@@ -34,6 +34,10 @@ main:has(.landing) {
 .hero-section {
   padding-top: 2.5rem;
   padding-bottom: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 3rem;
 }
 
 /* Hide Lucode's PageTitle description on the landing page — it duplicates
@@ -44,8 +48,7 @@ main:has(.landing) [slot='doc-title-description'] {
 }
 
 .hero-section .hero-text {
-  text-align: center;
-  margin-bottom: 1.5rem;
+  text-align: left;
 }
 
 .hero-section .hero-text h1 {
@@ -69,13 +72,13 @@ main:has(.landing) [slot='doc-title-description'] {
   font-size: 1.15rem;
   color: var(--sl-color-gray-3);
   max-width: 36rem;
-  margin: 0 auto 1.5rem;
+  margin: 0 0 1.5rem;
 }
 
 .hero-cta {
   display: flex;
   gap: 0.75rem;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
 }
 
@@ -126,8 +129,7 @@ main:has(.landing) [slot='doc-title-description'] {
 
 /* --- Terminal window ---------------------------------------------------- */
 .terminal {
-  max-width: 48rem;
-  margin: 0 auto 3rem;
+  width: 100%;
   border-radius: 0.75rem;
   overflow: hidden;
   background: #0d0b0a;
@@ -445,6 +447,16 @@ main:has(.landing) [slot='doc-title-description'] {
 
   .hero-section {
     padding-top: 2rem;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .hero-section .hero-text {
+    text-align: center;
+  }
+
+  .hero-cta {
+    justify-content: center;
   }
 
   .metrics-strip {
