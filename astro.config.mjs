@@ -22,6 +22,7 @@ export default defineConfig({
       components: {
         Footer: './src/components/FooterDisclaimer.astro',
         Head: './src/components/SeoHead.astro',
+        PageTitle: './src/components/PageTitle.astro',
         ThemeSelect: './src/components/ThemeToggle.astro',
         PageSidebar: './src/components/PageSidebar.astro',
       },
