@@ -65,6 +65,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="sync/upstream-$(date +%Y%m%d)"
+          # Delete stale remote branch from earlier runs today (ignore error if absent)
+          git push origin --delete "$BRANCH" || true
           git checkout -b "$BRANCH"
           git commit -m "chore: sync upstream JMeter documentation
 
