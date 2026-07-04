@@ -1,0 +1,48 @@
+---
+// Scroll-to-top floating button. Only shows on doc pages (not splash).
+---
+
+<button class="go-to-top" aria-label="Go to top" title="Scroll to top" id="goToTopBtn">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="18 15 12 9 6 15"/>
+  </svg>
+</button>
+
+<script is:inline>
+  (function() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+    
+    function init() {
+      var btn = document.getElementById('goToTopBtn');
+      if (!btn) return;
+
+      // Reparent to <body> so the button escapes any intermediate stacking
+      // context (e.g. Starlight's .main-pane has `isolation: isolate`) that
+      // would otherwise trap its z-index below the fixed right sidebar and
+      // block clicks. At body level, z-index:50 sits above the right
+      // sidebar (z-index:auto) in the root stacking context.
+      if (btn.parentNode && btn.parentNode !== document.body) {
+        document.body.appendChild(btn);
+      }
+
+      function toggle() {
+        if (window.scrollY > 400) {
+          btn.classList.add('visible');
+        } else {
+          btn.classList.remove('visible');
+        }
+      }
+
+      window.addEventListener('scroll', toggle, { passive: true });
+      toggle();
+
+      btn.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  })();
+</script>

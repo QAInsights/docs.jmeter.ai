@@ -1,0 +1,42 @@
+---
+// Global image lightbox for markdown images
+---
+
+<div class="image-lightbox" id="imageLightbox">
+  <button class="image-lightbox-close" id="imageLightboxClose" aria-label="Close">&times;</button>
+  <img id="imageLightboxImg" src="" alt="" />
+</div>
+
+<script is:inline>
+  (function() {
+    var lightbox = document.getElementById('imageLightbox');
+    var lightboxImg = document.getElementById('imageLightboxImg');
+    var closeBtn = document.getElementById('imageLightboxClose');
+    if (!lightbox || !lightboxImg || !closeBtn) return;
+
+    var images = document.querySelectorAll('.sl-markdown-content img:not(.astro-m46x6ez3)');
+    images.forEach(function(img) {
+      img.addEventListener('click', function(e) {
+        e.preventDefault();
+        lightboxImg.src = img.src;
+        lightboxImg.alt = img.alt;
+        lightbox.classList.add('active');
+      });
+    });
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+      lightboxImg.src = '';
+    }
+
+    closeBtn.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', function(e) {
+      if (e.target === lightbox) closeLightbox();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+        closeLightbox();
+      }
+    });
+  })();
+</script>

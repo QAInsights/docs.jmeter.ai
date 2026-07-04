@@ -1,0 +1,51 @@
+---
+title: "User's Manual: Building an Advanced Web Test Plan"
+description: "User's Manual: Building an Advanced Web Test Plan"
+---
+
+## 5. Building an Advanced Web Test Plan
+
+In this section, you will learn how to create advanced
+[Test Plans](/user-manual/build-test-plan/) to test a Web site.
+
+For an example of a basic Test Plan, see
+[Building a Web Test Plan](/user-manual/build-web-test-plan/).
+
+## 5.1 Handling User Sessions With URL Rewriting
+
+If your web application uses URL rewriting rather than cookies to save session information,
+then you'll need to do a bit of extra work to test your site.
+
+To respond correctly to URL rewriting, JMeter needs to parse the HTML
+received from the server and retrieve the unique session ID.  Use the appropriate [HTTP URL Re-writing Modifier](/user-manual/component-reference/#HTTP_URL_Re_writing_Modifier)
+to accomplish this.  Simply enter the name of your session ID parameter into the modifier, and it
+will find it and add it to each request.  If the request already has a value, it will be replaced.
+If "Cache Session Id" is checked, then the last found session id will be saved,
+and will be used if the previous HTTP sample does not contain a session id.
+
+#### URL Rewriting Example
+
+Download [this example](../demos/URLRewritingExample.jmx). In Figure 1 is shown a
+test plan using URL rewriting.  Note that the URL Re-writing modifier is added to the SimpleController,
+thus assuring that it will only affect requests under that SimpleController.
+
+![Figure 1 - Test Tree](/images/screenshots/url_rewrite_example_a.png)
+_Figure 1 - Test Tree_
+
+In Figure 2, we see the URL Re-writing modifier GUI, which just has a field for the user to specify
+the name of the session ID parameter.  There is also a checkbox for indicating that the session ID should
+be part of the path (separated by a ";"), rather than a request parameter
+
+![Figure 2 - Request parameters](/images/screenshots/url_rewrite_example_b.png)
+_Figure 2 - Request parameters_
+
+## 5.2 Using a Header Manager
+
+The [HTTP Header Manager](/user-manual/component-reference/#HTTP_Header_Manager) lets you customize what information
+JMeter sends in the HTTP request header.  This header includes properties like "User-Agent",
+"Pragma", "Referer", etc.
+
+The [HTTP Header Manager](/user-manual/component-reference/#HTTP_Header_Manager), like the [HTTP Cookie Manager](/user-manual/component-reference/#HTTP_Cookie_Manager),
+should probably be added at the Thread Group level, unless for some reason you wish to
+specify different headers for the different [HTTP Request](/user-manual/component-reference/#HTTP_Request) objects in
+your test.

@@ -1,0 +1,151 @@
+---
+title: "Building and Contributing to JMeter"
+description: "Building and Contributing to JMeter"
+---
+
+## Building JMeter
+
+Before you can compile JMeter, you will need a few things:
+
+- a Java 17 compatible JDK (Java Development Kit)
+- Optional: [Gradle](https://gradle.org/) installation
+- the JMeter sources as shown in the next section
+
+#### Acquiring the source
+
+The official source releases of Apache JMeter can be downloaded from [download page](download_jmeter.cgi).
+
+#### Compiling and packaging JMeter using Gradle
+
+JMeter can be built entirely using Gradle.
+The basic command is:
+
+```
+./gradlew build
+```
+
+See the list of available tasks via `./gradlew tasks` (or `./gradlew tasks --all`)
+for the other tasks that can be used. More detailed information about the available tasks can be found
+in [gradle.md](https://github.com/apache/jmeter/blob/master/gradle.md).
+
+#### Opening project via IntelliJ IDEA
+
+    You require IntelliJ 2018.3.1 or newer.
+
+    
+- Open the build.gradle.kts file with IntelliJ IDEA and choose "Open as Project"
+- Make sure "Create separate module per source set" is selected
+- Make sure "Use default gradle wrapper" is selected
+- In the "File already exists" dialogue, choose "Yes" to overwrite
+- In the "Open Project" dialogue, choose "Delete Existing Project and Import"
+
+#### Compiling and packaging JMeter using Eclipse
+
+##### Option 1 : Importing Eclipse project via Eclipse's "import Gradle project" wizard
+
+Recent Eclipse versions can import Gradle projects automatically, so use
+**File → Import...**
+Then choose **Existing Gradle Project** and proceed
+with the import.
+
+##### Option 2 : Setting up Eclipse project with Gradle task
+
+Once you have downloaded the sources, you can setup the Eclipse project by running:
+
+```
+./gradlew eclipse
+```
+
+You can then import the project using
+**File → Import → Existing projects into Workspace** and select the folder containing JMeter sources.
+
+## Contributing to JMeter
+
+### We love contribution
+
+We are very grateful to you if you take some time to contribute to the project.
+If you have some time to spend on the project you can pick existing enhancement or bug from [Issues page](/reference/issues/).
+
+You can also contribute to translation, see [JMeter Localisation (Translator's Guide)](/localising/index/).
+
+### Submitting a patch
+
+If you want to contribute to JMeter for a bug fix or enhancement, here is the procedure to follow:
+
+#### Check your patch
+
+Before submitting your patch ensure you do the following:
+
+Check that patch compiles and follows Tab space policy by running:
+
+```
+./gradlew check
+```
+
+Check that patch does not break JUnit tests by running:
+
+```
+./gradlew test
+```
+
+#### Create a pull request using Git
+
+- Fork [Apache JMeter mirror](https://www.github.com/apache/jmeter)
+- Clone your forked repository locally:  ``` git clone https://github.com/yourid/jmeter.git ```
+- Create a branch using for example issue id:  ``` git branch gh123-thread-group-typo ```       (please refrain from using  ``` master ```  and  ``` main ```  branches for pull request)
+- Checkout the new branch:  ``` git checkout gh123-thread-group-typo ```
+- Commit your fix there:  ``` git commit -m 'Fix to BUGID' list of files ```
+- Please avoid creating merge commits in the PR. We embrace small changes, and merge commits are harder to review
+- Push it:  ``` git push origin gh123-thread-group-typo ```
+- Create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)
+
+:::note
+Different operating systems have different defaults for end-of-line markers.
+  Typical configuration is CRLF for Windows and LF for macOS and GNU/Linux.
+
+  It is recommended to follow that configuration by appropriate settings of `core.autocrlf`.
+  For Windows 
+```
+git config --global core.autocrlf true
+```
+
+, and for macOS and GNU/Linux set 
+```
+git config --global core.autocrlf input
+```
+
+  Git will automatically recognize text files in the repository thanks to `.gitattributes`,
+  and Git will convert line endings for text files to the appropriate platform-native format (according to `core.autocrlf`)
+
+  Certain files (e.g. `*.sh` or `*.bat`) have predefined end of line policy
+  no matter the configuration of the developer workstation.
+:::
+
+#### Proposing a change with a patch
+
+If you cannot to create a pull request at GitHub, you might submit your changes as a unified diff patch on JMeter dev mailing list.
+
+- Checkout Apache JMeter source
+- Code your fix
+- Create your patch by Right clicking on Eclipse project and select         **Team → Create Patch …**
+- Attach your patch to email message on JMeter dev list
+
+## Automated builds
+
+### Automated (nightly) builds
+
+As part of the development process, the JMeter project has access to various Continuous Integration (CI) server builds.
+The build output can be useful for testing recent changes to the code-base.
+
+Please note that the builds have not undergone any QA and should only be used for development testing.
+For further information, see the [Nightly builds for developers](/nightly/) page.
+
+## Building Add-Ons
+
+### Building Add-Ons
+
+There is no need to build JMeter if you just want to build an add-on.
+Just download the binary archive and add the jars to the classpath or use Maven artifacts to build your add-ons.
+You may want to also download the source so it can be used by the IDE.
+
+See the `extras/addons*` files in the source tree for some suggestions

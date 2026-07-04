@@ -1,0 +1,55 @@
+# docs.jmeter.ai
+
+> Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience. This is an independent community resource and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation. For official documentation, visit jmeter.apache.org.
+
+## User Manual
+
+- [Getting Started](https://docs.jmeter.ai/getting-started/get-started/): Installation, configuration, and first steps with JMeter
+- [Building a Test Plan](https://docs.jmeter.ai/user-manual/build-test-plan/): How to create and structure a JMeter test plan
+- [Elements of a Test Plan](https://docs.jmeter.ai/user-manual/test-plan/): Thread groups, samplers, controllers, listeners, and other core elements
+- [Component Reference](https://docs.jmeter.ai/user-manual/component-reference/): Detailed reference for all JMeter components including samplers, controllers, listeners, timers, and assertions
+- [Functions and Variables](https://docs.jmeter.ai/user-manual/functions/): Built-in functions for dynamic values, property access, and scripting
+- [Properties Reference](https://docs.jmeter.ai/user-manual/properties-reference/): Complete reference for jmeter.properties configuration options
+- [Best Practices](https://docs.jmeter.ai/user-manual/best-practices/): Guidelines for efficient, maintainable, and scalable test plans
+- [Listeners](https://docs.jmeter.ai/user-manual/listeners/): Configuring and using JMeter listeners for result collection and visualization
+- [Remote Testing](https://docs.jmeter.ai/user-manual/remote-test/): Setting up and running distributed JMeter tests
+- [Dashboard Report](https://docs.jmeter.ai/user-manual/generating-dashboard/): Generating and interpreting the HTML dashboard report
+- [Real-time Results](https://docs.jmeter.ai/user-manual/realtime-results/): Live monitoring with Backend Listener
+- [Regular Expressions](https://docs.jmeter.ai/user-manual/regular-expressions/): Using regular expressions in JMeter extractors and assertions
+- [Glossary](https://docs.jmeter.ai/user-manual/glossary/): Key JMeter terminology explained
+- [Hints and Tips](https://docs.jmeter.ai/user-manual/hints-and-tips/): Practical tips and tricks for JMeter users
+- [Changes](https://docs.jmeter.ai/user-manual/changes/): What changed in the current JMeter version
+
+## Building Test Plans
+
+- [Web Test Plan](https://docs.jmeter.ai/user-manual/build-web-test-plan/): Building HTTP/HTTPS test plans for web applications
+- [Advanced Web Test Plan](https://docs.jmeter.ai/user-manual/build-adv-web-test-plan/): Advanced techniques for web testing
+- [Database Test Plan](https://docs.jmeter.ai/user-manual/build-db-test-plan/): Testing databases with JDBC samplers
+- [FTP Test Plan](https://docs.jmeter.ai/user-manual/build-ftp-test-plan/): Testing FTP servers
+- [LDAP Test Plan](https://docs.jmeter.ai/user-manual/build-ldap-test-plan/): Testing LDAP directory services
+- [Extended LDAP Test Plan](https://docs.jmeter.ai/user-manual/build-ldapext-test-plan/): Extended LDAP testing
+- [Webservice Test Plan](https://docs.jmeter.ai/user-manual/build-ws-test-plan/): Testing SOAP/REST web services
+- [JMS Point-to-Point](https://docs.jmeter.ai/user-manual/build-jms-point-to-point-test-plan/): Testing JMS point-to-point messaging
+- [JMS Topic Test Plan](https://docs.jmeter.ai/user-manual/build-jms-topic-test-plan/): Testing JMS pub/sub messaging
+- [Programmatic Test Plan](https://docs.jmeter.ai/user-manual/build-programmatic-test-plan/): Building test plans programmatically in Java
+
+## Tutorials
+
+- [JMeter Tutorial](https://docs.jmeter.ai/user-manual/jmeter-tutorial/): Introduction to JMeter concepts
+- [Proxy Step by Step](https://docs.jmeter.ai/user-manual/jmeter-proxy-step-by-step/): Recording test scripts with the proxy
+- [Distributed Testing](https://docs.jmeter.ai/user-manual/jmeter-distributed-testing-step-by-step/): Step-by-step distributed testing guide
+
+## Extending JMeter
+
+- [Extending JMeter](https://docs.jmeter.ai/extending/extending-jmeter/): Developer guide for creating custom samplers, listeners, timers, and controllers
+- [Dashboard Generator](https://docs.jmeter.ai/extending/devguide-dashboard/): Architecture of the dashboard generation engine
+
+## Reference
+
+- [Building JMeter](https://docs.jmeter.ai/reference/building/): Building JMeter from source
+- [Download JMeter](https://docs.jmeter.ai/reference/download-jmeter/): Where to download JMeter releases
+
+## Legal
+
+- [Disclaimer](https://docs.jmeter.ai/legal/disclaimer/): Trademark disclaimer and site attribution
+- [NOTICE](https://docs.jmeter.ai/legal/notice/): Apache JMeter NOTICE file

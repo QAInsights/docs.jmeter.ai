@@ -1,0 +1,213 @@
+---
+title: "User's Manual: Live Statistics"
+description: "User's Manual: Live Statistics"
+---
+
+## 15. Real-time results
+
+Since JMeter 2.13 you can get real-time results sent to a backend through the
+[Backend Listener](/user-manual/component-reference/#Backend_Listener) using potentially any backend (JDBC, JMS, Webservice, …)
+by providing a class which implements [AbstractBackendListenerClient](https://jmeter.apache.org/api/org/apache/jmeter/visualizers/backend/AbstractBackendListenerClient.html).
+
+JMeter ships with:
+
+- a GraphiteBackendListenerClient which allows you to send metrics to a Graphite Backend. This feature provides: - Live results - Nice graphs for metrics - Ability to compare 2 or more load tests - Storing monitoring data as long as JMeter results in the same backend - …
+- an InfluxDBBackendListenerClient introduced in JMeter 3.2 which allows you to send metrics to an InfluxDB Backend using UDP or HTTP protocols This feature provides: - Live results - Nice graphs for metrics - Ability to compare 2 or more load tests - Ability to add annotations to graphs - Storing monitoring data as long as JMeter results in the same backend - …
+
+In this document we will present the configuration setup to graph and historize the data in different backends:
+
+- InfluxDB setup for InfluxDBBackendListenerClient
+- InfluxDB setup for GraphiteBackendListenerClient
+- Grafana
+- Graphite
+
+### 15.1 Metrics exposed
+
+    
+#### 15.1.1 Thread/Virtual Users metrics
+
+    
+    Thread metrics are the following:
+    
+
+    
+
+**`&lt;rootMetricsPrefix&gt;test.minAT`**
+: Min active threads
+
+**`&lt;rootMetricsPrefix&gt;test.maxAT`**
+: Max active threads
+
+**`&lt;rootMetricsPrefix&gt;test.meanAT`**
+: Mean active threads
+
+**`&lt;rootMetricsPrefix&gt;test.startedT`**
+: Started threads
+
+**`&lt;rootMetricsPrefix&gt;test.endedT`**
+: Finished threads
+
+    
+    
+#### 15.1.2 Response times metrics
+
+    Response related metrics are the following:
+
+    
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ok.count`**
+: Number of successful responses for sampler name
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.h.count`**
+: Server hits per seconds, this metric cumulates Sample Result and Sub results (if using Transaction Controller, "Generate parent sampler" should be unchecked)
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ok.min`**
+: Min response time for successful responses of sampler name
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ok.max`**
+: Max response time for successful responses of sampler name
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ok.avg`**
+: Average response time for successful responses of sampler name.
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ok.pct&lt;percentileValue&gt;`**
+: Percentile computed for successful responses of sampler name. There will be one metric for each calculated value.
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ko.count`**
+: Number of failed responses for sampler name
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ko.min`**
+: Min response time for failed responses of sampler name
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ko.max`**
+: Max response time for failed responses of sampler name
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ko.avg`**
+: Average response time for failed responses of sampler name.
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.ko.pct&lt;percentileValue&gt;`**
+: Percentile computed for failed responses of sampler name. There will be one metric for each calculated value.
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.a.count`**
+: Number of responses for sampler name (sum of ok.count and ko.count)
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.sb.bytes`**
+: Sent Bytes
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.rb.bytes`**
+: Received Bytes
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.a.min`**
+: Min response time for responses of sampler name (min of ok.count and ko.count)
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.a.max`**
+: Max response time for responses of sampler name (max of ok.count and ko.count)
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.a.avg`**
+: Average response time for responses of sampler name (avg of ok.count and ko.count)
+
+**`&lt;rootMetricsPrefix&gt;&lt;samplerName&gt;.a.pct&lt;percentileValue&gt;`**
+: Percentile computed for responses of sampler name. There will be one metric for each calculated value. (calculated on the totals for OK and failed samples)
+
+    
+    The default `percentiles` setting on the [Backend Listener](/user-manual/component-reference/#Backend_Listener) is "90;95;99",
+    i.e. the 3 percentiles 90%, 95% and 99%.
+    
+
+    
+    The [Graphite naming hierarchy](https://graphite.readthedocs.io/en/latest/feeding-carbon.html#step-1-plan-a-naming-hierarchy)
+    uses dot (".") to separate elements. This could be confused with decimal percentile values.
+    JMeter converts any such values, replacing dot (".") with underscore ("-").
+    For example, "`99.9`" becomes "`99_9`"
+    
+
+    
+    By default JMeter sends metrics for all samplers accumulated under the samplerName "`all`".
+    If the Backend Listener `samplersList` is configured, then JMeter also sends the metrics
+    for the matching sample names unless `summaryOnly=true`
+    
+
+    
+
+### 15.2 JMeter configuration
+
+    
+    To make JMeter send metrics to backend add a [BackendListener](/./component-reference/#Backend_Listener) using the InfluxDBBackendListenerClient.
+    
+
+    ![InfluxDB configuration](/images/screenshots/backend_listener.png)
+_InfluxDB configuration_
+
+### 15.3 InfluxDB configuration
+
+    Do one of the following to store data sent by the Backend Listener:
+    
+- For InfluxDB 2 setup, create a `jmeter` [bucket](https://v2.docs.influxdata.com/v2.0/organizations/buckets/create-bucket/)
+- For InfluxDB 1.x setup, create a `jmeter` database using the [Influx CLI](https://docs.influxdata.com/influxdb/v1.8/introduction/get-started/)
+
+    You can also use the HTTP API i.e.
+        `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE jmeter"`
+    
+
+#### 15.3.1 InfluxDB setup for InfluxDBBackendListenerClient
+
+InfluxDB is an open-source, distributed, time-series database that allows to
+easily store metrics.
+Installation and configuration is very easy, read this for more details [InfluxDB documentation](https://docs.influxdata.com/influxdb/latest/introduction/installation/).
+
+InfluxDB data can be easily viewed in a browser through [Grafana](http://grafana.org/).
+
+#### 15.3.2 InfluxDB 2 setup for InfluxDBBackendListenerClient
+
+    
+        The configuration should specify the `influxdbToken` parameter and also specify `bucket` and `org` as query parameters in the `influxdbUrl`. See the [InfluxDB v2 API](https://v2.docs.influxdata.com/v2.0/api/#operation/PostWrite) for more details.
+    
+
+    
+     How to retrieve the required information in the InfluxDB UI:
+     
+- [influxdbToken](https://v2.docs.influxdata.com/v2.0/security/tokens/view-tokens/)
+- [bucket](https://v2.docs.influxdata.com/v2.0/organizations/buckets/view-buckets/)
+- [org](https://v2.docs.influxdata.com/v2.0/organizations/view-orgs/)
+
+    
+
+    ![InfluxDB 2 configuration](/images/screenshots/backend_listener_influxdb_v2.png)
+_InfluxDB 2 configuration_
+
+### 15.4 Grafana configuration
+
+    
+    Installing grafana
+
+    Read [documentation](https://docs.grafana.org/) for more details.
+    Add the [datasource](https://docs.grafana.org/features/datasources/influxdb/)
+
+    
+
+    Here is the kind of dashboard that you could obtain:
+    ![Grafana dashboard](/images/screenshots/grafana_dashboard.png)
+_Grafana dashboard_
+
+### 15.5 Graphite Configuration
+
+    To make JMeter send metrics to backend, add a BackendListener using the GraphiteBackendListenerClient.
+
+    [GraphiteBackendListenerClient](/./component-reference/#Backend_Listener) section will help you do the configuration.
+
+    ![Graphite configuration](/images/screenshots/backend_listener_graphite.png)
+_Graphite configuration_
+
+### 15.5.1 Graphite Sender
+
+    Two types of Senders are available. TextGraphiteMetricsSender, PickleGraphiteMetricsSender
+
+    
+- For plaintext protocol, set graphiteMetricsSender parameter to `org.apache.jmeter.visualizers.backend.graphite.TextGraphiteMetricsSender`
+- For pickle protocol, set graphiteMetricsSender parameter to `org.apache.jmeter.visualizers.backend.graphite.PickleGraphiteMetricsSender`
+
+    To send large amounts of data, use the Pickle sender. It is a more efficient transmission method compared to textplain.
+    Read [the Graphite documentation](https://graphite.readthedocs.io/en/latest/feeding-carbon.html) for more details.
+
+    ![Graphite pickle sender](/images/screenshots/backend_listener_graphite_pickle.png)
+_Graphite pickle sender_

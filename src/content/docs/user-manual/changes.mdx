@@ -1,0 +1,114 @@
+---
+title: "Changes"
+description: "Changes"
+---
+
+## Changes
+
+:::note
+**This page details the changes made in the current version only.**
+
+Earlier changes are detailed in the [History of Previous Changes](/user-manual/changes-history/).
+:::
+
+:::note
+JMeter 6.x requires Java 17 or later for execution (Java 21 is recommended).
+:::
+
+## Version 6.0.0
+
+Summary
+
+- [Changes](#Changes)
+- [Bug fixes](#Bug fixes)
+
+  
+## Changes
+
+  
+#### General
+
+  
+- [PR#6220](https://github.com/apache/jmeter/pull/6220) Require Java 17 or later for running JMeter
+- [PR#6550](https://github.com/apache/jmeter/pull/6550) Require Kotlin 1.9 or later for running JMeter
+- [PR#6274](https://github.com/apache/jmeter/pull/6274) Change references to old MySQL driver to new class `com.mysql.cj.jdbc.Driver`
+- [Issue#6352](https://github.com/apache/jmeter/issues/6352) Calculate delays in Open Model Thread Group and Precise Throughput         Timer relative to start of Thread Group instead of the start of the test.
+- [Issue#6357](https://github.com/apache/jmeter/issues/6357)[PR#6358](https://github.com/apache/jmeter/pull/6358) Ensure writable directories when copying template files while report generation.
+- [PR#6509](https://github.com/apache/jmeter/pull/6509)[PR#6675](https://github.com/apache/jmeter/pull/6675) Synchronize recent file menu across multiple JVMs. Contributed by Corneliu C (https://github.com/KingRabbid)
+- [PR#6596](https://github.com/apache/jmeter/pull/6596)Fallback to English locale when loading test plans that use string values for enum properties, so old sample plans load correctly even with non-English locales.
+
+  
+#### HTTP Samplers and Test Script Recorder
+
+  
+- [PR#5891](https://github.com/apache/jmeter/pull/5891)Skip Internet Explorer 6-9 conditional comment processing when fetching resource links
+- [Issue#5466](https://github.com/apache/jmeter/issues/5466)Allow enabling or disabling individual HTTP request arguments in the HTTP Sampler UI. Contributed by Pasquale Pochop (github.com/pochopsp)
+- [Issue#6250](https://github.com/apache/jmeter/issues/6250)Avoid adding "; charset=" automatically to `multipart/form-data` requests to align behavior with modern HTTP clients.
+- [Issue#6080](https://github.com/apache/jmeter/issues/6080)Preserve the original HTTP method when following 307 and 308 redirects according to the HTTP specification. Contributed by LeeJiWon (github.com/dlwldnjs1009)
+- [Issue#6267](https://github.com/apache/jmeter/issues/6267)[PR#6268](https://github.com/apache/jmeter/pull/6268)Add a space between key and value after `:` in View Results Tree &gt; Sampler result tab for better readability.
+
+  
+#### Timers, Assertions, Config, Pre- & Post-Processors
+
+  
+- [Issue#6448](https://github.com/apache/jmeter/issues/6448)Support trailing empty default values in JSON Extractor so expressions like `\${VAR:-}` are handled correctly. Contributed by Raul Almeida (github.com/ratacolita)
+- [PR#6596](https://github.com/apache/jmeter/pull/6596)Add a schema for ConstantThroughputTimer and use it to ensure required properties are initialized properly.
+
+  
+#### Non-functional changes
+
+  
+- Update Apache Tika to 3.x from 1.x to use the latest parser engine.
+- Update Saxon-HE to 12.x from 11.x for XSLT and XQuery processing.
+- Update Groovy to 5.x for the Groovy-based scripting environment.
+- Update Bouncy Castle to 1.82 for cryptographic operations.
+- Update json-path to 2.10.0 for JSON query expressions.
+- Update Neo4j Java driver to 6.x for Bolt-based database tests.
+- Update Rhino JavaScript engine to 1.8.0 for JSR-223 JavaScript execution.
+
+  
+#### UI
+
+  
+- [PR#6333](https://github.com/apache/jmeter/pull/6333)Apply HiDPI mode automatically when setting up the GUI so JMeter looks sharp on high-resolution displays. Contributed by Gabriele Coletta (github.com/gdmg92)
+- [PR#6656](https://github.com/apache/jmeter/pull/6656)Replace the previous feather icon with the new oak leaf in the JMeter logo.
+
+  
+## Bug fixes
+
+  
+#### General
+
+  
+- [PR#6654](https://github.com/apache/jmeter/pull/6654)[Issue#6611](https://github.com/apache/jmeter/issues/6611)Support JDK 25 and above for result collectors with empty file names
+- Trim whitespace when parsing numeric JMeter properties so accidental spaces do not silently change configuration values.
+- [PR#6372](https://github.com/apache/jmeter/pull/6372)Fix KeyManager logging when using CLI mode so keystore passwords are not incorrectly reported as missing. Contributed by Patrick Uiterwijk (patrick at puiterwijk.org)
+- [Issue#5937](https://github.com/apache/jmeter/issues/5937)Remove deprecated Log4j package scanning and configure plugin metadata processing to improve startup time and avoid deprecation warnings. Contributed by Piotr P. Karwasz (github.com/piotrgithub)
+- [PR#6620](https://github.com/apache/jmeter/pull/6620)Fix report generation paths so dashboard output files are created in the correct location after internal refactoring.
+- [Bug 6456](https://bz.apache.org/bugzilla/show_bug.cgi?id=6456)Handle malformed percent-encoded URLs gracefully when recording HTTP traffic, logging a warning instead of failing the recording.
+
+ 
+
+## Thanks
+
+We thank all contributors mentioned in bug and improvement sections above:
+
+- Raul Almeida (github.com/ratacolita)
+- Pasquale Pochop (github.com/pochopsp)
+- Gabriele Coletta (github.com/gdmg92)
+- Patrick Uiterwijk (patrick at puiterwijk.org)
+- Piotr P. Karwasz (github.com/piotrgithub)
+
+We also thank bug reporters who helped us improve JMeter.
+
+Apologies if we have omitted anyone else.
+
+ 
+
+## Known problems and workarounds
+
+- The Once Only controller behaves correctly under a Thread Group or Loop Controller, but otherwise its behaviour is not consistent (or clearly specified).
+- The numbers that appear to the left of the green box are the number of active threads / total number of threads, the total number of threads only applies to a locally run test, otherwise it will show `0` (see [Bug 55510](https://bz.apache.org/bugzilla/show_bug.cgi?id=55510)).
+- Note that under some windows systems you may have this WARNING: ``` java.util.prefs.WindowsPreferences WARNING: Could not open/create prefs root node Software\JavaSoft\Prefs at root 0 x80000002. Windows RegCreateKeyEx(…) returned error code 5. ``` The fix is to run JMeter as Administrator, it will create the registry key for you, then you can restart JMeter as a normal user and you won't have the warning anymore.
+- You may encounter the following error: ``` java.security.cert.CertificateException: Certificates does not conform to algorithm constraints ```  if you run a HTTPS request on a web site with a SSL certificate (itself or one of SSL certificates in its chain of trust) with a signature  algorithm using MD2 (like `md2WithRSAEncryption`) or with a SSL certificate with a size lower than 1024 bits. This error is related to increased security in Java 8+. To allow you to perform your HTTPS request, you can downgrade the security of your Java installation by editing the Java `jdk.certpath.disabledAlgorithms` property. Remove the MD2 value or the constraint on size, depending on your case. This property is in this file: ``` JAVA_HOME/jre/lib/security/java.security ``` See  [Bug 56357](https://bz.apache.org/bugzilla/show_bug.cgi?id=56357) for details.
+- With Java 15 the JavaScript implementation [Nashorn has been removed](https://openjdk.java.net/jeps/372). JMeter now ships with a JSR-223 compatible JavaScript engine by default (Mozilla Rhino 1.8.0), so you do not need to download Rhino separately anymore. If you prefer to use Nashorn instead, you can still add it as a module. One way to download version 15.7 (or later) and its dependencies and set the module path is outlined below:    ``` mkdir lib/modules pushd lib/modules wget https://repo1.maven.org/maven2/org/openjdk/nashorn/nashorn-core/15.7/nashorn-core-15.7.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm/9.9.1/asm-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-commons/9.9.1/asm-commons-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-util/9.9.1/asm-util-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-tree/9.9.1/asm-tree-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-analysis/9.9.1/asm-analysis-9.9.1.jar popd export JVM_ARGS="--module-path $PWD/lib/modules" ./bin/jmeter ```

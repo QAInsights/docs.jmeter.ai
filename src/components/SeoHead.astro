@@ -1,0 +1,77 @@
+---
+import StarlightHead from '@astrojs/starlight/components/Head.astro';
+import type { Props } from '@astrojs/starlight/props';
+
+const props = Astro.props as unknown as Props;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
+const title = props.entry?.data?.title || 'docs.jmeter.ai';
+const description = props.entry?.data?.description || 'Community documentation for Apache JMeter';
+
+// TechArticle JSON-LD for doc pages
+const isDocPage = Astro.url.pathname !== '/' && !Astro.url.pathname.startsWith('/404');
+const jsonLd = isDocPage ? {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: title,
+  description: description,
+  url: canonicalUrl,
+  publisher: {
+    '@type': 'Organization',
+    name: 'docs.jmeter.ai',
+    url: 'https://docs.jmeter.ai',
+  },
+  about: {
+    '@type': 'SoftwareApplication',
+    name: 'Apache JMeter',
+    applicationCategory: 'DeveloperApplication',
+  },
+} : null;
+
+// BreadcrumbList JSON-LD
+const pathSegments = Astro.url.pathname.split('/').filter(Boolean);
+const breadcrumbItems = [
+  { name: 'Home', url: 'https://docs.jmeter.ai/' },
+];
+let currentPath = '';
+for (const segment of pathSegments) {
+  currentPath += `/${segment}`;
+  const name = segment.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  breadcrumbItems.push({ name, url: `https://docs.jmeter.ai${currentPath}` });
+}
+
+const breadcrumbJsonLd = breadcrumbItems.length > 1 ? {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: breadcrumbItems.map((item, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: item.name,
+    item: item.url,
+  })),
+} : null;
+---
+
+<StarlightHead {...Astro.props}>
+  <link rel="canonical" href={canonicalUrl} />
+  <link rel="manifest" href="/manifest.json" />
+
+  {/* Open Graph */}
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:site_name" content="docs.jmeter.ai" />
+
+  {/* Twitter Card */}
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+
+  {/* JSON-LD Structured Data */}
+  {jsonLd && (
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  )}
+  {breadcrumbJsonLd && (
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+  )}
+</StarlightHead>

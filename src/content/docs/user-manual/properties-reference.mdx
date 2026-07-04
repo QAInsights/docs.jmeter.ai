@@ -1,0 +1,719 @@
+---
+title: "User's Manual: Properties Reference"
+description: "User's Manual: Properties Reference"
+---
+
+## 19 Introduction
+
+This document describes JMeter properties. The properties present in `jmeter.properties` or `reportgenerator.properties` should be set in the `user.properties` file.
+These properties are only taken into account after restarting JMeter as they are usually resolved when the class is loaded.
+
+## 19.1 Language
+
+| Name | Required | Description |
+|------|----------|-------------|
+| language | No | Preferred GUI language. Comment out to use the JVM default locale's language.     Example:  ``` language=en ```      :::note This property is the only one that must be set in `jmeter.properties` file :::      :::note To fully configure language ensure you set locale, see [Internationalization: Understanding Locale in the Java Platform](http://www.oracle.com/us/technologies/java/locale-140624.html).     Example for English:      ``` -Duser.language=en -Duser.region=EN ``` ::: |
+| locales.add | No | Additional locale(s) to add to the displayed list.     The current default list is: `en`, `fr`,     `de`, `no`, `es`, `tr`,     `ja`, `zh_CN`,     `zh_TW`, `pl`, `pt_BR`.     See `JMeterMenuBar#makeLanguageMenu()`     The entries are a comma-separated list of language names.     Example:  ``` locales.add=zu ``` |
+
+## 19.2 XML Parser
+
+| Name | Required | Description |
+|------|----------|-------------|
+| xpath.namespace.config | No | Path to a Properties file containing Namespace mapping in the form `prefix=Namespace`.     Example:  ``` ns=http://biz.aol.com/schema/2006-12-18 ``` |
+| xpath2query.parser.cache.size | No | XPath2 query cache for storing compiled XPath queries     Defaults to `400` |
+
+## 19.3 SSL configuration
+
+:::note
+SSL (Java) System properties are now in `system.properties`
+
+JMeter no longer converts `javax._xxx_` property entries in
+`jmeter.properties` into System properties. These must now be
+defined in the `system.properties` file or on the command-line. The
+`system.properties` file gives more flexibility.
+:::
+
+| Name | Required | Description |
+|------|----------|-------------|
+| https.sessioncontext.shared | No | By default, SSL session contexts are now created per-thread, rather than being shared.     The old behaviour can be enabled by setting this property to `true`. Defaults to: `false` |
+| https.default.protocol | No | Be aware that https default protocol may vary depending on the version of JVM.     See [Diagnosing TLS, SSL and HTTPS](https://blogs.oracle.com/java-platform-group/entry/diagnosing_tls_ssl_and_https)     and [Bug 58236](https://bz.apache.org/bugzilla/show_bug.cgi?id=58236).     Default HTTPS protocol level:  ``` https.default.protocol=TLS ```     This may need to be changed to:  ``` https.default.protocol=SSLv3 ``` |
+| https.socket.protocols | No | List of protocols to enable. You may have to select only a subset if you find issues with target server.     This is needed when server does not support Socket version negotiation, this can lead to errors like:     `javax.net.ssl.SSLPeerUnverifiedException: peer not authenticated`     or `java.net.SocketException: Connection reset`.     See [Bug 54759](https://bz.apache.org/bugzilla/show_bug.cgi?id=54759), example:  ``` https.socket.protocols=SSLv2Hello SSLv3 TLSv1 ``` |
+| https.cipherSuites | No | Comma-separated list of SSL cipher suites that may be used in HTTPS     connections.  It may be desirable to use a subset of cipher suites in order     to match expected client behavior or to reduce encryption overhead in     JMeter when running with large numbers of users. Errors may occur if the     JVM does not support the specified cipher suites, or if the cipher suites     supported by the HTTPS server do not overlap this list.  See the     [JSSE     Reference Guide.](https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#Customization)     For example:  ``` https.cipherSuites=TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_RSA_WITH_AES_128_GCM_SHA256 ```     If not specified, JMeter will use the default list of cipher suites     supported by the JVM. |
+| httpclient.reset_state_on_thread_group_iteration | No | Reset HTTP State when starting a new Thread Group iteration. In summary`true` means next iteration is associated to a new user. `false` means next iteration is associated to same user. `true` involves:   - Closing opened connection - resetting SSL State Defaults to: `true` |
+| https.use.cached.ssl.context | No | Control if we allow reuse of cached SSL context between iterations.     Set the value to `false` to reset the SSL context each iteration.     Defaults to: `true`      :::note DEPRECATED, you should use `httpclient.reset_state_on_thread_group_iteration` with correct value ::: |
+| https.keyStoreStartIndex | No | Start index to be used with keystores with many entries.     The default is to use entry `0`, i.e. the first.     Defaults to: `0` |
+| https.keyStoreEndIndex | No | End index to be used with keystores with many entries.     Defaults to: `0` |
+
+## 19.4 Look and Feel configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| jmeter.laf.windows_10 | No | Classname of the Swing default UI     The LAF classnames that are available are now displayed as ToolTip text when hovering over     the Options/Look and Feel selection list.     You can either use a full class name, as shown below, or one of the strings "`System`"     or "`CrossPlatform`" which means JMeter will use the     corresponding string returned by `UIManager.get&lt;name&gt;LookAndFeelClassName()`.     LAF can be overridden by `os.name` (lowercased, spaces replaced by '_').      #### Order of LAF property lookup         Take for example an `os.name` of `Windows 10`.         JMeter would look first for a property          ``` jmeter.laf.windows_10=javax.swing.plaf.metal.MetalLookAndFeel ```         Failing that, the OS family `os.name` would be used shortened to the first space. In our example         JMeter would therefore look for a property          ``` jmeter.laf.windows=com.sun.java.swing.plaf.windows.WindowsLookAndFeel ```           :::note Mac apparently looks better with the System LAF set through          ``` jmeter.laf.mac=System ```         Failing that, the JMeter default LAF can be defined through:          ``` jmeter.laf=System ```         If none of the above `jmeter.laf` properties are defined, JMeter uses the `CrossPlatform` LAF.         This is because the `CrossPlatform` LAF generally looks better than the `System` LAF.         See [Bug 52026](https://bz.apache.org/bugzilla/show_bug.cgi?id=52026) for details. :::      :::note When you change Look and Feel (LAF) from JMeter GUI through menu Options &gt; Look and Feel,     you should restart JMeter to ensure change is fully effective. ::: |
+| jmeter.loggerpanel.display | No | Display LoggerPanel.     Defaults to: `false` |
+| jmeter.loggerpanel.enable_when_closed | No | Enable LogViewer Panel to receive log event even when closed.     Enabled since 2.12      :::note Note this has some impact on performances, but as GUI mode must not be used for Load Test it is acceptable :::     Defaults to: `true` |
+| jmeter.loggerpanel.maxlength | No | Max lines kept in LoggerPanel, `0` means no limit.      Defaults to: `1000` |
+| jmeter.gui.refresh_period | No | Interval period in `ms` to process the events of the listeners.     Defaults to: `500` |
+
+## 19.4.1 Darklaf configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| darklaf.decorations | No | Enables custom window chrome when using a Darklaf Look And Feel.         Defaults to: `false` |
+| darklaf.unifiedMenuBar | No | Enables the unified menubar on Windows when using a Darklaf Look and Feel.         This property only has an effect if `darklaf.native` is `true`.         Defaults to: `true` |
+
+## 19.5 Toolbar display
+
+| Name | Required | Description |
+|------|----------|-------------|
+| jmeter.toolbar.icons | No | Toolbar icon definitions.     Defaults to `org/apache/jmeter/images/toolbar/icons-toolbar.properties` |
+| jmeter.toolbar | No | Toolbar list.     Defaults to:      ``` new,open,close,save,save_as_testplan,|,cut,copy,paste,|,expand,collapse,toggle,|,test_start,test_stop,test_shutdown,|,test_start_remote_all,test_stop_remote_all,test_shutdown_remote_all,|,test_clear,test_clear_all,|,search,search_reset,|,function_helper,help ``` |
+| jmeter.toolbar.icons.size | No | Available sizes are: `22x22`, `32x32`, `48x48`. Suggested value for HiDPI mode is      ``` jmeter.toolbar.icons.size=48x48 ```     Defaults to: `22x22` |
+| jmeter.icons | No | Icon definitions. Alternate set:      ``` jmeter.icons=org/apache/jmeter/images/icon_1.properties ```     Historical icon set (deprecated):      ``` jmeter.icons=org/apache/jmeter/images/icon_old.properties ```     Defaults to:`org/apache/jmeter/images/icon.properties` |
+| jmeter.tree.icons.size | No | Available sizes are: `19x19`, `24x24`, `32x32`, `48x48`.     Useful for HiDPI display (see below).     Defaults to: `19x19`     Suggested value for HiDPI screen like 3200x1800 is: `32x32` |
+| jmeter.hidpi.mode | No | HiDPI mode. Activate a '_pseudo_'-HiDPI mode. Allows to increase size of some UI     elements which are not correctly managed by JVM with high resolution screens in Linux or Windows.     Defaults to: `false` |
+| jmeter.hidpi.scale.factor | No | HiDPI scale factor. Suggested value for HiDPI: `2.0`.     Defaults to: `1.0` |
+| not_in_menu | No | Components to not display in JMeter GUI (GUI class name or static label). |
+| undo.history.size | No | Number of items in undo history.     Feature is disabled by default (`0`) due to known and not fixed bugs     [Bug 57043](https://bz.apache.org/bugzilla/show_bug.cgi?id=57043), [Bug 57039](https://bz.apache.org/bugzilla/show_bug.cgi?id=57039) and [Bug 57040](https://bz.apache.org/bugzilla/show_bug.cgi?id=57040).     Set it to a number greater than zero (`25` can be a good default).     The bigger it is, the more memory will be consumed.     Defaults to: `0` |
+| gui.quick_X | No | Hotkeys to add JMeter components where `_X_` is the shortcut key, for example: ``` gui.quick_0=ThreadGroupGui gui.quick_1=HttpTestSampleGui gui.quick_2=RegexExtractorGui gui.quick_3=AssertionGui gui.quick_4=ConstantTimerGui gui.quick_5=TestActionGui gui.quick_6=JSR223PostProcessor gui.quick_7=JSR223PreProcessor gui.quick_8=DebugSampler gui.quick_9=ViewResultsFullVisualizer ```     Above code will add the corresponding elements when you press     `Ctrl + 0` …     `Ctrl + 9`     (`&command; + 0` …     `&command; + 9` on Mac) |
+
+## 19.6 JMX Backup configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| jmeter.gui.action.save.backup_on_save | No | Enable auto backups of the `.jmx` file when a test plan is saved.     When enabled, before the `.jmx` is saved, it will be backed up to the directory     pointed to by the `jmeter.gui.action.save.backup_directory` property (see below).     Backup file names are built after the jmx file being saved. For example,     saving `test-plan.jmx` will create a `test-plan-000012.jmx` in the backup     directory provided that the last created backup file is `test-plan-000011.jmx`.     Default value is `true` indicating that auto backups are enabled.     Defaults to: `true` |
+| jmeter.gui.action.save.backup_directory | No | Set the backup directory path where JMX backups will be created upon save in the GUI.     If not set (what it defaults to) then backup files will be created in a sub-directory of     the JMeter base installation. If set and the directory does not exist, a corresponding directory will be created.     Defaults to: `\${JMETER_HOME}/backups` |
+| jmeter.gui.action.save.keep_backup_max_hours | No | Set the maximum time (in hours) that backup files should be preserved since the save time.     By default no expiration time is set which means we keep backups for ever.     Defaults to: `0` |
+| jmeter.gui.action.save.keep_backup_max_count | No | Set the maximum number of backup files that should be preserved.     By default ten backups will be preserved.     Setting this to zero will cause the backups to not being deleted (unless `keep_backup_max_hours`     is set to a non zero value).     Defaults to: `10` |
+| save_automatically_before_run | No | Enable auto saving of the .jmx file before start run a test plan When enabled, before the run, the .jmx will be saved and also backed up to the directory pointed. Defaults to: `true` |
+
+## 19.7 Remote hosts and RMI configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| remote_hosts | No | Remote Hosts - comma delimited, for example      ``` remote_hosts=localhost:1099,localhost:2010 ```     Defaults to: `127.0.0.1` |
+| server_port | No | RMI port to be used by the server (must start `rmiregistry` with same port).     To change the port to (say) `1234`:     On the server(s):      1. `set server_port=1234` 2. start `rmiregistry` with port `1234`     On Windows this can be done by:      ``` SET SERVER_PORT=1234 JMETER-SERVER ```     On Unix:      ``` SERVER_PORT=1234 jmeter-server ```     On the Windows client:      ``` set remote_hosts=_server_:1234 ```     On the Unix client:      ``` export remote_hosts=_server_:1234 ```     Defaults to: `1099` |
+| client.rmi.localport | No | Parameter that controls the RMI ports used by `RemoteSampleListenerImpl` and `RemoteThreadsListenerImpl` (The Controller)     Default value is `0`, which means ports are randomly assigned.     If this is non-zero, it will be used as the base for local port numbers for the client engine.     At the moment JMeter will open up to three ports beginning with the port defined in this property.      :::note You may need to open corresponding ports in the firewall on the Controller machine. :::     Defaults to: `0` |
+| client.tries | No | When distributed test is starting, there may be several attempts to initialize remote engines.     By default, only a single try is made. Increase this property to make it retry additional times.     Defaults to: `1` |
+| client.retries_delay | No | If initialization is retried, this property sets the delay between those attempts in milliseconds.     Defaults to: `5000` |
+| client.continue_on_fail | No | When all initialization tries were made, the test will fail, if any remote engines are failed.     Set this property to `true` to ignore failed nodes and proceed with test.     Defaults to: `false` |
+| server.rmi.port | No | To change the default port (`1099`) used to access the server.     Defaults to: `1099` |
+| server.rmi.localport | No | To use a specific port for the JMeter server engine, define this property before starting the server.     Defaults to: `4000` |
+| server.rmi.create | No | From JMeter version 2.3.1, the JMeter server creates the RMI registry as part of the server process.     Set this property to `false`, to stop the server creating the RMI registry.     Defaults to: `true` |
+| server.exitaftertest | No | From JMeter version 2.3.1, define this property to cause JMeter to exit after the first test.     Defaults to: `true` |
+| server.rmi.ssl.keystore.type | No | Type of keystore for RMI connection security. Possible values are dependent on the JVM in use, but commonly supported are `JKS` and `PKCS12`.     Defaults to: `JKS` |
+| server.rmi.ssl.keystore.file | No | Keystore file that contains private key     Defaults to: `rmi_keystore.jks` |
+| server.rmi.ssl.keystore.password | No | Password of Keystore     Defaults to: `changeit` |
+| server.rmi.ssl.keystore.alias | No | Key alias     Defaults to: `rmi` |
+| server.rmi.ssl.truststore.type | No | Type of truststore for RMI connection security     Defaults to: the value of `server.rmi.ssl.keystore.type`, which is `JKS` |
+| server.rmi.ssl.truststore.file | No | Keystore file that contains certificate     Defaults to: the value of `server.rmi.ssl.keystore.file`, which is `rmi_keystore.jks` |
+| server.rmi.ssl.truststore.password | No | Password of Trust store     Defaults to: the value of `server.rmi.ssl.keystore.password`, which is `changeit` |
+| server.rmi.ssl.disable | No | Set this to `true` if you don't want to use SSL for RMI     Defaults to: `false` |
+
+## 19.8 Include Controller
+
+| Name | Required | Description |
+|------|----------|-------------|
+| includecontroller.prefix | No | Prefix used by `IncludeController` when building file names.     Defaults to empty value |
+
+## 19.9 HTTP Java configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| http.java.sampler.retries | No | Number of connection retries performed by HTTP Java sampler before giving up.     `0` means no retry since version 3.0.     Defaults to: `0` |
+
+## 19.10 Apache HttpClient common properties
+
+| Name | Required | Description |
+|------|----------|-------------|
+| http.post_add_content_type_if_missing | No | Should JMeter add to POST request a Header `Content-type: application/x-www-form-urlencoded` if missing?      Was true before version 4.1.     Defaults to: `false` |
+| httpclient.timeout | No | Set the socket timeout (or use the parameter `http.socket.timeout`) for     AJP Sampler.     Value is in milliseconds, `0` means no timeout.     Defaults to: `0` |
+| httpclient.version | No | Set the http version.     Defaults to: `1.1` (or use the parameter `http.protocol.version`) |
+| httpclient.socket.http.cps | No | Set characters per second to a value greater then zero to emulate slow connections.     Defaults to: `0` |
+| httpclient.socket.https.cps | No | Same as before but for https.     Defaults to: `0` |
+| httpclient.loopback | No | Enable loopback protocol.     Defaults to: `true` |
+| httpclient.localaddress | No | Define the local host address to be used for multi-homed hosts,     example  ``` httpclient.localaddress=1.2.3.4 ``` |
+| http.proxyUser | No | Set the user name to use with a proxy. |
+| http.proxyPass | No | Set the password to use with a proxy. |
+
+## 19.11 Kerberos properties
+
+| Name | Required | Description |
+|------|----------|-------------|
+| kerberos_jaas_application | No | AuthManager Kerberos configuration     Name of application module used in `jaas.conf`.     Defaults to: `JMeter` |
+| kerberos.spnego.strip_port | No | Should port be stripped from urls before constructing SPNs for SPNEGO authentication.     Defaults to: `true` |
+| kerberos.spnego.use_canonical_host_name | No | Should the host name for constructing SPN be canonicalized for SPNEGO authentication. |
+| kerberos.spnego.delegate_cred | No | Should SPNEGO authentication should use delegation of credentials.     Defaults to: `false` |
+
+## 19.12 Apache HttpClient logging examples
+
+    Enable header wire and context logging - Best for Debugging
+    In log4j2.xml, set:
+
+```
+&lt;Logger name="org.apache.http" level="debug" /&gt;
+&lt;Logger name="org.apache.http.wire" level="error" /&gt;
+```
+
+    Enable full wire and context logging
+    In log4j2.xml, set:
+    
+```
+&lt;Logger name="org.apache.http" level="debug" /&gt;
+```
+
+    Enable context logging for connection management
+    
+```
+&lt;Logger name="org.apache.http.impl.conn" level="debug" /&gt;
+```
+
+    Enable context logging for connection management / request execution
+
+```
+&lt;Logger name="org.apache.http.impl.conn" level="debug" /&gt;
+&lt;Logger name="org.apache.http.impl.client" level="debug" /&gt;
+&lt;Logger name="org.apache.http.client" level="debug" /&gt;
+```
+
+## 19.13 Apache HttpComponents HTTPClient configuration (HTTPClient4)
+
+| Name | Required | Description |
+|------|----------|-------------|
+| hc.parameters.file | No | Define a properties file for overriding Apache HttpClient parameters.     Uncomment this line if you put anything in `hc.parameters` file.     Defaults to: `hc.parameters` |
+| httpclient4.auth.preemptive | No | Preemptively send Authorization Header when BASIC auth is used     Defaults to: `true` |
+| httpclient4.retrycount | No | Number of retries to attempt.     Retry will be done on Idempotent Http Methods by default.     If you want to retry for all methods, see property `httpclient4.request_sent_retry_enabled`          Defaults to: `0` |
+| httpclient4.request_sent_retry_enabled | No | Set this property to `true` if it's OK to retry requests that have been sent.     This mean that both Idempotent and non Idempotent requests will be retried.     This should usually be false, but it can be useful when testing against some Load Balancers like Amazon ELB.     Defaults to: `false` |
+| httpclient4.idletimeout | No | Idle connection timeout (in milliseconds) to apply if the server does not send `Keep-Alive` timeout headers.     Defaults to: `0` (no suggested duration for `Keep-Alived` connections) |
+| httpclient4.validate_after_inactivity | No | Check connection if the elapsed time (in milliseconds) since the last use of the connection     exceeds this value. Ensure this value is always lower by at least 150 ms than `httpclient4.time_to_live`     Defaults to: `4900` |
+| httpclient4.time_to_live | No | TTL (in milliseconds) represents an absolute value.     No matter what, the connection will not be re-used beyond its TTL.     Defaults to: `60000` |
+| httpclient4.deflate_relax_mode | No | Ignore EOFException that some edgy application may emit to signal end of Deflated stream.     Defaults to: `false` |
+| httpclient4.gzip_relax_mode | No | Ignore EOFException that some edgy application may emit to signal end of GZipped stream.     Defaults to: `false` |
+| httpclient4.default_user_agent_disabled | No | If true, default HC4 User-Agent (Apache-HttpClient/X.Y.Z (Java/A.B.C_D)) will not be added.     Defaults to: `false` |
+
+## 19.14 HTTP Cache Manager configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| cacheable_methods | No | Space or comma separated list of methods that can be cached.     Defaults to: `GET` |
+| cache_manager.cached_resource_mode | No | :::note N.B. This property is currently a temporary solution for [Bug 56162](https://bz.apache.org/bugzilla/show_bug.cgi?id=56162). :::     Since version 2.12, JMeter does not create anymore a Sample Result with a response     code of `204` for a resource found in cache. This is in line with what browser do.     You can choose between three modes:      **`RETURN_NO_SAMPLE` (default)** : this mode returns no Sample Result. It has no additional configuration. **`RETURN_200_CACHE`** : this mode will return Sample Result with response code to `200` and         response message to "`(ex cache)`". **`RETURN_CUSTOM_STATUS`** : choosing this mode, response code and message have to be set by specifying         `RETURN_CUSTOM_STATUS.code` and `RETURN_CUSTOM_STATUS.message`.     Defaults to: `RETURN_NO_SAMPLE` |
+| RETURN_CUSTOM_STATUS.code | No | This lets you select what response code you want to return if mode `RETURN_CUSTOM_STATUS`     is selected.     Defaults to empty value. |
+| RETURN_CUSTOM_STATUS.message | No | This lets you select what response message you want to return if mode `RETURN_CUSTOM_STATUS`     is selected.     Defaults to empty value |
+
+## 19.15 Results file configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| jmeter.save.saveservice.output_format | No | This section helps determine how result data will be saved.     The commented out values are the defaults.     Legitimate values: `xml`, `csv`, `db`.     Only `xml` and `csv` are currently supported.     Defaults to: `csv` |
+| jmeter.save.saveservice.assertion_results_failure_message | No | `true` when field should be saved; `false` otherwise.     `assertion_results_failure_message` only affects CSV output.     Defaults to: `true` |
+| jmeter.save.saveservice.assertion_results | No | Legitimate values: `none`, `first`, `all`.     Defaults to: `none` |
+| jmeter.save.saveservice.data_type | No | Defaults to: `true` |
+| jmeter.save.saveservice.label | No | Defaults to: `true` |
+| jmeter.save.saveservice.response_code | No | Defaults to: `true` |
+| jmeter.save.saveservice.response_data | No | :::note `response_data` is currently not supported for CSV output :::     Defaults to: `false` |
+| jmeter.save.saveservice.response_data.on_error | No | Save ResponseData for failed samples.     Defaults to: `false` |
+| jmeter.save.saveservice.response_message | No | Defaults to: `true` |
+| jmeter.save.saveservice.successful | No | Defaults to: `true` |
+| jmeter.save.saveservice.thread_name | No | Defaults to: `true` |
+| jmeter.save.saveservice.time | No | Defaults to: `true` |
+| jmeter.save.saveservice.subresults | No | Defaults to: `true` |
+| jmeter.save.saveservice.assertions | No | Defaults to: `true` |
+| jmeter.save.saveservice.latency | No | Defaults to: `true` |
+| jmeter.save.saveservice.connect_time | No | Defaults to: `false` |
+| jmeter.save.saveservice.samplerData | No | Defaults to: `false` |
+| jmeter.save.saveservice.responseHeaders | No | Defaults to: `false` |
+| jmeter.save.saveservice.requestHeaders | No | Defaults to: `false` |
+| jmeter.save.saveservice.encoding | No | Defaults to: `false` |
+| jmeter.save.saveservice.bytes | No | Defaults to: `true` |
+| jmeter.save.saveservice.url | No | Defaults to: `false` |
+| jmeter.save.saveservice.filename | No | Defaults to: `false` |
+| jmeter.save.saveservice.hostname | No | Defaults to: `false` |
+| jmeter.save.saveservice.thread_counts | No | Defaults to: `true` |
+| jmeter.save.saveservice.sample_count | No | Defaults to: `false` |
+| jmeter.save.saveservice.idle_time | No | Defaults to: `true` |
+| jmeter.save.saveservice.timestamp_format | No | Timestamp format - this only affects CSV output files.     Legitimate values: `none`, `ms`, or a format suitable for `SimpleDateFormat`.     Defaults to: `ms` |
+| jmeter.save.saveservice.timestamp_format | No | Defaults to: `yyyy/MM/dd HH:mm:ss.SSS` |
+| jmeter.save.saveservice.default_delimiter | No | For use with Comma-separated value (CSV) files or other formats where the fields' values     are separated by specified delimiters.     Defaults to: `,`      :::note For TAB, one can use `\t` ::: |
+| jmeter.save.saveservice.print_field_names | No | Only applies to CSV format files:     Print field names as first line in CSV     Defaults to: `true` |
+| sample_variables | No | Optional list of JMeter variable names whose values are to be saved in the result data files.     Use commas to separate the names.     Defaults to: `SESSION_ID,REFERENCE` |
+| jmeter.save.saveservice.xml_pi | No | :::note N.B. The current implementation saves the values in XML as attributes, so the names must be valid XML names. :::     Versions of JMeter after 2.3.2 send the variable to all servers to ensure that the correct data is available at the client.     Optional XML processing instruction for line two of the file.     Defaults to empty value |
+| jmeter.save.saveservice.base_prefix | No | Prefix used to identify filenames that are relative to the current base.     Defaults to: `~/` |
+| jmeter.save.saveservice.autoflush | No | AutoFlush on each line written in XML or CSV output.     Setting this to `true` will result in less test results data loss in case of a crash, but     with impact on performances, particularly for intensive tests (low or no pauses).     Since JMeter version 2.10, this is `false` by default.     Defaults to: `false` |
+
+## 19.16 Settings that affect SampleResults
+
+| Name | Required | Description |
+|------|----------|-------------|
+| sampleresult.timestamp.start | No | Save the start time stamp instead of the end.     This also affects the timestamp stored in result files.     Defaults to: `false` |
+| sampleresult.useNanoTime | No | Whether to use `System.nanoTime()` - otherwise only use `System.currentTimeMillis()`.     Defaults to: `true` |
+| sampleresult.nanoThreadSleep | No | Use a background thread to calculate the nanoTime offset.     Set this to a value less than zero to disable the background thread.     Defaults to: `5000` |
+| subresults.disable_renaming | No | Since version 5.0 JMeter has a new SubResult Naming Policy which numbers subresults by default     This property if set to `true` discards renaming policy. This can be required if you're using JMeter for functional testing.     Defaults to: `false` |
+
+## 19.17 Upgrade
+
+| Name | Required | Description |
+|------|----------|-------------|
+| upgrade_properties | No | File that holds a record of name changes for backward compatibility issues.     Defaults to: `/bin/upgrade.properties` |
+
+## 19.18 JMeter Test Script recorder configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| proxy.pause | No | :::note N.B. The element was originally called the Proxy recorder, which is why the properties     have the prefix "proxy". :::     If the recorder detects a gap of at least 5s (default) between HTTP requests, it assumes     that the user has clicked a new URL. Specified in milliseconds.     Defaults to: `5000` |
+| proxy.number.requests | No | Add numeric suffix to Sampler names.     defaults to: `true` |
+| proxy.sampler_format | No | Default format string for new samplers when `Use format string` is selected     as `naming scheme`.     Defaults to: `#{counter,number,000} - #{path} (#{name})` |
+| proxy.excludes.suggested | No | List of URL patterns that will be added to URL Patterns to exclude.     Separate multiple lines with `;`     Defaults to: `.*\\.(bmp|css|js|gif|ico|jpe?g|png|swf|woff|woff2)` |
+| jmeter.httpsampler | No | Change the default HTTP Sampler.     Can be one of      **`HTTPSampler` or `Java`** : Use the `Java` Sampler **`HTTPSampler2`** **`HttpClient4`** : Use Apache HTTPClient version 4     Defaults to: `HttpClient4` |
+| jmeter.httpclient.strict_rfc2616 | No | By default JMeter tries to be more lenient with [RFC 2616](http://tools.ietf.org/html/rfc2616)     redirects and allows relative paths.     If you want to test strict conformance, set this value to `true`.     When the property is `true`, JMeter follows     [RFC 3986 section 5.2](https://tools.ietf.org/html/3986#section-5.2).     Defaults to: `false` |
+| proxy.content_type_include | No | Default `content-type` include filter to use. Specified as a regex.     Defaults to: `text/html|text/plain|text/xml` |
+| proxy.content_type_exclude | No | Default `content-type` exclude filter to use. Specified as a regex.     Defaults to: `image/.*|text/css|application/.*` |
+| proxy.headers.remove | No | Default headers to remove from Header Manager elements. Specified as comma separated list      :::note The headers `Cookie` and `Authorization` are always removed. :::     Defaults to: `If-Modified-Since,If-None-Match,Host` |
+| proxy.binary.types | No | Binary `content-type` handling.     These `content-types` will be handled by saving the request in a file.     Defaults to: `application/x-amf,application/x-java-serialized-object,binary/octet-stream` |
+| proxy.binary.directory | No | The files will be saved in this directory.     Defaults to: `user.dir` |
+| proxy.binary.filesuffix | No | The files will be created suffixed with this value.     Defaults to: `.binary` |
+| proxy.redirect.disabling | No | Whether to attempt disabling of samples that resulted from redirects where the     generated samples use auto-redirection.     Defaults to: `true` |
+| proxy.ssl.protocol | No | SSL configuration.     Defaults to: `TLS` |
+
+## 19.19 Test Script Recorder certificate configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| proxy.cert.directory | No | Defaults to: _JMeter `bin` directory_ |
+| proxy.cert.file | No | Defaults to: `proxyserver.jks` |
+| proxy.cert.type | No | Defaults to: `JKS` |
+| proxy.cert.keystorepass | No | Defaults to: `password` |
+| proxy.cert.keypassword | No | Defaults to: `password` |
+| proxy.cert.factory | No | Defaults to: `SunX509` |
+| proxy.cert.alias | No | Define this property if you wish to use a special entry from the keystore.     Defaults to empty value |
+| proxy.cert.validity | No | The default validity (in days) for certificates created by JMeter.     Defaults to: `7` |
+| proxy.cert.dynamic_keys | No | Use dynamic key generation (if supported by JMeter/JVM).     If `false`, will revert to using a single key with no certificate.     Defaults to: `true` |
+
+## 19.20 JMeter Proxy configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| http.proxyDomain | No | Use command-line flags for user-name and password.     Defaults to: NTLM domain, if required by HTTPClient sampler |
+
+## 19.21 HTML Parser configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| HTTPResponse.parsers | No | Space-separated list of parser groups.      :::note For each parser, there should be a `_parser_.types` and a `_parser_.className` property :::     Defaults to: `htmlParser wmlParser cssParser` |
+| cssParser.className | No | CSS Parser based on ph-css.     Defaults to: `org.apache.jmeter.protocol.http.parser.CssParser` |
+| cssParser.types | No | Content types handled by cssParser.     Defaults to: `text/css` |
+| css.parser.cache.size | No | CSS parser LRU cache size. This cache stores the URLs found in a CSS to avoid continuously     parsing the CSS. By default the cache size is 400. It can be disabled by setting its value to 0.     Defaults to: `400` |
+| css.parser.ignore_all_css_errors | No | Let the CSS Parser ignore all CSS errors.     Defaults to: `true` |
+| htmlParser.className | Yes | Define the HTML parser to be used.     Do not comment this property.      **`org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser`** : This new parser (since 2.10) should perform better than all others. See [Bug 55632](https://bz.apache.org/bugzilla/show_bug.cgi?id=55632). **`org.apache.jmeter.protocol.http.parser.JTidyHTMLParser`** : Default parser before JMeter version 2.10 **`org.apache.jmeter.protocol.http.parser.RegexpHTMLParser`** : :::note Note that Regexp extractor may detect references that have been commented out. :::          In many cases it will work OK, but you should be aware that it may generate additional references. **`org.apache.jmeter.protocol.http.parser.JsoupBasedHtmlParser`** : This parser is based on JSoup. It should be the most accurate parser,         but it is less performant than LagartoBasedHtmlParser     Defaults to: `org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser` |
+| htmlParser.types | No | Used by HTTPSamplerBase to associate htmlParser with content types below.     Defaults to: `text/html application/xhtml+xml application/xml text/xml` |
+| wmlParser.className | No | Defaults to: `org.apache.jmeter.protocol.http.parser.RegexpHTMLParser` |
+| wmlParser.types | No | Used by HTTPSamplerBase to associate wmlParser with content types below.     Defaults to: `text/vnd.wap.wml` |
+
+## 19.22 Remote batching configuration
+
+    
+    Configure how SampleResults are sent from server to client when using distributed testing.
+    
+
+    
+:::note
+Note that the mode is currently resolved on the client, while other properties
+    (e.g. `time_threshold`) are resolved on the server.
+:::
+
+    
+    Since JMeter version 2.9, default is `StrippedBatch`, which returns samples in
+    batch mode (every 100 samples or every minute by default).
+
+    You can set mode by configuring:
+    
+
+    
+```
+mode=_one of the possible modes below_
+```
+
+    
+:::note
+StrippedBatch strips response data from SampleResult, so if you need the response data, change to another mode.
+:::
+
+    
+    Possible modes are:
+    
+
+    
+
+**`Standard`**
+: Sends SampleResult one by one
+
+**`Batch`**
+: Accumulates SampleResults before sending them. Configured by
+        properties `num_sample_threshold` and `time_threshold`
+
+**`Statistical`**
+: returns sample summary statistics. Configured by
+        properties `key_on_threadname` and `time_threshold`
+
+**`Stripped`**
+: Similar to `Standard` mode but strips Response from SampleResult.
+        Configured by property `sample_sender_strip_also_on_error`
+
+**`StrippedBatch`**
+: Same as `Batch` but strips Response from SampleResult.
+        Configured by properties `num_sample_threshold`, `time_threshold`
+        and `sample_sender_strip_also_on_error`
+
+**`Asynch`**
+: Asynchronous sender; uses a queue and background worker process to return the samples.
+        Configured by property `asynch.batch.queue.size`
+
+**`StrippedAsynch`**
+: Same as `Asynch` but strips response data from SampleResult.
+        Configured by properties `asynch.batch.queue.size`
+        and `sample_sender_strip_also_on_error`
+
+**`StrippedDiskStore`**
+: Same as `DiskStore` but strips response data from SampleResult
+
+**Class extending [`AbstractSampleSender`](https://jmeter.apache.org/api/org/apache/jmeter/samplers/AbstractSampleSender.html) (`org.example.load.MySampleSender` for example)**
+: A custom implementation of your choice
+
+| Name | Required | Description |
+|------|----------|-------------|
+| sample_sender_client_configured | No | How is Sample sender implementations configured:      **`true`** : (default) means client configuration will be used **`false`** : means server configuration will be used     Defaults to: `true` |
+| sample_sender_strip_also_on_error | No | By default when Stripping modes are used JMeter since version 3.1 will strip     response even for SampleResults in error. If you want to revert to previous     behaviour (no stripping of Responses in error) set this property to `false`     Defaults to: `true` |
+| mode | No | Remote batching support.     Since JMeter version 2.9, default is `StrippedBatch`, which returns samples in     batch mode (every 100 samples or every minute by default).      :::note Note also that StrippedBatch strips response data from SampleResult, so if you need     the response data, change to another mode. ::: |
+| key_on_threadname | No | Set to `true` to key statistical samples on `threadName` rather than `threadGroup`.     Defaults to: `false` |
+| num_sample_threshold | No | Number of SampleResults to accumulate before sending to client.     Defaults to: `100` |
+| time_threshold | No | Time to retain SampleResults before sending them to client.     Value is in milliseconds.     Defaults to: `60000` |
+| asynch.batch.queue.size | No | Default queue size used by `Async` mode.     Defaults to: `100` |
+
+## 19.23 JDBC Request configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| jdbcsampler.nullmarker | No | String used to indicate a null value.     Defaults to: `]NULL[` |
+| jdbcsampler.max_retain_result_size | No | Max bytes to store from a `CLOB` or `BLOB` in the sampler.     Defaults to: `65536` (bytes) |
+| jdbc.config.check.query | No | List of queries used to determine if the database is still responding.     Defaults to:  ``` select 1 from INFORMATION_SCHEMA.SYSTEM_USERS|select 1 from dual|select 1 from sysibm.sysdummy1|select 1|select 1 from rdb$database ``` |
+| jdbc.config.jdbc.driver.class | No | List of JDBC driver class name     Defaults to:  ``` com.mysql.cj.jdbc.Driver|com.mysql.jdbc.Driver|org.postgresql.Driver|oracle.jdbc.OracleDriver|com.ingres.jdbc.IngresDriver|com.microsoft.sqlserver.jdbc.SQLServerDriver|com.microsoft.jdbc.sqlserver.SQLServerDriver|org.apache.derby.jdbc.ClientDriver|org.hsqldb.jdbc.JDBCDriver|com.ibm.db2.jcc.DB2Driver|org.apache.derby.jdbc.ClientDriver|org.h2.Driver|org.firebirdsql.jdbc.FBDriver|org.mariadb.jdbc.Driver|org.sqlite.JDBC|net.sourceforge.jtds.jdbc.Driver|com.exasol.jdbc.EXADriver ``` |
+
+## 19.24 OS Process Sampler configuration
+
+## 19.25 TCP Sampler configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| tcp.handler | No | The default handler class.     Defaults to: `TCPClientImpl` |
+| tcp.eolByte | No | Set this to a value outside the range `-128` to `+127` to skip     `eol` checking.     Defaults to byte value for end of line: `1000` |
+| tcp.charset | No | TCP Charset, used by `org.apache.jmeter.protocol.tcp.sampler.TCPClientImpl`.     Defaults to platforms default charset as returned by `Charset.defaultCharset().name()` |
+| tcp.status.prefix | No | String at the beginning of the status response code.     Defaults to: `Status` |
+| tcp.status.suffix | No | String at the end of the status response code.     defaults to: `.` |
+| tcp.status.properties | No | Property file to convert codes to messages.     Defaults to: `mytestfiles/tcpstatus.properties` |
+| tcp.binarylength.prefix.length | No | The length prefix used by `LengthPrefixedBinaryTCPClientImpl` implementation (in bytes).     Defaults to: `2` |
+
+## 19.26 Summariser - Generate Summary Results - configuration (mainly applies to CLI mode)
+
+| Name | Required | Description |
+|------|----------|-------------|
+| summariser.name | No | Comment the following property to disable the default CLI mode summariser.     [or change the value to rename it]      :::note Applies to CLI mode only :::     Defaults to: `summary` |
+| summariser.interval | No | Interval between summaries (in seconds).     Defaults to: `30` |
+| summariser.log | No | Write messages to log file.     Defaults to: `true` |
+| summariser.out | No | Write messages to `System.out`.     Defaults to: `true` |
+| summariser.ignore_transaction_controller_sample_result | No | Ignore SampleResults generated by TransactionControllers.     Defaults to: `true` |
+
+## 19.27 Aggregate Report and Aggregate Graph - configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| aggregate_rpt_pct1 | No | Percentiles to display in reports.     Given as a float value between `0` and `100` (means percent).     First percentile to display.     Defaults to: `90` |
+| aggregate_rpt_pct2 | No | Second percentile to display.     Given as a float value between `0` and `100` (means percent).     Defaults to: `95` |
+| aggregate_rpt_pct3 | No | Second percentile to display.     Given as a float value between `0` and `100` (means percent).     Defaults to: `99` |
+
+## 19.28 BackendListener - configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| backend_graphite.send_interval | No | Send interval in seconds.     Defaults to: `1` second |
+| backend_influxdb.send_interval | No | Send interval in seconds.     Defaults to: `5` seconds |
+| backend_influxdb.connection_timeout | No | InfluxDB connection timeout.     Defaults to: `1000` millis |
+| backend_influxdb.socket_timeout | No | InfluxDB socket read timeout.     Defaults to: `3000` millis |
+| backend_influxdb.connection_request_timeout | No | InfluxDB timeout to get a connection.     Defaults to: `100` millis |
+| backend_metrics_window | No | Backend metrics sliding window size for `Percentiles`, `Min`     and `Max`.     Defaults to: `100` |
+| backend_metrics_large_window | No | Backend metrics sliding window size  for `Percentiles`, `Min`     and `Max`. when `backend_metrics_window_mode=timed`     Setting this value too high can lead to OOM Backend metrics sliding window size     Defaults to: `5000` |
+| backend_metrics_percentile_estimator | No | Specify the [Percentile Estimation Type](https://commons.apache.org/proper/commons-math/javadocs/api-3.6.1/org/apache/commons/math3/stat/descriptive/rank/Percentile.EstimationType.html) to use.     To make the values from the dashboard compatible with the Aggregate Report, use the value `R_3`.     Defaults to: `LEGACY` |
+| backend_metrics_window_mode | No | Backend metrics window mode.     Possible values:      - `fixed` : fixed-size window - `timed` : time boxed     Defaults to: `fixed` |
+
+## 19.29 BeanShell configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| beanshell.server.port | No | BeanShell Server properties.     Define the port number as non-zero to start the http server on that port.     The telnet server will be started on the next port.     Defaults to: `0` (i.e. don't start the server)      :::note There is no security. Anyone who can connect to the port can issue any BeanShell commands.     These can provide unrestricted access to the JMeter application and the host.     **Do not enable the server unless the ports are protected against access, e.g. by a firewall.** ::: |
+| beanshell.server.file | No | Define the server initialisation file.     Defaults to: `../extras/startup.bsh` |
+| beanshell.init.file | No | Define a file to be processed at startup.     This is processed using its own interpreter.     Defaults to empty value. |
+| beanshell.sampler.init | No | Define the initialisation files for BeanShell Sampler, Function and     other BeanShell elements.      :::note N.B. Beanshell test elements do not share interpreters.     Each element in each thread has its own interpreter.     This is retained between samples. :::     Defaults to empty value. |
+| beanshell.function.init | No | Defaults to empty value. |
+| beanshell.assertion.init | No | Defaults to empty value. |
+| beanshell.listener.init | No | Defaults to empty value. |
+| beanshell.postprocessor.init | No | Defaults to empty value. |
+| beanshell.preprocessor.init | No | Defaults to empty value. |
+| beanshell.timer.init | No | Defaults to empty value. |
+
+    
+    The file `BeanShellListeners.bshrc` contains sample definitions
+    of Test and Thread Listeners.
+
+    
+
+## 19.30 MailerModel configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| mailer.successlimit | No | Number of successful samples before a message is sent.     Defaults to: `2` |
+| mailer.failurelimit | No | Number of failed samples before a message is sent.     Defaults to: `2` |
+
+## 19.31 CSVRead configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| csvread.delimiter | No | CSVRead delimiter setting (default "`,`").      :::note Make sure that there are no trailing spaces or tabs after the delimiter     characters, or these will be included in the list of valid delimiters. :::     Defaults to: `,` |
+
+## 19.32 __time() function configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| time.YMD | No | This and the following properties can be used to redefine the default time formats.     Defaults to: `yyyyMMdd` |
+| time.HMS | No | Defaults to: `HHmmss` |
+| time.YMDHMS | No | Defaults to: `yyyyMMdd-HHmmss` |
+| time.USER1 | No | Defaults to empty value |
+| time.USER2 | No | Defaults to empty value |
+
+## 19.33 CSV DataSet configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| csvdataset.eofstring | No | String to return at `EOF` (if recycle not used).     Defaults to: `&lt;EOF&gt;` |
+| csvdataset.file.encoding_list | No | List of file encoding values     Defaults to: `platform default` |
+
+## 19.34 LDAP Sampler configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| ldapsampler.max_sorted_results | No | Maximum number of search results returned by a search that will be sorted     to guarantee a stable ordering (if more results then this limit are returned     then no sorting is done).     Set to zero to turn off all sorting, in which case "Equals" response assertions     will be very likely to fail against search results.     Defaults to: `1000` |
+| assertion.equals_section_diff_len | No | Number of characters to log for each of three sections (starting matching section,     diff section, ending matching section where not all sections will appear for all diffs)     diff display when an Equals assertion fails. So a value of `100` means a     maximum of `300` characters of diff text will be displayed (plus a number     of extra characters like "`...`" and "`[[[`"/"`]]]`"     which are used to decorate it).     Defaults to: `100` |
+| assertion.equals_diff_delta_start | No | Test written out to log to signify start/end of diff delta.     Defaults to: `[[[` |
+| assertion.equals_diff_delta_end | No | Defaults to: `]]]` |
+
+## 19.35 Miscellaneous configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| cssselector.parser.cache.size | No | Size of cache used by `CSS Selector Extractor` (for JODD implementation only) to store parsed CSS Selector expressions.     Defaults to: `400` |
+| resultcollector.action_if_file_exists | No | Used to control what happens when you start a test and have listeners that could overwrite existing result files.     Possible values:      - `ASK` : Ask user - `APPEND` : Append results to existing file - `DELETE` : Delete existing file and start a new file |
+| mirror.server.port | No | If defined and greater then zero, then start the mirror server on the port.     Defaults to: `0` |
+| oro.patterncache.size | No | ORO PatternCacheLRU size.     Defaults to: `1000` |
+| function.cache.per.iteration | No | Cache function execution during test execution.     By default, JMeter caches function properties during a test iteration, however,     it might cause unexpected results when a component is shared across threads and the expression depends on     the thread variables.      :::note The property will likely be removed in an upcoming version, so if you need it consider raising      an issue with your use-case. :::     Defaults to: `false` |
+| propertyEditorSearchPath | No | TestBeanGui     Defaults to: `null` |
+| jmeter.expertMode | No | Turn expert mode on/off: expert mode will show expert-mode beans and properties.     Defaults to: `true` |
+| httpsampler.max_bytes_to_store_per_request | No | Max size of bytes stored in memory per `SampleResult`. Ensure that you     don't exceed the maximum capacity of a Java Array and remember that the higher you     set this value, the more memory JMeter will consume.     Defaults to: `0` bytes which means no truncation will occur |
+| httpsampler.max_buffer_size | No | Max size of buffer in bytes used when reading responses.     Defaults to: `66560` bytes |
+| httpsampler.max_redirects | No | Maximum redirects to follow in a single sequence.     Defaults to: `20` |
+| httpsampler.max_frame_depth | No | Maximum frame/iframe nesting depth.     defaults to: `5` |
+| httpsampler.separate.container | No | Revert to [Bug 51939](https://bz.apache.org/bugzilla/show_bug.cgi?id=51939) behaviour (no separate container for embedded resources)     by setting the following `false`.     defaults to: `true` |
+| httpsampler.ignore_failed_embedded_resources | No | If embedded resources download fails due to missing resources or other reasons,     if this property is `true`, Parent sample will not be marked as failed.     Defaults to: `false` |
+| httpsampler.parallel_download_thread_keepalive_inseconds | No | Keep-alive time for the parallel download threads (in seconds).     Defaults to: `60` |
+| httpsampler.embedded_resources_use_md5 | No | Don't keep the embedded resources response data; just keep the size and the MD5 sum.     Defaults to: `false` |
+| httpsampler.user_defined_methods | No | List of extra HTTP methods that should be available in select box.     Defaults to:      ``` VERSION-CONTROL,REPORT,CHECKOUT,CHECKIN,UNCHECKOUT,MKWORKSPACE,UPDATE,LABEL,MERGE,BASELINE-CONTROL,MKACTIVITY ``` |
+| sampleresult.default.encoding | No | The encoding to be used if none is provided.     Defaults to: `UTF-8` (since 5.6.1) |
+| CookieManager.delete_null_cookies | No | CookieManager behaviour - should cookies with null/empty values be deleted?     Use `false` to revert to original behaviour.     Defaults to: `true` |
+| CookieManager.allow_variable_cookies | No | CookieManager behaviour - should variable cookies be allowed?     Use `false` to revert to original behaviour.     Defaults to: `true` |
+| CookieManager.save.cookies | No | CookieManager behaviour - should Cookies be stored as variables?     Default to: `false` |
+| CookieManager.name.prefix | No | CookieManager behaviour - prefix to add to cookie name before storing it as a variable.     Default is COOKIE_; to remove the prefix, define it as one or more spaces.     Defaults to: `COOKIE_` |
+| CookieManager.check.cookies | No | CookieManager behaviour - check received cookies are valid before storing them?     Use `false` to revert to previous behaviour.     Defaults to: `true` |
+| cookies | No | Netscape HTTP Cookie file.     Defaults to: `cookies` |
+| javascript.use_rhino | No | Ability to switch to Rhino as default Javascript Engine used by `IfController`     and `[__javaScript](/user-manual/functions/#__javaScript)` function.      :::note JMeter uses Nashorn since 3.2 version.     If you want to use Rhino, set this value to `true` :::     Defaults to: `false` |
+| jmeter.regex.engine | No | Ability to switch out the old Oro Regex implementation with the JDK built-in implementation.     Any value different to `oro` will disable the Oro implementation and enable the JDK based.      :::note We intend to switch the default to the JDK based one in a later version of JMeter. :::     Defaults to: `oro` |
+| jmeter.regex.patterncache.size | No | We assist the JDK based Regex implementation by caching Pattern objects. The size of the     cache can be set with this setting. It can be disabled by setting it to `0`.     Defaults to: `1000` |
+| jmeterengine.threadstop.wait | No | Number of milliseconds to wait for a thread to stop.     Defaults to: `5000` |
+| jmeterengine.remote.system.exit | No | Whether to invoke `System.exit(0)` in server exit code after     stopping RMI.     Defaults to: `false` |
+| jmeterengine.stopfail.system.exit | No | Whether to call `System.exit(1)` on failure to stop threads in CLI mode.     This only takes effect if the test was explicitly requested to stop.     If this is disabled, it may be necessary to kill the JVM externally.     Defaults to: `true` |
+| jmeterengine.force.system.exit | No | Whether to force call `System.exit(0)` at end of test in CLI mode,     even if there were no failures and the test was not explicitly asked to stop.     Without this, the JVM may never exit if there are other threads spawned by     the test which never exit.     Defaults to: `false` |
+| jmeter.exit.check.pause | No | How long to pause (in ms) in the daemon thread before reporting that the JVM has     failed to exit.     If the value is less than zero, the JMeter does not start the daemon thread     Defaults to: `2000` |
+| jmeterengine.nongui.port | No | If running CLI mode, then JMeter listens on the following port for a shutdown message.     To disable, set the port to `1000` or less.     Defaults to: `4445` |
+| jmeterengine.nongui.maxport | No | If the initial port is busy, keep trying until this port is reached     (to disable searching, set the value less than or equal to the `.port` property).     Defaults to: `4455` |
+| jmeterthread.rampup.granularity | No | How often to check for shutdown during ramp-up (milliseconds).     Defaults to: `1000` |
+| onload.expandtree | No | Should JMeter expand the tree when loading a test plan?     Default value is `false` since JMeter 2.7     Defaults to: `false` |
+| jsyntaxtextarea.wrapstyleword | No | JSyntaxTextArea configuration.     Defaults to: `true` |
+| jsyntaxtextarea.linewrap | No | Defaults to: `true` |
+| jsyntaxtextarea.codefolding | No | Defaults to: `true` |
+| jsyntaxtextarea.maxundos | No | Set to zero to disable undo feature in JSyntaxTextArea.     Defaults to: `50` |
+| jsyntaxtextarea.font.family | No | Change the font on the (JSyntax) Text Areas. (Useful for HiDPI screens).     Defaults to empty value, which means platform default monospaced font |
+| jsyntaxtextarea.font.size | No | Change the size of the (JSyntax) Text Areas. Will be used only,     when `jsyntaxtextarea.font.family` is set.     Defaults to: `-1` |
+| loggerpanel.usejsyntaxtext | No | Set this to `false` to disable the use of JSyntaxTextArea     for the Console Logger panel.     Defaults to: `true` |
+| view.results.tree.max_results | No | Maximum number of main samples, that should be stored and displayed.     A value of `0` will store all results. This might consume a lot of memory.     Defaults to: `500` |
+| view.results.tree.max_size | No | Maximum size (in bytes) of HTML page that can be displayed.     Set to zero to disable the size check and display the whole response.     Defaults to: `10485760` |
+| view.results.tree.max_line_size | No | Maximum size (in characters) of the line in the displayed.     This property works around Bug 63620 since Swing hangs when displaying very long lines.     Set to zero to disable line wrapping.     Defaults to: `110000` |
+| view.results.tree.soft_wrap_line_size | No | Line size (in characters) to consider wrapping to make UI faster.     This property works around Bug 63620 since Swing hangs when displaying very long lines.     Set to zero to disable line wrapping.     Defaults to: `view.results.tree.max_line_size / 1.1f` |
+| view.results.tree.renderers_order | No | Order of Renderers in View Results Tree.      :::note Note full class names should be used for non JMeter core renderers :::     For JMeter core renderers, class names start with `.` and are automatically     prefixed with `org.apache.jmeter.visualizers`     Defaults to:      ``` .RenderAsText,.RenderAsRegexp,.RenderAsCssJQuery,.RenderAsXPath,.RenderAsHTML,.RenderAsHTMLWithEmbedded,.RenderAsDocument,.RenderAsJSON,.RenderAsXML ``` |
+| view.results.tree.simple_view_limit | No | Configures maximum document length for text view before switching to a simpler view, that does not do line breaks.     Works probably best, when combined with a low setting of `view.results.tree.max_line_size`.     Can be switched off by setting the value to `-1`.     Defaults to: `10000` |
+| document.max_size | No | Maximum size (in bytes) of Document that can be parsed by Tika engine     Set to zero to disable the size check.     Defaults to: `10485760` |
+| text.kerning.max_document_size | No | Configures the maximum document length for rendering with kerning enabled.     Defaults to: `10000` |
+| JMSSampler.useSecurity.properties | No | JMS options.     Enable the following property to stop JMS Point-to-Point Sampler from using     the properties `java.naming.security.[principal|credentials]` when     creating the queue connection.     Defaults to: `false` |
+| confirm.delete.skip | No | Set the following value to `true` in order to skip the delete     confirmation dialogue.     Defaults to: `false` |
+
+## 19.36 Classpath configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| search_paths | No | List of directories (separated by `;`) to search for additional     JMeter plugin classes, for example new GUI elements and samplers.     Any jar file in such a directory will be automatically included; jar files in sub directories are ignored.     The given value is in addition to any jars found in the `lib/ext` directory.     Do not use this for utility or plugin dependency jars.     Defaults to empty value. |
+| user.classpath | No | List of directories that JMeter will search for utility and plugin dependency classes.     Use your platform path separator (`java.io.File.pathSeparatorChar` in Java) to separate multiple paths.     Any jar file in such a directory will be automatically included; jar files in sub directories are ignored.     The given value is in addition to any jars found in the `lib` directory.     All entries will be added to the class path of the system class loader and also to the path     of the JMeter internal loader.     Paths with spaces may cause problems for the JVM.     Defaults to empty value. |
+| plugin_dependency_paths | No | List of directories (separated by `;`) that JMeter will search for utility     and plugin dependency classes.     Any jar file in such a directory will be automatically included; jar files in sub directories are ignored.     The given value is in addition to any jars found in the `lib` directory     or given by the `user.classpath` property.     All entries will be added to the path of the JMeter internal loader only.     For plugin dependencies this property should be used instead of `user.classpath`.     Defaults to empty value. |
+| classfinder.functions.contain | No | The classpath finder currently needs to load every single JMeter class to find the classes it needs.     For CLI mode, it's only necessary to scan for Function classes, but all classes are still loaded.     All current Function classes include "`.function.`" in their name, and none include     "`.gui.`" in the name, so the number of unwanted classes loaded can be reduced by     checking for these. However, if a valid function class name does not match these restrictions,     it will not be loaded. If problems are encountered, then comment or change this or the following property.     Defaults to: `.functions.` |
+| classfinder.functions.notContain | No | Defaults to: `.gui.` |
+
+## 19.37 Reporting configuration
+
+| Name | Required | Description |
+|------|----------|-------------|
+| jmeter.reportgenerator.apdex_satisfied_threshold | No | Sets the satisfaction threshold for the APDEX calculation (in milliseconds).     Defaults to: `500` |
+| jmeter.reportgenerator.apdex_tolerated_threshold | No | Sets the tolerance threshold for the APDEX calculation (in milliseconds).     Defaults to: `1500` |
+| jmeter.reportgenerator.sample_filter | No | Regular Expression which Indicates which samples to keep for graphs and statistics generation.     Empty value means no filtering     Defaults to empty value. |
+| jmeter.reportgenerator.temp_dir | No | Sets the temporary directory used by the generation process if it needs file I/O operations.     Defaults to: `temp` |
+| jmeter.reportgenerator.statistic_window | No | Sets the size of the sliding window used by percentile evaluation.      :::note Caution: higher value provides a better accuracy but needs more memory. :::     Defaults to: `20000` |
+| jmeter.reportgenerator.report_title | No | Configure this property to change the report title     Defaults to: `Apache JMeter Dashboard` |
+| jmeter.reportgenerator.overall_granularity | No | Defines the overall granularity for over time graphs     Defaults to: `60000` |
+| jmeter.reportgenerator.graph.responseTimePercentiles.classname | No | Response Time Percentiles graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.ResponseTimePercentilesGraphConsumer ``` |
+| jmeter.reportgenerator.graph.responseTimePercentiles.title | No | Defaults to: `Response Time Percentiles` |
+| jmeter.reportgenerator.graph.responseTimeDistribution.classname | No | Response Time Distribution graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.ResponseTimeDistributionGraphConsumer ``` |
+| jmeter.reportgenerator.graph.responseTimeDistribution.title | No | Defaults to: `Response Time Distribution` |
+| jmeter.reportgenerator.graph.responseTimeDistribution.property.set_granularity | No | Defaults to: `100` |
+| jmeter.reportgenerator.graph.activeThreadsOverTime.classname | No | Active Threads Over Time graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.ActiveThreadsGraphConsumer ``` |
+| jmeter.reportgenerator.graph.activeThreadsOverTime.title | No | Defaults to: `Active Threads Over Time` |
+| jmeter.reportgenerator.graph.activeThreadsOverTime.property.set_granularity | No | Defaults to: `\${jmeter.reportgenerator.overall_granularity}` |
+| jmeter.reportgenerator.graph.timeVsThreads.classname | No | Time VS Threads graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.TimeVSThreadGraphConsumer ``` |
+| jmeter.reportgenerator.graph.timeVsThreads.title | No | Defaults to: `Time VS Threads` |
+| jmeter.reportgenerator.graph.bytesThroughputOverTime.classname | No | Bytes Throughput Over Time graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.BytesThroughputGraphConsumer ``` |
+| jmeter.reportgenerator.graph.bytesThroughputOverTime.title | No | Defaults to: `Bytes Throughput Over Time` |
+| jmeter.reportgenerator.graph.bytesThroughputOverTime.property.set_granularity | No | Defaults to: `\${jmeter.reportgenerator.overall_granularity}` |
+| jmeter.reportgenerator.graph.responseTimesOverTime.classname | No | Response Time Over Time graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.ResponseTimeOverTimeGraphConsumer ``` |
+| jmeter.reportgenerator.graph.responseTimesOverTime.title | No | Defaults to: `Response Time Over Time` |
+| jmeter.reportgenerator.graph.responseTimesOverTime.property.set_granularity | No | Defaults to: `\${jmeter.reportgenerator.overall_granularity}` |
+| jmeter.reportgenerator.graph.latenciesOverTime.classname | No | Latencies Over Time graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.LatencyOverTimeGraphConsumer ``` |
+| jmeter.reportgenerator.graph.latenciesOverTime.title | No | Defaults to: `Latencies Over Time` |
+| jmeter.reportgenerator.graph.latenciesOverTime.property.set_granularity | No | Defaults to: `\${jmeter.reportgenerator.overall_granularity}` |
+| jmeter.reportgenerator.graph.responseTimeVsRequest.classname | No | Response Time Vs Request graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.ResponseTimeVSRequestGraphConsumer ``` |
+| jmeter.reportgenerator.graph.responseTimeVsRequest.title | No | Defaults to: `Response Time Vs Request` |
+| jmeter.reportgenerator.graph.responseTimeVsRequest.exclude_controllers | No | Defaults to: `true` |
+| jmeter.reportgenerator.graph.responseTimeVsRequest.property.set_granularity | No | Defaults to: `\${jmeter.reportgenerator.overall_granularity}` |
+| jmeter.reportgenerator.graph.latencyVsRequest.classname | No | Latencies Vs Request graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.LatencyVSRequestGraphConsumer ``` |
+| jmeter.reportgenerator.graph.latencyVsRequest.title | No | Defaults to: `Latencies Vs Request` |
+| jmeter.reportgenerator.graph.latencyVsRequest.exclude_controllers | No | Defaults to: `true` |
+| jmeter.reportgenerator.graph.latencyVsRequest.property.set_granularity | No | Defaults to: `\${jmeter.reportgenerator.overall_granularity}` |
+| jmeter.reportgenerator.graph.hitsPerSecond.classname | No | Hits Per Second graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.HitsPerSecondGraphConsumer ``` |
+| jmeter.reportgenerator.graph.hitsPerSecond.title | No | Defaults to: `Hits Per Second` |
+| jmeter.reportgenerator.graph.hitsPerSecond.exclude_controllers | No | Defaults to: `true` |
+| jmeter.reportgenerator.graph.hitsPerSecond.property.set_granularity | No | Defaults to: `\${jmeter.reportgenerator.overall_granularity}` |
+| jmeter.reportgenerator.graph.codesPerSecond.classname | No | Codes Per Second graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.CodesPerSecondGraphConsumer ``` |
+| jmeter.reportgenerator.graph.codesPerSecond.title | No | Defaults to: `Codes Per Second` |
+| jmeter.reportgenerator.graph.codesPerSecond.exclude_controllers | No | Defaults to: `true` |
+| jmeter.reportgenerator.graph.codesPerSecond.property.set_granularity | No | Defaults to: `\${jmeter.reportgenerator.overall_granularity}` |
+| jmeter.reportgenerator.graph.transactionsPerSecond.classname | No | Transactions Per Second graph definition     Defaults to:      ``` org.apache.jmeter.report.processor.graph.impl.TransactionsPerSecondGraphConsumer ``` |
+| jmeter.reportgenerator.graph.transactionsPerSecond.title | No | Defaults to: `Transactions Per Second` |
+| jmeter.reportgenerator.graph.transactionsPerSecond.property.set_granularity | No | Defaults to: `\${jmeter.reportgenerator.overall_granularity}` |
+| jmeter.reportgenerator.exporter.html.classname | No | HTML Export     Defaults to:      ``` org.apache.jmeter.report.dashboard.HtmlTemplateExporter ``` |
+| jmeter.reportgenerator.exporter.html.property.template_dir | No | Sets the source directory of templated files from which the html pages are generated.     Defaults to: `report-template` |
+| jmeter.reportgenerator.exporter.html.property.output_dir | No | Sets the destination directory for generated html pages.     This will be overridden by the command line option `-o`.     Defaults to: `report-output` |
+| jmeter.reportgenerator.exporter.html.series_filter | No | Regular Expression which Indicates which graph series are filtered in display.     Empty value means no filtering.     Defaults to empty value. |
+| jmeter.reportgenerator.exporter.html.filters_only_sample_series | No | Indicates whether series filter apply only on sample series     Defaults to: `true` |
+| jmeter.reportgenerator.exporter.html.show_controllers_only | No | Indicates whether only controller samples are displayed on graphs that support it.     Defaults to: `false` |
+| jmeter.reportgenerator.date_format | No | Date format of report using by start_date and end_date properties.     Defaults to: `yyyyMMddHHmmss` |
+| jmeter.reportgenerator.start_date | No | Start date of report using date_format property.     Defaults to: nothing |
+| jmeter.reportgenerator.end_date | No | End date of report using date_format property.     Defaults to: nothing |
+| generate_report_ui.generation_timeout | No | Timeout in milliseconds for Report generation when using Tools &gt; Generate HTML report.     Defaults to: 300000 |
+
+## 19.38 Additional property files to load
+
+| Name | Required | Description |
+|------|----------|-------------|
+| user.properties | No | Should JMeter automatically load additional JMeter properties?     File name to look for (comment to disable)     Defaults to: `user.properties` |
+| system.properties | No | Should JMeter automatically load additional system properties?     File name to look for (comment to disable)     Defaults to: `system.properties` |
+| template.files | No | Comma separated list of files that contain reference to templates and their description.     Path must be relative to JMeter root folder     Defaults to: `/bin/templates/templates.xml` |
+
+## 19.39 Thread Group Validation feature
+
+Validation is the name of the feature used to rapidly validate a Thread Group runs fine
+
+| Name | Required | Description |
+|------|----------|-------------|
+| testplan_validation.tree_cloner_class | No | Default implementation is  ``` org.apache.jmeter.gui.action.validation.TreeClonerForValidation ```     It runs validation without timers, with one thread and one iteration.     You can implement your own policy that must extend `org.apache.jmeter.engine.TreeCloner`.     JMeter will instantiate it and use it to create the Tree used to run validation on Thread Group.     Defaults to:      ``` org.apache.jmeter.gui.action.validation.TreeClonerForValidation ``` |
+| testplan_validation.nb_threads_per_thread_group | No | Number of threads to use to validate a Thread Group.     Defaults to: `1` |
+| testplan_validation.ignore_timers | No | Ignore timers when validating the thread group of plan.     Defaults to: `true` |
+| testplan_validation.ignore_backends | No | Ignore BackendListener when validating the thread group of plan.     Defaults to: `true` |
+| testplan_validation.number_iterations | No | Number of iterations to use to validate a Thread Group.     Defaults to: `1` |
+| testplan_validation.tpc_force_100_pct | No | Force throughput controllers that work in percentage mode to be a 100%.     Defaults to: `false` |
+
+## 19.40 Timer related feature
+
+Timer are used to introduce think time in your plan.
+
+| Name | Required | Description |
+|------|----------|-------------|
+| timer.factor | No | Apply a factor on computed pauses by the following Timers:      - Gaussian Random Timer - Uniform Random Timer - Poisson Random Timer     Defaults to: `1.0f` |
+| think_time_creator.impl | No | Default implementation that create the Timer structure to add to Test Plan.     Implementation of interface [`org.apache.jmeter.gui.action.thinktime.ThinkTimeCreator`](https://jmeter.apache.org/api/org/apache/jmeter/gui/action/thinktime/ThinkTimeCreator.html)     Defaults to: [`org.apache.jmeter.thinktime.DefaultThinkTimeCreator`](https://jmeter.apache.org/api/org/apache/jmeter/thinktime/DefaultThinkTimeCreator.html) |
+| think_time_creator.default_timer_implementation | No | Default Timer GUI class added to Test Plan by DefaultThinkTimeCreator     Defaults to: [`org.apache.jmeter.timers.gui.UniformRandomTimerGui`](https://jmeter.apache.org/api/org/apache/jmeter/timers/gui/UniformRandomTimerGui.html) |
+| think_time_creator.default_constant_pause | No | Default constant pause of Timer     Defaults to: `1000` |
+| think_time_creator.default_range | No | Default range pause of Timer     Defaults to: `100` |
+
+[^](#)
+
+## 19.41 Naming Policy
+
+Timer are used to introduce think time in your plan.
+
+| Name | Required | Description |
+|------|----------|-------------|
+| naming_policy.prefix | No | Prefix used when naming elements.     Defaults to empty prefix |
+| naming_policy.suffix | No | Prefix used when naming elements.     Defaults to empty suffix |
+| naming_policy.impl | No | Implementation of interface [`org.apache.jmeter.gui.action.TreeNodeNamingPolicy`](https://jmeter.apache.org/api/org/apache/jmeter/gui/action/TreeNodeNamingPolicy.html)     Default implementation that create the Timer structure to add to Test Plan.     Implementation of interface org.apache.jmeter.gui.action.thinktime.ThinkTimeCreator     Defaults to: [`org.apache.jmeter.gui.action.impl.DefaultTreeNodeNamingPolicy`](https://jmeter.apache.org/api/org/apache/jmeter/gui/action/impl/DefaultTreeNodeNamingPolicy.html) |
+
+[^](#)
+
+## 19.42 Help
+
+Controls how documentation in JMeter is displayed
+
+| Name | Required | Description |
+|------|----------|-------------|
+| help.local | No | Switch that allows using Local documentation opened in JMeter GUI.     By default we use Online documentation opened in Browser.     Defaults to `false` |
+
+## 19.43 Advanced Groovy Scripting configuration
+
+Advanced properties for configuration of scripting in Groovy
+
+| Name | Required | Description |
+|------|----------|-------------|
+| groovy.utilities | No | Path to Groovy file containing utility functions to make available to `[__groovy](/user-manual/functions/#__groovy)` function.     Defaults to `bin/utility.groovy` |
+
+## 19.44 Advanced JSR-223 Scripting configuration
+
+Advanced properties for configuration of scripting in JSR-223
+
+| Name | Required | Description |
+|------|----------|-------------|
+| jsr223.init.file | No | Path to JSR-223 file containing script to call on JMeter startup.     The actual scripting engine to use will be determined by the extension     of the init file name. If the file name has no extension, or no scripting     engine could be found for that extension, Groovy will be used.     This script can use pre-defined variables:      - `log`: Logger to log any message, uses SLF4J library - `props`: JMeter Properties - `OUT`: System.OUT, useful to write in the console     No script is defined by default. |
+| jsr223.compiled_scripts_cache_size | No | Used by JSR-223 elements.     Size of compiled scripts cache.     Defaults to: `100` |
+
+## 19.45 Documentation generation
+
+Advanced properties for documentation generation
+
+| Name | Required | Description |
+|------|----------|-------------|
+| docgeneration.schematic_xsl | No | Path to XSL file used to generate Schematic View of Test Plan.     When empty, JMeter will use the embedded one in src/core/org/apache/jmeter/gui/action/schematic.xsl     No default value |
+
+## 19.46 Security Provider
+
+Advanced properties for documentation generation
+
+| Name | Required | Description |
+|------|----------|-------------|
+| security.provider | No | The value must be in this format: &lt;ClassName&gt;[:&lt;Postion&gt;[:&lt;ConfigString&gt;]] |
+| security.provider.&lt;n&gt; | No | Replace the `&lt;n&gt;` with any number. The SecurityProviders will be added in the alphabetical         order of the property names. (First: `security.provider` and then `security.provider.2`, `security.provider.3`,...)         See property `security.provider` |

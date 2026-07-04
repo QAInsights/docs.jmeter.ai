@@ -1,0 +1,171 @@
+---
+title: "User's Manual: Building an LDAP Test Plan"
+description: "User's Manual: Building an LDAP Test Plan"
+---
+
+## 8a. Building an LDAP Test Plan
+
+        In this section, you will learn how to create a basic Test Plan to test an LDAP server.
+You will create four users that send requests for four tests on the LDAP server. Also, you will tell
+the users to run their tests 4 times. So,  the total number of requests is (4 users) x (4 requests) x
+(repeat 4 times) = 64 LDAP requests. To construct the Test Plan, you will use the following elements:
+[Thread Group](/user-manual/test-plan/#thread_group),
+[LDAP Request](/user-manual/component-reference/#LDAP_Request),
+[LDAP Request Defaults](/user-manual/component-reference/#LDAP_Request_Defaults), and
+[View Results in Table](/user-manual/component-reference/#View_Results_in_Table)
+.
+
+        This example assumes that the LDAP Server is available at ldap.test.com.
+
+    
+## 8a.1 Adding Users
+
+        The first step you want to do with every JMeter Test Plan is to add a Thread Group element.
+The Thread Group tells JMeter the number of users you want to simulate, how often the users should send
+requests, and the how many requests  they should send.
+
+                Go ahead and add the ThreadGroup element by first selecting the Test Plan, clicking your
+right mouse button to get the **Add** menu, and then select
+**Add → ThreadGroup**. You should now see the
+Thread Group element under Test Plan. If you do not see the element, then "expand" the Test Plan tree by
+clicking on the Test Plan element.
+![Figure 8a.1. Thread Group and final test tree](/images/screenshots/ldaptest/threadgroup.png)
+_Figure 8a.1. Thread Group and final test tree_
+
+    
+## 8a.2 Adding Login Config Element
+
+        Begin by selecting the `LDAP Users` element. Click your right mouse
+button to get the Add menu, and then select
+  **Add → Config Element → Login Config Element**.
+Then,  select this new element to view its Control Panel.
+
+        Like most JMeter elements, the `Login  Config Element`'s Control Panel has a name
+field that you can modify. In this example, leave this field with the default value.
+
+![Figure 8a.2 Login Config Element for our Test Plan](/images/screenshots/ldaptest/login-config-element.png)
+_Figure 8a.2 Login Config Element for our Test Plan_
+
+        
+:::note
+Enter Username field to "your LDAP Username",
+
+        The password field to "your LDAP Password"
+
+        These values will be used by the LDAP Requests.
+:::
+
+    
+## 8a.3 Adding LDAP Request Defaults
+
+                Begin by selecting the `LDAP Users` element. Click your right mouse button
+to get the **Add** menu, and then select
+**Add → Config Element → LDAP Request Defaults**. Then,
+select this new element to view its Control Panel.
+
+        Like most JMeter elements, the `LDAP Request Defaults` Control Panel has a name
+field that you can modify. In this example, leave this field with the default value.
+
+![Figure 8a.3 LDAP Defaults for our Test Plan](/images/screenshots/ldaptest/requestdefaults.png)
+_Figure 8a.3 LDAP Defaults for our Test Plan_
+
+        
+:::note
+Enter `DN` field to "`your LDAP Root Distinguished Name`".
+
+                Enter LDAP Server's `Servername` field to "`ldap.test.com`".
+
+        The `port` to `389`.
+
+        These values are default for the LDAP Requests.
+:::
+
+    
+## 8a.4 Adding LDAP Requests
+
+                In our Test Plan, we need to make four LDAP requests.
+
+                
+1. Inbuilt Add Test
+2. Inbuilt Search Test
+3. Inbuilt Modify Test
+4. Inbuilt Delete Test
+
+        JMeter sends requests in the order that you add them to the tree.
+Start by adding the first LDAP Request to the LDAP Users element
+(**Add → Sampler → LDAP Request**). Then, select the LDAP Request  element in the tree
+and edit the following properties
+
+        
+1. Rename to "`Add`" this element
+2. Select the `Add Test` radio button in `Test Configuration` group
+
+                ![Figure 8a.4.1 LDAP Request for Inbuilt Add test](/images/screenshots/ldaptest/add.png)
+_Figure 8a.4.1 LDAP Request for Inbuilt Add test_
+
+                You do not have to set the `Servername` field, `port` field, `Username`, `Password`
+and `DN` because you already specified this value in the `Login Config Element` and
+`LDAP Request Defaults.`
+
+        Next, add the second LDAP Request and edit the following
+properties
+
+        
+1. Rename to "`Search`" this element
+2. Select the `Search Test` radio button in `Test Configuration` group
+
+        
+        Next, add the Third LDAP Request and edit the following properties
+        
+
+                ![Figure 8a.4.2 LDAP Request for Inbuilt Search test](/images/screenshots/ldaptest/search.png)
+_Figure 8a.4.2 LDAP Request for Inbuilt Search test_
+
+        
+1. Rename to "`Modify`" this element
+2. Select the `Modify Test` radio button in `Test Configuration` group
+
+        
+        Next, add the fourth LDAP Request and edit the following properties
+        
+
+                ![Figure 8a.4.3 LDAP Request for Inbuilt Modify test](/images/screenshots/ldaptest/modify.png)
+_Figure 8a.4.3 LDAP Request for Inbuilt Modify test_
+
+        
+1. Rename to "`Delete`" this element
+2. Select the `Delete Test` radio button in `Test Configuration` group
+
+                ![Figure 8a.4.4 LDAP Request for Inbuilt Delete test](/images/screenshots/ldaptest/delete.png)
+_Figure 8a.4.4 LDAP Request for Inbuilt Delete test_
+
+## 8a.5 Adding a Response Assertion
+
+               You can add a Response Assertion element.
+ This element will check the received response data by verifying if the response text is "`successful`".
+  (**Add → Assertion → Response Assertion**).
+
+:::note
+Note: A this position in the tree,
+  the Response Assertion will be executed for each LDAP Request.
+:::
+
+          
+1. Select `Text Response` Radio button in `Response Field to Test` group
+2. Select `Substring` Radio button in `Pattern Matching Rules` group
+3. Click on `Add` button and add the string "`successful`" in `Pattern to Test` field
+
+![Figure 8a.5 LDAP Response Assertion](/images/screenshots/ldaptest/responseassertion.png)
+_Figure 8a.5 LDAP Response Assertion_
+
+ 
+## 8a.6 Adding a Listener to View/Store the Test Results
+
+               The final element you need to add to your Test Plan is a Listener.
+ This element is responsible for storing all of the results of your LDAP
+requests in a file  and presenting a visual model of the data. Select the LDAP
+Users element and add a View Results in Table
+(**Add → Listener → View Results in Table**)
+
+![Figure 8a.6 View Results in Table Listener](/images/screenshots/ldaptest/viewtable.png)
+_Figure 8a.6 View Results in Table Listener_

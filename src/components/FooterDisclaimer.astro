@@ -1,0 +1,55 @@
+---
+import EditLink from 'virtual:starlight/components/EditLink';
+import Pagination from 'virtual:starlight/components/Pagination';
+import GoToTop from './GoToTop.astro';
+import PageActions from './PageActions.astro';
+import ImageLightbox from './ImageLightbox.astro';
+
+const isLandingPage = Astro.url.pathname === '/';
+---
+
+<div class="doc-footer-wrapper">
+  <PageActions />
+  <footer class="sl-flex doc-footer">
+    <div class="meta sl-flex">
+      <EditLink />
+    </div>
+    {!isLandingPage && <Pagination />}
+  </footer>
+  <footer class="site-footer">
+    <p>
+      Created by <a href="https://qaautomationlabs.com">NaveenKumar Namachivayam</a>.
+      Content synced from <a href="https://github.com/apache/jmeter">apache/jmeter</a> under Apache License 2.0.
+      <a href="/legal/disclaimer">Full disclaimer</a> &middot; <a href="/legal/notice">NOTICE</a>
+    </p>
+    <p>
+      Apache, Apache JMeter, JMeter, and the Apache JMeter logo are trademarks of the
+      Apache Software Foundation. This site is an independent community resource and is
+      not affiliated with, endorsed by, or sponsored by the Apache Software Foundation.
+    </p>
+    <p>
+      <a href="https://jmeter.apache.org">Official JMeter Site</a>
+    </p>
+  </footer>
+  <GoToTop />
+  <ImageLightbox />
+</div>
+
+<style>
+  @layer starlight.core {
+    .doc-footer-wrapper {
+      margin-top: 2rem;
+    }
+    .doc-footer {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .doc-footer .meta {
+      gap: 0.75rem 3rem;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      font-size: var(--sl-text-sm);
+      color: var(--sl-color-gray-3);
+    }
+  }
+</style>

@@ -1,0 +1,58 @@
+---
+title: "Access log sampler Step-by-step"
+description: "Access log sampler Step-by-step"
+---
+
+## 28. Access log sampler Step-by-step
+
+This is a short tutorial on JMeter's access log sampler. The purpose of the Access Log Sampler
+is to provide an easy way to simulate production traffic. There are several benefits to using access logs.
+
+- Rather than guess what users are doing, the test plan is using real traffic data
+- As the traffic pattern changes, the access log provides a record of individual changes and general shifts in usage
+- Access logs contain a lot of useful data, which may provide some insight
+- Access logs can be minded to determine different types of users
+- Access logs can capture detailed session information
+
+The down side of using access logs for test plans is you have to configure the webserver to output the request
+information. This may not be appropriate where security is an issue. For example, if the webserver dumps the post
+data from each request to the access logs, users login and password would be stored in plain text. Here are some
+general cases where access logs might be inappropriate.
+
+- Security sensitive applications where the data is encrypted
+- The application does not allow fine grain control of which request parameters are written to the access logs
+- The application needs correlation between requests
+- The webserver cannot be configured to append the post data to the access log
+- The webserver is hosting multiple applications, but doesn't provide a way to log the requests of one application to a separate file
+
+To take advantage of access logs, the first thing is the webserver needs to be configured to use extended
+log format. Links for configuring the popular containers are provided below.
+
+- [BEA Weblogic](http://e-docs.bea.com/wls/docs70/adminguide/web_server.html#113868)
+- [Tomcat](http://tomcat.apache.org/tomcat-8.5-doc/config/valve.html#Access_Log_Valve)
+- [Websphere](http://e-docs.bea.com/wls/docs61/adminguide/web_server.html#113868)
+- [Resin](http://www.caucho.com/resin-3.0/config/log.xtp#access-log)
+
+In some cases, it may be desirable to write custom logging, so that sensitive information is not written
+to the access logs. This article does not cover the techniques for writing custom logging.
+
+### 28.1 Step-by-Step
+
+1. Start JMeter
+2. Select `Test Plan`
+3. Right click       **Add → Threads (Users) → Thread Group**       ![Add Thread Group](/images/screenshots/add-threadgroup.png) _Add Thread Group_
+4. Select `Thread Group`
+5. Right click       **Add → Sampler → Access Log Sampler**       ![Add Access Log Sampler](/images/screenshots/add-access-log-sampler.png) _Add Access Log Sampler_
+6. Right click on `Thread Group`       **Add → Listener → Aggregate Report**       ![Add Aggregate Report](/images/screenshots/add-aggregate-report.png) _Add Aggregate Report_
+7. Select the `Access Log Sampler`       ![Access Log Sampler](/images/screenshots/accesslogsampler.png) _Access Log Sampler_
+8. Enter the IP address or hostname in `Server`
+9. Enter the port in `Port`
+10. If you want to download the images, set `Parse images` to `true`.
+11. Select a file for `Log File Location`       ![Filled in Access Log Sampler](/images/screenshots/example-access-log-sampler.png) _Filled in Access Log Sampler_
+12. Select Aggregate Report
+13. Enter `results.jtl` for filename       ![Aggregate Report with filename](/images/screenshots/example-aggregate-report.png) _Aggregate Report with filename_
+
+At this point, the test plan is ready. Start the test with
+  `Ctrl + R`
+or from the menu
+   **Start → Run**.

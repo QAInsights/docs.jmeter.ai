@@ -1,0 +1,29 @@
+---
+const lines = [
+  { text: '$ jmeter -n -t test-plan.jmx -l results.jtl', cls: 'cmd' },
+  { text: 'Creating summariser <main>' },
+  { text: 'Created the tree successfully' },
+  { text: 'Starting the test @ 2026 Jul 3 06:32:00 PM' },
+  { text: 'summary +   1247 in 00:00:12 =  103.9/s  Avg:   245  Min:    12  Max:  1823  Err:     0 (0.00%)', cls: 'ok' },
+  { text: 'summary =   1247 in 00:00:12 =  103.9/s  Avg:   245  Min:    12  Max:  1823  Err:     0 (0.00%)', cls: 'ok' },
+];
+---
+
+<div class="terminal">
+  <div class="terminal-bar">
+    <span class="dot dot-red"></span>
+    <span class="dot dot-yellow"></span>
+    <span class="dot dot-green"></span>
+    <span class="terminal-title">jmeter - bash</span>
+  </div>
+  <div class="terminal-body">
+    {lines.map((line, i) => (
+      <div class="term-line" style={`--line-delay: ${i * 0.35}s`} class:list={['term-line', line.cls]}>
+        <span class="term-text">{line.text}</span>
+      </div>
+    ))}
+    <div class="term-line term-cursor" style={`--line-delay: ${lines.length * 0.35}s`}>
+      <span class="term-text">$ <span class="blink">▋</span></span>
+    </div>
+  </div>
+</div>

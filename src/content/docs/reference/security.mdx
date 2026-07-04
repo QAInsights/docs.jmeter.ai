@@ -1,0 +1,46 @@
+---
+title: "Security"
+description: "Security"
+---
+
+## Security Model
+
+  
+    The purpose of JMeter is to execute the workload specified
+    in the input jmx file, which may include arbitrary code.
+  
+
+  
+    As such, the JMeter security model assumes you trust
+    jmx input files: even opening a jmx input file may in some
+    cases trigger code execution. If you want to use JMeter to
+    evaluate untrusted jmx files, it is up to you to provide the
+    required isolation.
+  
+
+  
+    Still in the area of security, when JMeter is used in distributed
+    environment, we recommend setting up the security manager in order
+    to avoid any execution of malicious code on the distributed
+    architecture. See the [Security-Manager documentation](/./usermanual/remote-test/#security-manager) for its implementation.
+  
+
+## Reporting security issues
+
+  
+    We strongly encourage you to report potential security vulnerabilities to our private security mailing list, [security@apache.org](mailto:security@apache.org), before disclosing them in a public forum.
+  
+
+  
+    Only use this list to report undisclosed security vulnerabilities in Apache projects and manage the process of fixing such vulnerabilities. We cannot accept regular bug reports or other security-related queries at these addresses. We will ignore mail sent to these addresses that does not relate to an undisclosed security problem in an Apache project.
+  
+
+  
+    An overview of the vulnerability handling process is:
+    
+- The reporter reports the vulnerability privately to Apache.
+- The appropriate project's security team works privately with the reporter to resolve the vulnerability.
+- The project creates a new release of the package the vulnerabilty affects to deliver its fix.
+- The project publicly announces the vulnerability and describes how to apply the fix.
+
+    Committers should read a [more detailed description of the process](https://www.apache.org/security/committers.html). Reporters of security vulnerabilities may also find it useful.

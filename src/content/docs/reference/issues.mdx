@@ -1,0 +1,125 @@
+---
+title: "Issues"
+description: "Issues"
+---
+
+## Issue tracker
+
+  
+    JMeter uses GitHub Issues for issue tracking, i.e. for reporting bugs and requesting enhancements.
+    Previously, the issues were tracked in [Bugzilla](https://bz.apache.org/bugzilla/describecomponents.cgi),
+    and all the issues, comments, and attachments have been migrated to GitHub on 2022-09-22.
+  
+
+## Support Questions
+
+  
+    Please do not use GitHub Issues for asking questions. It is not a support forum.
+    Instead, please [subscribe](/mail2/) to the JMeter user mailing list and ask there.
+    The user mailing list has a bigger audience, and you are more likely to get an answer quickly.
+  
+
+## Known Bugs and enhancements
+
+  
+- [Most voted issues](https://github.com/apache/jmeter/issues?q=is%3Aopen+sort%3Areactions-%2B1-desc)
+- [All open bugs and enhancements](https://github.com/apache/jmeter/issues?q=is%3Aopen)
+- [Open bugs (excluding enhancements)](https://github.com/apache/jmeter/issues?q=is%3Aissue+is%3Aopen+-label%3Aenhancement)
+- [Enhancements only](https://github.com/apache/jmeter/issues?q=is%3Aopen+label%3Aenhancement)
+
+## Requesting an enhancement
+
+  
+    Please check if the same enhancement has already been requested previously.
+    If you find a very similar request in the issues list, please refrain from adding "_I also need this_" comments to the issue.
+    "_I also need this_" comments cause notifications, and the comment itself does not add much to the discussion.
+    Instead, prefer adding reactions to the first comment of an existing issue, so the issues could be sorted (see
+    [Most voted issues](https://github.com/apache/jmeter/issues?q=sort%3Areactions-%2B1-desc)).
+  
+
+  
+    Please make sure that you describe the enhancement in sufficient detail. It might be a good idea to start with a use-case.
+  
+
+  
+    There are several options to propose an enhancement request:
+    
+
+**GitHub issue**
+: You could [file an issue on GitHub](https://github.com/apache/jmeter/issues/new/choose) to start a discussion
+          and gather opinions. GitHub issues allow
+          [basic formatting](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax),
+          [advanced formatting](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting),
+          [attaching files](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files),
+          [syntax highlight](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#quoting-code),
+          [task lists](https://docs.github.com/en/issues/tracking-your-work-with-issues/about-task-lists),
+          reactions,
+          [references to the other
+            issues and the source code](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls#issues-and-pull-requests).
+        
+
+        
+          When you create an issue at GitHub, it suggests one of the templates (e.g. "_Bug report_",
+          "_Feedback about the manual_", "_Feature Request_", "_Regression_"), and it guides which information is required for each case.
+          You could read more on [creating issues](https://docs.github.com/en/issues/tracking-your-work-with-issues/creating-an-issue) in
+          GitHub documentation.
+
+**Mailing list discussion**
+: If you are not sure if something is an enhancement, or if you are unsure regarding the possible solutions,
+          it might be a good idea to start a discussion on [JMeter dev mailing list](https://jmeter.apache.org/mail2.html#JMeterDev)
+
+**GitHub pull request**
+: If you are positive regarding the solution, you could start a discussion by creating a
+          [pull request on GitHub](https://github.com/apache/jmeter/pulls).
+          Pull requests are not much different from issues, however, sometimes it is easier to discuss with code at hand.
+          For instance, if you fix a typo or make other small fixes, there's no need to create "_issue and PR_" for each change.
+          The following [GitHub post](https://github.blog/2015-01-21-how-to-write-the-perfect-pull-request/) might be helpful
+          for creating your perfect pull request.
+        
+
+        
+:::note
+There's no guarantee that your contribution will be accepted, so it might be wise to discuss your suggestions
+          before you invest significant efforts on implementing the changes.
+:::
+
+        
+          If you are providing a code patch, also provide a test case, and documentation on how to use the new feature (ideally as a documentation patch).
+
+  
+
+## Raising an Issue
+
+  
+    First check that the issue has not already been reported on [GitHub issues](https://github.com/apache/jmeter/issues)
+    and [JMeter user mailing list](https://lists.apache.org/list.html?user@jmeter.apache.org)).
+    If reporting a bug, are you sure it really is a bug in JMeter, not just a misunderstanding of how JMeter works?
+  
+
+  
+    If you face a bug or regression, please create an [issue on GitHub](https://github.com/apache/jmeter/issues).
+    In case you can't create an issue, you might send the bug report to [JMeter dev mailing list](https://jmeter.apache.org/mail2.html#JMeterDev).
+  
+
+## Required Information for bug reporting
+
+Please make sure you provide sufficient information for others to be able to make use of the report effectively.
+Use the checklist below to guide you.
+
+- JMeter version
+- Java version (output from `java -version`)
+- OS version
+- `jmeter.log` file (unlikely to contain sensitive information, but check before uploading)
+- JMX file if relevant (redact any sensitive information first), providing a simplified Test Plan (using [Debug Sampler](/user-manual/component-reference/#Debug_Sampler)) will ensure BUG is fixed much more rapidly than without it
+- Try to reproduce the bug without third-party plug-ins. Minimal JMX files should not contain third-party plug-ins, as it makes it harder to test them on a plain JMeter installation.
+- JTL file if relevant (may need to redact sensitive information)
+- For a suspected bug, describe what you did, what happened, and how this differs from what you expected to happen. Does it happen every time?
+- If you have error messages, that you wish to report, copy them as text into the issue, as it makes it easier to search for them and re-use the message in our research for the origin of the issue
+- When a bug is market as `need info`, please provide as soon as possible the required information so that bug can be understood and fixed. Be aware that if no information is provided after team requires more information and bug is not reproducible, then bug will be closed as `invalid`. You can always ask to reopen it later once you provide the required information.
+- Prefer using issue templates (e.g. "_Bug report_", "_Feedback about the manual_", "_Feature Request_", "_Regression_")
+- If you are providing a patch file to fix a bug, please ensure it is in unified diff format. If using Eclipse, please set the patch root to "`Project`", not the default "`Workspace`" which is harder to apply.
+- New source files can be provided as is; please ensure they have the standard Apache License header (as per other JMeter files). Please do not use `@author` tags (credit will be given in the changes file).
+- In the case of patches for new features, please also provide documentation patches if at all possible. Components are documented in `xdocs/usermanual/component_reference.xml`.
+
+<strong>See also the following [Bug writing guidelines](https://bz.apache.org/bugwritinghelp.html),
+also the terms and conditions noted on the [GitHub Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service)</strong>

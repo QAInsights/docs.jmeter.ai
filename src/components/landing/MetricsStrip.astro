@@ -1,0 +1,17 @@
+---
+const metrics = [
+  { value: '46', label: 'Documentation Pages', sub: 'User manual, reference, extending' },
+  { value: '14K+', label: 'Words Indexed', sub: 'Full-text client-side search' },
+  { value: '535', label: 'Screenshots', sub: 'Component UI references' },
+];
+---
+
+<div class="metrics-strip">
+  {metrics.map((m) => (
+    <div class="metric-card">
+      <span class="metric-value">{m.value}</span>
+      <span class="metric-label">{m.label}</span>
+      <span class="metric-sub">{m.sub}</span>
+    </div>
+  ))}
+</div>

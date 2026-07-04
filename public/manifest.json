@@ -1,0 +1,16 @@
+{
+  "name": "docs.jmeter.ai",
+  "short_name": "JMeter Docs",
+  "description": "Community documentation for Apache JMeter with improved navigation and search",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1917",
+  "theme_color": "#ea580c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

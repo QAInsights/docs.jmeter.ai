@@ -1,0 +1,72 @@
+---
+const cards = [
+  {
+    title: 'Component Reference',
+    desc: 'Detailed reference for all JMeter components - samplers, controllers, listeners, timers, assertions, config elements.',
+    href: '/user-manual/component-reference/',
+    size: 'large',
+    snippet: 'Thread Group → HTTP Request → View Results Tree',
+  },
+  {
+    title: 'Building Test Plans',
+    desc: 'Step-by-step guides for web, database, FTP, LDAP, JMS, and more.',
+    href: '/user-manual/build-test-plan/',
+    size: 'large',
+    snippet: 'Test Plan → Thread Group → Sampler → Listener',
+  },
+  {
+    title: 'Functions & Variables',
+    desc: 'Built-in functions for dynamic values, scripting, and property access.',
+    href: '/user-manual/functions/',
+    size: 'medium',
+    snippet: '${__time(YMD)}',
+  },
+  {
+    title: 'Properties Reference',
+    desc: 'Complete jmeter.properties configuration options.',
+    href: '/user-manual/properties-reference/',
+    size: 'medium',
+    snippet: 'jmeter.save.saveservice.output_format=csv',
+  },
+  {
+    title: 'Extending JMeter',
+    desc: 'Developer guide for custom samplers and plugins.',
+    href: '/extending/extending-jmeter/',
+    size: 'medium',
+    snippet: 'public SampleResult sample(Entry e)',
+  },
+  {
+    title: 'Best Practices',
+    desc: 'Guidelines for scalable, maintainable test plans.',
+    href: '/user-manual/best-practices/',
+    size: 'small',
+  },
+  {
+    title: 'Glossary',
+    desc: 'Key JMeter terminology explained.',
+    href: '/user-manual/glossary/',
+    size: 'small',
+  },
+  {
+    title: 'Remote Testing',
+    desc: 'Distributed load testing setup.',
+    href: '/user-manual/remote-test/',
+    size: 'small',
+  },
+];
+---
+
+<div class="bento-grid">
+  {cards.map((card) => (
+    <a href={card.href} class={`bento-card bento-${card.size}`}>
+      <div class="bento-content">
+        <h3 class="bento-title">{card.title}</h3>
+        <p class="bento-desc">{card.desc}</p>
+        {card.snippet && (
+          <code class="bento-snippet">{card.snippet}</code>
+        )}
+      </div>
+      <span class="bento-arrow" aria-hidden="true">→</span>
+    </a>
+  ))}
+</div>

@@ -1,0 +1,372 @@
+---
+title: "User's Manual: Best Practices"
+description: "User's Manual: Best Practices"
+---
+
+## 16. Best Practices
+
+## 16.1 Always use latest version of JMeter
+
+The performance of JMeter is being constantly improved, so users are highly encouraged to use the most up to date version. 
+
+Ensure you always read [changes list](/../changes/) to be aware of new improvements and components.
+You should absolutely avoid using versions that are older than 3 versions before the last one.
+
+## 16.2 Use the correct Number of Threads
+
+Your hardware capabilities as well as the Test Plan design will both impact the number of threads you can effectively
+run with JMeter.  The number will also depend on how fast your server is (a faster server
+ makes JMeter work harder since it returns a response quicker).  As with any Load Testing tool, if you don't correctly size
+ the number of threads, you will face the "Coordinated Omission" problem which can give you wrong or inaccurate results.
+ If you need large-scale load testing, consider running multiple CLI JMeter instances on multiple machines
+ using distributed mode (or not). When using distributed mode the result file is combined on the Controller node, if
+ using multiple autonomous instances, the sample result files can be combined for subsequent analysis.
+For testing how JMeter performs on a given platform, the JavaTest sampler can be used.
+It does not require any network access so can give some idea as to the maximum throughput achievable.
+
+JMeter has an option to delay thread creation until the thread starts sampling, i.e. after any thread group delay and the ramp-up time for the thread itself.
+This allows for a very large total number of threads, provided that not too many are active concurrently.
+
+## 16.3 Where to Put the Cookie Manager
+
+See [Building a Web Test](/user-manual/build-web-test-plan/#adding_cookie_support)
+for information.
+
+## 16.4 Where to Put the Authorization Manager
+
+See [Building an Advanced
+Web Test](/user-manual/build-adv-web-test-plan/#header_manager) for information.
+
+## 16.5 Using the HTTP(S) Test Script Recorder
+
+Refer to [HTTP(S) Test Script Recorder](/user-manual/component-reference/#HTTP_S__Test_Script_Recorder) for details on setting up the
+recorder. The most important thing to do is filter out all requests you aren't
+interested in.  For instance, there's no point in recording image requests (JMeter can
+be instructed to download all images on a page - see [HTTP Request](/user-manual/component-reference/#HTTP_Request)).
+These will just clutter your test plan.  Most likely, there is an extension all your files
+share, such as `.jsp`, `.asp`, `.php`, `.html` or the like.
+These you should "`include`" by entering "`.*\.jsp`" as an "Include Pattern". 
+
+Alternatively, you can exclude images by entering "`.*\.gif`" as an "Exclude Pattern".
+Depending on your application, this may or may not be a better way to go.  You may
+also have to exclude stylesheets, javascript files, and other included files.  Test
+out your settings to verify you are recording what you want, and then erase and start
+fresh.
+
+The HTTP(S) Test Script Recorder expects to find a ThreadGroup element with a Recording Controller
+under it where it will record HTTP Requests to.  This conveniently packages all your samples under one
+controller, which can be given a name that describes the test case.
+
+Now, go through the steps of a Test Case.  If you have no pre-defined test cases, use
+JMeter to record your actions to define your test cases.  Once you have finished a
+definite series of steps, save the entire test case in an appropriately named file.  Then, wipe
+clean and start a new test case.  By doing this, you can quickly record a large number of
+test case "rough drafts".
+
+One of the most useful features of the HTTP(S) Test Script Recorder is that you can abstract out
+certain common elements from the recorded samples.  By defining some
+[user-defined variables](/user-manual/functions/) at the Test Plan level or in
+[User Defined Variables](/user-manual/component-reference/#User_Defined_Variables) elements, you can have JMeter automatically
+replace values in you recorded samples.  For instance, if you are testing an app on
+server "`xxx.example.com`", then you can define a variable called "`server`" with the value of
+"`xxx.example.com`", and anyplace that value is found in your recorded samples will be replaced
+with "`\${server}`".
+
+:::note
+Please note that matching is case-sensitive.
+:::
+
+If JMeter does not record any samples, check that the browser really is using the proxy.
+If the browser works OK even if JMeter is not running, then the browser cannot be using the proxy.
+Some browsers ignore proxy settings for `localhost` or `127.0.0.1`; try using the local hostname or IP instead.
+
+The error "`unknown_ca`" probably means that you are trying to record HTTPS, and the browser has not accepted the
+JMeter Proxy server certificate.
+
+## 16.6 User variables
+
+Some test plans need to use different values for different users/threads.
+For example, you might want to test a sequence that requires a unique login for each user.
+This is easy to achieve with the facilities provided by JMeter.
+
+For example:
+
+- Create a text file containing the user names and passwords, separated by commas. Put this in the same directory as your test plan.
+- Add a CSV DataSet configuration element to the test plan. Name the variables `USER` and `PASS`.
+- Replace the login name with `\${USER}` and the password with `\${PASS}` on the appropriate samplers
+
+The CSV Data Set element will read a new line for each thread.
+
+## 16.7 Reducing resource requirements
+
+Some suggestions on reducing resource usage.
+
+- Use CLI mode: `jmeter -n -t test.jmx -l test.jtl`
+- Use as few Listeners as possible; if using the `-l` flag as above they can all be deleted or disabled.
+- Don't use "View Results Tree" or "View Results in Table" listeners during the load test, use them only during scripting phase to debug your scripts.
+- Rather than using lots of similar samplers, use the same sampler in a loop, and use variables (CSV Data Set) to vary the sample. [The Include Controller does not help here, as it adds all the test elements in the file to the test plan.]
+- Don't use functional mode
+- Use CSV output rather than XML
+- Only save the data that you need
+- Use as few Assertions as possible
+- Use the most performing scripting language (see JSR223 section)
+
+If your test needs large amounts of data - particularly if it needs to be randomised - create the test data in a file
+that can be read with CSV Dataset. This avoids wasting resources at run-time.
+
+## 16.8 BeanShell server
+
+The BeanShell interpreter has a very useful feature - it can act as a server,
+which is accessible by telnet or http.
+
+:::note
+There is no security. Anyone who can connect to the port can issue any BeanShell commands.
+These can provide unrestricted access to the JMeter application and the host.
+**Do not enable the server unless the ports are protected against access, e.g. by a firewall.**
+:::
+
+If you do wish to use the server, define the following in `jmeter.properties`:
+
+```
+beanshell.server.port=9000
+beanshell.server.file=../extras/startup.bsh
+```
+
+In the above example, the server will be started, and will listen on ports `9000` and `9001`.
+Port `9000` will be used for http access. Port `9001` will be used for telnet access.
+The `startup.bsh` file will be processed by the server, and can be used to define various functions and set up variables.
+The startup file defines methods for setting and printing JMeter and system properties.
+This is what you should see in the JMeter console:
+
+```
+Startup script running
+Startup script completed
+Httpd started on port: 9000
+Session started on port: 9001
+```
+
+There is a sample script (`extras/remote.bsh`) you can use to test the server.
+[Have a look at it to see how it works.]
+
+When starting it in the JMeter `bin` directory
+(adjust paths as necessary if running from elsewhere)
+the output should look like:
+
+```bash
+$ java -jar ../lib/bshclient.jar localhost 9000 ../extras/remote.bsh
+Connecting to BSH server on localhost:9000
+Reading responses from server …
+BeanShell 2.0b5 - by Pat Niemeyer (pat@pat.net)
+bsh % remote.bsh starting
+user.home = C:\Documents and Settings\User
+user.dir = D:\eclipseworkspaces\main\JMeter_trunk\bin
+Setting property 'EXAMPLE' to '0'.
+Setting property 'EXAMPLE' to '1'.
+Setting property 'EXAMPLE' to '2'.
+Setting property 'EXAMPLE' to '3'.
+Setting property 'EXAMPLE' to '4'.
+Setting property 'EXAMPLE' to '5'.
+Setting property 'EXAMPLE' to '6'.
+Setting property 'EXAMPLE' to '7'.
+Setting property 'EXAMPLE' to '8'.
+Setting property 'EXAMPLE' to '9'.
+EXAMPLE = 9
+remote.bsh ended
+bsh % … disconnected from server.
+```
+
+As a practical example, assume you have a long-running JMeter test running in CLI mode,
+and you want to vary the throughput at various times during the test.
+The test-plan includes a Constant Throughput Timer which is defined in terms of a property,
+e.g. `\${__P(throughput)}`.
+The following BeanShell commands could be used to change the test:
+
+```
+printprop("throughput");
+curr = Integer.decode(args[0]);  // Start value
+inc  = Integer.decode(args[1]);  // Increment
+end  = Integer.decode(args[2]);  // Final value
+secs = Integer.decode(args[3]);  // Wait between changes
+while(curr &lt;= end) {
+  setprop("throughput",curr.toString()); // Needs to be a string here
+  Thread.sleep(secs*1000);
+  curr += inc;
+}
+printprop("throughput");
+```
+
+The script can be stored in a file (`throughput.bsh`, say), and sent to the server using `bshclient.jar`.
+For example:
+
+```
+java -jar ../lib/bshclient.jar localhost 9000 throughput.bsh 70 5 100 60
+```
+
+## 16.9 BeanShell scripting
+
+:::note
+Since JMeter 3.1, we advise switching from BeanShell to JSR223 Test Elements (see JSR223 section below for more details), and switching from `[__Beanshell](/user-manual/functions/#__BeanShell)` function
+to [__groovy](/user-manual/functions/#__groovy) function.
+:::
+
+### 16.9.1 Overview
+
+Each BeanShell test element has its own copy of the interpreter (for each thread).
+If the test element is repeatedly called, e.g. within a loop, then the interpreter is retained
+between invocations unless the "`Reset bsh.Interpreter before each call`" option is selected.
+
+Some long-running tests may cause the interpreter to use lots of memory; if this is the case try using the reset option.
+
+You can test BeanShell scripts outside JMeter by using the command-line interpreter:
+
+```bash
+$ java -cp bsh-xxx.jar[;other jars as needed] bsh.Interpreter file.bsh 
+```
+
+or
+
+```bash
+$ java -cp bsh-xxx.jar bsh.Interpreter
+bsh% source("file.bsh");
+bsh% exit(); // or use EOF key (e.g. ^Z or ^D)
+```
+
+### 16.9.2 Sharing Variables
+
+Variables can be defined in startup (initialisation) scripts.
+These will be retained across invocations of the test element, unless the reset option is used.
+
+Scripts can also access JMeter variables using the `get()` and `put()` methods of the "`vars`" variable,
+for example:
+
+```
+vars.get("HOST");
+vars.put("MSG","Successful");
+```
+
+The `get()` and `put()` methods only support variables with String values,
+but there are also `getObject()` and `putObject()` methods which can be used for arbitrary objects.
+JMeter variables are local to a thread, but can be used by all test elements (not just Beanshell).
+
+If you need to share variables between threads, then JMeter properties can be used:
+
+```java
+import org.apache.jmeter.util.JMeterUtils;
+String value = JMeterUtils.getPropDefault("name","");
+JMeterUtils.setProperty("name", "value");
+```
+
+The sample `.bshrc` files contain sample definitions of `getprop()` and `setprop()` methods.
+
+Another possible method of sharing variables is to use the "`bsh.shared`" shared namespace.
+For example:
+
+```
+if (bsh.shared.myObj == void){
+    // not yet defined, so create it:
+    myObj = new AnyObject();
+}
+bsh.shared.myObj.process();
+```
+
+Rather than creating the object in the test element, it can be created in the startup file
+defined by the JMeter property "`beanshell.init.file`". This is only processed once.
+
+## 16.10 Developing script functions in Groovy or Jexl3 etc.
+
+It's quite hard to write and test scripts as functions.
+However, JMeter has the JSR223 samplers which can be used instead with any language supporting it.
+We advise using [Apache Groovy](http://www.groovy-lang.org/) or any language that supports the `[Compilable](https://docs.oracle.com/javase/8/docs/api/javax/script/Compilable.html)` interface of JSR223.
+
+Create a simple Test Plan containing the JSR223 Sampler and Tree View Listener.
+Code the script in the sampler script pane, and test it by running the test.
+If there are any errors, these will show up in the Tree View and `jmeter.log` file.
+Also the result of running the script will show up as the response.
+
+Once the script is working properly, it can be stored as a variable on the Test Plan.
+The script variable can then be used to create the function call.
+For example, suppose a Groovy script is stored in the variable `RANDOM_NAME`.
+The function call can then be coded as `\${__groovy(\${RANDOM_NAME})}`.
+There is no need to escape any commas in the script,
+because the function call is parsed before the variable's value is interpolated.
+
+## 16.11 Parameterising tests
+
+Often it is useful to be able to re-run the same test with different settings.
+For example, changing the number of threads or loops, or changing a hostname.
+
+One way to do this is to define a set of variables on the Test Plan, and then use those variables in the test elements.
+For example, one could define the variable `LOOPS=10`, and refer to that in the Thread Group as `\${LOOPS}`.
+To run the test with 20 loops, just change the value of the `LOOPS` variable on the Test Plan.
+
+This quickly becomes tedious if you want to run lots of tests in CLI mode.
+One solution to this is to define the Test Plan variable in terms of a property,
+for example `LOOPS=\${__P(loops,10)}`.
+This uses the value of the property "`loops`", defaulting to `10` if the property is not found.
+The "`loops`" property can then be defined on the JMeter command-line:
+
+```
+jmeter … -Jloops=12 …
+```
+
+If there are a lot of properties that need to be changed together,
+then one way to achieve this is to use a set of property files.
+The appropriate property file can be passed in to JMeter using the `-q` command-line option.
+
+## 16.12 JSR223 Elements
+
+For intensive load testing, the recommended scripting language is one whose ScriptingEngine implements the `[Compilable](https://docs.oracle.com/javase/8/docs/api/javax/script/Compilable.html)` interface.
+Groovy scripting engine implements `[Compilable](https://docs.oracle.com/javase/8/docs/api/javax/script/Compilable.html)`. However neither Beanshell nor Javascript do so as of release date of JMeter 3.1, so it is
+recommended to avoid them for intensive load testing.
+
+:::note
+Note: Beanshell implements the `[Compilable](https://docs.oracle.com/javase/8/docs/api/javax/script/Compilable.html)` interface but it has not been coded - the method just throws an Exception.
+JMeter has an explicit work-round for this bug.
+:::
+
+When using JSR 223 elements, it is advised to check `Cache compiled script if available` property to ensure the script compilation is cached if underlying language supports it.
+In this case, ensure the script does not use any variable using `\${varName}` as caching would take only first value of `\${varName}`. Instead use :
+
+```
+vars.get("varName")
+```
+
+You can also pass them as Parameters to the script and use them this way.
+
+## 16.13 Sharing variables between threads and thread groups
+
+Variables are local to a thread; a variable set in one thread cannot be read in another.
+This is by design. For variables that can be determined before a test starts, see
+[Parameterising Tests](#parameterising_tests) (above).
+If the value is not known until the test starts, there are various options:
+
+- Store the variable as a property - properties are global to the JMeter instance
+- Write variables to a file and re-read them.
+- Use the `bsh.shared` namespace - see [above](#bsh_variables)
+- Write your own Java classes
+
+## 16.14 Managing properties
+
+When you need to modify jmeter properties, ensure you don't modify `jmeter.properties` file,
+**instead copy the property from `jmeter.properties` and modify its value in `user.properties` file**.
+
+Doing so will ease you migration to the next version of JMeter. 
+
+Note that in the documentation `jmeter.properties` is frequently mentioned but this should be understood as
+"Copy from `jmeter.properties` to `user.properties` the property you want to modify and do so in the latter file".
+
+:::note
+`user.properties` file supersedes the properties defined in `jmeter.properties`
+:::
+
+## 16.15 Deprecated elements
+
+It is advised not to use deprecated elements (marked as such in [changes list](/../changes/) and in [component reference](/./component-reference/))
+and to migrate to new advised elements if available or new way of doing the same thing. 
+
+Deprecated elements are removed from the menu in version N but can be enabled for migration by modifying `not_in_menu` property in `user.properties` file and removing the full class name
+of the element from there.
+
+:::note
+Please note that deprecated elements in version N will be removed definitely in version N+1, so ensure you stop using them as soon as possible.
+:::

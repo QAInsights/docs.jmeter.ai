@@ -1,0 +1,47 @@
+---
+title: "Include Controller Tutorial"
+description: "Include Controller Tutorial"
+---
+
+## 42. Include Controller Tutorial
+
+This is a short tutorial explaining the basics of the Include Controller. The Include Controller
+provides an easy way to include modules in a test plan. It is different than the Module Controller
+in a couple of ways.
+
+- the Include Controller loads a simple controller with all its samples, where as the Module     Controller can use any controller
+- the Include Controller doesn't use the workbench
+- the Module Controller doesn't load from a file
+- the Include Controller loads the module at runtime and doesn't display the contents of the     Simple Controller
+
+There are a couple of reasons why one might want to use the include controller.
+
+- Break a test plan into reusable modules
+- Reduce the cost of maintaining test plans
+- Reduce duplication of common process
+
+For example, say you need to test an application that requires login. If each test plan had the login requests,
+a change in the login process would require updating all test plans. By making the login a module, all other
+test plans can reuse it. When the login process changes, the change is made to the module and all other test
+plans get the change. One limitation of the current implementation is the contents of the module are only
+loaded at runtime, so users can't view or edit the contents of an included module.
+
+![Include Controller](/images/screenshots/includecontroller.png)
+_Include Controller_
+
+The Include Controller has two properties. The `name` and the `filename`. The `name`
+is the descriptive name for the controller in the test plan. The `filename` is the name of the `.jmx` file.
+
+### 42.1 Step-by-step
+
+1. Start JMeter
+2. Select the workbench
+3. **Add → Logic Controller → Simple Controller**
+4. Enter `module1` in the name
+5. Now add one or more samples to the controller
+6. Once the samples are added, right click on `module1`
+7. Select `save as` and save it as `module1.jmx`
+
+`module1.jmx` can now be used with any test plan. The Include Controller hasn't been tested
+with other controllers as the root element. If you need to use other controllers, use a Simple Controller
+as the root and add other controllers to it.

@@ -1,0 +1,43 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import TerminalHero from '../components/landing/TerminalHero.astro';
+import MetricsStrip from '../components/landing/MetricsStrip.astro';
+import BentoGrid from '../components/landing/BentoGrid.astro';
+---
+
+<StarlightPage
+  frontmatter={{
+    title: ' ',
+    description: 'Community documentation for Apache JMeter with improved navigation and search',
+    template: 'splash',
+  }}
+>
+  <div class="landing">
+
+    <section class="hero-section">
+      <TerminalHero />
+      <div class="hero-text">
+        <h1>Apache <span class="accent">JMeter</span> Documentation</h1>
+        <p>Community-maintained docs with full-text search, dark mode, and organized navigation. Independent resource - not affiliated with the Apache Software Foundation.</p>
+        <div class="hero-cta">
+          <a href="/getting-started/get-started/" class="cta-primary">
+            Get Started →
+          </a>
+          <a href="#" class="cta-secondary" onclick="event.preventDefault(); document.querySelector('button[aria-label*=\"Search\"], starlight-search button, [data-open-modal]')?.click()">
+            Search <kbd>Ctrl</kbd> <kbd>K</kbd>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="metrics-section">
+      <MetricsStrip />
+    </section>
+
+    <section class="bento-section">
+      <h2>Explore the Documentation</h2>
+      <BentoGrid />
+    </section>
+
+  </div>
+</StarlightPage>

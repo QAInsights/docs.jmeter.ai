@@ -1,0 +1,150 @@
+---
+title: "User guide: Customizables templates"
+description: "User guide: Customizables templates"
+---
+
+## Customizable template
+
+            
+                This document describes how to create a customizable template.
+            
+
+            
+### 1 Folder structure
+
+                    
+                        The template feature uses the bin/templates folder which contains :
+
+                        
+- templates.xml, the file where you declare the templates you want to be able to use
+- some .jmx and .jmx.fmkr files which are the templates
+
+                    
+
+                    Here is how it looks like:
+                    ![Figure 1 - template folder](/images/screenshots/templates/template_folder.png)
+_Figure 1 - template folder_
+
+                    
+
+            
+            
+### 2 Template declaration
+
+                
+#### 2.1 Basic template declaration
+
+                    
+                        First of all you must declare your template. To do that, look into the templates.xml file.
+
+                        This file respect a DTD 
+
+                        Below is the already existing Recording template declaration inside the templates.xml :
+                        ![Figure 2 - recording template declaration](/images/screenshots/templates/templates_xml.png)
+_Figure 2 - recording template declaration_
+
+                        A template declaration is made as follow :
+
+                        
+- `template` element which contains the information described in the following tags
+- `name` element which contains the template name the user will see
+- `fileName` element which contains the relative path of the template.
+- `description` element which uses html to describe the template
+- `optional` parameters tag (will be discussed later)
+
+                    
+
+                
+                
+#### 2.2 Customizable template declaration
+
+                    
+                        Let's say we want the exact same Recording template as in the 2.1 section, but we want to choose the name
+                        of the xml file where the recording of view result tree will be saved.
+
+                        To do so we will use the parameters tag to tell JMeter to ask the user about a name for the concerned file :
+                        ![Figure 3 - recording template with parameters](/images/screenshots/templates/templates_xml_parameters.png)
+_Figure 3 - recording template with parameters_
+
+                        
+:::note
+You can put as many parameter tags as you want in the parameters tag.
+:::
+
+                        Let's see what changed here.
+
+                        Firstly, customs templates are `.jmx.fmkr` files and not only `.jmx`.
+
+                        Lastly, we added a `parameters` tag.
+ As you can see in the image, a `parameters` tag contains `parameter` tags.
+
+                        Parameter tags are empty and contains 2 attributes :
+                        
+- `key` is the name of the parameter you will ask the user to fill.
+- `defaultValue` is as its name says, the default value the user will see for the parameter.
+
+                    
+
+                
+            
+            
+### 3 Template file
+
+                
+#### 3.1 Basic template file
+
+                    
+                        The template file is the one you used in the fileName tag when you declared your template.
+                        A template file is just the saving of a JMeter test plan.
+                    
+
+                
+
+                
+#### 3.2 Customizable template file
+
+                    
+                        In the 2.2 section we saw that a custom template file is a .jmx.fmkr file.
+
+                        The single difference between them is the .jmx.fmkr will be analyzed by JMeter to
+
+                        detect customs tag. If a custom tag is found, JMeter will try to replace it by the corresponding
+                        given value from the user.
+
+                        A custom tag is defined as follow :
+                        
+```
+[object Object]
+```
+
+                        This is based on [Freemarker alternative Interpolation syntax](https://freemarker.apache.org/docs/dgui_misc_alternativesyntax.html#dgui_misc_alternativesyntax_interpolation).
+                        Let's illustrate how it works with an example.
+
+                        Consider the following part of the recording.jmx template file : 
+
+                        ![Figure 4 - recording.jmx save file](/images/screenshots/templates/template_recording_filename.png)
+_Figure 4 - recording.jmx save file_
+
+                        The surrounded area correspond to the name of the xml file where the View Results Tree output will be saved.
+                        As it is, when you use the template you will always have the same saving filename : `recording.xml`.
+
+                        To make it customizable, change your recording template declaration in the templates.xml files by the
+
+                        one shown in the 2.2 section. Then, rename the recording.jmx file to recording.jmx.fmkr.
+
+                        When it's done, Change the above selected line by this one :
+                        
+```
+[object Object]
+```
+
+                        
+
+                        It's over ! With this configuration, if you chose to use the recording template, JMeter will ask you
+                        a xmlFileName (correspond to the key value in the declaration).
+                        ![Figure 5 - JMeter asks you the value you want to put for the key](/images/screenshots/templates/template_parameters_window.png)
+_Figure 5 - JMeter asks you the value you want to put for the key_
+
+                        Then, you will find the expected value in the created template where you placed the [=xmlFileName] tag :
+                        ![Figure 6 - the value changed](/images/screenshots/templates/template_recording_retrieved_value.png)
+_Figure 6 - the value changed_

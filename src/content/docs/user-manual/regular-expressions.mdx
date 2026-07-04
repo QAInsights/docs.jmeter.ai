@@ -1,0 +1,244 @@
+---
+title: "User's Manual: Regular Expressions"
+description: "User's Manual: Regular Expressions"
+---
+
+## 21. Regular Expressions
+
+### 21.1 Overview
+
+JMeter includes the pattern matching software [Apache Jakarta ORO](http://attic.apache.org/projects/jakarta-oro.html)
+
+There is some documentation for this on the Jakarta web-site, for example
+[a summary of the pattern matching characters](http://archimedes.fas.harvard.edu/scrapbook/jakarta-oro-2.0.6/docs/api/org/apache/oro/text/regex/package-summary.html)
+
+There is also documentation on an older incarnation of the product at
+[OROMatcher User's guide](http://www.savarese.org/oro/docs/OROMatcher/index.html), which might prove useful.
+
+:::note
+With JMeter version 5.5 the Regex implementation can be switched from Oro to the JDK based one by setting
+the JMeter property `jmeter.regex.engine` to some value different than `oro`.
+:::
+
+The pattern matching is very similar to the pattern matching in Perl.
+A full installation of Perl will include plenty of documentation on regular expressions - look for `perlrequick`,
+`perlretut`, `perlre` and `perlreref`.
+
+It is worth stressing the difference between "_contains_" and "_matches_", as used on the Response Assertion test element:
+
+**"_contains_"**
+: means that the regular expression matched at least some part of the target,
+so '`alphabet`' "_contains_" '`ph.b.`' because the regular expression matches the substring '`phabe`'.
+
+**"_matches_"**
+: means that the regular expression matched the whole target.
+So '`alphabet`' is "_matched_" by '`al.*t`'.
+
+In this case, it is equivalent to wrapping the regular expression in `^` and `$`, viz '`^al.*t$`'.
+
+However, this is not always the case.
+For example, the regular expression '`alp|.lp.*`' is "_contained_" in '`alphabet`',
+but does not "_match_" '`alphabet`'.
+
+Why? Because when the pattern matcher finds the sequence '`alp`' in '`alphabet`', it stops trying any other
+combinations - and '`alp`' is not the same as '`alphabet`', as it does not include '`habet`'.
+
+:::note
+Unlike Perl, there is no need to (i.e. do not) enclose the regular expression in `//`.
+:::
+
+So how does one use the modifiers `ismx` etc. if there is no trailing `/`?
+The solution is to use _extended regular expressions_, i.e. `/abc/i` becomes `(?i)abc`.
+See also [Placement of modifiers](#placement) below.
+
+### 21.2 Examples
+
+#### Extract single string
+
+Suppose you want to match the following portion of a web-page:
+
+`name="file" value="readme.txt"&gt;`
+
+and you want to extract `readme.txt`.
+
+A suitable regular expression would be:
+
+`name="file" value="(.+?)"&gt;`
+
+The special characters above are:
+
+**`(` and `)`**
+: these enclose the portion of the match string to be returned
+
+**`.`**
+: match any character
+
+**`+`**
+: one or more times
+
+**`?`**
+: don't be greedy, i.e. stop when first match succeeds
+
+Note: without the `?`, the `.+` would continue past the first `"&gt;`
+until it found the last possible `"&gt;` - which is probably not what was intended.
+
+Note: although the above expression works, it's more efficient to use the following expression:
+
+`name="file" value="([^"]+)"&gt;`
+where
+
+`[^"]` - means match anything except `"`
+
+In this case, the matching engine can stop looking as soon as it sees the first `"`,
+whereas in the previous case the engine has to check that it has found `"&gt;` rather than say `" &gt;`.
+
+#### Extract multiple strings
+
+Suppose you want to match the following portion of a web-page:
+
+`name="file.name" value="readme.txt"`
+and you want to extract both `file.name` and `readme.txt`.
+
+A suitable regular expression would be:
+
+`name="([^"]+)" value="([^"]+)"`
+
+This would create 2 groups, which could be used in the JMeter Regular Expression Extractor template as `$1$` and `$2$`.
+
+The JMeter Regex Extractor saves the values of the groups in additional variables.
+
+For example, assume:
+
+- Reference Name: `MYREF`
+- Regex: `name="(.+?)" value="(.+?)"`
+- Template: `$1$$2$`
+
+:::note
+Do not enclose the regular expression in `/ /`
+:::
+
+The following variables would be set:
+
+**`MYREF`**
+: `file.namereadme.txt`
+
+**`MYREF_g0`**
+: `name="file.name" value="readme.txt"`
+
+**`MYREF_g1`**
+: `file.name`
+
+**`MYREF_g2`**
+: `readme.txt`
+
+These variables can be referred to later on in the JMeter test plan, as `\${MYREF}`, `\${MYREF_g1}` etc.
+
+### 21.3 Line mode
+
+The pattern matching behaves in various slightly different ways,
+depending on the setting of the multi-line and single-line modifiers.
+Note that the single-line and multi-line operators have nothing to do with each other;
+they can be specified independently.
+
+#### Single-line mode
+
+Single-line mode only affects how the '`.`' meta-character is interpreted.
+
+Default behaviour is that '`.`' matches any character except newline.
+In single-line mode, '`.`' also matches newline.
+
+#### Multi-line mode
+
+Multi-line mode only affects how the meta-characters '`^`' and '`$`' are interpreted.
+
+Default behaviour is that '`^`' and '`$`' only match at the very beginning and end of the string.
+When Multi-line mode is used, the '`^`' metacharacter matches at the beginning of every line,
+and the '`$`' metacharacter matches at the end of every line.
+
+### 21.4 Meta characters
+
+Regular expressions use certain characters as meta characters - these characters have a special meaning to the RE engine.
+Such characters must be escaped by preceding them with `\` (backslash) in order to treat them as ordinary characters.
+Here is a list of the meta characters and their meaning (please check the ORO documentation if in doubt).
+
+**`(` and `)`**
+: grouping
+
+**`[` and `]`**
+: character classes
+
+**`{` and `}`**
+: repetition
+
+**`*`, `+` and `?`**
+: repetition
+
+**`.`**
+: wild-card character
+
+**`\`**
+: escape character
+
+**`|`**
+: alternatives
+
+**`^` and `$`**
+: start and end of string or line
+
+:::note
+Please note that ORO does not support the `\Q` and `\E` meta-characters.
+[In other RE engines, these can be used to quote a portion of an RE so that the meta-characters stand for themselves.]
+You can use function  to do the equivalent, see [\$\{__escapeOroRegexpChars(valueToEscape)\}](/user-manual/functions/#__escapeOroRegexpChars).
+:::
+
+The following Perl5 extended regular expressions are supported by ORO.
+
+**`(?#text)`**
+: An embedded comment causing text to be ignored.
+
+**`(?:regexp)`**
+: Groups things like "`()`" but doesn't cause the group match to be saved.
+
+**`(?=regexp)`**
+: A zero-width positive lookahead assertion. For example, `\w+(?=\s)` matches a word followed by whitespace, without including whitespace in the MatchResult.
+
+**`(?!regexp)`**
+: A zero-width negative lookahead assertion. For example `foo(?!bar)` matches any occurrence of "`foo`" that
+isn't followed by "`bar`". Remember that this is a zero-width assertion, which means that `a(?!b)d` will
+match `ad` because `a` is followed by a character that is not `b` (the `d`) and a `d`
+follows the zero-width assertion.
+
+**`(?imsx)`**
+: One or more embedded pattern-match modifiers. `i` enables case insensitivity, `m` enables multiline treatment
+of the input, `s` enables single line treatment of the input, and `x` enables extended whitespace comments.
+
+**Note that `(?&lt;=regexp)` - lookbehind - is not supported.**
+
+### 21.5 Placement of modifiers
+
+Modifiers can be placed anywhere in the regex, and apply from that point onwards.
+[A bug in ORO means that they cannot be used at the very end of the regex.
+However they would have no effect there anyway.]
+
+The single-line `(?s)` and multi-line `(?m)` modifiers are normally placed at the start of the regex.
+
+The ignore-case modifier `(?i)` may be usefully applied to just part of a regex,
+for example:
+
+```
+Match ExAct case or (?i)ArBiTrARY(?-i) case
+```
+
+would match `Match ExAct case or arbitrary case` as well as `Match ExAct case or ARBitrary case`, but not `Match exact case or ArBiTrARY case`.
+
+## 21.6 Testing Regular Expressions
+
+Since JMeter 2.4, the listener [View Results Tree](/user-manual/component-reference/#View_Results_Tree)
+include a RegExp Tester to test regular expressions directly on sampler response data.
+
+There is a [Website](http://www.regexplanet.com/advanced/java/index.html) to test Java Regular expressions.
+
+Another approach is to use a simple test plan to test the regular expressions.
+The Java Request sampler can be used to generate a sample, or the HTTP Sampler can be used to load a file.
+Add a Debug Sampler and a Tree View Listener and changes to the regular expression can be tested quickly,
+without needing to access any external servers.

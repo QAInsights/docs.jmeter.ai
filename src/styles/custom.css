@@ -1,0 +1,684 @@
+@import '@fontsource/geist-sans/400.css';
+@import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-sans/700.css';
+
+/* Color system — "flame" warm palette.
+   Brand accent sits in the JMeter logo's orange-red family (#dd552c → #f79a23).
+   Neutrals are low-chroma warm grays (stone), tinted toward the brand hue so
+   surfaces feel authored instead of empty. Accent and neutrals are now separate
+   hue families, so the accent can actually carry hierarchy. */
+:root {
+  --sl-font: 'Geist Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --sl-color-accent-low: #431407;
+  --sl-color-accent: #ea580c;
+  --sl-color-accent-high: #f97316;
+  --sl-color-white: #fafaf9;
+  --sl-color-gray-1: #f5f5f4;
+  --sl-color-gray-2: #d6d3d1;
+  --sl-color-gray-3: #a8a29e;
+  --sl-color-gray-4: #78716c;
+  --sl-color-gray-5: #44403c;
+  --sl-color-gray-6: #292524;
+  --sl-color-black: #1c1917;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #fff7ed;
+  --sl-color-accent: #c2410c;
+  --sl-color-accent-high: #9a3412;
+  --sl-color-white: #1c1917;
+  --sl-color-gray-1: #292524;
+  --sl-color-gray-2: #44403c;
+  --sl-color-gray-3: #57534e;
+  --sl-color-gray-4: #78716c;
+  --sl-color-gray-5: #d6d3d1;
+  --sl-color-gray-6: #f5f5f4;
+  --sl-color-gray-7: #fafaf9;
+  --sl-color-black: #ffffff;
+}
+
+/* Footer disclaimer */
+.site-footer {
+  border-top: 1px solid var(--sl-color-gray-5);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--sl-color-gray-2);
+}
+
+.site-footer a {
+  color: var(--sl-color-accent-high);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.site-footer a:hover {
+  color: var(--sl-color-accent);
+}
+
+/* Component reference property tables */
+.prop-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.prop-table th {
+  background: var(--sl-color-gray-6);
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+}
+
+.prop-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+  vertical-align: top;
+}
+
+.prop-table td:first-child {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.prop-required {
+  color: var(--sl-color-accent-high);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* Component screenshot */
+.component-screenshot {
+  margin: 1rem 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--sl-color-gray-5);
+}
+
+.component-screenshot img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Component links section */
+.component-links {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--sl-color-gray-6);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.component-links h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sl-color-gray-3);
+}
+
+.component-links ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.component-links li {
+  margin: 0.25rem 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Motion system
+   Learn surface (docs) — product register. Motion paces reading and
+   responds to touch; no page-load theater. All spatial movement is gated
+   behind prefers-reduced-motion: no-preference, so reduced-motion users get
+   instant state changes only. Functional signals (focus, selection, theme)
+   stay alive at every motion level.
+   ------------------------------------------------------------------------- */
+:root {
+  --mx-fast: 100ms;
+  --mx-base: 150ms;
+  --mx-reveal: 250ms;
+  --mx-spatial: 300ms;
+  --mx-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --mx-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Smooth in-page anchor jumps (TOC links). Wheel scrolling is untouched. */
+html {
+  scroll-behavior: smooth;
+}
+
+/* --- Theme toggle: smooth color crossfade on the structural surfaces ----- */
+@media (prefers-reduced-motion: no-preference) {
+  body,
+  .header:where(.astro-vrdttmbt),
+  .sidebar-pane:where(.astro-vrdttmbt),
+  .right-sidebar:where(.astro-67yu43on),
+  .content-panel:where(.astro-7nkwcw3z),
+  .sl-markdown-content,
+  .starlight-aside,
+  .prop-table th,
+  .component-links,
+  .component-screenshot,
+  .site-footer,
+  dialog:where(.astro-v37mnknz),
+  button:where(.astro-jif73yzw) {
+    transition: background-color 200ms var(--mx-ease),
+      border-color 200ms var(--mx-ease), color 200ms var(--mx-ease);
+  }
+}
+
+/* --- Hover + press feedback on interactive elements --------------------- */
+.sl-markdown-content a,
+.site-footer a,
+.site-title:where(.astro-m46x6ez3),
+.right-sidebar-panel:where(.astro-pb3aqygn) a,
+a:where(.astro-3ii7xxms),
+a:where(.astro-g2bywc46),
+a:where(.astro-eez2twj6),
+a:where(.astro-u2l5gyhi),
+.kudos:where(.astro-3yyafb3n),
+button:where(.astro-v37mnknz),
+button:where(.astro-jif73yzw),
+.expressive-code .copy button {
+  transition: color var(--mx-base) var(--mx-ease),
+    border-color var(--mx-base) var(--mx-ease),
+    background-color var(--mx-base) var(--mx-ease),
+    transform var(--mx-base) var(--mx-ease),
+    box-shadow var(--mx-base) var(--mx-ease);
+}
+
+/* Pagination cards lift on hover (pointer devices only) */
+@media (hover: hover) {
+  a:where(.astro-u2l5gyhi):hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sl-shadow-lg);
+  }
+}
+
+/* Press feedback — scale 0.97, fast. Links and buttons alike. */
+.site-title:where(.astro-m46x6ez3):active,
+a:where(.astro-u2l5gyhi):active,
+a:where(.astro-eez2twj6):active,
+.kudos:where(.astro-3yyafb3n):active,
+button:where(.astro-v37mnknz):active,
+button:where(.astro-jif73yzw):active,
+.expressive-code .copy button:active {
+  transform: scale(0.97);
+}
+
+/* --- Focus rings: consistent, intentional, accent-colored ---------------- */
+:where(
+  a:where(.astro-3ii7xxms),
+  a:where(.astro-g2bywc46),
+  a:where(.astro-u2l5gyhi),
+  a:where(.astro-eez2twj6),
+  a:where(.astro-7q3lir66),
+  .site-title:where(.astro-m46x6ez3),
+  .sl-markdown-content a,
+  .right-sidebar-panel:where(.astro-pb3aqygn) a,
+  button:where(.astro-v37mnknz),
+  button:where(.astro-jif73yzw),
+  .expressive-code .copy button,
+  .toggle:where(.astro-doynk5tl),
+  summary:where(.astro-3ii7xxms)
+):focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+  transition: outline-offset var(--mx-base) var(--mx-ease);
+}
+
+/* --- Article H1: quiet rise on load (top of page, no scroll needed) ----- */
+@media (prefers-reduced-motion: no-preference) {
+  h1:where(.astro-j6tvhyss) {
+    animation: mx-rise 400ms var(--mx-out) both;
+  }
+}
+
+/* --- Hero: composed entrance on the landing page only ------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .hero:where(.astro-jbfsktt5) .copy > * {
+    animation: mx-rise 500ms var(--mx-out) both;
+  }
+  .hero:where(.astro-jbfsktt5) .copy > *:nth-child(2) {
+    animation-delay: 80ms;
+  }
+  .hero:where(.astro-jbfsktt5) .copy > *:nth-child(3) {
+    animation-delay: 160ms;
+  }
+  .hero:where(.astro-jbfsktt5) > img,
+  .hero:where(.astro-jbfsktt5) > .hero-html {
+    animation: mx-rise 600ms var(--mx-out) both;
+    animation-delay: 120ms;
+  }
+}
+
+/* --- Scroll-driven reveal of section landmarks (progressive enhancement)
+   Browsers without animation-timeline support skip the block entirely via
+   @supports, so content stays fully visible — no flash of hidden content. -- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .sl-markdown-content :is(h2, h3, h4),
+    .sl-markdown-content pre,
+    .sl-markdown-content table,
+    .sl-markdown-content .starlight-aside,
+    .sl-markdown-content .component-screenshot,
+    .sl-markdown-content .component-links,
+    .sl-markdown-content .prop-table {
+      animation: mx-rise var(--mx-reveal) var(--mx-out) both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 45%;
+    }
+  }
+}
+
+@keyframes mx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Search modal: fade + slight rise on open/close (allow-discrete) ---- */
+@supports (transition-behavior: allow-discrete) {
+  @media (prefers-reduced-motion: no-preference) {
+    dialog:where(.astro-v37mnknz) {
+      transition: opacity 200ms var(--mx-ease),
+        transform 200ms var(--mx-ease), overlay 200ms allow-discrete,
+        display 200ms allow-discrete;
+      transition-behavior: allow-discrete;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    dialog:where(.astro-v37mnknz):not([open]) {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    @starting-style {
+      dialog:where(.astro-v37mnknz)[open] {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+    dialog:where(.astro-v37mnknz)::backdrop {
+      transition: background-color 200ms var(--mx-ease);
+    }
+  }
+}
+
+/* --- Reduced motion: neutralize all spatial movement and animation.
+   Functional signals (focus rings, selection, theme) still apply — they
+   just snap instead of animating. Scroll snapping reverts to instant. ----- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Interaction system
+   Learn surface (docs) — product register. Adds the missing behavior states:
+   disabled (search while Pagefind loads), overflow (wide tables/code on
+   touch), touch targets (pointer: coarse), and link affordance for the
+   custom component-links block. Starlight's native keyboard path, focus
+   trap, and skip link are left intact.
+   ------------------------------------------------------------------------- */
+
+/* --- Disabled state: search button before Pagefind index loads ----------- */
+button:where(.astro-v37mnknz)[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Overflow affordance: make scrollable tables and code blocks signal
+   that they scroll. Styled, brand-tinted scrollbars appear only when the
+   content overflows, so touch and trackpad users see a clear affordance. -- */
+.sl-markdown-content table,
+.sl-markdown-content pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-color-accent) transparent;
+}
+
+.sl-markdown-content table::-webkit-scrollbar,
+.sl-markdown-content pre::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.sl-markdown-content table::-webkit-scrollbar-track,
+.sl-markdown-content pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sl-markdown-content table::-webkit-scrollbar-thumb,
+.sl-markdown-content pre::-webkit-scrollbar-thumb {
+  background: var(--sl-color-gray-4);
+  border-radius: 4px;
+}
+
+.sl-markdown-content table:hover::-webkit-scrollbar-thumb,
+.sl-markdown-content pre:hover::-webkit-scrollbar-thumb {
+  background: var(--sl-color-accent);
+}
+
+/* --- Component-links: give the "See Also" links real affordance ----------- */
+.component-links a {
+  color: var(--sl-color-text-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--sl-color-accent) 40%, transparent);
+  transition: text-decoration-color var(--mx-base) var(--mx-ease),
+    color var(--mx-base) var(--mx-ease);
+}
+
+.component-links a:hover {
+  color: var(--sl-color-accent);
+  text-decoration-color: var(--sl-color-accent);
+}
+
+.component-links a:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* --- Touch targets: enlarge hit areas on coarse pointers (phones/tablets).
+   Visual size stays the same; padding-block grows the tappable region to
+   clear the 44px minimum. Links stay text-sized but the gap between them
+   widens so adjacent targets don't merge under a fingertip. ------------- */
+@media (pointer: coarse) {
+  /* Sidebar navigation links */
+  a:where(.astro-3ii7xxms) {
+    padding-block: 0.5em;
+  }
+
+  /* Right-sidebar TOC links */
+  .right-sidebar-panel:where(.astro-pb3aqygn) a {
+    padding-block: 0.35rem;
+  }
+
+  /* Mobile sidebar links */
+  .isMobile a:where(.astro-g2bywc46) {
+    padding-block: 0.75rem;
+  }
+
+  /* Component-links list items: more vertical breathing room between links */
+  .component-links li {
+    margin: 0.5rem 0;
+  }
+
+  .component-links a {
+    display: inline-block;
+    padding-block: 0.2rem;
+  }
+}
+
+/* ==========================================================================
+   Text selection
+   ========================================================================== */
+::selection {
+  background: var(--sl-color-accent);
+  color: #fff;
+}
+
+/* ==========================================================================
+   Wider search dialog
+   ========================================================================== */
+@media (min-width: 50rem) {
+  dialog:where(.astro-v37mnknz) {
+    max-width: 56rem !important;
+    width: 90% !important;
+  }
+}
+
+/* ==========================================================================
+   Go-to-top button
+   ========================================================================== */
+.go-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 50;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--sl-color-gray-5);
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-gray-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms var(--mx-ease), transform 200ms var(--mx-ease), background-color 200ms var(--mx-ease);
+}
+
+.go-to-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.go-to-top:hover {
+  background: var(--sl-color-accent);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.go-to-top svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* ==========================================================================
+   One-click theme toggle
+   ========================================================================== */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--sl-color-gray-5);
+  background: transparent;
+  color: var(--sl-color-gray-2);
+  cursor: pointer;
+  transition: color 150ms var(--mx-ease), background-color 150ms var(--mx-ease), border-color 150ms var(--mx-ease);
+}
+
+.theme-toggle-btn:hover {
+  color: var(--sl-color-accent);
+  border-color: var(--sl-color-accent);
+  background: var(--sl-color-accent-low);
+}
+
+.theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+.theme-toggle-btn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.theme-toggle-btn .icon-sun,
+.theme-toggle-btn .icon-moon {
+  display: none;
+}
+
+:root[data-theme='dark'] .theme-toggle-btn .icon-sun {
+  display: block;
+}
+
+:root[data-theme='light'] .theme-toggle-btn .icon-moon {
+  display: block;
+}
+
+/* ==========================================================================
+   Page share & agent actions
+   ========================================================================== */
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--sl-color-gray-5);
+  align-items: center;
+}
+
+.page-actions-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sl-color-gray-3);
+  margin-right: 0.25rem;
+}
+
+.page-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--sl-color-gray-5);
+  background: transparent;
+  color: var(--sl-color-gray-2);
+  font-size: 0.8rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 150ms var(--mx-ease), border-color 150ms var(--mx-ease), background-color 150ms var(--mx-ease);
+}
+
+.page-action-btn:hover {
+  color: var(--sl-color-accent);
+  border-color: var(--sl-color-accent);
+  background: var(--sl-color-accent-low);
+}
+
+.page-action-btn svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.page-actions-separator {
+  width: 1px;
+  height: 1.25rem;
+  background: var(--sl-color-gray-5);
+  margin: 0 0.25rem;
+}
+
+/* ==========================================================================
+   Markdown images - rounded + clickable, constrained to content area
+   ========================================================================== */
+.sl-markdown-content img:not(.astro-m46x6ez3) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--sl-color-gray-5);
+  cursor: pointer;
+  transition: transform 200ms var(--mx-ease), box-shadow 200ms var(--mx-ease);
+  display: block;
+}
+
+.sl-markdown-content img:not(.astro-m46x6ez3):hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   Image lightbox
+   ========================================================================== */
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 2rem;
+  cursor: pointer;
+}
+
+.image-lightbox.active {
+  display: flex;
+}
+
+.image-lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.image-lightbox-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms var(--mx-ease);
+}
+
+.image-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================================================
+   Note aside icon: replace info circle with lightbulb, hide "Note" text
+   ========================================================================== */
+.starlight-aside--note .starlight-aside__icon {
+  display: none;
+}
+
+.starlight-aside--note .starlight-aside__title {
+  font-size: 0;
+}
+
+.starlight-aside--note .starlight-aside__title::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 0;
+  vertical-align: -3px;
+  font-size: 1rem;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7zm2.9 11.1L14 14v2h-4v-2l-.9-.9C7.8 12.2 7 10.7 7 9c0-2.8 2.2-5 5-5s5 2.2 5 5c0 1.7-.8 3.2-2.1 4.1z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7zm2.9 11.1L14 14v2h-4v-2l-.9-.9C7.8 12.2 7 10.7 7 9c0-2.8 2.2-5 5-5s5 2.2 5 5c0 1.7-.8 3.2-2.1 4.1z'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}

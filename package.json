@@ -1,0 +1,25 @@
+{
+  "name": "jmeter-docs",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Community documentation site for Apache JMeter",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "convert": "node tools/convert.mjs",
+    "generate-sidebar": "node scripts/generate-sidebar.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.34.0",
+    "@fontsource/geist-sans": "^5.2.5",
+    "@fontsource/lora": "^5.2.8",
+    "astro": "^5.9.0",
+    "sharp": "^0.34.2"
+  },
+  "devDependencies": {
+    "fast-xml-parser": "^5.2.3",
+    "typescript": "^5.8.3"
+  }
+}

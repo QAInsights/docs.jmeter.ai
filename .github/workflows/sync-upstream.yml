@@ -1,0 +1,107 @@
+name: Sync Upstream JMeter Docs
+
+on:
+  schedule:
+    # Run nightly at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout docs repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sparse checkout JMeter xdocs
+        run: |
+          mkdir -p .tmp/jmeter
+          cd .tmp/jmeter
+          git init
+          git remote add origin https://github.com/apache/jmeter.git
+          git config core.sparseCheckout true
+          echo "xdocs/" >> .git/info/sparse-checkout
+          echo "NOTICE" >> .git/info/sparse-checkout
+          echo "LICENSE" >> .git/info/sparse-checkout
+          git pull --depth=1 origin master
+
+      - name: Convert xdocs to MDX
+        run: |
+          JMETER_XDOCS=.tmp/jmeter/xdocs node tools/convert.mjs
+        env:
+          JMETER_XDOCS: .tmp/jmeter/xdocs
+
+      - name: Copy NOTICE file
+        run: |
+          cp .tmp/jmeter/NOTICE public/NOTICE
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create PR with changes
+        if: steps.diff.outputs.changes == 'true'
+        run: |
+          BRANCH="sync/upstream-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git commit -m "chore: sync upstream JMeter documentation
+
+          Automated sync from apache/jmeter master branch.
+          - Converts xdocs XML to MDX
+          - Updates images and screenshots
+          - Updates NOTICE file"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "chore: sync upstream JMeter documentation ($(date +%Y-%m-%d))" \
+            --body "Automated sync from apache/jmeter master branch.
+
+          This PR updates the documentation content by:
+          - Converting upstream xdocs XML to MDX format
+          - Updating images and screenshots
+          - Updating the NOTICE file
+
+          Please review and merge if the changes look correct." \
+            --label "automated,sync"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report no changes
+        if: steps.diff.outputs.changes == 'false'
+        run: echo "No upstream changes detected. Nothing to sync."
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf .tmp
+
+      - name: Report failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Sync workflow failed',
+              body: `The upstream sync workflow failed on ${new Date().toISOString()}.\n\n[View run](${context.payload.repository.html_url}/actions/runs/${context.runId})\n\nPlease investigate and fix the issue to prevent documentation from going stale.`,
+              labels: ['bug', 'sync']
+            })

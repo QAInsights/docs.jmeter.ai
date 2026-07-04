@@ -1,0 +1,468 @@
+/* ==========================================================================
+   Landing page styles — docs.jmeter.ai
+   Terminal hero, metrics strip, bento grid navigation
+   ========================================================================== */
+
+/* Hide Starlight's auto-generated H1 when landing page is present.
+   Structure: main > .content-panel > h1#_top  (first panel)
+              main > .content-panel > .landing  (second panel) */
+main:has(.landing) > .content-panel:first-child {
+  display: none;
+}
+
+/* --- Page wrapper: full-bleed sections ---------------------------------- */
+.landing {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.landing section {
+  padding: 3rem 0;
+}
+
+/* ==========================================================================
+   Terminal Hero
+   ========================================================================== */
+.hero-section {
+  padding-top: 4rem;
+  padding-bottom: 2rem;
+}
+
+.hero-section .hero-text {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.hero-section .hero-text h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 0.75rem;
+  color: var(--sl-color-white);
+}
+
+.hero-section .hero-text h1 .accent {
+  background: linear-gradient(135deg, var(--sl-color-accent), var(--sl-color-accent-high));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-section .hero-text p {
+  font-size: 1.15rem;
+  color: var(--sl-color-gray-3);
+  max-width: 36rem;
+  margin: 0 auto 1.5rem;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hero-cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: transform 150ms var(--mx-ease), box-shadow 150ms var(--mx-ease), background-color 150ms var(--mx-ease);
+}
+
+.hero-cta .cta-primary {
+  background: var(--sl-color-accent);
+  color: #fff;
+}
+
+.hero-cta .cta-primary:hover {
+  background: var(--sl-color-accent-high);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.3);
+}
+
+.hero-cta .cta-secondary {
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+  border: 1px solid var(--sl-color-gray-5);
+}
+
+.hero-cta .cta-secondary:hover {
+  border-color: var(--sl-color-accent);
+  color: var(--sl-color-accent);
+  transform: translateY(-1px);
+}
+
+.hero-cta kbd {
+  font-family: var(--sl-font-system-mono);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  background: var(--sl-color-gray-5);
+  color: var(--sl-color-gray-2);
+  border: 1px solid var(--sl-color-gray-4);
+}
+
+/* --- Terminal window ---------------------------------------------------- */
+.terminal {
+  max-width: 48rem;
+  margin: 0 auto 3rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #0d0b0a;
+  border: 1px solid var(--sl-color-gray-5);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 20px 60px -12px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme='light'] .terminal {
+  background: #1c1917;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 20px 60px -12px rgba(0, 0, 0, 0.25);
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.dot-red { background: #ff5f57; }
+.dot-yellow { background: #febc2e; }
+.dot-green { background: #28c840; }
+
+.terminal-title {
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: var(--sl-font-system-mono);
+}
+
+.terminal-body {
+  padding: 1.25rem;
+  font-family: var(--sl-font-system-mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: #a8a29e;
+  overflow-x: auto;
+}
+
+.term-line {
+  opacity: 0;
+  animation: term-reveal 0.01ms forwards;
+  animation-delay: var(--line-delay, 0s);
+}
+
+.term-line.cmd .term-text {
+  color: #f97316;
+}
+
+.term-line.ok .term-text {
+  color: #4ade80;
+}
+
+.term-cursor .term-text {
+  color: #a8a29e;
+}
+
+.blink {
+  animation: blink-cursor 1s step-end infinite;
+}
+
+/* ==========================================================================
+   Metrics Strip
+   ========================================================================== */
+.metrics-section {
+  padding: 1rem 0 2rem;
+}
+
+.metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+}
+
+.metric-value {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--sl-color-accent);
+  line-height: 1;
+  margin-bottom: 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--sl-color-white);
+  margin-bottom: 0.2rem;
+}
+
+.metric-sub {
+  font-size: 0.78rem;
+  color: var(--sl-color-gray-3);
+}
+
+/* ==========================================================================
+   Bento Grid
+   ========================================================================== */
+.bento-section {
+  padding: 2rem 0 4rem;
+}
+
+.bento-section h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--sl-color-white);
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(10rem, auto);
+  gap: 1rem;
+}
+
+.bento-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  transition: transform 200ms var(--mx-ease), box-shadow 200ms var(--mx-ease), border-color 200ms var(--mx-ease);
+}
+
+@media (hover: hover) {
+  .bento-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.3);
+    border-color: var(--sl-color-accent);
+  }
+}
+
+.bento-card:active {
+  transform: scale(0.98);
+}
+
+/* Grid placement */
+.bento-large {
+  grid-column: span 2;
+}
+
+.bento-medium {
+  grid-column: span 1;
+}
+
+.bento-small {
+  grid-column: span 1;
+}
+
+.bento-content {
+  flex: 1;
+}
+
+.bento-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--sl-color-white);
+  margin: 0 0 0.5rem;
+}
+
+.bento-desc {
+  font-size: 0.85rem;
+  color: var(--sl-color-gray-3);
+  line-height: 1.5;
+  margin: 0 0 0.75rem;
+}
+
+.bento-snippet {
+  display: inline-block;
+  font-family: var(--sl-font-system-mono);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.35rem;
+  background: rgba(234, 88, 12, 0.1);
+  color: var(--sl-color-accent-high);
+  border: 1px solid rgba(234, 88, 12, 0.15);
+}
+
+.bento-arrow {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  font-size: 1.2rem;
+  color: var(--sl-color-gray-4);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 200ms var(--mx-ease), transform 200ms var(--mx-ease);
+}
+
+@media (hover: hover) {
+  .bento-card:hover .bento-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ==========================================================================
+   About strip
+   ========================================================================== */
+.about-strip {
+  text-align: center;
+  padding: 2rem 0 3rem;
+  border-top: 1px solid var(--sl-color-gray-5);
+  font-size: 0.85rem;
+  color: var(--sl-color-gray-3);
+  line-height: 1.6;
+}
+
+.about-strip a {
+  color: var(--sl-color-accent);
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+/* Terminal line reveal */
+@keyframes term-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Cursor blink */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Hero entrance */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-section .hero-text {
+    animation: mx-rise 500ms var(--mx-out) both;
+  }
+  .hero-section .terminal {
+    animation: mx-rise 600ms var(--mx-out) both;
+    animation-delay: 200ms;
+  }
+  .metrics-strip .metric-card:nth-child(1) {
+    animation: mx-rise 400ms var(--mx-out) both;
+    animation-delay: 0.5s;
+  }
+  .metrics-strip .metric-card:nth-child(2) {
+    animation: mx-rise 400ms var(--mx-out) both;
+    animation-delay: 0.6s;
+  }
+  .metrics-strip .metric-card:nth-child(3) {
+    animation: mx-rise 400ms var(--mx-out) both;
+    animation-delay: 0.7s;
+  }
+}
+
+/* Bento scroll reveal */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .bento-card {
+      animation: mx-rise 300ms var(--mx-out) both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 40%;
+    }
+  }
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 768px) {
+  .landing {
+    padding: 0 1rem;
+  }
+
+  .hero-section {
+    padding-top: 2rem;
+  }
+
+  .metrics-strip {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .metric-card {
+    flex-direction: row;
+    text-align: left;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .metric-value {
+    font-size: 1.75rem;
+    min-width: 3.5rem;
+  }
+
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bento-large,
+  .bento-medium,
+  .bento-small {
+    grid-column: span 1;
+  }
+
+  .terminal {
+    font-size: 0.72rem;
+  }
+
+  .terminal-body {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bento-large {
+    grid-column: span 2;
+  }
+}

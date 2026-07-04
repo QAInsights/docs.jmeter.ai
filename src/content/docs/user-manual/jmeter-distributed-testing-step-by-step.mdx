@@ -1,0 +1,138 @@
+---
+title: "Apache JMeter Distributed Testing Step-by-step"
+description: "Apache JMeter Distributed Testing Step-by-step"
+---
+
+## 25. Apache JMeter Distributed Testing Step-by-step
+
+This short tutorial explains how to use multiple systems to perform stress testing. Before we start, there are a couple of things to check.
+
+- the firewalls on the systems are turned off or correct ports are opened.
+- all the clients are on the same subnet.
+- the server is in the same subnet, if `192.x.x.x` or `10.x.x.x` IP addresses are used.       If the server doesn't use `192.xx` or `10.xx` IP address, there shouldn't be any problems.
+- Make sure JMeter can access the server.
+- Make sure you use the same version of JMeter and Java on all the systems. Mixing versions will not work correctly.
+- You have [setup SSL for RMI](/user-manual/remote-test/#setup_ssl) or disabled it.
+
+Once you've made sure the systems are ready, it's time to setup remote testing. The tutorial assumes you already
+have JMeter installed on all the systems. The way JMeter works is one controller node initiates the test on multiple worker nodes.
+
+:::note
+In this tutorial we use GUI Mode just for demonstration. In real life you should use CLI mode (NON GUI) to start your load test
+:::
+
+![One controller node with multiple worker nodes](/images/screenshots/distributed-jmeter.svg)
+_One controller node with multiple worker nodes_
+
+### 25.1 Terminology
+
+Before we dive into the step-by-step instructions, it's a good idea to define the terms and make sure the definition is clear.
+
+**Controller Node**
+: the system running JMeter GUI, which controls the test
+
+**Worker Node**
+: the system running `jmeter-server`, which takes commands from
+      the GUI and send requests to the target system(s)
+
+**Target**
+: the webserver we plan to stress test
+
+![Categories of systems](/images/screenshots/distributed-names.svg)
+_Categories of systems_
+
+### 25.2 Step-by-Step
+
+1. On the worker nodes, go to `jmeter/bin` directory and execute      `jmeter-server.bat` (`jmeter-server` on unix).
+2. On controller node acting as the console, open windows explorer and go to       `jmeter/bin` directory
+3. Open `jmeter.properties` in a text editor
+4. Edit the line `remote_hosts=127.0.0.1`
+5. Add the IP address. For example, if I have JMeter server running on `192.168.0.10`,     …, `192.168.0.15`, the entry would look like this:      ``` remote_hosts=192.168.0.10,192.168.0.11,192.168.0.12,192.168.0.13,192.168.0.14 ```
+6. Start JMeter.
+7. Open the test plan you want to use
+
+![Simple test plan](/images/screenshots/example-simple-plan.png)
+_Simple test plan_
+
+### 25.2 Starting the Test
+
+At this point, you are ready to start load testing. If you want to double check
+the worker nodes are working, open `jmeter.log` in your editor. You should see the following in the log.
+
+```
+Writing log file to: /XXXX/XXXXX/bin/jmeter-server.log
+Created remote object: UnicastServerRef [liveRef: (local),objID:[-6a665beb:15a2c8b9419:-7fff, 3180474504933847586]]]
+```
+
+If you do not see this message, it means `jmeter-server` did not start correctly. For tips on
+debugging the issue, [go to the tips section](#tips). There are two ways to
+initiate the test: a single system and all systems.
+
+### 25.3 Start a single clients
+
+1. Click Run at the top
+2. Select Remote Start
+3. Select the IP address
+
+![Start a single worker node](/images/screenshots/example-remote-start.png)
+_Start a single worker node_
+
+### 25.4 Start all clients
+
+1. Click Run at the top
+2. Select Remote Start all or use `Ctrl + Shift + R`
+
+![Start all worker nodes](/images/screenshots/example-remote-start-all.png)
+_Start all worker nodes_
+
+### 25.5 Limitations
+
+There are some basic limitations for distributed testing. Here's the list of the known items in no specific order.
+
+1. RMI cannot communicate across subnets without a proxy; therefore neither can JMeter without a proxy.
+2. Since version 2.9, JMeter sends all the test results stripping Response data to the controlling console, this allows       us to reduce impact on network IO. Ensure you monitor your network traffic so that this traffic does not incur contention
+3. A single JMeter client running on a 2-3 GHz CPU (recent CPU) can handle 1000-2000 threads depending on the type of test.
+
+### 25.6 Additional resources
+
+  [Wiki page on remote testing](https://cwiki.apache.org/confluence/display/JMETER/JMeterFAQ#JMeterFAQ-Howtodoremotetestingthe'properway'?)
+
+  [Remote Testing in the user manual](/user-manual/remote-test/)
+
+### 25.7 Tips
+
+In some cases, the firewall may still be blocking RMI traffic.
+
+#### Anti Virus and Firewall
+
+:::note
+Antivirus should be stopped during a Load Test as it can drastically impact timings leading to wrong results.
+:::
+
+Firewall needs to be stopped from windows services or at least some ports need to be opened.
+
+1. Open control panel
+2. Open administrative tools
+3. Double click services
+4. Go to down to Symantec anti virus, right click and select stop
+
+#### Windows firewall
+
+1. Open network connections
+2. Select the network connection
+3. Right click and select properties
+4. Select advanced tab
+5. Uncheck internet connection firewall
+
+#### Linux
+
+On Linux, iptables might be turned on by default. For instructions, please refer to the
+  [Remote Testing in the user manual](/user-manual/remote-test/)
+
+On RedHat (or derivatives), iptables is turned on by default. Execute
+
+```
+service iptables stop
+```
+
+to stop the Linux firewall or ensure you open the correct ports.
