@@ -290,6 +290,7 @@ main:has(.landing) [slot='doc-title-description'] {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
+  align-self: stretch;
   gap: 0.8rem;
   min-height: 5.5rem;
   border: 1px solid var(--sl-color-gray-5);
