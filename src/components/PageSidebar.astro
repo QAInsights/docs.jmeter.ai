@@ -1,14 +1,18 @@
 ---
-import MobileTableOfContents from 'virtual:starlight/components/MobileTableOfContents';
 import TableOfContents from 'virtual:starlight/components/TableOfContents';
 import SidebarActions from './SidebarActions.astro';
+
+const { toc } = Astro.locals.starlightRoute;
 ---
 
 {
-	Astro.locals.starlightRoute.toc && (
+	toc && (
 		<>
-			<div class="lg:sl-hidden">
-				<MobileTableOfContents />
+			<div class="mobile-toc lg:sl-hidden">
+				<details>
+					<summary>{Astro.locals.t('tableOfContents.onThisPage')}</summary>
+					<TableOfContents />
+				</details>
 			</div>
 			<div class="right-sidebar-panel sl-hidden lg:sl-block">
 				<div class="sl-container">
@@ -22,6 +26,35 @@ import SidebarActions from './SidebarActions.astro';
 
 <style>
 	@layer starlight.core {
+		.mobile-toc {
+			position: sticky;
+			z-index: var(--sl-z-index-toc);
+			top: calc(var(--sl-nav-height) - 1px);
+			border-top: 1px solid var(--sl-color-gray-5);
+			border-bottom: 1px solid var(--sl-color-hairline-shade);
+			background-color: var(--sl-color-bg-nav);
+		}
+		.mobile-toc summary {
+			padding: 0.5rem var(--sl-sidebar-pad-x);
+			font-size: var(--sl-text-xs);
+			cursor: pointer;
+			color: var(--sl-color-gray-2);
+		}
+		.mobile-toc summary:hover {
+			color: var(--sl-color-white);
+		}
+		.mobile-toc details[open] summary {
+			border-bottom: 1px solid var(--sl-color-hairline-shade);
+		}
+		.mobile-toc :global(starlight-toc) {
+			display: block;
+			max-height: 60vh;
+			overflow-y: auto;
+			padding: 0.5rem var(--sl-sidebar-pad-x) 1rem;
+		}
+		.mobile-toc :global(h2) {
+			display: none;
+		}
 		.right-sidebar-panel {
 			padding: 1rem var(--sl-sidebar-pad-x);
 		}
