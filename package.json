@@ -9,7 +9,10 @@
     "preview": "astro preview",
     "astro": "astro",
     "convert": "node tools/convert.mjs",
-    "generate-sidebar": "node scripts/generate-sidebar.mjs"
+    "generate-sidebar": "node scripts/generate-sidebar.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.41.0",
@@ -20,7 +23,9 @@
     "sharp": "^0.34.2"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.9",
     "fast-xml-parser": "^5.2.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.9"
   }
 }

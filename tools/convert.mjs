@@ -716,41 +716,75 @@ function copyDirRecursive(src, dest) {
   }
 }
 
-// Main
-console.log('Converting JMeter xdocs → MDX...');
-console.log(`  Source: ${JMETER_XDOCS}`);
-console.log(`  Output: ${OUTPUT_DIR}`);
+function main() {
+  console.log('Converting JMeter xdocs → MDX...');
+  console.log(`  Source: ${JMETER_XDOCS}`);
+  console.log(`  Output: ${OUTPUT_DIR}`);
 
-let converted = 0, failed = 0;
+  let converted = 0, failed = 0;
 
-for (const [srcRel, destRel] of Object.entries(FILE_MAP)) {
-  const srcPath = path.join(JMETER_XDOCS, srcRel);
-  if (!fs.existsSync(srcPath)) {
-    console.log(`  SKIP: ${srcRel}`);
-    continue;
+  for (const [srcRel, destRel] of Object.entries(FILE_MAP)) {
+    const srcPath = path.join(JMETER_XDOCS, srcRel);
+    if (!fs.existsSync(srcPath)) {
+      console.log(`  SKIP: ${srcRel}`);
+      continue;
+    }
+    const destPath = path.join(OUTPUT_DIR, destRel);
+    if (convertFile(srcPath, destPath)) {
+      console.log(`  OK: ${srcRel} → ${destRel}`);
+      converted++;
+    } else {
+      failed++;
+    }
   }
-  const destPath = path.join(OUTPUT_DIR, destRel);
-  if (convertFile(srcPath, destPath)) {
-    console.log(`  OK: ${srcRel} → ${destRel}`);
-    converted++;
-  } else {
-    failed++;
+
+  console.log(`\n  Converted: ${converted}, Failed: ${failed}`);
+
+  console.log('\nCopying assets...');
+  const imgSrc = path.join(JMETER_XDOCS, 'images');
+  if (fs.existsSync(imgSrc)) {
+    copyDirRecursive(imgSrc, path.join(IMAGES_DIR));
+    console.log('  Images copied');
   }
+
+  const noticeSrc = path.join(path.dirname(JMETER_XDOCS), 'NOTICE');
+  if (fs.existsSync(noticeSrc)) {
+    fs.copyFileSync(noticeSrc, path.resolve('public/NOTICE'));
+    console.log('  NOTICE copied');
+  }
+
+  console.log('\nDone!');
 }
 
-console.log(`\n  Converted: ${converted}, Failed: ${failed}`);
-
-console.log('\nCopying assets...');
-const imgSrc = path.join(JMETER_XDOCS, 'images');
-if (fs.existsSync(imgSrc)) {
-  copyDirRecursive(imgSrc, path.join(IMAGES_DIR));
-  console.log('  Images copied');
+// Run main only when executed directly, not when imported
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.url.replace('file:///', '').replace(/\//g, path.sep)) || process.argv[1]?.endsWith('convert.mjs');
+if (isMain) {
+  main();
 }
 
-const noticeSrc = path.join(path.dirname(JMETER_XDOCS), 'NOTICE');
-if (fs.existsSync(noticeSrc)) {
-  fs.copyFileSync(noticeSrc, path.resolve('public/NOTICE'));
-  console.log('  NOTICE copied');
-}
-
-console.log('\nDone!');
+// Export functions for testing
+export {
+  resolveEntities,
+  resolveOutputEntities,
+  escapeCurlyBraces,
+  extractSectNum,
+  stripDoctype,
+  extractTitle,
+  getAttrs,
+  getTag,
+  getChildren,
+  walkOrdered,
+  convertOrderedNode,
+  renderPropertyTable,
+  convertOrderedTable,
+  convertOrderedRow,
+  resolveHref,
+  detectLanguage,
+  generateFrontmatter,
+  convertFile,
+  copyDirRecursive,
+  parser,
+  FILE_MAP,
+  ROUTE_MAP,
+  ENTITIES,
+};
