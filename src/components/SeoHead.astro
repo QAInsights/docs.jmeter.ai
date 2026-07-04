@@ -97,8 +97,26 @@ if (route && route.head) {
   });
 
   // Helper to check if a tag already exists
-  const hasTag = (tagType: string, attrKey: string, attrVal: string) => 
+  const hasTag = (tagType: string, attrKey: string, attrVal: string) =>
     route.head.some(t => t.tag === tagType && t.attrs?.[attrKey] === attrVal);
+
+  // Google Analytics (gtag.js) — injected at the front of <head> so it loads
+  // immediately. Gated to production so dev/preview visits aren't tracked.
+  if (import.meta.env.PROD && !hasTag('script', 'src', 'https://www.googletagmanager.com/gtag/js?id=G-MVZN6CMXYQ')) {
+    route.head.unshift(
+      {
+        tag: 'script',
+        attrs: { async: true, src: 'https://www.googletagmanager.com/gtag/js?id=G-MVZN6CMXYQ' },
+      },
+      {
+        tag: 'script',
+        content: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-MVZN6CMXYQ');`,
+      }
+    );
+  }
 
   // Inject robots meta tag
   if (!hasTag('meta', 'name', 'robots')) {
