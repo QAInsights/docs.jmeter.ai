@@ -43,7 +43,7 @@ export const faqSchema = {
   '/user-manual/hints-and-tips': [
     {
       q: 'How do I pass variables between threads in JMeter?',
-      a: 'JMeter variables have thread scope by design so threads can act independently. To pass variables between threads, use a property instead — properties are shared between all JMeter threads. If one thread sets a property, another thread can read the updated value. For large amounts of information, consider using a file or a CSV Dataset.',
+      a: 'JMeter variables have thread scope by design so threads can act independently. To pass variables between threads, use a property instead  -  properties are shared between all JMeter threads. If one thread sets a property, another thread can read the updated value. For large amounts of information, consider using a file or a CSV Dataset.',
     },
     {
       q: 'How do I enable debug logging in JMeter?',

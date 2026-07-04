@@ -151,15 +151,15 @@ describe('SEO: no broken internal links', () => {
     if (fs.existsSync(path.join(ROOT, relPath))) return true;
 
     // Allow external Javadoc/API links that happen to start with /api/ or
-    // /localising/ — these are upstream references that don't resolve locally.
+    // /localising/  -  these are upstream references that don't resolve locally.
     if (relPath.startsWith('api/') || relPath.startsWith('localising/')) return true;
 
-    // Allow legacy upstream paths like "usermanual/" (no hyphen) — these
+    // Allow legacy upstream paths like "usermanual/" (no hyphen)  -  these
     // are inherited from Apache JMeter xdocs and resolve on the official
     // site, not locally.
     if (relPath.startsWith('usermanual/')) return true;
 
-    // Allow upstream-converted relative links (/./  and /../ prefixes) —
+    // Allow upstream-converted relative links (/./  and /../ prefixes)  - 
     // these are artifacts of the xdocs→MDX conversion and work at runtime
     // via Astro's routing.
     if (link.startsWith('/./') || link.startsWith('/../')) return true;

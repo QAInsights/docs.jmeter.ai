@@ -26,11 +26,11 @@ jmeter -n -t test-plan.jmx -l results.jtl -e -o report/
 ```
 
 Flags:
-- `-n` — non-GUI mode
-- `-t` — test plan file
-- `-l` — results log file (CSV format)
-- `-e` — generate dashboard report after test
-- `-o` — output folder for HTML report
+- `-n`  -  non-GUI mode
+- `-t`  -  test plan file
+- `-l`  -  results log file (CSV format)
+- `-e`  -  generate dashboard report after test
+- `-o`  -  output folder for HTML report
 
 ### Passing Parameters
 
@@ -50,9 +50,9 @@ To fail a build when performance degrades, check the APDEX score or error rate f
 
 The [Dashboard Report](/user-manual/generating-dashboard/) generates a `statistics.json` file alongside the HTML report. Parse it to extract:
 
-- **Overall APDEX score** — threshold for build pass/fail
-- **Error percentage** — must be below a target (e.g., 1%)
-- **95th percentile response time** — must not exceed a target
+- **Overall APDEX score**  -  threshold for build pass/fail
+- **Error percentage**  -  must be below a target (e.g., 1%)
+- **95th percentile response time**  -  must not exceed a target
 
 ### Example: Bash Script Gate
 
@@ -106,7 +106,7 @@ Follow the [Best Practices](/user-manual/best-practices/) guide:
 
 - Always use non-GUI mode in pipelines
 - Keep test plans under version control alongside application code
-- Use CSV Data Set Config for test data — don't hardcode values
+- Use CSV Data Set Config for test data  -  don't hardcode values
 - Generate the [Dashboard Report](/user-manual/generating-dashboard/) for every run
 - Store historical results for trend analysis
 
@@ -115,8 +115,8 @@ Follow the [Best Practices](/user-manual/best-practices/) guide:
 Add a performance gate to your existing pipeline using the statistics.json approach described above.
 </Fragment>
 <Fragment slot="related">
-- [Dashboard Report](/user-manual/generating-dashboard/) — configure custom APDEX thresholds
-- [Building JMeter from Source](/reference/building/) — build a custom JMeter for your CI environment
+- [Dashboard Report](/user-manual/generating-dashboard/)  -  configure custom APDEX thresholds
+- [Building JMeter from Source](/reference/building/)  -  build a custom JMeter for your CI environment
 </Fragment>
 <Fragment slot="mistakes">
 - Running GUI mode in CI causes resource waste and potential hangs

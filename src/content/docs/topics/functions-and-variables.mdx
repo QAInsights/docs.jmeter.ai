@@ -14,7 +14,7 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 # JMeter Functions and Variables Guide
 
-JMeter functions and variables are the primary mechanism for making test plans dynamic. Instead of hardcoding values, you can generate random data, read from files, manipulate strings, and pass values between samplers — all using JMeter's built-in function syntax.
+JMeter functions and variables are the primary mechanism for making test plans dynamic. Instead of hardcoding values, you can generate random data, read from files, manipulate strings, and pass values between samplers  -  all using JMeter's built-in function syntax.
 
 ## Function Syntax
 
@@ -58,8 +58,8 @@ Key rules:
 
 Understanding the difference is critical:
 
-- **Variables** (`vars`) — thread-local, each thread has its own copy. Set with `${__V()}` or extractors.
-- **Properties** (`props`) — global, shared across all threads. Set with `${__setProperty()}` or `-J` command-line flag.
+- **Variables** (`vars`)  -  thread-local, each thread has its own copy. Set with `${__V()}` or extractors.
+- **Properties** (`props`)  -  global, shared across all threads. Set with `${__setProperty()}` or `-J` command-line flag.
 
 Use properties to pass data between threads; use variables for within-thread parameterization.
 
@@ -83,8 +83,8 @@ See the [Functions and Variables](/user-manual/functions/) page for the full lis
 Practice by adding `${__Random(1,100)}` to an HTTP Request sampler and verifying the value in View Results Tree.
 </Fragment>
 <Fragment slot="related">
-- [Regular Expressions](/user-manual/regular-expressions/) — extract dynamic values from responses to use in subsequent requests
-- [Properties Reference](/user-manual/properties-reference/) — JMeter properties that interact with the `__P()` function
+- [Regular Expressions](/user-manual/regular-expressions/)  -  extract dynamic values from responses to use in subsequent requests
+- [Properties Reference](/user-manual/properties-reference/)  -  JMeter properties that interact with the `__P()` function
 </Fragment>
 <Fragment slot="mistakes">
 - Forgetting to escape commas in function parameters causes unexpected behavior

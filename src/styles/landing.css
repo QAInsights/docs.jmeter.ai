@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Landing page styles — docs.jmeter.ai
+   Landing page styles  -  docs.jmeter.ai
    Terminal hero, metrics strip, bento grid navigation
    ========================================================================== */
 
@@ -40,7 +40,7 @@ main:has(.landing) {
   gap: 3rem;
 }
 
-/* Hide Lucode's PageTitle description on the landing page — it duplicates
+/* Hide Lucode's PageTitle description on the landing page  -  it duplicates
    the hero text. The doc-title block is in a sibling content-panel, not
    inside .landing, so use :has() to detect the landing page. */
 main:has(.landing) [slot='doc-title-description'] {
@@ -307,7 +307,7 @@ main:has(.landing) [slot='doc-title-description'] {
   transform: scale(0.98);
 }
 
-/* Grid placement — uniform cards in a 4-column grid.
+/* Grid placement  -  uniform cards in a 4-column grid.
    8 cards = 2 clean rows of 4. No orphans, no empty cells. */
 .bento-large,
 .bento-medium,

@@ -32,10 +32,10 @@ Choosing a load testing tool depends on your team's skills, protocols, and infra
 ## Architecture Differences
 
 ### JMeter
-Thread-based model — each virtual user is a Java thread. Test plans are XML files (`.jmx`) edited through the GUI or directly. Rich ecosystem of plugins extends protocol support. [Building a Test Plan](/user-manual/build-test-plan/) is done visually.
+Thread-based model  -  each virtual user is a Java thread. Test plans are XML files (`.jmx`) edited through the GUI or directly. Rich ecosystem of plugins extends protocol support. [Building a Test Plan](/user-manual/build-test-plan/) is done visually.
 
 ### k6
-Written in Go for low resource consumption. Scripts are JavaScript/TypeScript files that define virtual user scenarios as code. Virtual users are lightweight goroutines, not OS threads. No GUI — everything is code-driven. Open-source core with a commercial cloud offering.
+Written in Go for low resource consumption. Scripts are JavaScript/TypeScript files that define virtual user scenarios as code. Virtual users are lightweight goroutines, not OS threads. No GUI  -  everything is code-driven. Open-source core with a commercial cloud offering.
 
 ### Locust
 Python-based with an event-driven architecture (gevent). Test scenarios are written as Python classes. Built-in web UI for real-time monitoring during tests. Distributed testing is built-in with a master-worker model. Very accessible for teams already using Python.
@@ -53,33 +53,33 @@ Scala/JVM-based with an asynchronous, non-blocking architecture. Tests are defin
 
 ## When to Consider Alternatives
 
-- **k6** — if your team prefers JavaScript, wants minimal resource usage, and uses Grafana's ecosystem
-- **Locust** — if your team writes Python and wants code-first test scenarios with a monitoring UI
-- **Gatling** — if your team uses Scala/Java and values type-safe test DSLs with detailed reports
+- **k6**  -  if your team prefers JavaScript, wants minimal resource usage, and uses Grafana's ecosystem
+- **Locust**  -  if your team writes Python and wants code-first test scenarios with a monitoring UI
+- **Gatling**  -  if your team uses Scala/Java and values type-safe test DSLs with detailed reports
 
 ## JMeter Strengths
 
-- **Protocol breadth** — no other open-source tool covers FTP, LDAP, JMS, and JDBC natively
-- **Mature ecosystem** — 25+ years of development, extensive plugin catalog, large community
-- **Visual debugging** — View Results Tree and GUI mode make test development accessible
-- **CI/CD ready** — [non-GUI mode](/user-manual/best-practices/) integrates with any pipeline
-- **Rich reporting** — [Dashboard Report](/user-manual/generating-dashboard/) with APDEX, graphs, and statistics
+- **Protocol breadth**  -  no other open-source tool covers FTP, LDAP, JMS, and JDBC natively
+- **Mature ecosystem**  -  25+ years of development, extensive plugin catalog, large community
+- **Visual debugging**  -  View Results Tree and GUI mode make test development accessible
+- **CI/CD ready**  -  [non-GUI mode](/user-manual/best-practices/) integrates with any pipeline
+- **Rich reporting**  -  [Dashboard Report](/user-manual/generating-dashboard/) with APDEX, graphs, and statistics
 
 ## Getting Started with JMeter
 
 If you've decided on JMeter:
 
-1. [Getting Started](/getting-started/get-started/) — install and understand the workflow
-2. [Building a Web Test Plan](/user-manual/build-web-test-plan/) — create your first HTTP test
-3. [Best Practices](/user-manual/best-practices/) — ensure reliable and accurate results
-4. [HTTP Recorder](/user-manual/jmeter-proxy-step-by-step/) — capture real browser traffic
+1. [Getting Started](/getting-started/get-started/)  -  install and understand the workflow
+2. [Building a Web Test Plan](/user-manual/build-web-test-plan/)  -  create your first HTTP test
+3. [Best Practices](/user-manual/best-practices/)  -  ensure reliable and accurate results
+4. [HTTP Recorder](/user-manual/jmeter-proxy-step-by-step/)  -  capture real browser traffic
 
 <RelatedContent>
 <Fragment slot="next-step">
 Start with [Getting Started](/getting-started/get-started/) to see JMeter's workflow in action.
 </Fragment>
 <Fragment slot="related">
-- [Best Practices](/user-manual/best-practices/) — get the most out of JMeter regardless of which tool you compare against
-- [Functions and Variables](/user-manual/functions/) — JMeter's parameterization capabilities rival code-first tools
+- [Best Practices](/user-manual/best-practices/)  -  get the most out of JMeter regardless of which tool you compare against
+- [Functions and Variables](/user-manual/functions/)  -  JMeter's parameterization capabilities rival code-first tools
 </Fragment>
 </RelatedContent>

@@ -34,7 +34,7 @@ Follow the [HTTP(S) Test Script Recorder](/user-manual/jmeter-proxy-step-by-step
 3. Set the **Target Controller** to your Thread Group
 4. Click **Start**
 5. Configure your browser proxy to `localhost:8888`
-6. Navigate your application — JMeter records every request
+6. Navigate your application  -  JMeter records every request
 
 ## SSL/HTTPS Recording
 
@@ -50,9 +50,9 @@ Since JMeter 2.10, embedded resource handling and on-the-fly certificate generat
 
 Use these Recorder settings to keep your test plan clean:
 
-- **URL Patterns to Include** — regex filter to capture only relevant requests (e.g., `.*\\.html|.*\\.json`)
-- **URL Patterns to Exclude** — filter out static assets (`.css`, `.js`, `.png`)
-- **Grouping** — group recorded samplers by URL path or controller
+- **URL Patterns to Include**  -  regex filter to capture only relevant requests (e.g., `.*\\.html|.*\\.json`)
+- **URL Patterns to Exclude**  -  filter out static assets (`.css`, `.js`, `.png`)
+- **Grouping**  -  group recorded samplers by URL path or controller
 
 ## After Recording
 
@@ -68,8 +68,8 @@ Once recorded, you'll need to:
 After recording, follow [Building a Web Test Plan](/user-manual/build-web-test-plan/) to clean up and configure your captured test plan.
 </Fragment>
 <Fragment slot="related">
-- [cURL Import](/user-manual/curl/) — alternative way to create samplers from command-line requests
-- [Access Log Sampler](/user-manual/jmeter-accesslog-sampler-step-by-step/) — replay production traffic patterns
+- [cURL Import](/user-manual/curl/)  -  alternative way to create samplers from command-line requests
+- [Access Log Sampler](/user-manual/jmeter-accesslog-sampler-step-by-step/)  -  replay production traffic patterns
 </Fragment>
 <Fragment slot="troubleshooting">
 - If HTTPS pages show certificate errors, re-install the JMeter root CA certificate

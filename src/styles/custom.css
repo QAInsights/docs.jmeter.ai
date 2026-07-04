@@ -22,7 +22,7 @@ nav.nav-bar a::before {
   opacity: 0.85;
 }
 
-/* Color system — "flame" warm palette.
+/* Color system  -  "flame" warm palette.
    Brand accent sits in the JMeter logo's orange-red family (#dd552c → #f79a23).
    Neutrals are low-chroma warm grays (stone), tinted toward the brand hue so
    surfaces feel authored instead of empty. Accent and neutrals are now separate
@@ -176,7 +176,7 @@ nav.nav-bar a::before {
 
 /* ---------------------------------------------------------------------------
    Motion system
-   Learn surface (docs) — product register. Motion paces reading and
+   Learn surface (docs)  -  product register. Motion paces reading and
    responds to touch; no page-load theater. All spatial movement is gated
    behind prefers-reduced-motion: no-preference, so reduced-motion users get
    instant state changes only. Functional signals (focus, selection, theme)
@@ -244,7 +244,7 @@ button:where(.astro-jif73yzw),
   }
 }
 
-/* Press feedback — scale 0.97, fast. Links and buttons alike. */
+/* Press feedback  -  scale 0.97, fast. Links and buttons alike. */
 .site-title:where(.astro-m46x6ez3):active,
 a:where(.astro-u2l5gyhi):active,
 a:where(.astro-eez2twj6):active,
@@ -304,7 +304,7 @@ button:where(.astro-jif73yzw):active,
 
 /* --- Scroll-driven reveal of section landmarks (progressive enhancement)
    Browsers without animation-timeline support skip the block entirely via
-   @supports, so content stays fully visible — no flash of hidden content. -- */
+   @supports, so content stays fully visible  -  no flash of hidden content. -- */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .sl-markdown-content :is(h2, h3, h4),
@@ -360,7 +360,7 @@ button:where(.astro-jif73yzw):active,
 }
 
 /* --- Reduced motion: neutralize all spatial movement and animation.
-   Functional signals (focus rings, selection, theme) still apply — they
+   Functional signals (focus rings, selection, theme) still apply  -  they
    just snap instead of animating. Scroll snapping reverts to instant. ----- */
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -378,7 +378,7 @@ button:where(.astro-jif73yzw):active,
 
 /* ---------------------------------------------------------------------------
    Interaction system
-   Learn surface (docs) — product register. Adds the missing behavior states:
+   Learn surface (docs)  -  product register. Adds the missing behavior states:
    disabled (search while Pagefind loads), overflow (wide tables/code on
    touch), touch targets (pointer: coarse), and link affordance for the
    custom component-links block. Starlight's native keyboard path, focus
@@ -737,7 +737,7 @@ button:where(.astro-v37mnknz)[disabled] {
 }
 
 /* ==========================================================================
-   Related Content cards — end-of-page internal-link modules
+   Related Content cards  -  end-of-page internal-link modules
    ========================================================================== */
 .related-content {
   margin-top: 3rem;

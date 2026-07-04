@@ -131,7 +131,7 @@ if (route && route.head) {
   const hasTag = (tagType: string, attrKey: string, attrVal: string) =>
     route.head.some(t => t.tag === tagType && t.attrs?.[attrKey] === attrVal);
 
-  // Google Analytics (gtag.js) — injected at the front of <head> so it loads
+  // Google Analytics (gtag.js)  -  injected at the front of <head> so it loads
   // immediately. Gated to production so dev/preview visits aren't tracked.
   if (import.meta.env.PROD && !hasTag('script', 'src', 'https://www.googletagmanager.com/gtag/js?id=G-MVZN6CMXYQ')) {
     route.head.unshift(

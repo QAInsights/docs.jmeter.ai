@@ -20,8 +20,8 @@ When a single machine can't generate enough load, JMeter's distributed testing f
 
 JMeter uses a **controller-worker** architecture (historically called master/slave):
 
-- **Controller (client)** — sends the test plan to workers, starts/stops tests, and collects results
-- **Workers (servers)** — execute the test plan and stream results back to the controller
+- **Controller (client)**  -  sends the test plan to workers, starts/stops tests, and collects results
+- **Workers (servers)**  -  execute the test plan and stream results back to the controller
 
 Important: JMeter does **not** distribute load between workers. Each worker runs the complete test plan. If your test plan uses 100 threads and you have 4 workers, you'll generate 400 total threads.
 
@@ -46,8 +46,8 @@ Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-te
 
 ## Monitoring Distributed Tests
 
-- [Real-time Results](/user-manual/realtime-results/) — use the Backend Listener to stream metrics from workers to InfluxDB/Grafana
-- [Dashboard Report](/user-manual/generating-dashboard/) — generate consolidated HTML reports from the aggregated CSV results
+- [Real-time Results](/user-manual/realtime-results/)  -  use the Backend Listener to stream metrics from workers to InfluxDB/Grafana
+- [Dashboard Report](/user-manual/generating-dashboard/)  -  generate consolidated HTML reports from the aggregated CSV results
 
 ## Troubleshooting
 
@@ -63,8 +63,8 @@ Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-te
 Follow the [Step-by-Step Tutorial](/user-manual/jmeter-distributed-testing-step-by-step/) for a hands-on distributed testing setup.
 </Fragment>
 <Fragment slot="related">
-- [Remote Testing Reference](/user-manual/remote-test/) — complete configuration reference
-- [Properties Reference](/user-manual/properties-reference/) — RMI and networking properties
+- [Remote Testing Reference](/user-manual/remote-test/)  -  complete configuration reference
+- [Properties Reference](/user-manual/properties-reference/)  -  RMI and networking properties
 </Fragment>
 <Fragment slot="troubleshooting">
 - Workers must be started before the controller initiates the test
