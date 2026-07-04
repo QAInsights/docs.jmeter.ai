@@ -5,11 +5,12 @@
   "description": "Community documentation site for Apache JMeter",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "node scripts/generate-llms-full.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "convert": "node tools/convert.mjs",
     "generate-sidebar": "node scripts/generate-sidebar.mjs",
+    "generate-llms-full": "node scripts/generate-llms-full.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

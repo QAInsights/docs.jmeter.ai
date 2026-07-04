@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import lucode from 'lucode-starlight';
+import { sidebar } from './src/sidebar.mjs';
 
 export default defineConfig({
   site: 'https://docs.jmeter.ai',
@@ -30,77 +31,7 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/QAInsights/docs.jmeter.ai/edit/main/',
       },
-      sidebar: [
-        {
-          label: 'Overview',
-          link: '/',
-        },
-        {
-          label: 'Getting Started',
-          items: [
-            { label: 'Get Started', link: '/getting-started/get-started' },
-          ],
-        },
-        {
-          label: 'User Manual',
-          collapsed: false,
-          items: [
-            { label: 'Building a Test Plan', link: '/user-manual/build-test-plan' },
-            { label: 'Elements of a Test Plan', link: '/user-manual/test-plan' },
-            { label: 'Building a Web Test Plan', link: '/user-manual/build-web-test-plan' },
-            { label: 'Advanced Web Test Plan', link: '/user-manual/build-adv-web-test-plan' },
-            { label: 'Database Test Plan', link: '/user-manual/build-db-test-plan' },
-            { label: 'FTP Test Plan', link: '/user-manual/build-ftp-test-plan' },
-            { label: 'LDAP Test Plan', link: '/user-manual/build-ldap-test-plan' },
-            { label: 'Extended LDAP Test Plan', link: '/user-manual/build-ldapext-test-plan' },
-            { label: 'Webservice Test Plan', link: '/user-manual/build-ws-test-plan' },
-            { label: 'JMS Point-to-Point', link: '/user-manual/build-jms-point-to-point-test-plan' },
-            { label: 'JMS Topic Test Plan', link: '/user-manual/build-jms-topic-test-plan' },
-            { label: 'Programmatic Test Plan', link: '/user-manual/build-programmatic-test-plan' },
-            { label: 'Listeners', link: '/user-manual/listeners' },
-            { label: 'Remote Testing', link: '/user-manual/remote-test' },
-            { label: 'Dashboard Report', link: '/user-manual/generating-dashboard' },
-            { label: 'Real-time Results', link: '/user-manual/realtime-results' },
-            { label: 'Best Practices', link: '/user-manual/best-practices' },
-            { label: 'Boss', link: '/user-manual/boss' },
-            { label: 'cURL', link: '/user-manual/curl' },
-            { label: 'Hints and Tips', link: '/user-manual/hints-and-tips' },
-            { label: 'Glossary', link: '/user-manual/glossary' },
-            { label: 'Regular Expressions', link: '/user-manual/regular-expressions' },
-            { label: 'Functions and Variables', link: '/user-manual/functions' },
-            { label: 'Properties Reference', link: '/user-manual/properties-reference' },
-            { label: 'Component Reference', link: '/user-manual/component-reference' },
-          ],
-        },
-        {
-          label: 'Extending JMeter',
-          items: [
-            { label: 'Extending JMeter', link: '/extending/extending-jmeter' },
-            { label: 'Dashboard Generator', link: '/extending/devguide-dashboard' },
-          ],
-        },
-        {
-          label: 'Reference',
-          items: [
-            { label: 'Changes', link: '/user-manual/changes' },
-            { label: 'Changes History', link: '/user-manual/changes-history' },
-            { label: 'History & Future', link: '/user-manual/history-future' },
-            { label: 'Building JMeter', link: '/reference/building' },
-            { label: 'Creating Templates', link: '/reference/creating-templates' },
-            { label: 'Download JMeter', link: '/reference/download-jmeter' },
-            { label: 'Security', link: '/reference/security' },
-            { label: 'Issue Tracking', link: '/reference/issues' },
-            { label: 'Mailing Lists', link: '/reference/mail' },
-          ],
-        },
-        {
-          label: 'Legal',
-          items: [
-            { label: 'Disclaimer', link: '/legal/disclaimer' },
-            { label: 'NOTICE', link: '/legal/notice' },
-          ],
-        },
-      ],
+      sidebar,
     }),
   ],
 });
