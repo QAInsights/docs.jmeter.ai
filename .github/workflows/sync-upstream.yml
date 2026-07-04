@@ -87,7 +87,7 @@ jobs:
           Please review and merge if the changes look correct." \
             --label "automated,sync"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
 
       - name: Report no changes
         if: steps.diff.outputs.changes == 'false'
