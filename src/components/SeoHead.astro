@@ -1,6 +1,7 @@
 ---
 import StarlightHead from '@astrojs/starlight/components/Head.astro';
 import type { Props } from '@astrojs/starlight/props';
+import { buildFaqJsonLd } from '../faq-schema.mjs';
 
 const route = Astro.locals.starlightRoute;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
@@ -156,6 +157,18 @@ gtag('config', 'G-MVZN6CMXYQ');`,
       tag: 'script',
       attrs: { type: 'application/ld+json', 'data-schema': 'breadcrumb' },
       content: JSON.stringify(breadcrumbJsonLd)
+    });
+  }
+
+  // FAQPage JSON-LD for pages with curated Q&A content (Glossary, Hints &
+  // Tips, Best Practices). Triggers expandable rich results in search
+  // engines that support it.
+  const faqJsonLd = buildFaqJsonLd(Astro.url.pathname, canonicalUrl);
+  if (faqJsonLd && !hasTag('script', 'data-schema', 'faq-page')) {
+    route.head.push({
+      tag: 'script',
+      attrs: { type: 'application/ld+json', 'data-schema': 'faq-page' },
+      content: JSON.stringify(faqJsonLd)
     });
   }
 }
