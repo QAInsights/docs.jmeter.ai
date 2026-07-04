@@ -6,7 +6,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['tools/convert.mjs'],
+      include: ['tools/convert.mjs', 'astro.config.mjs'],
       exclude: ['scripts/sync.mjs', '**/*.test.*'],
       thresholds: {
         lines: 80,
