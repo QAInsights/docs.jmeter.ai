@@ -9,16 +9,6 @@ const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 
 export default defineConfig({
   site: 'https://docs.jmeter.ai',
-  vite: {
-    resolve: {
-      alias: [
-        {
-          find: /lucode-starlight[/\\]components[/\\]overrides[/\\]Search\.astro$/,
-          replacement: '@astrojs/starlight-docsearch/DocSearch.astro'
-        }
-      ]
-    }
-  },
   integrations: [
     starlight({
       title: 'JMeter Docs',
@@ -44,6 +34,7 @@ export default defineConfig({
         PageTitle: './src/components/PageTitle.astro',
         ThemeSelect: './src/components/ThemeToggle.astro',
         PageSidebar: './src/components/PageSidebar.astro',
+        Header: './src/components/CustomHeader.astro',
       },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/QAInsights/docs.jmeter.ai' },
