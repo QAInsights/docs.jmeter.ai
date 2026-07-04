@@ -5,7 +5,7 @@
   "description": "Community documentation site for Apache JMeter",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/generate-llms-full.mjs && astro build",
+    "build": "npm run lint && node scripts/generate-llms-full.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "convert": "node tools/convert.mjs",

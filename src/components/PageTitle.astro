@@ -71,7 +71,12 @@ const rightArrow = 'M9 18l6-6-6-6';
         </div>
     </div>
 
-    {description && <p slot="doc-title-description">{description}</p>}
+    {
+        description &&
+        description.trim().toLowerCase() !== title.trim().toLowerCase() && (
+            <p slot="doc-title-description">{description}</p>
+        )
+    }
 
     <!--  -->
 </div>
