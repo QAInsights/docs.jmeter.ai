@@ -32,6 +32,7 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/QAInsights/docs.jmeter.ai/edit/main/',
       },
+      lastUpdated: true,
       sidebar,
     }),
   ],

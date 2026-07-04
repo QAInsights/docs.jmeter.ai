@@ -11,11 +11,13 @@
     "convert": "node tools/convert.mjs",
     "generate-sidebar": "node scripts/generate-sidebar.mjs",
     "generate-llms-full": "node scripts/generate-llms-full.mjs",
+    "lint": "vitest run src/schema-validation.test.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.9",
     "@astrojs/starlight": "^0.41.0",
     "@fontsource/geist-sans": "^5.2.5",
     "@fontsource/lora": "^5.2.8",
@@ -26,7 +28,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.9",
     "fast-xml-parser": "^5.2.3",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.9"
   }
 }

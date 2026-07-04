@@ -2,6 +2,7 @@
 import StarlightHead from '@astrojs/starlight/components/Head.astro';
 import type { Props } from '@astrojs/starlight/props';
 import { buildFaqJsonLd } from '../faq-schema.mjs';
+import { buildHowToJsonLd } from '../howto-schema.mjs';
 
 const route = Astro.locals.starlightRoute;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
@@ -169,6 +170,18 @@ gtag('config', 'G-MVZN6CMXYQ');`,
       tag: 'script',
       attrs: { type: 'application/ld+json', 'data-schema': 'faq-page' },
       content: JSON.stringify(faqJsonLd)
+    });
+  }
+
+  // HowTo JSON-LD for step-by-step tutorial pages (building test plans,
+  // remote testing, building JMeter, creating templates). Triggers
+  // step-by-step rich result cards in Google search.
+  const howToJsonLd = buildHowToJsonLd(Astro.url.pathname, canonicalUrl);
+  if (howToJsonLd && !hasTag('script', 'data-schema', 'how-to')) {
+    route.head.push({
+      tag: 'script',
+      attrs: { type: 'application/ld+json', 'data-schema': 'how-to' },
+      content: JSON.stringify(howToJsonLd)
     });
   }
 }
