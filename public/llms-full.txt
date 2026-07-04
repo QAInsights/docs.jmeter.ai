@@ -4,7 +4,7 @@
 
 Site: https://docs.jmeter.ai
 Pages: 45
-Generated: 2026-07-04T22:32:26.263Z
+Generated: 2026-07-04T23:14:03.486Z
 ---
 Title: User's Manual: Getting Started
 URL: https://docs.jmeter.ai/getting-started/get-started/
@@ -957,6 +957,14 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 Apache JMeter is one of the most widely used open-source tools for API load testing. Whether you're testing REST APIs, SOAP services, or GraphQL endpoints, JMeter provides the samplers, assertions, and reporting tools you need to validate performance under load.
 
+:::tip[Use CLI mode for real load]
+Build and debug API plans in the GUI, then run load tests with `jmeter -n -t plan.jmx -l results.jtl -e -o report/` so the GUI does not consume injector resources.
+:::
+
+:::caution[Avoid View Results Tree in load tests]
+Use View Results Tree only while debugging individual requests. Disable it before real API load runs because it stores response details in memory.
+:::
+
 ## Why JMeter for API Testing?
 
 - **Free and open-source**  -  no licensing costs, full control over test plans
@@ -1029,6 +1037,14 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 # JMeter Distributed Testing Guide
 
 When a single machine can't generate enough load, JMeter's distributed testing feature lets you control multiple remote JMeter engines from a single client. This guide covers everything you need to set up, run, and troubleshoot multi-machine load tests.
+
+:::caution[Security-sensitive setting]
+Distributed testing uses RMI between the controller and workers. Only run it on trusted networks with explicit firewall rules, matching JMeter versions, and a deliberate SSL/RMI configuration.
+:::
+
+:::note[Version-specific behavior]
+Remote startup, RMI defaults, and SSL behavior can change between JMeter releases. Keep controller and workers on the same JMeter and Java versions.
+:::
 
 ## How Distributed Testing Works
 
@@ -1258,6 +1274,10 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 # JMeter CI/CD Load Testing
 
 Integrating JMeter into your CI/CD pipeline ensures that performance regressions are caught before they reach production. This guide covers running JMeter in non-GUI mode, automating report generation, and setting up performance gates in popular CI systems.
+
+:::tip[Use CLI mode for real load]
+CI jobs should run JMeter in non-GUI mode and archive the `.jtl` plus generated dashboard report. Keep the GUI out of automated load stages.
+:::
 
 ## Running JMeter in Non-GUI Mode
 
@@ -2029,6 +2049,14 @@ URL: https://docs.jmeter.ai/user-manual/build-web-test-plan/
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 4. Building a Web Test Plan
+
+:::tip[Use CLI mode for real load]
+After the web flow is validated, save the plan and run it with `jmeter -n`. GUI listeners should stay disabled during the real load run.
+:::
+
+:::caution[Avoid View Results Tree in load tests]
+View Results Tree helps inspect recorded requests and assertions, but it should be disabled before sustained web load tests.
+:::
 
 In this section, you will learn how to create a basic
 [Test Plan](/user-manual/build-test-plan/) to test a Web site.  You will
@@ -3752,6 +3780,10 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 12. Introduction to listeners
 
+:::caution[Avoid View Results Tree in load tests]
+Listeners that render or retain detailed sample data can consume significant memory. Keep View Results Tree for debugging only and use `.jtl` files plus dashboard reports for real load runs.
+:::
+
 A listener is a component that shows the results of the
 samples. The results can be shown in a tree, tables, graphs or simply written to a log
 file. To view the contents of a response from any given sampler, add either of the Listeners "`View
@@ -4225,6 +4257,14 @@ URL: https://docs.jmeter.ai/user-manual/remote-test/
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 13. Remote Testing
+
+:::caution[Security-sensitive setting]
+Remote testing exposes control channels between machines. Restrict network access, use trusted test plans, and review RMI SSL settings before enabling workers.
+:::
+
+:::note[Version-specific behavior]
+Remote testing requires compatible JMeter and Java versions across controller and workers. Re-check RMI and SSL defaults after upgrades.
+:::
 
 In the event that your JMeter client machine is unable, performance-wise, to simulate
 enough users to stress your server or is limited at network level, an option exists to control multiple, remote JMeter
@@ -5616,6 +5656,14 @@ URL: https://docs.jmeter.ai/user-manual/best-practices/
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 16. Best Practices
+
+:::tip[Use CLI mode for real load]
+Use the GUI to build and validate a test plan, then run the actual load test from the command line so rendering and listeners do not distort injector performance.
+:::
+
+:::caution[Avoid View Results Tree in load tests]
+View Results Tree is useful for debugging, but it keeps detailed sample data in memory. Disable it before any sustained or high-volume load test.
+:::
 
 ## 16.1 Always use latest version of JMeter
 
@@ -8896,6 +8944,14 @@ URL: https://docs.jmeter.ai/user-manual/properties-reference/
 
 ## 19 Introduction
 
+:::caution[Security-sensitive setting]
+Properties can affect SSL, remote execution, scripting, file access, and report contents. Review changes before committing shared `user.properties` or CI overrides.
+:::
+
+:::note[Version-specific behavior]
+Property names and defaults can change across JMeter releases. Check the installed `jmeter.properties` file when upgrading.
+:::
+
 This document describes JMeter properties. The properties present in `jmeter.properties` or `reportgenerator.properties` should be set in the `user.properties` file.
 These properties are only taken into account after restarting JMeter as they are usually resolved when the class is loaded.
 
@@ -9618,6 +9674,10 @@ URL: https://docs.jmeter.ai/user-manual/component-reference/
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 18 Introduction
+
+:::note[Version-specific behavior]
+Component fields, defaults, and save formats can change across JMeter versions. Verify component behavior against the version used by your test runners.
+:::
 
  
 :::note
@@ -16788,6 +16848,10 @@ URL: https://docs.jmeter.ai/user-manual/changes/
 ---
 
 ## Changes
+
+:::note[Version-specific behavior]
+Use this page when behavior differs between JMeter releases, especially for components, properties, Java support, and distributed testing defaults.
+:::
 
 :::note
 **This page details the changes made in the current version only.**
@@ -25872,6 +25936,10 @@ URL: https://docs.jmeter.ai/reference/security/
 ---
 
 ## Security Model
+
+:::caution[Security-sensitive setting]
+Treat `.jmx` files and distributed workers as trusted execution inputs. Opening or running a test plan can execute code through configured elements or scripts.
+:::
 
   
     The purpose of JMeter is to execute the workload specified

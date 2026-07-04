@@ -7,6 +7,9 @@ keywords:
   - JMeter master slave
   - JMeter multi-machine load testing
 difficulty: advanced
+guideType: how-to
+estimatedReadTime: 8 min read
+lastVerified: JMeter 5.6
 canonicalTopic: distributed-testing
 ---
 
@@ -15,6 +18,14 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 # JMeter Distributed Testing Guide
 
 When a single machine can't generate enough load, JMeter's distributed testing feature lets you control multiple remote JMeter engines from a single client. This guide covers everything you need to set up, run, and troubleshoot multi-machine load tests.
+
+:::caution[Security-sensitive setting]
+Distributed testing uses RMI between the controller and workers. Only run it on trusted networks with explicit firewall rules, matching JMeter versions, and a deliberate SSL/RMI configuration.
+:::
+
+:::note[Version-specific behavior]
+Remote startup, RMI defaults, and SSL behavior can change between JMeter releases. Keep controller and workers on the same JMeter and Java versions.
+:::
 
 ## How Distributed Testing Works
 

@@ -1,6 +1,6 @@
 ---
 import TableOfContents from 'virtual:starlight/components/TableOfContents';
-import SidebarActions from './SidebarActions.astro';
+import DocActions from './DocActions.astro';
 
 const { toc } = Astro.locals.starlightRoute;
 ---
@@ -9,20 +9,156 @@ const { toc } = Astro.locals.starlightRoute;
 	toc && (
 		<>
 			<div class="mobile-toc lg:sl-hidden">
-				<details>
+				<details data-enhanced-toc>
+					<div class="toc-progress" aria-hidden="true"><span data-reading-progress></span></div>
 					<summary>{Astro.locals.t('tableOfContents.onThisPage')}</summary>
-					<TableOfContents />
+					<div class="toc-links" data-toc-links>
+						<TableOfContents />
+					</div>
+					<button class="toc-toggle" type="button" data-toc-toggle hidden>Show more</button>
 				</details>
 			</div>
 			<div class="right-sidebar-panel sl-hidden lg:sl-block">
-				<div class="sl-container">
-					<SidebarActions {...Astro.props} />
-					<TableOfContents />
+				<div class="sl-container" data-enhanced-toc>
+					<DocActions variant="sidebar" {...Astro.props} />
+					<div class="toc-shell">
+						<div class="toc-progress" aria-hidden="true"><span data-reading-progress></span></div>
+						<div class="toc-links" data-toc-links>
+							<TableOfContents />
+						</div>
+						<button class="toc-toggle" type="button" data-toc-toggle hidden>Show more</button>
+					</div>
 				</div>
 			</div>
 		</>
 	)
 }
+
+<script>
+	(() => {
+		if (window.__jmeterTocEnhancementsReady) return;
+		window.__jmeterTocEnhancementsReady = true;
+
+		const copyText = async (text) => {
+			if (navigator.clipboard?.writeText) {
+				await navigator.clipboard.writeText(text);
+				return;
+			}
+			const textarea = document.createElement('textarea');
+			textarea.value = text;
+			textarea.setAttribute('readonly', '');
+			textarea.style.position = 'fixed';
+			textarea.style.opacity = '0';
+			document.body.append(textarea);
+			textarea.select();
+			document.execCommand('copy');
+			textarea.remove();
+		};
+
+		const updateProgress = () => {
+			const doc = document.documentElement;
+			const max = doc.scrollHeight - window.innerHeight;
+			const progress = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+			document.querySelectorAll('[data-reading-progress]').forEach((bar) => {
+				bar.style.transform = `scaleX(${progress})`;
+			});
+		};
+
+		const enhanceToc = () => {
+			document.querySelectorAll('[data-enhanced-toc]').forEach((toc) => {
+				const links = Array.from(toc.querySelectorAll('[data-toc-links] a[href^="#"]'));
+				const toggle = toc.querySelector('[data-toc-toggle]');
+				if (!toggle || links.length <= 8) return;
+				toc.dataset.collapsed = 'true';
+				toggle.hidden = false;
+				toggle.setAttribute('aria-expanded', 'false');
+				toggle.addEventListener('click', () => {
+					const isCollapsed = toc.dataset.collapsed !== 'false';
+					toc.dataset.collapsed = isCollapsed ? 'false' : 'true';
+					toggle.setAttribute('aria-expanded', String(isCollapsed));
+					toggle.textContent = isCollapsed ? 'Show less' : 'Show more';
+				});
+			});
+		};
+
+		const enhanceHeadings = () => {
+			document.querySelectorAll('.sl-markdown-content :is(h2, h3, h4)[id]').forEach((heading) => {
+				if (heading.querySelector('[data-copy-heading-link]')) return;
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'heading-copy-link';
+				button.dataset.copyHeadingLink = '';
+				button.setAttribute('aria-label', `Copy link to ${heading.textContent?.trim() || 'section'}`);
+				button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span>Copy link</span>';
+				heading.append(button);
+			});
+		};
+
+		const observeHeadings = () => {
+			const headingMap = new Map();
+			document.querySelectorAll('.sl-markdown-content :is(h2, h3, h4)[id]').forEach((heading) => {
+				headingMap.set(heading.id, heading);
+			});
+			if (!headingMap.size) return;
+
+			const setActive = (id) => {
+				document.querySelectorAll('[data-toc-links] a[aria-current="location"]').forEach((link) => {
+					link.removeAttribute('aria-current');
+				});
+				document.querySelectorAll(`[data-toc-links] a[href="#${CSS.escape(id)}"]`).forEach((link) => {
+					link.setAttribute('aria-current', 'location');
+				});
+			};
+
+			if (!('IntersectionObserver' in window)) {
+				const first = headingMap.keys().next().value;
+				if (first) setActive(first);
+				return;
+			}
+
+			const visible = new Set();
+			const observer = new IntersectionObserver((entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) visible.add(entry.target.id);
+					else visible.delete(entry.target.id);
+				});
+				const activeId = visible.values().next().value;
+				if (activeId) setActive(activeId);
+			}, { rootMargin: '-20% 0px -65% 0px', threshold: [0, 1] });
+
+			headingMap.forEach((heading) => observer.observe(heading));
+		};
+
+		document.addEventListener('click', async (event) => {
+			const button = event.target.closest('[data-copy-heading-link]');
+			if (!button) return;
+			const heading = button.closest('[id]');
+			if (!heading) return;
+			const url = new URL(window.location.href);
+			url.hash = heading.id;
+			try {
+				await copyText(url.toString());
+				button.dataset.copied = 'true';
+				const text = button.querySelector('span');
+				if (text) text.textContent = 'Copied';
+				window.setTimeout(() => {
+					button.dataset.copied = 'false';
+					if (text) text.textContent = 'Copy link';
+				}, 1600);
+			} catch {
+				const text = button.querySelector('span');
+				if (text) text.textContent = 'Copy failed';
+			}
+		});
+
+		window.addEventListener('scroll', updateProgress, { passive: true });
+		window.addEventListener('resize', updateProgress);
+		enhanceToc();
+		enhanceHeadings();
+		observeHeadings();
+		updateProgress();
+	})();
+</script>
 
 <style>
 	@layer starlight.core {
@@ -33,6 +169,19 @@ const { toc } = Astro.locals.starlightRoute;
 			border-top: 1px solid var(--sl-color-gray-5);
 			border-bottom: 1px solid var(--sl-color-hairline-shade);
 			background-color: var(--sl-color-bg-nav);
+		}
+		.toc-progress {
+			height: 2px;
+			background: var(--sl-color-gray-6);
+			overflow: hidden;
+		}
+		.toc-progress span {
+			display: block;
+			width: 100%;
+			height: 100%;
+			transform: scaleX(0);
+			transform-origin: left;
+			background: var(--sl-color-accent);
 		}
 		.mobile-toc summary {
 			padding: 0.5rem var(--sl-sidebar-pad-x);
@@ -72,15 +221,91 @@ const { toc } = Astro.locals.starlightRoute;
 			line-height: var(--sl-line-height-headings);
 			margin-bottom: 0.5rem;
 		}
+		.toc-shell {
+			border: 1px solid var(--sl-color-gray-5);
+			border-radius: 0.5rem;
+			overflow: hidden;
+			background: color-mix(in srgb, var(--sl-color-gray-6) 50%, transparent);
+		}
+		.toc-shell :global(starlight-toc) {
+			display: block;
+			padding: 0.75rem;
+		}
 		.right-sidebar-panel :global(:where(a)) {
 			display: block;
 			font-size: var(--sl-text-xs);
 			text-decoration: none;
 			color: var(--sl-color-gray-3);
 			overflow-wrap: anywhere;
+			border-left: 2px solid transparent;
+			padding-left: 0.45rem;
 		}
 		.right-sidebar-panel :global(:where(a):hover) {
 			color: var(--sl-color-white);
+		}
+		:global([data-toc-links] a[aria-current='location']) {
+			color: var(--sl-color-accent) !important;
+			border-left-color: var(--sl-color-accent);
+			background: color-mix(in srgb, var(--sl-color-accent-low) 55%, transparent);
+		}
+		:global([data-enhanced-toc][data-collapsed='true'] [data-toc-links] li:nth-child(n + 9)) {
+			display: none;
+		}
+		.toc-toggle {
+			width: 100%;
+			border: 0;
+			border-top: 1px solid var(--sl-color-gray-5);
+			background: transparent;
+			color: var(--sl-color-accent);
+			cursor: pointer;
+			font: inherit;
+			font-size: var(--sl-text-xs);
+			font-weight: 700;
+			padding: 0.55rem 0.75rem;
+			text-align: left;
+		}
+		.toc-toggle:hover {
+			background: var(--sl-color-accent-low);
+		}
+		:global(.sl-markdown-content :is(h2, h3, h4)[id]) {
+			position: relative;
+			scroll-margin-top: calc(var(--sl-nav-height) + 1rem);
+		}
+		:global(.heading-copy-link) {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.25rem;
+			margin-left: 0.35rem;
+			border: 0;
+			border-radius: 0.25rem;
+			background: transparent;
+			color: var(--sl-color-gray-3);
+			cursor: pointer;
+			font: inherit;
+			font-size: 0.75rem;
+			font-weight: 600;
+			opacity: 0;
+			padding: 0.15rem 0.3rem;
+			vertical-align: middle;
+		}
+		:global(.sl-markdown-content :is(h2, h3, h4):hover .heading-copy-link),
+		:global(.heading-copy-link:focus-visible),
+		:global(.heading-copy-link[data-copied='true']) {
+			opacity: 1;
+		}
+		:global(.heading-copy-link:hover),
+		:global(.heading-copy-link[data-copied='true']) {
+			color: var(--sl-color-accent);
+			background: var(--sl-color-accent-low);
+		}
+		:global(.heading-copy-link svg) {
+			width: 0.85rem;
+			height: 0.85rem;
+			fill: none;
+			stroke: currentColor;
+			stroke-width: 2;
+			stroke-linecap: round;
+			stroke-linejoin: round;
 		}
 	}
 </style>

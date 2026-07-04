@@ -8,6 +8,19 @@ const {
 
 const { title, description } = data;
 const incudeAIMenu = userConfig.docs?.includeAiUtilities ?? false;
+const wordsPerMinute = 220;
+const contentBody = typeof Astro.locals.starlightRoute?.entry?.body === 'string'
+    ? Astro.locals.starlightRoute.entry.body
+    : '';
+const computedReadTime = contentBody
+    ? `${Math.max(1, Math.ceil(contentBody.trim().split(/\s+/).filter(Boolean).length / wordsPerMinute))} min read`
+    : undefined;
+const guideMeta = [
+    data.difficulty && { label: data.difficulty, title: 'Difficulty' },
+    data.guideType && { label: data.guideType, title: 'Guide type' },
+    (data.estimatedReadTime || computedReadTime) && { label: data.estimatedReadTime || computedReadTime, title: 'Estimated read time' },
+    data.lastVerified && { label: `Verified ${data.lastVerified}`, title: 'Last verified version' },
+].filter(Boolean);
 
 // Suppress prev/next arrow buttons on the home (splash) page, where the
 // title is intentionally blank and the landing layout has its own CTAs.
@@ -78,7 +91,18 @@ const rightArrow = 'M9 18l6-6-6-6';
         )
     }
 
-    <!--  -->
+    {
+        !isHomePage && guideMeta.length > 0 && (
+            <dl class="guide-meta" aria-label="Guide metadata">
+                {guideMeta.map((item) => (
+                    <div class="guide-meta-chip" title={item.title}>
+                        <dt>{item.title}</dt>
+                        <dd>{item.label}</dd>
+                    </div>
+                ))}
+            </dl>
+        )
+    }
 </div>
 
 <style>
@@ -125,6 +149,44 @@ const rightArrow = 'M9 18l6-6-6-6';
         @media (min-width: 640px) {
             max-width: 80%;
         }
+    }
+
+    .guide-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin: 0.35rem 0 0;
+    }
+
+    .guide-meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border: 1px solid var(--sl-color-gray-5);
+        border-radius: 9999px;
+        background: var(--sl-color-gray-6);
+        color: var(--sl-color-gray-2);
+        font-size: 0.75rem;
+        font-weight: 650;
+        line-height: 1;
+        padding: 0.35rem 0.6rem;
+        text-transform: capitalize;
+    }
+
+    .guide-meta-chip dt {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .guide-meta-chip dd {
+        margin: 0;
     }
 
     /* LinkButton  -  inlined from lucode-starlight (not exported as a public import). */

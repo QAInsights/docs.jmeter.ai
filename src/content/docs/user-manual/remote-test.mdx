@@ -1,10 +1,22 @@
 ---
 title: "User's Manual: Remote (Distributed) Testing"
 description: "Configure JMeter distributed testing to scale load across multiple remote engines. Control worker nodes from a single client and aggregate results centrally."
+difficulty: advanced
+guideType: reference
+estimatedReadTime: 14 min read
+lastVerified: JMeter 5.6
 ---
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 13. Remote Testing
+
+:::caution[Security-sensitive setting]
+Remote testing exposes control channels between machines. Restrict network access, use trusted test plans, and review RMI SSL settings before enabling workers.
+:::
+
+:::note[Version-specific behavior]
+Remote testing requires compatible JMeter and Java versions across controller and workers. Re-check RMI and SSL defaults after upgrades.
+:::
 
 In the event that your JMeter client machine is unable, performance-wise, to simulate
 enough users to stress your server or is limited at network level, an option exists to control multiple, remote JMeter

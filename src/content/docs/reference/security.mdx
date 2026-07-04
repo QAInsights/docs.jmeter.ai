@@ -1,9 +1,17 @@
 ---
 title: "Security"
 description: "JMeter security guidelines - trust model for .jmx files, distributed testing isolation, sandboxing untrusted test plans, and reporting vulnerabilities."
+difficulty: advanced
+guideType: reference
+estimatedReadTime: 5 min read
+lastVerified: JMeter 5.6
 ---
 
 ## Security Model
+
+:::caution[Security-sensitive setting]
+Treat `.jmx` files and distributed workers as trusted execution inputs. Opening or running a test plan can execute code through configured elements or scripts.
+:::
 
   
     The purpose of JMeter is to execute the workload specified

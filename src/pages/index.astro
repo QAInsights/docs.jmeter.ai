@@ -1,9 +1,56 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import TerminalHero from '../components/landing/TerminalHero.astro';
-import MetricsStrip from '../components/landing/MetricsStrip.astro';
 import BentoGrid from '../components/landing/BentoGrid.astro';
 import DocsGraph from '../components/landing/DocsGraph.astro';
+
+const workflows = [
+  {
+    title: 'Record HTTP traffic',
+    description: 'Capture browser journeys, filter noise, and turn real requests into a maintainable test plan.',
+    href: '/topics/http-recorder/',
+    action: 'Open recorder guide',
+  },
+  {
+    title: 'Build a test plan',
+    description: 'Model users with thread groups, samplers, config elements, assertions, and realistic data.',
+    href: '/user-manual/build-test-plan/',
+    action: 'Build from basics',
+  },
+  {
+    title: 'Run distributed load',
+    description: 'Scale beyond one injector with controller-worker setup, RMI ports, and result aggregation.',
+    href: '/topics/distributed-testing/',
+    action: 'Scale the run',
+  },
+  {
+    title: 'Analyze dashboard results',
+    description: 'Generate HTML reports and interpret APDEX, percentiles, throughput, and errors after a run.',
+    href: '/user-manual/generating-dashboard/',
+    action: 'Read reports',
+  },
+  {
+    title: 'Tune properties',
+    description: 'Adjust JMeter and system properties for load generation, reporting, networking, and plugins.',
+    href: '/user-manual/properties-reference/',
+    action: 'Review properties',
+  },
+  {
+    title: 'Extend JMeter',
+    description: 'Create custom samplers, listeners, timers, and dashboard components for your testing stack.',
+    href: '/extending/extending-jmeter/',
+    action: 'Extend behavior',
+  },
+];
+
+const goals = [
+  { id: 'web', label: 'Web app', href: '/user-manual/build-web-test-plan/', detail: 'Browser-style HTTP flows with cookies, defaults, and assertions.' },
+  { id: 'api', label: 'API', href: '/topics/api-load-testing/', detail: 'REST, SOAP, GraphQL, headers, payloads, and CI-friendly reports.' },
+  { id: 'database', label: 'Database', href: '/user-manual/build-db-test-plan/', detail: 'JDBC connection setup, SQL requests, and database test plans.' },
+  { id: 'distributed', label: 'Distributed', href: '/topics/distributed-testing/', detail: 'Multi-machine load generation with controller and workers.' },
+  { id: 'ci', label: 'CI', href: '/topics/ci-cd-load-testing/', detail: 'Non-GUI execution, report artifacts, and performance gates.' },
+  { id: 'plugin', label: 'Plugin dev', href: '/extending/extending-jmeter/', detail: 'Custom elements, UI integration, and extension points.' },
+];
 ---
 
 <StarlightPage
@@ -18,7 +65,7 @@ import DocsGraph from '../components/landing/DocsGraph.astro';
     <section class="hero-section">
       <div class="hero-text">
         <h1>Apache <span class="accent">JMeter</span> Documentation</h1>
-        <p>Community-maintained docs with full-text search, dark mode, and organized navigation. Independent resource - not affiliated with the Apache Software Foundation.</p>
+        <p>Find the JMeter guide that matches the job in front of you: record traffic, build a plan, run real load, analyze results, tune configuration, or extend the tool.</p>
         <div class="hero-cta">
           <a href="/getting-started/get-started/" class="cta-primary">
             Get Started →
@@ -31,8 +78,39 @@ import DocsGraph from '../components/landing/DocsGraph.astro';
       <TerminalHero />
     </section>
 
-    <section class="metrics-section">
-      <MetricsStrip />
+    <section class="workflow-section" aria-labelledby="workflow-heading">
+      <div class="section-heading">
+        <h2 id="workflow-heading">Choose the workflow</h2>
+        <p>Start with the task you need to finish, then move into the deeper manual pages when the plan is ready.</p>
+      </div>
+      <div class="workflow-grid">
+        {workflows.map((workflow) => (
+          <a class="workflow-card" href={workflow.href}>
+            <span class="workflow-title">{workflow.title}</span>
+            <span class="workflow-desc">{workflow.description}</span>
+            <span class="workflow-action">{workflow.action}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section class="goal-section" aria-labelledby="goal-heading">
+      <div class="section-heading">
+        <h2 id="goal-heading">Start from your goal</h2>
+        <p>Pick the closest target and jump to the guide that gets you moving fastest.</p>
+      </div>
+      <div class="goal-selector" role="radiogroup" aria-label="Documentation goal">
+        {goals.map((goal, index) => (
+          <label class="goal-option">
+            <input type="radio" name="doc-goal" value={goal.id} checked={index === 0} />
+            <span class="goal-copy">
+              <span class="goal-label">{goal.label}</span>
+              <span class="goal-detail">{goal.detail}</span>
+            </span>
+            <a href={goal.href}>Open guide</a>
+          </label>
+        ))}
+      </div>
     </section>
 
     <section class="docs-graph-section">

@@ -7,6 +7,9 @@ keywords:
   - REST API performance testing
   - JMeter HTTP sampler
 difficulty: intermediate
+guideType: how-to
+estimatedReadTime: 7 min read
+lastVerified: JMeter 5.6
 canonicalTopic: api-load-testing
 ---
 
@@ -15,6 +18,14 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 # JMeter for API Load Testing
 
 Apache JMeter is one of the most widely used open-source tools for API load testing. Whether you're testing REST APIs, SOAP services, or GraphQL endpoints, JMeter provides the samplers, assertions, and reporting tools you need to validate performance under load.
+
+:::tip[Use CLI mode for real load]
+Build and debug API plans in the GUI, then run load tests with `jmeter -n -t plan.jmx -l results.jtl -e -o report/` so the GUI does not consume injector resources.
+:::
+
+:::caution[Avoid View Results Tree in load tests]
+Use View Results Tree only while debugging individual requests. Disable it before real API load runs because it stores response details in memory.
+:::
 
 ## Why JMeter for API Testing?
 

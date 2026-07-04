@@ -1,9 +1,21 @@
 ---
 title: "User's Manual: Properties Reference"
 description: "JMeter properties reference - jmeter.properties, user.properties, and reportgenerator.properties. Configure SSL, XML parsing, language, and runtime behavior."
+difficulty: advanced
+guideType: reference
+estimatedReadTime: 18 min read
+lastVerified: JMeter 5.6
 ---
 
 ## 19 Introduction
+
+:::caution[Security-sensitive setting]
+Properties can affect SSL, remote execution, scripting, file access, and report contents. Review changes before committing shared `user.properties` or CI overrides.
+:::
+
+:::note[Version-specific behavior]
+Property names and defaults can change across JMeter releases. Check the installed `jmeter.properties` file when upgrading.
+:::
 
 This document describes JMeter properties. The properties present in `jmeter.properties` or `reportgenerator.properties` should be set in the `user.properties` file.
 These properties are only taken into account after restarting JMeter as they are usually resolved when the class is loaded.

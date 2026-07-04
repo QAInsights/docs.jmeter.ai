@@ -12,6 +12,8 @@ export const collections = {
         seoTitle: z.string().optional(),
         keywords: z.array(z.string()).optional(),
         difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+        guideType: z.enum(['tutorial', 'how-to', 'reference', 'concept', 'troubleshooting']).optional(),
+        estimatedReadTime: z.string().optional(),
         lastVerified: z.string().optional(),
         canonicalTopic: z.string().optional(),
       }),

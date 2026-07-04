@@ -8,6 +8,9 @@ keywords:
   - automated load testing
   - JMeter non-GUI mode
 difficulty: advanced
+guideType: how-to
+estimatedReadTime: 6 min read
+lastVerified: JMeter 5.6
 canonicalTopic: ci-cd-load-testing
 ---
 
@@ -16,6 +19,10 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 # JMeter CI/CD Load Testing
 
 Integrating JMeter into your CI/CD pipeline ensures that performance regressions are caught before they reach production. This guide covers running JMeter in non-GUI mode, automating report generation, and setting up performance gates in popular CI systems.
+
+:::tip[Use CLI mode for real load]
+CI jobs should run JMeter in non-GUI mode and archive the `.jtl` plus generated dashboard report. Keep the GUI out of automated load stages.
+:::
 
 ## Running JMeter in Non-GUI Mode
 

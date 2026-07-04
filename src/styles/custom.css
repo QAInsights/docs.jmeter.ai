@@ -332,6 +332,26 @@ button:where(.astro-jif73yzw):active,
   }
 }
 
+/* --- Inline link hover effect: accent background fill
+   Keeps Starlight's default underline, adds background highlight on hover.
+   Wrapped in prefers-reduced-motion to respect motion prefs. -- */
+@media (prefers-reduced-motion: no-preference) {
+  .sl-markdown-content a {
+    position: relative;
+    z-index: 0;
+    transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  }
+
+  .sl-markdown-content a:hover {
+    color: var(--sl-color-text-accent);
+    background-color: color-mix(in srgb, var(--sl-color-accent) 15%, transparent);
+    text-decoration-color: var(--sl-color-accent);
+    border-radius: 0.2em;
+    padding: 0.1em 0.2em;
+    margin: -0.1em -0.2em;
+  }
+}
+
 /* --- Search modal: fade + slight rise on open/close (allow-discrete) ---- */
 @supports (transition-behavior: allow-discrete) {
   @media (prefers-reduced-motion: no-preference) {
@@ -576,62 +596,6 @@ button:where(.astro-v37mnknz)[disabled] {
 
 :root[data-theme='light'] .theme-toggle-btn .icon-moon {
   display: block;
-}
-
-/* ==========================================================================
-   Page share & agent actions
-   ========================================================================== */
-.page-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--sl-color-gray-5);
-  align-items: center;
-}
-
-.page-actions-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--sl-color-gray-3);
-  margin-right: 0.25rem;
-}
-
-.page-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 9999px;
-  border: 1px solid var(--sl-color-gray-5);
-  background: transparent;
-  color: var(--sl-color-gray-2);
-  font-size: 0.8rem;
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 150ms var(--mx-ease), border-color 150ms var(--mx-ease), background-color 150ms var(--mx-ease);
-}
-
-.page-action-btn:hover {
-  color: var(--sl-color-accent);
-  border-color: var(--sl-color-accent);
-  background: var(--sl-color-accent-low);
-}
-
-.page-action-btn svg {
-  width: 0.875rem;
-  height: 0.875rem;
-  flex-shrink: 0;
-}
-
-.page-actions-separator {
-  width: 1px;
-  height: 1.25rem;
-  background: var(--sl-color-gray-5);
-  margin: 0 0.25rem;
 }
 
 /* ==========================================================================
