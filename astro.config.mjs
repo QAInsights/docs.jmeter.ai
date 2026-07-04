@@ -1,10 +1,24 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import lucode from 'lucode-starlight';
+import starlightDocSearch from '@astrojs/starlight-docsearch';
+import { loadEnv } from 'vite';
 import { sidebar } from './src/sidebar.mjs';
+
+const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 
 export default defineConfig({
   site: 'https://docs.jmeter.ai',
+  vite: {
+    resolve: {
+      alias: [
+        {
+          find: /lucode-starlight[/\\]components[/\\]overrides[/\\]Search\.astro$/,
+          replacement: '@astrojs/starlight-docsearch/DocSearch.astro'
+        }
+      ]
+    }
+  },
   integrations: [
     starlight({
       title: 'JMeter Docs',
@@ -16,6 +30,11 @@ export default defineConfig({
         replacesTitle: false,
       },
       plugins: [
+        starlightDocSearch({
+          appId: env.PUBLIC_ALGOLIA_APP_ID,
+          apiKey: env.PUBLIC_ALGOLIA_API_KEY,
+          indexName: env.PUBLIC_ALGOLIA_INDEX_NAME,
+        }),
         lucode({ footerText: '' }),
       ],
       customCss: ['./src/styles/custom.css', './src/styles/landing.css'],
