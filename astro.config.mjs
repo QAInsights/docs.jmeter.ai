@@ -22,6 +22,7 @@ export default defineConfig({
         Footer: './src/components/FooterDisclaimer.astro',
         Head: './src/components/SeoHead.astro',
         ThemeSelect: './src/components/ThemeToggle.astro',
+        PageSidebar: './src/components/PageSidebar.astro',
       },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/QAInsights/docs.jmeter.ai' },
