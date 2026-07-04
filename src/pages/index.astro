@@ -3,6 +3,7 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import TerminalHero from '../components/landing/TerminalHero.astro';
 import MetricsStrip from '../components/landing/MetricsStrip.astro';
 import BentoGrid from '../components/landing/BentoGrid.astro';
+import DocsGraph from '../components/landing/DocsGraph.astro';
 ---
 
 <StarlightPage
@@ -32,6 +33,10 @@ import BentoGrid from '../components/landing/BentoGrid.astro';
 
     <section class="metrics-section">
       <MetricsStrip />
+    </section>
+
+    <section class="docs-graph-section">
+      <DocsGraph />
     </section>
 
     <section class="bento-section">

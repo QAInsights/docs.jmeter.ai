@@ -4,7 +4,7 @@
 
 Site: https://docs.jmeter.ai
 Pages: 45
-Generated: 2026-07-04T21:48:18.311Z
+Generated: 2026-07-04T22:32:26.263Z
 ---
 Title: User's Manual: Getting Started
 URL: https://docs.jmeter.ai/getting-started/get-started/
@@ -936,12 +936,512 @@ Note: You can define additional JMeter properties in the file defined by the
 Build your first test plan with the [Building a Test Plan](/user-manual/build-test-plan/) guide.
 </Fragment>
 <Fragment slot="related">
-- [Best Practices](/user-manual/best-practices/) — essential guidelines before running load tests
-- [Boss](/user-manual/boss/) — how to scope a performance testing effort
+- [Best Practices](/user-manual/best-practices/)  -  essential guidelines before running load tests
+- [Boss](/user-manual/boss/)  -  how to scope a performance testing effort
 </Fragment>
 <Fragment slot="troubleshooting">
 - If JMeter fails to start, verify you have Java 17+ installed (`java -version`)
 - Use View Results Tree in Validate mode to debug before running full tests
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter for API Load Testing
+URL: https://docs.jmeter.ai/topics/api-load-testing/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter for API Load Testing
+
+Apache JMeter is one of the most widely used open-source tools for API load testing. Whether you're testing REST APIs, SOAP services, or GraphQL endpoints, JMeter provides the samplers, assertions, and reporting tools you need to validate performance under load.
+
+## Why JMeter for API Testing?
+
+- **Free and open-source**  -  no licensing costs, full control over test plans
+- **Protocol support**  -  HTTP/HTTPS, WebSocket, gRPC (via plugins), SOAP, and GraphQL
+- **Parameterization**  -  use functions, CSV datasets, and variables to simulate realistic traffic
+- **CI/CD integration**  -  run tests in non-GUI mode from any build pipeline
+- **Rich reporting**  -  HTML dashboard reports with APDEX scores, throughput graphs, and error tables
+
+## Getting Started
+
+If you're new to JMeter, start with these pages:
+
+1. [Getting Started](/getting-started/get-started/)  -  install JMeter and understand the workflow
+2. [Building a Test Plan](/user-manual/build-test-plan/)  -  learn the core concepts
+3. [Building a Web Test Plan](/user-manual/build-web-test-plan/)  -  your first HTTP test plan
+
+## Configuring HTTP Requests
+
+The [HTTP Request sampler](/user-manual/component-reference/) is the core element for API testing. Key configuration options:
+
+- **Server Name or IP**  -  target hostname (e.g., `api.example.com`)
+- **Method**  -  GET, POST, PUT, DELETE, PATCH
+- **Path**  -  API endpoint path (e.g., `/v1/users`)
+- **Body Data**  -  request payload for POST/PUT
+- **Headers**  -  use HTTP Header Manager for Content-Type, Authorization, etc.
+
+## Parameterizing Requests
+
+Real-world API tests need dynamic data. Use these techniques:
+
+- [Functions and Variables](/user-manual/functions/)  -  `${__Random()}`, `${__UUID()}`, `${__time()}` for generating test data
+- [Regular Expressions](/user-manual/regular-expressions/)  -  extract tokens from responses for subsequent requests
+- CSV Data Set Config  -  read test data from files
+
+## Analyzing Results
+
+After running a load test, analyze the results:
+
+- [Dashboard Report](/user-manual/generating-dashboard/)  -  generate HTML reports with APDEX, response time distributions, and error tables
+- [Listeners](/user-manual/listeners/)  -  View Results Tree for debugging, Summary Report for quick stats
+- [Real-time Results](/user-manual/realtime-results/)  -  stream metrics to InfluxDB/Grafana during the test
+
+## Best Practices
+
+Follow the [Best Practices](/user-manual/best-practices/) guide for reliable results:
+
+- Run tests in non-GUI mode (`jmeter -n -t test.jmx`)
+- Remove all Listeners except CSV output during load tests
+- Use the correct number of threads for your target load
+- Always include ramp-up and ramp-down periods
+
+<RelatedContent>
+<Fragment slot="next-step">
+Start with [Building a Web Test Plan](/user-manual/build-web-test-plan/) to create your first API load test.
+</Fragment>
+<Fragment slot="related">
+- [cURL Import](/user-manual/curl/)  -  quickly create HTTP samplers from existing curl commands
+- [Component Reference](/user-manual/component-reference/)  -  full HTTP Request configuration
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter Distributed Testing Guide
+URL: https://docs.jmeter.ai/topics/distributed-testing/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Distributed Testing Guide
+
+When a single machine can't generate enough load, JMeter's distributed testing feature lets you control multiple remote JMeter engines from a single client. This guide covers everything you need to set up, run, and troubleshoot multi-machine load tests.
+
+## How Distributed Testing Works
+
+JMeter uses a **controller-worker** architecture (historically called master/slave):
+
+- **Controller (client)**  -  sends the test plan to workers, starts/stops tests, and collects results
+- **Workers (servers)**  -  execute the test plan and stream results back to the controller
+
+Important: JMeter does **not** distribute load between workers. Each worker runs the complete test plan. If your test plan uses 100 threads and you have 4 workers, you'll generate 400 total threads.
+
+## Setup Requirements
+
+Before starting, verify:
+
+- All machines are on the **same subnet**
+- **Firewalls are disabled** or ports are open (default RMI ports: 1099, 4000-4099)
+- **Same version** of JMeter and Java on all machines
+- SSL for RMI is either configured or explicitly disabled
+
+## Step-by-Step Setup
+
+Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-testing-step-by-step/) tutorial for a guided walkthrough, or refer to the [Remote Testing](/user-manual/remote-test/) page for the full reference.
+
+### Quick Start
+
+1. On each worker: `jmeter-server` (or `jmeter-server.bat` on Windows)
+2. On the controller: `jmeter -R worker1,worker2,worker3 -t test.jmx -n`
+3. Results are aggregated automatically on the controller
+
+## Monitoring Distributed Tests
+
+- [Real-time Results](/user-manual/realtime-results/)  -  use the Backend Listener to stream metrics from workers to InfluxDB/Grafana
+- [Dashboard Report](/user-manual/generating-dashboard/)  -  generate consolidated HTML reports from the aggregated CSV results
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Connection refused | Check firewall rules and that `jmeter-server` is running on the worker |
+| Serialization errors | Ensure identical JMeter versions on all machines |
+| Workers not found | Verify all machines are on the same subnet and can ping each other |
+| SSL handshake failure | Set `server.rmi.ssl.disable=true` in `user.properties` on all machines (non-production only) |
+
+<RelatedContent>
+<Fragment slot="next-step">
+Follow the [Step-by-Step Tutorial](/user-manual/jmeter-distributed-testing-step-by-step/) for a hands-on distributed testing setup.
+</Fragment>
+<Fragment slot="related">
+- [Remote Testing Reference](/user-manual/remote-test/)  -  complete configuration reference
+- [Properties Reference](/user-manual/properties-reference/)  -  RMI and networking properties
+</Fragment>
+<Fragment slot="troubleshooting">
+- Workers must be started before the controller initiates the test
+- Check `jmeter-server.log` on each worker for startup errors
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter HTTP(S) Test Script Recorder Guide
+URL: https://docs.jmeter.ai/topics/http-recorder/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter HTTP(S) Test Script Recorder Guide
+
+The HTTP(S) Test Script Recorder is one of the fastest ways to build a JMeter test plan. Instead of manually creating HTTP Request samplers, you configure your browser to route traffic through JMeter's proxy, and JMeter captures every request automatically.
+
+## How It Works
+
+1. JMeter starts an embedded HTTP proxy server on a configurable port (default: 8888)
+2. Your browser sends all requests through this proxy
+3. JMeter intercepts each request and creates a corresponding HTTP Request sampler in your test plan
+4. Responses pass through to the browser unchanged
+
+## Step-by-Step Recording
+
+Follow the [HTTP(S) Test Script Recorder](/user-manual/jmeter-proxy-step-by-step/) tutorial for detailed setup instructions.
+
+### Quick Setup
+
+1. Add a **Test Plan** > **Thread Group**
+2. Add **HTTP(S) Test Script Recorder** under WorkBench (or Test Plan in newer versions)
+3. Set the **Target Controller** to your Thread Group
+4. Click **Start**
+5. Configure your browser proxy to `localhost:8888`
+6. Navigate your application  -  JMeter records every request
+
+## SSL/HTTPS Recording
+
+For HTTPS sites, JMeter generates a self-signed certificate. You must:
+
+1. Start the recorder (JMeter generates the certificate)
+2. Install `ApacheJMeterTemporaryRootCA.crt` in your browser's certificate store
+3. Accept the security warning
+
+Since JMeter 2.10, embedded resource handling and on-the-fly certificate generation have been significantly improved.
+
+## Filtering and Grouping
+
+Use these Recorder settings to keep your test plan clean:
+
+- **URL Patterns to Include**  -  regex filter to capture only relevant requests (e.g., `.*\\.html|.*\\.json`)
+- **URL Patterns to Exclude**  -  filter out static assets (`.css`, `.js`, `.png`)
+- **Grouping**  -  group recorded samplers by URL path or controller
+
+## After Recording
+
+Once recorded, you'll need to:
+
+1. Add [HTTP Request Defaults](/user-manual/component-reference/) to set common server/port values
+2. Add [HTTP Cookie Manager](/user-manual/component-reference/) to handle session cookies
+3. Use [Regular Expression Extractors](/user-manual/regular-expressions/) to capture dynamic tokens (CSRF, session IDs)
+4. Add [Assertions](/user-manual/test-plan/) to validate response content
+
+<RelatedContent>
+<Fragment slot="next-step">
+After recording, follow [Building a Web Test Plan](/user-manual/build-web-test-plan/) to clean up and configure your captured test plan.
+</Fragment>
+<Fragment slot="related">
+- [cURL Import](/user-manual/curl/)  -  alternative way to create samplers from command-line requests
+- [Access Log Sampler](/user-manual/jmeter-accesslog-sampler-step-by-step/)  -  replay production traffic patterns
+</Fragment>
+<Fragment slot="troubleshooting">
+- If HTTPS pages show certificate errors, re-install the JMeter root CA certificate
+- Static assets (CSS, JS, images) should be excluded via URL Patterns to keep the test plan focused on API calls
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter Functions and Variables Guide
+URL: https://docs.jmeter.ai/topics/functions-and-variables/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Functions and Variables Guide
+
+JMeter functions and variables are the primary mechanism for making test plans dynamic. Instead of hardcoding values, you can generate random data, read from files, manipulate strings, and pass values between samplers  -  all using JMeter's built-in function syntax.
+
+## Function Syntax
+
+All JMeter functions follow the pattern `${__functionName(param1, param2, ...)}`. Functions can be used in any sampler field, assertion, or configuration element.
+
+Key rules:
+- Functions with no parameters can omit parentheses: `${__threadNum}` works the same as `${__threadNum()}`
+- Commas in parameters must be escaped with backslash: `${__Random(1\,100)}`
+- Functions can be nested: `${__substring(${__time()}, 0, 10)}`
+
+## Most-Used Functions
+
+### Data Generation
+
+| Function | Purpose | Example |
+|----------|---------|---------|
+| `__Random` | Random integer in range | `${__Random(1,1000,varName)}` |
+| `__RandomString` | Random string of given length | `${__RandomString(10,abcdefg)}` |
+| `__UUID` | Generate a UUID | `${__UUID()}` |
+| `__time` | Current timestamp | `${__time(yyyy-MM-dd,)}` |
+| `__counter` | Auto-incrementing counter | `${__counter(TRUE,)}` |
+
+### Variable Access
+
+| Function | Purpose | Example |
+|----------|---------|---------|
+| `__V` | Resolve nested variable | `${__V(user_${counter})}` |
+| `__P` | Read a property | `${__P(threads,10)}` |
+| `__setProperty` | Set a JMeter property | `${__setProperty(key, value)}` |
+| `__BeanShell` | Execute BeanShell code | `${__BeanShell(vars.get("x"))}` |
+
+### String Manipulation
+
+| Function | Purpose | Example |
+|----------|---------|---------|
+| `__substring` | Extract substring | `${__substring(hello world, 0, 5)}` |
+| `__urlencode` | URL-encode a string | `${__urlencode(my value)}` |
+| `__split` | Split string into variables | `${__split(a\,b\,c, arr, \,)}` |
+
+## Variables vs Properties
+
+Understanding the difference is critical:
+
+- **Variables** (`vars`)  -  thread-local, each thread has its own copy. Set with `${__V()}` or extractors.
+- **Properties** (`props`)  -  global, shared across all threads. Set with `${__setProperty()}` or `-J` command-line flag.
+
+Use properties to pass data between threads; use variables for within-thread parameterization.
+
+## CSV Data Set Config
+
+For large datasets, the CSV Data Set Config element reads values from a file and assigns them to variables:
+
+1. Add CSV Data Set Config to your Thread Group
+2. Set **Filename** to your CSV file path
+3. Set **Variable Names** (comma-separated, matching CSV columns)
+4. Use `${variableName}` in samplers
+
+This is the most common approach for parameterizing usernames, passwords, and test data.
+
+## Complete Reference
+
+See the [Functions and Variables](/user-manual/functions/) page for the full list of all available functions with detailed parameter descriptions.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Practice by adding `${__Random(1,100)}` to an HTTP Request sampler and verifying the value in View Results Tree.
+</Fragment>
+<Fragment slot="related">
+- [Regular Expressions](/user-manual/regular-expressions/)  -  extract dynamic values from responses to use in subsequent requests
+- [Properties Reference](/user-manual/properties-reference/)  -  JMeter properties that interact with the `__P()` function
+</Fragment>
+<Fragment slot="mistakes">
+- Forgetting to escape commas in function parameters causes unexpected behavior
+- Using variables instead of properties when you need to share data across Thread Groups
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter CI/CD Load Testing
+URL: https://docs.jmeter.ai/topics/ci-cd-load-testing/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter CI/CD Load Testing
+
+Integrating JMeter into your CI/CD pipeline ensures that performance regressions are caught before they reach production. This guide covers running JMeter in non-GUI mode, automating report generation, and setting up performance gates in popular CI systems.
+
+## Running JMeter in Non-GUI Mode
+
+The foundation of CI/CD integration is JMeter's command-line mode:
+
+```bash
+jmeter -n -t test-plan.jmx -l results.jtl -e -o report/
+```
+
+Flags:
+- `-n`  -  non-GUI mode
+- `-t`  -  test plan file
+- `-l`  -  results log file (CSV format)
+- `-e`  -  generate dashboard report after test
+- `-o`  -  output folder for HTML report
+
+### Passing Parameters
+
+Override JMeter properties from the command line:
+
+```bash
+jmeter -n -t test.jmx -Jthreads=50 -Jrampup=60 -Jduration=300
+```
+
+In the test plan, reference these with `${__P(threads,10)}` (with a default value of 10).
+
+## Performance Gates
+
+To fail a build when performance degrades, check the APDEX score or error rate from the dashboard report:
+
+### Using the Dashboard Report
+
+The [Dashboard Report](/user-manual/generating-dashboard/) generates a `statistics.json` file alongside the HTML report. Parse it to extract:
+
+- **Overall APDEX score**  -  threshold for build pass/fail
+- **Error percentage**  -  must be below a target (e.g., 1%)
+- **95th percentile response time**  -  must not exceed a target
+
+### Example: Bash Script Gate
+
+```bash
+# Extract error rate from statistics.json
+ERROR_RATE=$(jq '.Total.errorPct' report/statistics.json)
+APDEX=$(jq '.Total.apdexSummary.apdex' report/statistics.json)
+
+if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then
+  echo "FAIL: Error rate $ERROR_RATE exceeds 1%"
+  exit 1
+fi
+
+if (( $(echo "$APDEX < 0.85" | bc -l) )); then
+  echo "FAIL: APDEX $APDEX below 0.85"
+  exit 1
+fi
+
+echo "PASS: Error rate=$ERROR_RATE, APDEX=$APDEX"
+```
+
+## CI System Integration
+
+### GitHub Actions
+
+```yaml
+- name: Run JMeter Load Test
+  run: |
+    docker run --rm -v ${{ github.workspace }}:/test justb4/jmeter:5.6 \
+      -n -t /test/test-plan.jmx -l /test/results.jtl -e -o /test/report
+
+- name: Check Performance Gate
+  run: |
+    ERROR_RATE=$(jq '.Total.errorPct' report/statistics.json)
+    if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then exit 1; fi
+
+- name: Upload Report
+  uses: actions/upload-artifact@v4
+  with:
+    name: jmeter-report
+    path: report/
+```
+
+### Jenkins
+
+Use the JMeter plugin or a simple shell build step. Archive the `report/` directory as a build artifact and use the Performance Plugin to track trends across builds.
+
+## Best Practices for CI/CD
+
+Follow the [Best Practices](/user-manual/best-practices/) guide:
+
+- Always use non-GUI mode in pipelines
+- Keep test plans under version control alongside application code
+- Use CSV Data Set Config for test data  -  don't hardcode values
+- Generate the [Dashboard Report](/user-manual/generating-dashboard/) for every run
+- Store historical results for trend analysis
+
+<RelatedContent>
+<Fragment slot="next-step">
+Add a performance gate to your existing pipeline using the statistics.json approach described above.
+</Fragment>
+<Fragment slot="related">
+- [Dashboard Report](/user-manual/generating-dashboard/)  -  configure custom APDEX thresholds
+- [Building JMeter from Source](/reference/building/)  -  build a custom JMeter for your CI environment
+</Fragment>
+<Fragment slot="mistakes">
+- Running GUI mode in CI causes resource waste and potential hangs
+- Not setting timeouts on the JMeter process can block the pipeline indefinitely
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter vs k6, Locust, and Gatling
+URL: https://docs.jmeter.ai/topics/jmeter-vs-alternatives/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter vs k6, Locust, and Gatling
+
+Choosing a load testing tool depends on your team's skills, protocols, and infrastructure. This page provides a factual comparison of Apache JMeter with three popular alternatives: k6, Locust, and Gatling.
+
+## Quick Comparison
+
+| Feature | JMeter | k6 | Locust | Gatling |
+|---------|--------|-----|--------|---------|
+| **Language** | Java | Go (scripts in JS/TS) | Python | Scala/Java/Kotlin |
+| **Scripting** | GUI + XML | JavaScript/TypeScript | Python code | Scala/Java DSL |
+| **Protocols** | HTTP, FTP, JDBC, LDAP, JMS, SMTP, WebSocket (plugin) | HTTP, WebSocket, gRPC | HTTP | HTTP, WebSocket, JMS |
+| **GUI** | Full GUI for test design | CLI only | Web UI for monitoring | CLI only |
+| **Reporting** | HTML dashboard, CSV | Cloud + CLI output | Web UI + CSV | HTML report |
+| **License** | Apache 2.0 | AGPL 3.0 (OSS) / Cloud | MIT | Apache 2.0 |
+| **Distributed** | Native (controller-worker) | Cloud only | Built-in (master-worker) | Commercial only |
+
+## Architecture Differences
+
+### JMeter
+Thread-based model  -  each virtual user is a Java thread. Test plans are XML files (`.jmx`) edited through the GUI or directly. Rich ecosystem of plugins extends protocol support. [Building a Test Plan](/user-manual/build-test-plan/) is done visually.
+
+### k6
+Written in Go for low resource consumption. Scripts are JavaScript/TypeScript files that define virtual user scenarios as code. Virtual users are lightweight goroutines, not OS threads. No GUI  -  everything is code-driven. Open-source core with a commercial cloud offering.
+
+### Locust
+Python-based with an event-driven architecture (gevent). Test scenarios are written as Python classes. Built-in web UI for real-time monitoring during tests. Distributed testing is built-in with a master-worker model. Very accessible for teams already using Python.
+
+### Gatling
+Scala/JVM-based with an asynchronous, non-blocking architecture. Tests are defined as code using a type-safe DSL. Generates detailed HTML reports automatically. Commercial version (Gatling Enterprise) adds cloud execution and distributed testing.
+
+## When to Choose JMeter
+
+- You need **GUI-based test design** for team members who don't code
+- You test **multiple protocols** beyond HTTP (FTP, LDAP, JMS, JDBC)
+- You need **native distributed testing** without a commercial subscription
+- Your team has existing **JMeter expertise** and a library of `.jmx` files
+- You want a **fully open-source** solution with no AGPL restrictions
+
+## When to Consider Alternatives
+
+- **k6**  -  if your team prefers JavaScript, wants minimal resource usage, and uses Grafana's ecosystem
+- **Locust**  -  if your team writes Python and wants code-first test scenarios with a monitoring UI
+- **Gatling**  -  if your team uses Scala/Java and values type-safe test DSLs with detailed reports
+
+## JMeter Strengths
+
+- **Protocol breadth**  -  no other open-source tool covers FTP, LDAP, JMS, and JDBC natively
+- **Mature ecosystem**  -  25+ years of development, extensive plugin catalog, large community
+- **Visual debugging**  -  View Results Tree and GUI mode make test development accessible
+- **CI/CD ready**  -  [non-GUI mode](/user-manual/best-practices/) integrates with any pipeline
+- **Rich reporting**  -  [Dashboard Report](/user-manual/generating-dashboard/) with APDEX, graphs, and statistics
+
+## Getting Started with JMeter
+
+If you've decided on JMeter:
+
+1. [Getting Started](/getting-started/get-started/)  -  install and understand the workflow
+2. [Building a Web Test Plan](/user-manual/build-web-test-plan/)  -  create your first HTTP test
+3. [Best Practices](/user-manual/best-practices/)  -  ensure reliable and accurate results
+4. [HTTP Recorder](/user-manual/jmeter-proxy-step-by-step/)  -  capture real browser traffic
+
+<RelatedContent>
+<Fragment slot="next-step">
+Start with [Getting Started](/getting-started/get-started/) to see JMeter's workflow in action.
+</Fragment>
+<Fragment slot="related">
+- [Best Practices](/user-manual/best-practices/)  -  get the most out of JMeter regardless of which tool you compare against
+- [Functions and Variables](/user-manual/functions/)  -  JMeter's parameterization capabilities rival code-first tools
 </Fragment>
 </RelatedContent>
 
@@ -1064,8 +1564,8 @@ The status of a sample result can be seen in the various different Listeners.
 Start with the [Building a Web Test Plan](/user-manual/build-web-test-plan/) tutorial for a hands-on walkthrough.
 </Fragment>
 <Fragment slot="related">
-- [Elements of a Test Plan](/user-manual/test-plan/) — detailed component descriptions
-- [Component Reference](/user-manual/component-reference/) — full element reference
+- [Elements of a Test Plan](/user-manual/test-plan/)  -  detailed component descriptions
+- [Component Reference](/user-manual/component-reference/)  -  full element reference
 </Fragment>
 <Fragment slot="mistakes">
 - Adding too many listeners in non-GUI mode wastes memory
@@ -1736,8 +2236,8 @@ _Figure 4.12. Use Thread Group to control Authorization Manager_
 Try the [Advanced Web Test Plan](/user-manual/build-adv-web-test-plan/) to handle session management and URL rewriting.
 </Fragment>
 <Fragment slot="related">
-- [HTTP Request Defaults](/user-manual/component-reference/) — configure common request parameters once
-- [Best Practices](/user-manual/best-practices/) — optimize thread counts and listener usage
+- [HTTP Request Defaults](/user-manual/component-reference/)  -  configure common request parameters once
+- [Best Practices](/user-manual/best-practices/)  -  optimize thread counts and listener usage
 </Fragment>
 <Fragment slot="troubleshooting">
 - If responses show 403/401, check that your HTTP Request includes required cookies or auth headers
@@ -1973,8 +2473,8 @@ _Figure 6.7. Graph results Listener_
 Add [Assertions](/user-manual/test-plan/) to validate that SQL responses contain expected data.
 </Fragment>
 <Fragment slot="related">
-- [Component Reference](/user-manual/component-reference/) — JDBC Request sampler configuration details
-- [Listeners](/user-manual/listeners/) — view query results and response times
+- [Component Reference](/user-manual/component-reference/)  -  JDBC Request sampler configuration details
+- [Listeners](/user-manual/listeners/)  -  view query results and response times
 </Fragment>
 <Fragment slot="mistakes">
 - Forgetting to copy the database driver JAR to JMeter's `lib/` directory
@@ -3707,8 +4207,8 @@ _Figure 1 - **Edit → Save Node As Image**_
 Set up [Real-time Results](/user-manual/realtime-results/) to stream listener data to InfluxDB or Graphite.
 </Fragment>
 <Fragment slot="related">
-- [Dashboard Report](/user-manual/generating-dashboard/) — generate rich HTML reports from listener CSV output
-- [Component Reference](/user-manual/component-reference/) — detailed configuration for each listener type
+- [Dashboard Report](/user-manual/generating-dashboard/)  -  generate rich HTML reports from listener CSV output
+- [Component Reference](/user-manual/component-reference/)  -  detailed configuration for each listener type
 </Fragment>
 <Fragment slot="mistakes">
 - Leaving View Results Tree active during load tests causes memory exhaustion
@@ -4222,8 +4722,8 @@ The usage of `java.security.AllPermission` is an easy way to make your test plan
 Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-testing-step-by-step/) tutorial for a guided setup.
 </Fragment>
 <Fragment slot="related">
-- [Real-time Results](/user-manual/realtime-results/) — monitor distributed tests with Backend Listener
-- [Dashboard Report](/user-manual/generating-dashboard/) — generate HTML reports from distributed test CSV files
+- [Real-time Results](/user-manual/realtime-results/)  -  monitor distributed tests with Backend Listener
+- [Dashboard Report](/user-manual/generating-dashboard/)  -  generate HTML reports from distributed test CSV files
 </Fragment>
 <Fragment slot="mistakes">
 - Running different JMeter versions on controller and worker nodes causes serialization errors
@@ -4867,8 +5367,8 @@ jmeter.reportgenerator.graph.custom_testGraph.property.set_Content_Message=Numbe
 Combine dashboard reports with [Real-time Results](/user-manual/realtime-results/) for live monitoring during tests.
 </Fragment>
 <Fragment slot="related">
-- [Listeners](/user-manual/listeners/) — configure CSV output that feeds the dashboard generator
-- [Best Practices](/user-manual/best-practices/) — ensure test results are clean enough for accurate APDEX scores
+- [Listeners](/user-manual/listeners/)  -  configure CSV output that feeds the dashboard generator
+- [Best Practices](/user-manual/best-practices/)  -  ensure test results are clean enough for accurate APDEX scores
 </Fragment>
 <Fragment slot="troubleshooting">
 - If the dashboard shows empty graphs, verify your CSV result file has the correct delimiter configured in `jmeter.properties`
@@ -5098,8 +5598,8 @@ _Graphite pickle sender_
 Set up a Grafana dashboard to visualize the InfluxDB metrics streamed by the Backend Listener.
 </Fragment>
 <Fragment slot="related">
-- [Listeners](/user-manual/listeners/) — understand how JMeter captures sample data
-- [Dashboard Report](/user-manual/generating-dashboard/) — generate post-test HTML reports from the same data
+- [Listeners](/user-manual/listeners/)  -  understand how JMeter captures sample data
+- [Dashboard Report](/user-manual/generating-dashboard/)  -  generate post-test HTML reports from the same data
 </Fragment>
 <Fragment slot="troubleshooting">
 - If InfluxDB shows no data, check that the Backend Listener's `influxdb.url` and `application` parameters are correct
@@ -5488,8 +5988,8 @@ Please note that deprecated elements in version N will be removed definitely in 
 Apply these practices to a [Web Test Plan](/user-manual/build-web-test-plan/) and measure the difference.
 </Fragment>
 <Fragment slot="related">
-- [Hints and Tips](/user-manual/hints-and-tips/) — additional community-tested techniques
-- [Dashboard Report](/user-manual/generating-dashboard/) — generate performance reports that reflect best practices
+- [Hints and Tips](/user-manual/hints-and-tips/)  -  additional community-tested techniques
+- [Dashboard Report](/user-manual/generating-dashboard/)  -  generate performance reports that reflect best practices
 </Fragment>
 <Fragment slot="mistakes">
 - Using View Results Tree or View Results in Table during actual load tests causes massive memory overhead
@@ -6456,8 +6956,8 @@ without needing to access any external servers.
 Use a Regular Expression Extractor to capture dynamic tokens (like CSRF tokens) for subsequent requests.
 </Fragment>
 <Fragment slot="related">
-- [Functions and Variables](/user-manual/functions/) — combine regex results with JMeter functions
-- [Component Reference](/user-manual/component-reference/) — Response Assertion and RegEx Extractor configuration
+- [Functions and Variables](/user-manual/functions/)  -  combine regex results with JMeter functions
+- [Component Reference](/user-manual/component-reference/)  -  Response Assertion and RegEx Extractor configuration
 </Fragment>
 <Fragment slot="mistakes">
 - Confusing "contains" (substring match) with "matches" (full string match) in Response Assertions
@@ -8379,8 +8879,8 @@ They are mainly intended for use in file names etc.
 Practice by parameterizing an HTTP Request sampler with `${__Random()}` and `${__time()}` functions.
 </Fragment>
 <Fragment slot="related">
-- [Properties Reference](/user-manual/properties-reference/) — JMeter properties that interact with variables
-- [Regular Expressions](/user-manual/regular-expressions/) — extract dynamic values from responses
+- [Properties Reference](/user-manual/properties-reference/)  -  JMeter properties that interact with variables
+- [Regular Expressions](/user-manual/regular-expressions/)  -  extract dynamic values from responses
 </Fragment>
 <Fragment slot="mistakes">
 - Forgetting to escape commas in function parameters with backslash
@@ -15300,512 +15800,12 @@ _Figure 1 - Run tearDown Thread Groups after shutdown of main threads_
 Use the Component Reference alongside the [Building a Test Plan](/user-manual/build-test-plan/) guide to configure elements.
 </Fragment>
 <Fragment slot="related">
-- [Functions and Variables](/user-manual/functions/) — parameterize component fields with dynamic values
-- [Properties Reference](/user-manual/properties-reference/) — JMeter properties that affect component behavior
+- [Functions and Variables](/user-manual/functions/)  -  parameterize component fields with dynamic values
+- [Properties Reference](/user-manual/properties-reference/)  -  JMeter properties that affect component behavior
 </Fragment>
 <Fragment slot="related">
-- [Listeners](/user-manual/listeners/) — detailed configuration for result viewers and reporters
-- [Best Practices](/user-manual/best-practices/) — which components to use and which to avoid in load tests
-</Fragment>
-</RelatedContent>
-
-
----
-Title: JMeter for API Load Testing
-URL: https://docs.jmeter.ai/topics/api-load-testing/
----
-
-import RelatedContent from '../../../components/RelatedContent.astro';
-
-# JMeter for API Load Testing
-
-Apache JMeter is one of the most widely used open-source tools for API load testing. Whether you're testing REST APIs, SOAP services, or GraphQL endpoints, JMeter provides the samplers, assertions, and reporting tools you need to validate performance under load.
-
-## Why JMeter for API Testing?
-
-- **Free and open-source** — no licensing costs, full control over test plans
-- **Protocol support** — HTTP/HTTPS, WebSocket, gRPC (via plugins), SOAP, and GraphQL
-- **Parameterization** — use functions, CSV datasets, and variables to simulate realistic traffic
-- **CI/CD integration** — run tests in non-GUI mode from any build pipeline
-- **Rich reporting** — HTML dashboard reports with APDEX scores, throughput graphs, and error tables
-
-## Getting Started
-
-If you're new to JMeter, start with these pages:
-
-1. [Getting Started](/getting-started/get-started/) — install JMeter and understand the workflow
-2. [Building a Test Plan](/user-manual/build-test-plan/) — learn the core concepts
-3. [Building a Web Test Plan](/user-manual/build-web-test-plan/) — your first HTTP test plan
-
-## Configuring HTTP Requests
-
-The [HTTP Request sampler](/user-manual/component-reference/) is the core element for API testing. Key configuration options:
-
-- **Server Name or IP** — target hostname (e.g., `api.example.com`)
-- **Method** — GET, POST, PUT, DELETE, PATCH
-- **Path** — API endpoint path (e.g., `/v1/users`)
-- **Body Data** — request payload for POST/PUT
-- **Headers** — use HTTP Header Manager for Content-Type, Authorization, etc.
-
-## Parameterizing Requests
-
-Real-world API tests need dynamic data. Use these techniques:
-
-- [Functions and Variables](/user-manual/functions/) — `${__Random()}`, `${__UUID()}`, `${__time()}` for generating test data
-- [Regular Expressions](/user-manual/regular-expressions/) — extract tokens from responses for subsequent requests
-- CSV Data Set Config — read test data from files
-
-## Analyzing Results
-
-After running a load test, analyze the results:
-
-- [Dashboard Report](/user-manual/generating-dashboard/) — generate HTML reports with APDEX, response time distributions, and error tables
-- [Listeners](/user-manual/listeners/) — View Results Tree for debugging, Summary Report for quick stats
-- [Real-time Results](/user-manual/realtime-results/) — stream metrics to InfluxDB/Grafana during the test
-
-## Best Practices
-
-Follow the [Best Practices](/user-manual/best-practices/) guide for reliable results:
-
-- Run tests in non-GUI mode (`jmeter -n -t test.jmx`)
-- Remove all Listeners except CSV output during load tests
-- Use the correct number of threads for your target load
-- Always include ramp-up and ramp-down periods
-
-<RelatedContent>
-<Fragment slot="next-step">
-Start with [Building a Web Test Plan](/user-manual/build-web-test-plan/) to create your first API load test.
-</Fragment>
-<Fragment slot="related">
-- [cURL Import](/user-manual/curl/) — quickly create HTTP samplers from existing curl commands
-- [Component Reference](/user-manual/component-reference/) — full HTTP Request configuration
-</Fragment>
-</RelatedContent>
-
-
----
-Title: JMeter Distributed Testing Guide
-URL: https://docs.jmeter.ai/topics/distributed-testing/
----
-
-import RelatedContent from '../../../components/RelatedContent.astro';
-
-# JMeter Distributed Testing Guide
-
-When a single machine can't generate enough load, JMeter's distributed testing feature lets you control multiple remote JMeter engines from a single client. This guide covers everything you need to set up, run, and troubleshoot multi-machine load tests.
-
-## How Distributed Testing Works
-
-JMeter uses a **controller-worker** architecture (historically called master/slave):
-
-- **Controller (client)** — sends the test plan to workers, starts/stops tests, and collects results
-- **Workers (servers)** — execute the test plan and stream results back to the controller
-
-Important: JMeter does **not** distribute load between workers. Each worker runs the complete test plan. If your test plan uses 100 threads and you have 4 workers, you'll generate 400 total threads.
-
-## Setup Requirements
-
-Before starting, verify:
-
-- All machines are on the **same subnet**
-- **Firewalls are disabled** or ports are open (default RMI ports: 1099, 4000-4099)
-- **Same version** of JMeter and Java on all machines
-- SSL for RMI is either configured or explicitly disabled
-
-## Step-by-Step Setup
-
-Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-testing-step-by-step/) tutorial for a guided walkthrough, or refer to the [Remote Testing](/user-manual/remote-test/) page for the full reference.
-
-### Quick Start
-
-1. On each worker: `jmeter-server` (or `jmeter-server.bat` on Windows)
-2. On the controller: `jmeter -R worker1,worker2,worker3 -t test.jmx -n`
-3. Results are aggregated automatically on the controller
-
-## Monitoring Distributed Tests
-
-- [Real-time Results](/user-manual/realtime-results/) — use the Backend Listener to stream metrics from workers to InfluxDB/Grafana
-- [Dashboard Report](/user-manual/generating-dashboard/) — generate consolidated HTML reports from the aggregated CSV results
-
-## Troubleshooting
-
-| Problem | Solution |
-|---------|----------|
-| Connection refused | Check firewall rules and that `jmeter-server` is running on the worker |
-| Serialization errors | Ensure identical JMeter versions on all machines |
-| Workers not found | Verify all machines are on the same subnet and can ping each other |
-| SSL handshake failure | Set `server.rmi.ssl.disable=true` in `user.properties` on all machines (non-production only) |
-
-<RelatedContent>
-<Fragment slot="next-step">
-Follow the [Step-by-Step Tutorial](/user-manual/jmeter-distributed-testing-step-by-step/) for a hands-on distributed testing setup.
-</Fragment>
-<Fragment slot="related">
-- [Remote Testing Reference](/user-manual/remote-test/) — complete configuration reference
-- [Properties Reference](/user-manual/properties-reference/) — RMI and networking properties
-</Fragment>
-<Fragment slot="troubleshooting">
-- Workers must be started before the controller initiates the test
-- Check `jmeter-server.log` on each worker for startup errors
-</Fragment>
-</RelatedContent>
-
-
----
-Title: JMeter HTTP(S) Test Script Recorder Guide
-URL: https://docs.jmeter.ai/topics/http-recorder/
----
-
-import RelatedContent from '../../../components/RelatedContent.astro';
-
-# JMeter HTTP(S) Test Script Recorder Guide
-
-The HTTP(S) Test Script Recorder is one of the fastest ways to build a JMeter test plan. Instead of manually creating HTTP Request samplers, you configure your browser to route traffic through JMeter's proxy, and JMeter captures every request automatically.
-
-## How It Works
-
-1. JMeter starts an embedded HTTP proxy server on a configurable port (default: 8888)
-2. Your browser sends all requests through this proxy
-3. JMeter intercepts each request and creates a corresponding HTTP Request sampler in your test plan
-4. Responses pass through to the browser unchanged
-
-## Step-by-Step Recording
-
-Follow the [HTTP(S) Test Script Recorder](/user-manual/jmeter-proxy-step-by-step/) tutorial for detailed setup instructions.
-
-### Quick Setup
-
-1. Add a **Test Plan** > **Thread Group**
-2. Add **HTTP(S) Test Script Recorder** under WorkBench (or Test Plan in newer versions)
-3. Set the **Target Controller** to your Thread Group
-4. Click **Start**
-5. Configure your browser proxy to `localhost:8888`
-6. Navigate your application — JMeter records every request
-
-## SSL/HTTPS Recording
-
-For HTTPS sites, JMeter generates a self-signed certificate. You must:
-
-1. Start the recorder (JMeter generates the certificate)
-2. Install `ApacheJMeterTemporaryRootCA.crt` in your browser's certificate store
-3. Accept the security warning
-
-Since JMeter 2.10, embedded resource handling and on-the-fly certificate generation have been significantly improved.
-
-## Filtering and Grouping
-
-Use these Recorder settings to keep your test plan clean:
-
-- **URL Patterns to Include** — regex filter to capture only relevant requests (e.g., `.*\\.html|.*\\.json`)
-- **URL Patterns to Exclude** — filter out static assets (`.css`, `.js`, `.png`)
-- **Grouping** — group recorded samplers by URL path or controller
-
-## After Recording
-
-Once recorded, you'll need to:
-
-1. Add [HTTP Request Defaults](/user-manual/component-reference/) to set common server/port values
-2. Add [HTTP Cookie Manager](/user-manual/component-reference/) to handle session cookies
-3. Use [Regular Expression Extractors](/user-manual/regular-expressions/) to capture dynamic tokens (CSRF, session IDs)
-4. Add [Assertions](/user-manual/test-plan/) to validate response content
-
-<RelatedContent>
-<Fragment slot="next-step">
-After recording, follow [Building a Web Test Plan](/user-manual/build-web-test-plan/) to clean up and configure your captured test plan.
-</Fragment>
-<Fragment slot="related">
-- [cURL Import](/user-manual/curl/) — alternative way to create samplers from command-line requests
-- [Access Log Sampler](/user-manual/jmeter-accesslog-sampler-step-by-step/) — replay production traffic patterns
-</Fragment>
-<Fragment slot="troubleshooting">
-- If HTTPS pages show certificate errors, re-install the JMeter root CA certificate
-- Static assets (CSS, JS, images) should be excluded via URL Patterns to keep the test plan focused on API calls
-</Fragment>
-</RelatedContent>
-
-
----
-Title: JMeter Functions and Variables Guide
-URL: https://docs.jmeter.ai/topics/functions-and-variables/
----
-
-import RelatedContent from '../../../components/RelatedContent.astro';
-
-# JMeter Functions and Variables Guide
-
-JMeter functions and variables are the primary mechanism for making test plans dynamic. Instead of hardcoding values, you can generate random data, read from files, manipulate strings, and pass values between samplers — all using JMeter's built-in function syntax.
-
-## Function Syntax
-
-All JMeter functions follow the pattern `${__functionName(param1, param2, ...)}`. Functions can be used in any sampler field, assertion, or configuration element.
-
-Key rules:
-- Functions with no parameters can omit parentheses: `${__threadNum}` works the same as `${__threadNum()}`
-- Commas in parameters must be escaped with backslash: `${__Random(1\,100)}`
-- Functions can be nested: `${__substring(${__time()}, 0, 10)}`
-
-## Most-Used Functions
-
-### Data Generation
-
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `__Random` | Random integer in range | `${__Random(1,1000,varName)}` |
-| `__RandomString` | Random string of given length | `${__RandomString(10,abcdefg)}` |
-| `__UUID` | Generate a UUID | `${__UUID()}` |
-| `__time` | Current timestamp | `${__time(yyyy-MM-dd,)}` |
-| `__counter` | Auto-incrementing counter | `${__counter(TRUE,)}` |
-
-### Variable Access
-
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `__V` | Resolve nested variable | `${__V(user_${counter})}` |
-| `__P` | Read a property | `${__P(threads,10)}` |
-| `__setProperty` | Set a JMeter property | `${__setProperty(key, value)}` |
-| `__BeanShell` | Execute BeanShell code | `${__BeanShell(vars.get("x"))}` |
-
-### String Manipulation
-
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `__substring` | Extract substring | `${__substring(hello world, 0, 5)}` |
-| `__urlencode` | URL-encode a string | `${__urlencode(my value)}` |
-| `__split` | Split string into variables | `${__split(a\,b\,c, arr, \,)}` |
-
-## Variables vs Properties
-
-Understanding the difference is critical:
-
-- **Variables** (`vars`) — thread-local, each thread has its own copy. Set with `${__V()}` or extractors.
-- **Properties** (`props`) — global, shared across all threads. Set with `${__setProperty()}` or `-J` command-line flag.
-
-Use properties to pass data between threads; use variables for within-thread parameterization.
-
-## CSV Data Set Config
-
-For large datasets, the CSV Data Set Config element reads values from a file and assigns them to variables:
-
-1. Add CSV Data Set Config to your Thread Group
-2. Set **Filename** to your CSV file path
-3. Set **Variable Names** (comma-separated, matching CSV columns)
-4. Use `${variableName}` in samplers
-
-This is the most common approach for parameterizing usernames, passwords, and test data.
-
-## Complete Reference
-
-See the [Functions and Variables](/user-manual/functions/) page for the full list of all available functions with detailed parameter descriptions.
-
-<RelatedContent>
-<Fragment slot="next-step">
-Practice by adding `${__Random(1,100)}` to an HTTP Request sampler and verifying the value in View Results Tree.
-</Fragment>
-<Fragment slot="related">
-- [Regular Expressions](/user-manual/regular-expressions/) — extract dynamic values from responses to use in subsequent requests
-- [Properties Reference](/user-manual/properties-reference/) — JMeter properties that interact with the `__P()` function
-</Fragment>
-<Fragment slot="mistakes">
-- Forgetting to escape commas in function parameters causes unexpected behavior
-- Using variables instead of properties when you need to share data across Thread Groups
-</Fragment>
-</RelatedContent>
-
-
----
-Title: JMeter CI/CD Load Testing
-URL: https://docs.jmeter.ai/topics/ci-cd-load-testing/
----
-
-import RelatedContent from '../../../components/RelatedContent.astro';
-
-# JMeter CI/CD Load Testing
-
-Integrating JMeter into your CI/CD pipeline ensures that performance regressions are caught before they reach production. This guide covers running JMeter in non-GUI mode, automating report generation, and setting up performance gates in popular CI systems.
-
-## Running JMeter in Non-GUI Mode
-
-The foundation of CI/CD integration is JMeter's command-line mode:
-
-```bash
-jmeter -n -t test-plan.jmx -l results.jtl -e -o report/
-```
-
-Flags:
-- `-n` — non-GUI mode
-- `-t` — test plan file
-- `-l` — results log file (CSV format)
-- `-e` — generate dashboard report after test
-- `-o` — output folder for HTML report
-
-### Passing Parameters
-
-Override JMeter properties from the command line:
-
-```bash
-jmeter -n -t test.jmx -Jthreads=50 -Jrampup=60 -Jduration=300
-```
-
-In the test plan, reference these with `${__P(threads,10)}` (with a default value of 10).
-
-## Performance Gates
-
-To fail a build when performance degrades, check the APDEX score or error rate from the dashboard report:
-
-### Using the Dashboard Report
-
-The [Dashboard Report](/user-manual/generating-dashboard/) generates a `statistics.json` file alongside the HTML report. Parse it to extract:
-
-- **Overall APDEX score** — threshold for build pass/fail
-- **Error percentage** — must be below a target (e.g., 1%)
-- **95th percentile response time** — must not exceed a target
-
-### Example: Bash Script Gate
-
-```bash
-# Extract error rate from statistics.json
-ERROR_RATE=$(jq '.Total.errorPct' report/statistics.json)
-APDEX=$(jq '.Total.apdexSummary.apdex' report/statistics.json)
-
-if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then
-  echo "FAIL: Error rate $ERROR_RATE exceeds 1%"
-  exit 1
-fi
-
-if (( $(echo "$APDEX < 0.85" | bc -l) )); then
-  echo "FAIL: APDEX $APDEX below 0.85"
-  exit 1
-fi
-
-echo "PASS: Error rate=$ERROR_RATE, APDEX=$APDEX"
-```
-
-## CI System Integration
-
-### GitHub Actions
-
-```yaml
-- name: Run JMeter Load Test
-  run: |
-    docker run --rm -v ${{ github.workspace }}:/test justb4/jmeter:5.6 \
-      -n -t /test/test-plan.jmx -l /test/results.jtl -e -o /test/report
-
-- name: Check Performance Gate
-  run: |
-    ERROR_RATE=$(jq '.Total.errorPct' report/statistics.json)
-    if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then exit 1; fi
-
-- name: Upload Report
-  uses: actions/upload-artifact@v4
-  with:
-    name: jmeter-report
-    path: report/
-```
-
-### Jenkins
-
-Use the JMeter plugin or a simple shell build step. Archive the `report/` directory as a build artifact and use the Performance Plugin to track trends across builds.
-
-## Best Practices for CI/CD
-
-Follow the [Best Practices](/user-manual/best-practices/) guide:
-
-- Always use non-GUI mode in pipelines
-- Keep test plans under version control alongside application code
-- Use CSV Data Set Config for test data — don't hardcode values
-- Generate the [Dashboard Report](/user-manual/generating-dashboard/) for every run
-- Store historical results for trend analysis
-
-<RelatedContent>
-<Fragment slot="next-step">
-Add a performance gate to your existing pipeline using the statistics.json approach described above.
-</Fragment>
-<Fragment slot="related">
-- [Dashboard Report](/user-manual/generating-dashboard/) — configure custom APDEX thresholds
-- [Building JMeter from Source](/reference/building/) — build a custom JMeter for your CI environment
-</Fragment>
-<Fragment slot="mistakes">
-- Running GUI mode in CI causes resource waste and potential hangs
-- Not setting timeouts on the JMeter process can block the pipeline indefinitely
-</Fragment>
-</RelatedContent>
-
-
----
-Title: JMeter vs k6, Locust, and Gatling
-URL: https://docs.jmeter.ai/topics/jmeter-vs-alternatives/
----
-
-import RelatedContent from '../../../components/RelatedContent.astro';
-
-# JMeter vs k6, Locust, and Gatling
-
-Choosing a load testing tool depends on your team's skills, protocols, and infrastructure. This page provides a factual comparison of Apache JMeter with three popular alternatives: k6, Locust, and Gatling.
-
-## Quick Comparison
-
-| Feature | JMeter | k6 | Locust | Gatling |
-|---------|--------|-----|--------|---------|
-| **Language** | Java | Go (scripts in JS/TS) | Python | Scala/Java/Kotlin |
-| **Scripting** | GUI + XML | JavaScript/TypeScript | Python code | Scala/Java DSL |
-| **Protocols** | HTTP, FTP, JDBC, LDAP, JMS, SMTP, WebSocket (plugin) | HTTP, WebSocket, gRPC | HTTP | HTTP, WebSocket, JMS |
-| **GUI** | Full GUI for test design | CLI only | Web UI for monitoring | CLI only |
-| **Reporting** | HTML dashboard, CSV | Cloud + CLI output | Web UI + CSV | HTML report |
-| **License** | Apache 2.0 | AGPL 3.0 (OSS) / Cloud | MIT | Apache 2.0 |
-| **Distributed** | Native (controller-worker) | Cloud only | Built-in (master-worker) | Commercial only |
-
-## Architecture Differences
-
-### JMeter
-Thread-based model — each virtual user is a Java thread. Test plans are XML files (`.jmx`) edited through the GUI or directly. Rich ecosystem of plugins extends protocol support. [Building a Test Plan](/user-manual/build-test-plan/) is done visually.
-
-### k6
-Written in Go for low resource consumption. Scripts are JavaScript/TypeScript files that define virtual user scenarios as code. Virtual users are lightweight goroutines, not OS threads. No GUI — everything is code-driven. Open-source core with a commercial cloud offering.
-
-### Locust
-Python-based with an event-driven architecture (gevent). Test scenarios are written as Python classes. Built-in web UI for real-time monitoring during tests. Distributed testing is built-in with a master-worker model. Very accessible for teams already using Python.
-
-### Gatling
-Scala/JVM-based with an asynchronous, non-blocking architecture. Tests are defined as code using a type-safe DSL. Generates detailed HTML reports automatically. Commercial version (Gatling Enterprise) adds cloud execution and distributed testing.
-
-## When to Choose JMeter
-
-- You need **GUI-based test design** for team members who don't code
-- You test **multiple protocols** beyond HTTP (FTP, LDAP, JMS, JDBC)
-- You need **native distributed testing** without a commercial subscription
-- Your team has existing **JMeter expertise** and a library of `.jmx` files
-- You want a **fully open-source** solution with no AGPL restrictions
-
-## When to Consider Alternatives
-
-- **k6** — if your team prefers JavaScript, wants minimal resource usage, and uses Grafana's ecosystem
-- **Locust** — if your team writes Python and wants code-first test scenarios with a monitoring UI
-- **Gatling** — if your team uses Scala/Java and values type-safe test DSLs with detailed reports
-
-## JMeter Strengths
-
-- **Protocol breadth** — no other open-source tool covers FTP, LDAP, JMS, and JDBC natively
-- **Mature ecosystem** — 25+ years of development, extensive plugin catalog, large community
-- **Visual debugging** — View Results Tree and GUI mode make test development accessible
-- **CI/CD ready** — [non-GUI mode](/user-manual/best-practices/) integrates with any pipeline
-- **Rich reporting** — [Dashboard Report](/user-manual/generating-dashboard/) with APDEX, graphs, and statistics
-
-## Getting Started with JMeter
-
-If you've decided on JMeter:
-
-1. [Getting Started](/getting-started/get-started/) — install and understand the workflow
-2. [Building a Web Test Plan](/user-manual/build-web-test-plan/) — create your first HTTP test
-3. [Best Practices](/user-manual/best-practices/) — ensure reliable and accurate results
-4. [HTTP Recorder](/user-manual/jmeter-proxy-step-by-step/) — capture real browser traffic
-
-<RelatedContent>
-<Fragment slot="next-step">
-Start with [Getting Started](/getting-started/get-started/) to see JMeter's workflow in action.
-</Fragment>
-<Fragment slot="related">
-- [Best Practices](/user-manual/best-practices/) — get the most out of JMeter regardless of which tool you compare against
-- [Functions and Variables](/user-manual/functions/) — JMeter's parameterization capabilities rival code-first tools
+- [Listeners](/user-manual/listeners/)  -  detailed configuration for result viewers and reporters
+- [Best Practices](/user-manual/best-practices/)  -  which components to use and which to avoid in load tests
 </Fragment>
 </RelatedContent>
 

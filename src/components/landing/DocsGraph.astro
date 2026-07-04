@@ -1,0 +1,714 @@
+---
+/**
+ * DocsGraph.astro
+ *
+ * Interactive SVG graph with floating/fluid physics, zoom/pan, and detail panel.
+ */
+
+import { buildGraphData } from '../../lib/docs-graph-data.mjs';
+
+const graphData = buildGraphData();
+const graphJSON = JSON.stringify(graphData);
+
+const groupNodes = graphData.nodes.filter((n) => n.type === 'group');
+const pageNodes = graphData.nodes.filter((n) => n.type === 'page');
+const pagesByGroup = {};
+for (const group of groupNodes) {
+  pagesByGroup[group.id] = pageNodes
+    .filter((p) => p.groupId === group.id)
+    .map((p) => ({ label: p.label, link: p.link }));
+}
+---
+
+<div class="docs-graph" data-graph>
+  <h2>Explore the docs map</h2>
+  <p class="docs-graph-subtitle">Find related JMeter topics - hover to highlight connections, click to navigate, drag to rearrange.</p>
+
+  <div class="docs-graph-viewport">
+    <svg
+      class="docs-graph-svg"
+      viewBox="0 0 900 520"
+      role="img"
+      aria-label="Interactive graph showing JMeter documentation pages grouped by section"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <g class="docs-graph-zoom-group" data-zoom-group></g>
+    </svg>
+
+    <div class="docs-graph-controls" data-graph-controls>
+      <button class="docs-graph-zoom-btn" data-zoom-in aria-label="Zoom in" title="Zoom in">+</button>
+      <button class="docs-graph-zoom-btn" data-zoom-out aria-label="Zoom out" title="Zoom out">&minus;</button>
+      <button class="docs-graph-zoom-btn" data-zoom-reset aria-label="Reset zoom" title="Reset view">&#x21BA;</button>
+    </div>
+  </div>
+
+  <div class="docs-graph-detail" data-graph-detail hidden>
+    <div class="docs-graph-detail-content" data-graph-detail-content></div>
+    <button class="docs-graph-detail-close" data-graph-detail-close aria-label="Close details">&times;</button>
+  </div>
+
+  <div class="docs-graph-fallback" aria-label="Documentation links by section">
+    <p class="docs-graph-fallback-heading">Documentation links by section</p>
+    {groupNodes.map((group) => (
+      <details class="docs-graph-fallback-group">
+        <summary>{group.label} ({group.pageCount} pages)</summary>
+        <ul>
+          {(pagesByGroup[group.id] || []).map((page) => (
+            <li><a href={page.link}>{page.label}</a></li>
+          ))}
+        </ul>
+      </details>
+    ))}
+  </div>
+
+  <script type="application/json" data-graph-data set:html={graphJSON} />
+</div>
+
+<script>
+(function () {
+  var dataEl = document.querySelector('[data-graph-data]');
+  var container = document.querySelector('[data-graph]');
+  if (!dataEl || !container) return;
+
+  var data;
+  try {
+    data = JSON.parse(dataEl.textContent);
+  } catch (e) {
+    return;
+  }
+
+  var svg = container.querySelector('.docs-graph-svg');
+  var zoomGroup = container.querySelector('[data-zoom-group]');
+  var detailPanel = container.querySelector('[data-graph-detail]');
+  var detailContent = container.querySelector('[data-graph-detail-content]');
+  var detailClose = container.querySelector('[data-graph-detail-close]');
+  var zoomInBtn = container.querySelector('[data-zoom-in]');
+  var zoomOutBtn = container.querySelector('[data-zoom-out]');
+  var zoomResetBtn = container.querySelector('[data-zoom-reset]');
+  if (!svg || !zoomGroup || !detailPanel || !detailContent || !detailClose) return;
+
+  var W = 900;
+  var H = 520;
+  var CX = W / 2;
+  var CY = H / 2;
+  var GROUP_R = 155;
+  var GROUP_NODE_R = 20;
+  var PAGE_NODE_R = 8;
+  var PAGE_LABEL_R = 20;
+
+  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* --- Physics constants ----------------------------------------------- */
+  var SPRING_STRENGTH = 0.08;
+  var REPULSION = 800;
+  var DAMPING = 0.85;
+  var MIN_DISTANCE = 30;
+
+  /* --- Zoom / Pan state ------------------------------------------------ */
+  var zoom = { scale: 1, tx: 0, ty: 0 };
+  var MIN_ZOOM = 0.4;
+  var MAX_ZOOM = 3;
+  var ZOOM_STEP = 0.25;
+
+  function applyZoom() {
+    zoomGroup.setAttribute(
+      'transform',
+      'translate(' + zoom.tx.toFixed(2) + ',' + zoom.ty.toFixed(2) + ') scale(' + zoom.scale.toFixed(4) + ')'
+    );
+  }
+
+  function zoomBy(delta, centerX, centerY) {
+    var oldScale = zoom.scale;
+    var newScale = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, oldScale + delta));
+    if (newScale === oldScale) return;
+
+    if (centerX !== undefined && centerY !== undefined) {
+      var ratio = newScale / oldScale;
+      zoom.tx = centerX - (centerX - zoom.tx) * ratio;
+      zoom.ty = centerY - (centerY - zoom.ty) * ratio;
+    }
+    zoom.scale = newScale;
+    applyZoom();
+  }
+
+  function resetZoom() {
+    zoom.scale = 1;
+    zoom.tx = 0;
+    zoom.ty = 0;
+    applyZoom();
+  }
+
+  function screenToViewBox(clientX, clientY) {
+    var pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    var ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    return pt.matrixTransform(ctm.inverse());
+  }
+
+  function viewBoxToContent(vbX, vbY) {
+    return {
+      x: (vbX - zoom.tx) / zoom.scale,
+      y: (vbY - zoom.ty) / zoom.scale,
+    };
+  }
+
+  /* Zoom buttons */
+  if (zoomInBtn) zoomInBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    zoomBy(ZOOM_STEP, W / 2, H / 2);
+  });
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    zoomBy(-ZOOM_STEP, W / 2, H / 2);
+  });
+  if (zoomResetBtn) zoomResetBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    resetZoom();
+  });
+
+  /* Scroll wheel zoom */
+  svg.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var vbPt = screenToViewBox(e.clientX, e.clientY);
+    var delta = e.deltaY < 0 ? ZOOM_STEP * 0.5 : -ZOOM_STEP * 0.5;
+    zoomBy(delta, vbPt.x, vbPt.y);
+  }, { passive: false });
+
+  /* Pan state */
+  var panning = null;
+
+  svg.addEventListener('mousedown', function (e) {
+    if (e.target.closest('.graph-node')) return;
+    if (e.button !== 0) return;
+    panning = { startX: e.clientX, startY: e.clientY, origTx: zoom.tx, origTy: zoom.ty };
+  });
+
+  document.addEventListener('mousemove', function (e) {
+    if (!panning) return;
+    e.preventDefault();
+    var svgRect = svg.getBoundingClientRect();
+    var scaleX = W / svgRect.width;
+    var scaleY = H / svgRect.height;
+    zoom.tx = panning.origTx + (e.clientX - panning.startX) * scaleX;
+    zoom.ty = panning.origTy + (e.clientY - panning.startY) * scaleY;
+    applyZoom();
+  });
+
+  document.addEventListener('mouseup', function () {
+    panning = null;
+  });
+
+  /* Touch pan + pinch zoom */
+  var touchState = null;
+
+  function getTouchDist(t1, t2) {
+    var dx = t1.clientX - t2.clientX;
+    var dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  svg.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 1) {
+      var target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+      if (target && target.closest('.graph-node')) return;
+      touchState = {
+        type: 'pan',
+        startX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+        origTx: zoom.tx,
+        origTy: zoom.ty,
+      };
+    } else if (e.touches.length === 2) {
+      e.preventDefault();
+      touchState = {
+        type: 'pinch',
+        dist: getTouchDist(e.touches[0], e.touches[1]),
+        origScale: zoom.scale,
+        cx: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        cy: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+        origTx: zoom.tx,
+        origTy: zoom.ty,
+      };
+    }
+  }, { passive: false });
+
+  svg.addEventListener('touchmove', function (e) {
+    if (!touchState) return;
+    e.preventDefault();
+
+    if (touchState.type === 'pan' && e.touches.length === 1) {
+      var svgRect = svg.getBoundingClientRect();
+      var scaleX = W / svgRect.width;
+      var scaleY = H / svgRect.height;
+      zoom.tx = touchState.origTx + (e.touches[0].clientX - touchState.startX) * scaleX;
+      zoom.ty = touchState.origTy + (e.touches[0].clientY - touchState.startY) * scaleY;
+      applyZoom();
+    } else if (touchState.type === 'pinch' && e.touches.length === 2) {
+      var newDist = getTouchDist(e.touches[0], e.touches[1]);
+      var ratio = newDist / touchState.dist;
+      var newScale = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, touchState.origScale * ratio));
+      var vbCenter = screenToViewBox(touchState.cx, touchState.cy);
+      var scaleRatio = newScale / touchState.origScale;
+      zoom.tx = vbCenter.x - (vbCenter.x - touchState.origTx) * scaleRatio;
+      zoom.ty = vbCenter.y - (vbCenter.y - touchState.origTy) * scaleRatio;
+      zoom.scale = newScale;
+      applyZoom();
+    }
+  }, { passive: false });
+
+  svg.addEventListener('touchend', function () {
+    touchState = null;
+  });
+
+  /* --- Graph data ------------------------------------------------------ */
+  var nodesMap = {};
+  data.nodes.forEach(function (n) {
+    nodesMap[n.id] = Object.assign({}, n, { vx: 0, vy: 0, pinned: false });
+  });
+
+  var groups = data.nodes.filter(function (n) { return n.type === 'group'; });
+  var pages = data.nodes.filter(function (n) { return n.type === 'page'; });
+
+  /* Initial radial layout */
+  groups.forEach(function (g, i) {
+    var angle = (i / groups.length) * Math.PI * 2 - Math.PI / 2;
+    nodesMap[g.id].x = CX + Math.cos(angle) * GROUP_R;
+    nodesMap[g.id].y = CY + Math.sin(angle) * GROUP_R;
+    nodesMap[g.id].angle = angle;
+  });
+
+  pages.forEach(function (p) {
+    if (!p.groupId) {
+      nodesMap[p.id].x = CX;
+      nodesMap[p.id].y = CY;
+    }
+  });
+
+  groups.forEach(function (g) {
+    var groupPages = pages.filter(function (p) { return p.groupId === g.id; });
+    var count = groupPages.length;
+    if (count === 0) return;
+
+    var baseAngle = nodesMap[g.id].angle;
+    var maxSpread = Math.PI / 2.5;
+    var spread = count > 1 ? Math.min(maxSpread, count * 0.1) : 0;
+    var dist = 72;
+
+    groupPages.forEach(function (p, j) {
+      var t = count === 1 ? 0.5 : j / (count - 1);
+      var angle = baseAngle + (t - 0.5) * spread;
+      nodesMap[p.id].x = nodesMap[g.id].x + Math.cos(angle) * dist;
+      nodesMap[p.id].y = nodesMap[g.id].y + Math.sin(angle) * dist;
+    });
+  });
+
+  /* Store rest positions for spring physics */
+  var restPositions = {};
+  Object.keys(nodesMap).forEach(function (id) {
+    restPositions[id] = { x: nodesMap[id].x, y: nodesMap[id].y };
+  });
+
+  /* Build SVG content */
+  var svgParts = [];
+
+  svgParts.push('<g class="docs-graph-links">');
+  data.links.forEach(function (link) {
+    var src = nodesMap[link.source];
+    var tgt = nodesMap[link.target];
+    if (!src || !tgt) return;
+    var cls = link.type === 'cross' ? 'graph-link graph-link-cross' : 'graph-link';
+    var opacity = link.type === 'cross' ? 0.1 : 0.15;
+    var dash = link.type === 'cross' ? ' stroke-dasharray="3,3"' : '';
+    svgParts.push(
+      '<line class="' + cls + '"' +
+      ' data-source="' + link.source + '" data-target="' + link.target + '"' +
+      ' x1="' + src.x.toFixed(1) + '" y1="' + src.y.toFixed(1) + '"' +
+      ' x2="' + tgt.x.toFixed(1) + '" y2="' + tgt.y.toFixed(1) + '"' +
+      ' stroke-opacity="' + opacity + '"' + dash + '/>'
+    );
+  });
+  svgParts.push('</g>');
+
+  svgParts.push('<g class="docs-graph-nodes">');
+  data.nodes.forEach(function (n) {
+    var node = nodesMap[n.id];
+    var isGroup = n.type === 'group';
+    var r = isGroup ? GROUP_NODE_R : PAGE_NODE_R;
+    var label = n.label;
+    var ariaLabel = isGroup
+      ? n.label + ' group, ' + n.pageCount + ' pages'
+      : n.label + ' - ' + n.groupLabel;
+
+    svgParts.push(
+      '<g class="graph-node" data-node-id="' + n.id + '" data-node-type="' + n.type + '"' +
+      ' tabindex="0" role="button" aria-label="' + ariaLabel + '"' +
+      (n.link ? ' data-link="' + n.link + '"' : '') + '>'
+    );
+    svgParts.push(
+      '<circle class="graph-node-circle"' +
+      ' cx="' + node.x.toFixed(1) + '" cy="' + node.y.toFixed(1) + '" r="' + r + '"/>'
+    );
+
+    if (isGroup) {
+      var labelY = node.y > CY ? node.y + r + 14 : node.y - r - 6;
+      svgParts.push(
+        '<text class="graph-node-label graph-node-label-group"' +
+        ' x="' + node.x.toFixed(1) + '" y="' + labelY.toFixed(1) + '"' +
+        ' text-anchor="middle">' + label + '</text>'
+      );
+    } else {
+      var px = node.x + PAGE_LABEL_R;
+      var py = node.y + 3;
+      svgParts.push(
+        '<text class="graph-node-label graph-node-label-page"' +
+        ' x="' + px.toFixed(1) + '" y="' + py.toFixed(1) + '"' +
+        ' text-anchor="start">' + label + '</text>'
+      );
+    }
+    svgParts.push('</g>');
+  });
+  svgParts.push('</g>');
+
+  zoomGroup.innerHTML = svgParts.join('');
+
+  /* Grab DOM references */
+  var nodeEls = {};
+  var linkEls = zoomGroup.querySelectorAll('.graph-link');
+  zoomGroup.querySelectorAll('.graph-node').forEach(function (el) {
+    var id = el.getAttribute('data-node-id');
+    nodeEls[id] = {
+      el: el,
+      circle: el.querySelector('.graph-node-circle'),
+      label: el.querySelector('.graph-node-label'),
+    };
+  });
+
+  /* Build adjacency map */
+  var adjacency = {};
+  data.nodes.forEach(function (n) { adjacency[n.id] = new Set(); });
+  data.links.forEach(function (link) {
+    adjacency[link.source].add(link.target);
+    adjacency[link.target].add(link.source);
+  });
+
+  var selectedNodeId = null;
+
+  function highlightNode(nodeId) {
+    clearHighlight();
+    var connected = adjacency[nodeId] || new Set();
+
+    Object.keys(nodeEls).forEach(function (id) {
+      var el = nodeEls[id].el;
+      if (id === nodeId) {
+        el.classList.add('is-active');
+      } else if (connected.has(id)) {
+        el.classList.add('is-connected');
+      } else {
+        el.classList.add('is-dimmed');
+      }
+    });
+
+    linkEls.forEach(function (line) {
+      var src = line.getAttribute('data-source');
+      var tgt = line.getAttribute('data-target');
+      if (src === nodeId || tgt === nodeId) {
+        line.classList.add('is-active');
+      } else {
+        line.classList.add('is-dimmed');
+      }
+    });
+  }
+
+  function clearHighlight() {
+    zoomGroup.querySelectorAll('.is-active, .is-connected, .is-dimmed').forEach(function (el) {
+      el.classList.remove('is-active', 'is-connected', 'is-dimmed');
+    });
+  }
+
+  function showDetail(nodeId) {
+    var node = nodesMap[nodeId];
+    if (!node) return;
+
+    var html = '<p class="docs-graph-detail-title">' + node.label + '</p>';
+    html += '<p class="docs-graph-detail-section">' + (node.groupLabel || 'Section') + '</p>';
+
+    if (node.type === 'page' && node.link) {
+      html += '<a href="' + node.link + '" class="docs-graph-detail-link">Open page &rarr;</a>';
+    } else if (node.type === 'group') {
+      html += '<p class="docs-graph-detail-count">' + node.pageCount + ' pages in this section</p>';
+    }
+
+    detailContent.innerHTML = html;
+    detailPanel.removeAttribute('hidden');
+    detailPanel.classList.add('is-visible');
+  }
+
+  function hideDetail() {
+    detailPanel.setAttribute('hidden', '');
+    detailPanel.classList.remove('is-visible');
+    selectedNodeId = null;
+    clearHighlight();
+  }
+
+  function selectNode(nodeId) {
+    selectedNodeId = nodeId;
+    highlightNode(nodeId);
+    showDetail(nodeId);
+  }
+
+  /* Drag state */
+  var dragging = null;
+  var dragStart = null;
+  var dragMoved = false;
+
+  function getContentPoint(clientX, clientY) {
+    var vbPt = screenToViewBox(clientX, clientY);
+    return viewBoxToContent(vbPt.x, vbPt.y);
+  }
+
+  /* Hover */
+  svg.addEventListener('mouseover', function (e) {
+    if (dragging) return;
+    var node = e.target.closest('.graph-node');
+    if (node) highlightNode(node.getAttribute('data-node-id'));
+  });
+
+  svg.addEventListener('mouseout', function (e) {
+    if (dragging) return;
+    var node = e.target.closest('.graph-node');
+    if (node && !selectedNodeId) clearHighlight();
+  });
+
+  /* Click */
+  svg.addEventListener('click', function (e) {
+    if (dragMoved) return;
+    var node = e.target.closest('.graph-node');
+    if (node) {
+      selectNode(node.getAttribute('data-node-id'));
+    } else {
+      hideDetail();
+    }
+  });
+
+  /* Keyboard */
+  svg.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      var node = e.target.closest('.graph-node');
+      if (node) selectNode(node.getAttribute('data-node-id'));
+    } else if (e.key === 'Escape') {
+      hideDetail();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && detailPanel.classList.contains('is-visible')) {
+      hideDetail();
+    }
+  });
+
+  /* Focus */
+  svg.addEventListener('focusin', function (e) {
+    var node = e.target.closest('.graph-node');
+    if (node) highlightNode(node.getAttribute('data-node-id'));
+  });
+
+  svg.addEventListener('focusout', function (e) {
+    var node = e.target.closest('.graph-node');
+    if (node && !selectedNodeId) clearHighlight();
+  });
+
+  /* Drag - mouse */
+  svg.addEventListener('mousedown', function (e) {
+    var node = e.target.closest('.graph-node');
+    if (!node) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var nodeId = node.getAttribute('data-node-id');
+    var pt = getContentPoint(e.clientX, e.clientY);
+    dragging = nodeId;
+    dragMoved = false;
+    dragStart = { x: pt.x - nodesMap[nodeId].x, y: pt.y - nodesMap[nodeId].y };
+    nodesMap[nodeId].pinned = true;
+    nodeEls[nodeId].el.style.cursor = 'grabbing';
+  });
+
+  document.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    e.preventDefault();
+    dragMoved = true;
+    var pt = getContentPoint(e.clientX, e.clientY);
+    nodesMap[dragging].x = pt.x - dragStart.x;
+    nodesMap[dragging].y = pt.y - dragStart.y;
+    nodesMap[dragging].vx = 0;
+    nodesMap[dragging].vy = 0;
+    updateNodePosition(dragging);
+  });
+
+  document.addEventListener('mouseup', function () {
+    if (dragging && nodesMap[dragging]) {
+      nodesMap[dragging].pinned = false;
+      if (nodeEls[dragging]) {
+        nodeEls[dragging].el.style.cursor = '';
+      }
+    }
+    dragging = null;
+    dragStart = null;
+    setTimeout(function () { dragMoved = false; }, 50);
+  });
+
+  /* Drag - touch */
+  svg.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) return;
+    var touch = e.touches[0];
+    var target = document.elementFromPoint(touch.clientX, touch.clientY);
+    var node = target ? target.closest('.graph-node') : null;
+    if (!node) return;
+    e.preventDefault();
+    var nodeId = node.getAttribute('data-node-id');
+    var pt = getContentPoint(touch.clientX, touch.clientY);
+    dragging = nodeId;
+    dragMoved = false;
+    dragStart = { x: pt.x - nodesMap[nodeId].x, y: pt.y - nodesMap[nodeId].y };
+    nodesMap[nodeId].pinned = true;
+  }, { passive: false });
+
+  document.addEventListener('touchmove', function (e) {
+    if (!dragging) return;
+    e.preventDefault();
+    dragMoved = true;
+    var touch = e.touches[0];
+    var pt = getContentPoint(touch.clientX, touch.clientY);
+    nodesMap[dragging].x = pt.x - dragStart.x;
+    nodesMap[dragging].y = pt.y - dragStart.y;
+    nodesMap[dragging].vx = 0;
+    nodesMap[dragging].vy = 0;
+    updateNodePosition(dragging);
+  }, { passive: false });
+
+  document.addEventListener('touchend', function () {
+    if (dragging && nodesMap[dragging]) {
+      nodesMap[dragging].pinned = false;
+    }
+    dragging = null;
+    dragStart = null;
+    setTimeout(function () { dragMoved = false; }, 50);
+  });
+
+  function updateNodePosition(nodeId) {
+    var node = nodesMap[nodeId];
+    var refs = nodeEls[nodeId];
+    if (!refs) return;
+
+    refs.circle.setAttribute('cx', node.x.toFixed(1));
+    refs.circle.setAttribute('cy', node.y.toFixed(1));
+
+    if (refs.label) {
+      if (node.type === 'group') {
+        var labelY = node.y > CY ? node.y + GROUP_NODE_R + 14 : node.y - GROUP_NODE_R - 6;
+        refs.label.setAttribute('x', node.x.toFixed(1));
+        refs.label.setAttribute('y', labelY.toFixed(1));
+      } else {
+        refs.label.setAttribute('x', (node.x + PAGE_LABEL_R).toFixed(1));
+        refs.label.setAttribute('y', (node.y + 3).toFixed(1));
+      }
+    }
+
+    linkEls.forEach(function (line) {
+      var src = line.getAttribute('data-source');
+      var tgt = line.getAttribute('data-target');
+      if (src === nodeId) {
+        line.setAttribute('x1', node.x.toFixed(1));
+        line.setAttribute('y1', node.y.toFixed(1));
+      }
+      if (tgt === nodeId) {
+        line.setAttribute('x2', node.x.toFixed(1));
+        line.setAttribute('y2', node.y.toFixed(1));
+      }
+    });
+  }
+
+  /* --- Physics simulation loop ----------------------------------------- */
+  var physicsActive = !reducedMotion;
+
+  function physicsStep() {
+    if (!physicsActive) return;
+
+    var nodeIds = Object.keys(nodesMap);
+
+    nodeIds.forEach(function (id) {
+      var node = nodesMap[id];
+      if (node.pinned) return;
+
+      var fx = 0;
+      var fy = 0;
+
+      /* Spring force toward rest position */
+      var rest = restPositions[id];
+      if (rest) {
+        var dx = rest.x - node.x;
+        var dy = rest.y - node.y;
+        fx += dx * SPRING_STRENGTH;
+        fy += dy * SPRING_STRENGTH;
+      }
+
+      /* Repulsion from other nodes */
+      nodeIds.forEach(function (otherId) {
+        if (otherId === id) return;
+        var other = nodesMap[otherId];
+        var dx = node.x - other.x;
+        var dy = node.y - other.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < MIN_DISTANCE) dist = MIN_DISTANCE;
+
+        var force = REPULSION / (dist * dist);
+        fx += (dx / dist) * force;
+        fy += (dy / dist) * force;
+      });
+
+      /* Update velocity and position */
+      node.vx = (node.vx + fx) * DAMPING;
+      node.vy = (node.vy + fy) * DAMPING;
+      node.x += node.vx;
+      node.y += node.vy;
+
+      /* Keep within bounds */
+      node.x = Math.max(50, Math.min(W - 50, node.x));
+      node.y = Math.max(50, Math.min(H - 50, node.y));
+
+      updateNodePosition(id);
+    });
+
+    requestAnimationFrame(physicsStep);
+  }
+
+  if (physicsActive) {
+    requestAnimationFrame(physicsStep);
+  }
+
+  /* Detail panel close - direct handler with no propagation */
+  detailClose.onclick = function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    hideDetail();
+    return false;
+  };
+
+  /* Click outside detail panel to close */
+  document.addEventListener('click', function (e) {
+    if (!detailPanel.classList.contains('is-visible')) return;
+    if (detailPanel.contains(e.target)) return;
+    if (e.target.closest('.graph-node')) return;
+    hideDetail();
+  });
+
+  detailPanel.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      hideDetail();
+    }
+  });
+})();
+</script>
