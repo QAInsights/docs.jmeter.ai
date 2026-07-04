@@ -1,7 +1,8 @@
 ---
 title: "User's Manual: Building a Test Plan"
-description: "User's Manual: Building a Test Plan"
+description: "Learn how to build a JMeter test plan from scratch. Understand Thread Groups, Samplers, Listeners, Timers, Assertions, and Config Elements."
 ---
+import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 2. Building a Test Plan
 
@@ -108,3 +109,17 @@ If a test is not behaving as you expect, please check the log file in case any e
 Sampling errors (e.g. HTTP 404 - file not found) are not normally reported in the log file.
 Instead these are stored as attributes of the sample result.
 The status of a sample result can be seen in the various different Listeners.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Start with the [Building a Web Test Plan](/user-manual/build-web-test-plan/) tutorial for a hands-on walkthrough.
+</Fragment>
+<Fragment slot="related">
+- [Elements of a Test Plan](/user-manual/test-plan/) — detailed component descriptions
+- [Component Reference](/user-manual/component-reference/) — full element reference
+</Fragment>
+<Fragment slot="mistakes">
+- Adding too many listeners in non-GUI mode wastes memory
+- Not using Timers causes unrealistic request rates
+</Fragment>
+</RelatedContent>

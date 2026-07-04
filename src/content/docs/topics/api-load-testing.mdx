@@ -1,0 +1,78 @@
+---
+title: "JMeter for API Load Testing"
+description: "Complete guide to API load testing with Apache JMeter — configure HTTP samplers, parameterize requests, analyze results, and integrate with CI/CD pipelines."
+keywords:
+  - JMeter API testing
+  - API load testing
+  - REST API performance testing
+  - JMeter HTTP sampler
+difficulty: intermediate
+canonicalTopic: api-load-testing
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter for API Load Testing
+
+Apache JMeter is one of the most widely used open-source tools for API load testing. Whether you're testing REST APIs, SOAP services, or GraphQL endpoints, JMeter provides the samplers, assertions, and reporting tools you need to validate performance under load.
+
+## Why JMeter for API Testing?
+
+- **Free and open-source** — no licensing costs, full control over test plans
+- **Protocol support** — HTTP/HTTPS, WebSocket, gRPC (via plugins), SOAP, and GraphQL
+- **Parameterization** — use functions, CSV datasets, and variables to simulate realistic traffic
+- **CI/CD integration** — run tests in non-GUI mode from any build pipeline
+- **Rich reporting** — HTML dashboard reports with APDEX scores, throughput graphs, and error tables
+
+## Getting Started
+
+If you're new to JMeter, start with these pages:
+
+1. [Getting Started](/getting-started/get-started/) — install JMeter and understand the workflow
+2. [Building a Test Plan](/user-manual/build-test-plan/) — learn the core concepts
+3. [Building a Web Test Plan](/user-manual/build-web-test-plan/) — your first HTTP test plan
+
+## Configuring HTTP Requests
+
+The [HTTP Request sampler](/user-manual/component-reference/) is the core element for API testing. Key configuration options:
+
+- **Server Name or IP** — target hostname (e.g., `api.example.com`)
+- **Method** — GET, POST, PUT, DELETE, PATCH
+- **Path** — API endpoint path (e.g., `/v1/users`)
+- **Body Data** — request payload for POST/PUT
+- **Headers** — use HTTP Header Manager for Content-Type, Authorization, etc.
+
+## Parameterizing Requests
+
+Real-world API tests need dynamic data. Use these techniques:
+
+- [Functions and Variables](/user-manual/functions/) — `${__Random()}`, `${__UUID()}`, `${__time()}` for generating test data
+- [Regular Expressions](/user-manual/regular-expressions/) — extract tokens from responses for subsequent requests
+- CSV Data Set Config — read test data from files
+
+## Analyzing Results
+
+After running a load test, analyze the results:
+
+- [Dashboard Report](/user-manual/generating-dashboard/) — generate HTML reports with APDEX, response time distributions, and error tables
+- [Listeners](/user-manual/listeners/) — View Results Tree for debugging, Summary Report for quick stats
+- [Real-time Results](/user-manual/realtime-results/) — stream metrics to InfluxDB/Grafana during the test
+
+## Best Practices
+
+Follow the [Best Practices](/user-manual/best-practices/) guide for reliable results:
+
+- Run tests in non-GUI mode (`jmeter -n -t test.jmx`)
+- Remove all Listeners except CSV output during load tests
+- Use the correct number of threads for your target load
+- Always include ramp-up and ramp-down periods
+
+<RelatedContent>
+<Fragment slot="next-step">
+Start with [Building a Web Test Plan](/user-manual/build-web-test-plan/) to create your first API load test.
+</Fragment>
+<Fragment slot="related">
+- [cURL Import](/user-manual/curl/) — quickly create HTTP samplers from existing curl commands
+- [Component Reference](/user-manual/component-reference/) — full HTTP Request configuration
+</Fragment>
+</RelatedContent>

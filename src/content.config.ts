@@ -9,6 +9,11 @@ export const collections = {
     schema: docsSchema({
       extend: ExtendDocsSchema.extend({
         jsonLd: z.record(z.string(), z.any()).optional(),
+        seoTitle: z.string().optional(),
+        keywords: z.array(z.string()).optional(),
+        difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+        lastVerified: z.string().optional(),
+        canonicalTopic: z.string().optional(),
       }),
     }),
   }),

@@ -1,7 +1,8 @@
 ---
 title: "User's Manual: Building a Web Test Plan"
-description: "User's Manual: Building a Web Test Plan"
+description: "Step-by-step guide to building a JMeter web test plan. Simulate 5 users sending HTTP requests using Thread Groups, HTTP Request samplers, and Graph Results."
 ---
+import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 4. Building a Web Test Plan
 
@@ -205,3 +206,17 @@ _Figure 4.11. Use Thread Group to control CacheManager_
 
 ![Figure 4.12. Use Thread Group to control Authorization Manager](/images/screenshots/webtest/threadgroup6.png)
 _Figure 4.12. Use Thread Group to control Authorization Manager_
+
+<RelatedContent>
+<Fragment slot="next-step">
+Try the [Advanced Web Test Plan](/user-manual/build-adv-web-test-plan/) to handle session management and URL rewriting.
+</Fragment>
+<Fragment slot="related">
+- [HTTP Request Defaults](/user-manual/component-reference/) — configure common request parameters once
+- [Best Practices](/user-manual/best-practices/) — optimize thread counts and listener usage
+</Fragment>
+<Fragment slot="troubleshooting">
+- If responses show 403/401, check that your HTTP Request includes required cookies or auth headers
+- Use [View Results Tree](/user-manual/listeners/) during debugging, but remove it for load tests
+</Fragment>
+</RelatedContent>

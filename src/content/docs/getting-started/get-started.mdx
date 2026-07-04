@@ -1,7 +1,8 @@
 ---
 title: "User's Manual: Getting Started"
-description: "User's Manual: Getting Started"
+description: "Get started with Apache JMeter for performance testing. Build test plans in GUI mode, debug with View Results Tree, and run tests in non-GUI mode."
 ---
+import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 1. Getting Started
 
@@ -921,3 +922,17 @@ Note: You can define additional JMeter properties in the file defined by the
   
 
 **See also the comments in the `jmeter.properties`, `user.properties` and `system.properties` files for further information on other settings you can change.**
+
+<RelatedContent>
+<Fragment slot="next-step">
+Build your first test plan with the [Building a Test Plan](/user-manual/build-test-plan/) guide.
+</Fragment>
+<Fragment slot="related">
+- [Best Practices](/user-manual/best-practices/) — essential guidelines before running load tests
+- [Boss](/user-manual/boss/) — how to scope a performance testing effort
+</Fragment>
+<Fragment slot="troubleshooting">
+- If JMeter fails to start, verify you have Java 17+ installed (`java -version`)
+- Use View Results Tree in Validate mode to debug before running full tests
+</Fragment>
+</RelatedContent>

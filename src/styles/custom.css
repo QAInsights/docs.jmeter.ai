@@ -735,3 +735,86 @@ button:where(.astro-v37mnknz)[disabled] {
 [data-slot='layout'] > footer:has([data-slot='footer-text']:empty) {
   display: none !important;
 }
+
+/* ==========================================================================
+   Related Content cards — end-of-page internal-link modules
+   ========================================================================== */
+.related-content {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--sl-color-gray-5);
+}
+
+.related-content-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: var(--sl-color-white);
+}
+
+.related-content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.related-card {
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+}
+
+.related-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.related-card-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.related-card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sl-color-gray-2);
+  margin: 0;
+}
+
+.related-card-body {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--sl-color-gray-2);
+}
+
+.related-card-body p {
+  margin: 0 0 0.5rem;
+}
+
+.related-card-body p:last-child {
+  margin-bottom: 0;
+}
+
+.related-card-body a {
+  color: var(--sl-color-accent-high);
+  text-decoration: none;
+}
+
+.related-card-body a:hover {
+  text-decoration: underline;
+}
+
+.related-card-body ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.related-card-body li {
+  margin-bottom: 0.25rem;
+}

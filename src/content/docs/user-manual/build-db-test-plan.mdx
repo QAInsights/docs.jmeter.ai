@@ -1,7 +1,8 @@
 ---
 title: "User's Manual: Building a Simple Database Test Plan"
-description: "User's Manual: Building a Simple Database Test Plan"
+description: "Build a JMeter database test plan to load test JDBC endpoints. Configure 50 users sending SQL queries with JDBC Request samplers and MySQL drivers."
 ---
+import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 6. Building a Database Test Plan
 
@@ -164,3 +165,17 @@ The listener shows the results.
 
 ![Figure 6.7. Graph results Listener](/images/screenshots/jdbctest/jdbc-results.png)
 _Figure 6.7. Graph results Listener_
+
+<RelatedContent>
+<Fragment slot="next-step">
+Add [Assertions](/user-manual/test-plan/) to validate that SQL responses contain expected data.
+</Fragment>
+<Fragment slot="related">
+- [Component Reference](/user-manual/component-reference/) — JDBC Request sampler configuration details
+- [Listeners](/user-manual/listeners/) — view query results and response times
+</Fragment>
+<Fragment slot="mistakes">
+- Forgetting to copy the database driver JAR to JMeter's `lib/` directory
+- Not setting the JDBC Connection Configuration before the JDBC Request sampler in the test tree
+</Fragment>
+</RelatedContent>

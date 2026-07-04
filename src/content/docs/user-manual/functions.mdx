@@ -1,7 +1,8 @@
 ---
 title: "User's Manual: Functions and Variables"
-description: "User's Manual: Functions and Variables"
+description: "Complete JMeter functions and variables reference. Learn the ${__functionName()} syntax for parameterizing samplers, generating data, and manipulating strings."
 ---
+import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 20. Functions and Variables
 
@@ -1903,3 +1904,17 @@ For convenience, the `START` properties are also copied to variables with the sa
 
 Please note that the `START` variables / properties represent JMeter startup time, not the test start time.
 They are mainly intended for use in file names etc.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Practice by parameterizing an HTTP Request sampler with `${__Random()}` and `${__time()}` functions.
+</Fragment>
+<Fragment slot="related">
+- [Properties Reference](/user-manual/properties-reference/) — JMeter properties that interact with variables
+- [Regular Expressions](/user-manual/regular-expressions/) — extract dynamic values from responses
+</Fragment>
+<Fragment slot="mistakes">
+- Forgetting to escape commas in function parameters with backslash
+- Using `${variable}` when you need `${__V(variable)}` for nested variable resolution
+</Fragment>
+</RelatedContent>

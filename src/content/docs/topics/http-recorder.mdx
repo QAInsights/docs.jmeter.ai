@@ -1,0 +1,78 @@
+---
+title: "JMeter HTTP(S) Test Script Recorder Guide"
+description: "Master the JMeter HTTP(S) Test Script Recorder to capture real browser traffic into test plans. Configure proxy settings, SSL certificates, and filtering rules."
+keywords:
+  - JMeter proxy recorder
+  - JMeter script recording
+  - HTTP test script recorder
+  - JMeter browser proxy
+difficulty: beginner
+canonicalTopic: http-recorder
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter HTTP(S) Test Script Recorder Guide
+
+The HTTP(S) Test Script Recorder is one of the fastest ways to build a JMeter test plan. Instead of manually creating HTTP Request samplers, you configure your browser to route traffic through JMeter's proxy, and JMeter captures every request automatically.
+
+## How It Works
+
+1. JMeter starts an embedded HTTP proxy server on a configurable port (default: 8888)
+2. Your browser sends all requests through this proxy
+3. JMeter intercepts each request and creates a corresponding HTTP Request sampler in your test plan
+4. Responses pass through to the browser unchanged
+
+## Step-by-Step Recording
+
+Follow the [HTTP(S) Test Script Recorder](/user-manual/jmeter-proxy-step-by-step/) tutorial for detailed setup instructions.
+
+### Quick Setup
+
+1. Add a **Test Plan** > **Thread Group**
+2. Add **HTTP(S) Test Script Recorder** under WorkBench (or Test Plan in newer versions)
+3. Set the **Target Controller** to your Thread Group
+4. Click **Start**
+5. Configure your browser proxy to `localhost:8888`
+6. Navigate your application — JMeter records every request
+
+## SSL/HTTPS Recording
+
+For HTTPS sites, JMeter generates a self-signed certificate. You must:
+
+1. Start the recorder (JMeter generates the certificate)
+2. Install `ApacheJMeterTemporaryRootCA.crt` in your browser's certificate store
+3. Accept the security warning
+
+Since JMeter 2.10, embedded resource handling and on-the-fly certificate generation have been significantly improved.
+
+## Filtering and Grouping
+
+Use these Recorder settings to keep your test plan clean:
+
+- **URL Patterns to Include** — regex filter to capture only relevant requests (e.g., `.*\\.html|.*\\.json`)
+- **URL Patterns to Exclude** — filter out static assets (`.css`, `.js`, `.png`)
+- **Grouping** — group recorded samplers by URL path or controller
+
+## After Recording
+
+Once recorded, you'll need to:
+
+1. Add [HTTP Request Defaults](/user-manual/component-reference/) to set common server/port values
+2. Add [HTTP Cookie Manager](/user-manual/component-reference/) to handle session cookies
+3. Use [Regular Expression Extractors](/user-manual/regular-expressions/) to capture dynamic tokens (CSRF, session IDs)
+4. Add [Assertions](/user-manual/test-plan/) to validate response content
+
+<RelatedContent>
+<Fragment slot="next-step">
+After recording, follow [Building a Web Test Plan](/user-manual/build-web-test-plan/) to clean up and configure your captured test plan.
+</Fragment>
+<Fragment slot="related">
+- [cURL Import](/user-manual/curl/) — alternative way to create samplers from command-line requests
+- [Access Log Sampler](/user-manual/jmeter-accesslog-sampler-step-by-step/) — replay production traffic patterns
+</Fragment>
+<Fragment slot="troubleshooting">
+- If HTTPS pages show certificate errors, re-install the JMeter root CA certificate
+- Static assets (CSS, JS, images) should be excluded via URL Patterns to keep the test plan focused on API calls
+</Fragment>
+</RelatedContent>

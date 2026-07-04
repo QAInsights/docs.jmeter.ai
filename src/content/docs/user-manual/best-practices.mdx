@@ -1,7 +1,8 @@
 ---
 title: "User's Manual: Best Practices"
-description: "User's Manual: Best Practices"
+description: "JMeter best practices for reliable performance testing — thread count optimization, Coordinated Omission, version selection, and Cookie Manager setup."
 ---
+import RelatedContent from '../../../components/RelatedContent.astro';
 
 ## 16. Best Practices
 
@@ -370,3 +371,17 @@ of the element from there.
 :::note
 Please note that deprecated elements in version N will be removed definitely in version N+1, so ensure you stop using them as soon as possible.
 :::
+
+<RelatedContent>
+<Fragment slot="next-step">
+Apply these practices to a [Web Test Plan](/user-manual/build-web-test-plan/) and measure the difference.
+</Fragment>
+<Fragment slot="related">
+- [Hints and Tips](/user-manual/hints-and-tips/) — additional community-tested techniques
+- [Dashboard Report](/user-manual/generating-dashboard/) — generate performance reports that reflect best practices
+</Fragment>
+<Fragment slot="mistakes">
+- Using View Results Tree or View Results in Table during actual load tests causes massive memory overhead
+- Not accounting for Coordinated Omission skews percentile response times
+</Fragment>
+</RelatedContent>

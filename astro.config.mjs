@@ -4,11 +4,15 @@ import lucode from 'lucode-starlight';
 import starlightDocSearch from '@astrojs/starlight-docsearch';
 import { loadEnv } from 'vite';
 import { sidebar } from './src/sidebar.mjs';
+import remarkImageOptimize from './src/remark-image-optimize.mjs';
 
 const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 
 export default defineConfig({
   site: 'https://docs.jmeter.ai',
+  markdown: {
+    remarkPlugins: [remarkImageOptimize],
+  },
   integrations: [
     starlight({
       title: 'JMeter Docs',

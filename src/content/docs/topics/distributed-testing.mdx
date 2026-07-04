@@ -1,0 +1,73 @@
+---
+title: "JMeter Distributed Testing Guide"
+description: "Set up JMeter distributed testing to scale load across multiple machines. Configure controller and worker nodes, manage RMI connections, and aggregate results."
+keywords:
+  - JMeter distributed testing
+  - JMeter remote testing
+  - JMeter master slave
+  - JMeter multi-machine load testing
+difficulty: advanced
+canonicalTopic: distributed-testing
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Distributed Testing Guide
+
+When a single machine can't generate enough load, JMeter's distributed testing feature lets you control multiple remote JMeter engines from a single client. This guide covers everything you need to set up, run, and troubleshoot multi-machine load tests.
+
+## How Distributed Testing Works
+
+JMeter uses a **controller-worker** architecture (historically called master/slave):
+
+- **Controller (client)** — sends the test plan to workers, starts/stops tests, and collects results
+- **Workers (servers)** — execute the test plan and stream results back to the controller
+
+Important: JMeter does **not** distribute load between workers. Each worker runs the complete test plan. If your test plan uses 100 threads and you have 4 workers, you'll generate 400 total threads.
+
+## Setup Requirements
+
+Before starting, verify:
+
+- All machines are on the **same subnet**
+- **Firewalls are disabled** or ports are open (default RMI ports: 1099, 4000-4099)
+- **Same version** of JMeter and Java on all machines
+- SSL for RMI is either configured or explicitly disabled
+
+## Step-by-Step Setup
+
+Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-testing-step-by-step/) tutorial for a guided walkthrough, or refer to the [Remote Testing](/user-manual/remote-test/) page for the full reference.
+
+### Quick Start
+
+1. On each worker: `jmeter-server` (or `jmeter-server.bat` on Windows)
+2. On the controller: `jmeter -R worker1,worker2,worker3 -t test.jmx -n`
+3. Results are aggregated automatically on the controller
+
+## Monitoring Distributed Tests
+
+- [Real-time Results](/user-manual/realtime-results/) — use the Backend Listener to stream metrics from workers to InfluxDB/Grafana
+- [Dashboard Report](/user-manual/generating-dashboard/) — generate consolidated HTML reports from the aggregated CSV results
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Connection refused | Check firewall rules and that `jmeter-server` is running on the worker |
+| Serialization errors | Ensure identical JMeter versions on all machines |
+| Workers not found | Verify all machines are on the same subnet and can ping each other |
+| SSL handshake failure | Set `server.rmi.ssl.disable=true` in `user.properties` on all machines (non-production only) |
+
+<RelatedContent>
+<Fragment slot="next-step">
+Follow the [Step-by-Step Tutorial](/user-manual/jmeter-distributed-testing-step-by-step/) for a hands-on distributed testing setup.
+</Fragment>
+<Fragment slot="related">
+- [Remote Testing Reference](/user-manual/remote-test/) — complete configuration reference
+- [Properties Reference](/user-manual/properties-reference/) — RMI and networking properties
+</Fragment>
+<Fragment slot="troubleshooting">
+- Workers must be started before the controller initiates the test
+- Check `jmeter-server.log` on each worker for startup errors
+</Fragment>
+</RelatedContent>

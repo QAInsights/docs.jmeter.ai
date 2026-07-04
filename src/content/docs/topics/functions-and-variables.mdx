@@ -1,0 +1,93 @@
+---
+title: "JMeter Functions and Variables Guide"
+description: "Master JMeter functions and variables for dynamic test data. Learn ${__function()} syntax, common functions, variable scoping, and parameterization."
+keywords:
+  - JMeter functions
+  - JMeter variables
+  - JMeter parameterization
+  - JMeter dynamic data
+difficulty: intermediate
+canonicalTopic: functions-and-variables
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Functions and Variables Guide
+
+JMeter functions and variables are the primary mechanism for making test plans dynamic. Instead of hardcoding values, you can generate random data, read from files, manipulate strings, and pass values between samplers — all using JMeter's built-in function syntax.
+
+## Function Syntax
+
+All JMeter functions follow the pattern `${__functionName(param1, param2, ...)}`. Functions can be used in any sampler field, assertion, or configuration element.
+
+Key rules:
+- Functions with no parameters can omit parentheses: `${__threadNum}` works the same as `${__threadNum()}`
+- Commas in parameters must be escaped with backslash: `${__Random(1\,100)}`
+- Functions can be nested: `${__substring(${__time()}, 0, 10)}`
+
+## Most-Used Functions
+
+### Data Generation
+
+| Function | Purpose | Example |
+|----------|---------|---------|
+| `__Random` | Random integer in range | `${__Random(1,1000,varName)}` |
+| `__RandomString` | Random string of given length | `${__RandomString(10,abcdefg)}` |
+| `__UUID` | Generate a UUID | `${__UUID()}` |
+| `__time` | Current timestamp | `${__time(yyyy-MM-dd,)}` |
+| `__counter` | Auto-incrementing counter | `${__counter(TRUE,)}` |
+
+### Variable Access
+
+| Function | Purpose | Example |
+|----------|---------|---------|
+| `__V` | Resolve nested variable | `${__V(user_${counter})}` |
+| `__P` | Read a property | `${__P(threads,10)}` |
+| `__setProperty` | Set a JMeter property | `${__setProperty(key, value)}` |
+| `__BeanShell` | Execute BeanShell code | `${__BeanShell(vars.get("x"))}` |
+
+### String Manipulation
+
+| Function | Purpose | Example |
+|----------|---------|---------|
+| `__substring` | Extract substring | `${__substring(hello world, 0, 5)}` |
+| `__urlencode` | URL-encode a string | `${__urlencode(my value)}` |
+| `__split` | Split string into variables | `${__split(a\,b\,c, arr, \,)}` |
+
+## Variables vs Properties
+
+Understanding the difference is critical:
+
+- **Variables** (`vars`) — thread-local, each thread has its own copy. Set with `${__V()}` or extractors.
+- **Properties** (`props`) — global, shared across all threads. Set with `${__setProperty()}` or `-J` command-line flag.
+
+Use properties to pass data between threads; use variables for within-thread parameterization.
+
+## CSV Data Set Config
+
+For large datasets, the CSV Data Set Config element reads values from a file and assigns them to variables:
+
+1. Add CSV Data Set Config to your Thread Group
+2. Set **Filename** to your CSV file path
+3. Set **Variable Names** (comma-separated, matching CSV columns)
+4. Use `${variableName}` in samplers
+
+This is the most common approach for parameterizing usernames, passwords, and test data.
+
+## Complete Reference
+
+See the [Functions and Variables](/user-manual/functions/) page for the full list of all available functions with detailed parameter descriptions.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Practice by adding `${__Random(1,100)}` to an HTTP Request sampler and verifying the value in View Results Tree.
+</Fragment>
+<Fragment slot="related">
+- [Regular Expressions](/user-manual/regular-expressions/) — extract dynamic values from responses to use in subsequent requests
+- [Properties Reference](/user-manual/properties-reference/) — JMeter properties that interact with the `__P()` function
+</Fragment>
+<Fragment slot="mistakes">
+- Forgetting to escape commas in function parameters causes unexpected behavior
+- Using variables instead of properties when you need to share data across Thread Groups
+</Fragment>
+</RelatedContent>

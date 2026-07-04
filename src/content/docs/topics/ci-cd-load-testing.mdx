@@ -1,0 +1,125 @@
+---
+title: "JMeter CI/CD Load Testing"
+description: "Integrate JMeter into CI/CD pipelines. Run tests in non-GUI mode, generate reports automatically, and fail builds on performance regressions."
+keywords:
+  - JMeter CI/CD
+  - JMeter Jenkins
+  - JMeter GitHub Actions
+  - automated load testing
+  - JMeter non-GUI mode
+difficulty: advanced
+canonicalTopic: ci-cd-load-testing
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter CI/CD Load Testing
+
+Integrating JMeter into your CI/CD pipeline ensures that performance regressions are caught before they reach production. This guide covers running JMeter in non-GUI mode, automating report generation, and setting up performance gates in popular CI systems.
+
+## Running JMeter in Non-GUI Mode
+
+The foundation of CI/CD integration is JMeter's command-line mode:
+
+```bash
+jmeter -n -t test-plan.jmx -l results.jtl -e -o report/
+```
+
+Flags:
+- `-n` — non-GUI mode
+- `-t` — test plan file
+- `-l` — results log file (CSV format)
+- `-e` — generate dashboard report after test
+- `-o` — output folder for HTML report
+
+### Passing Parameters
+
+Override JMeter properties from the command line:
+
+```bash
+jmeter -n -t test.jmx -Jthreads=50 -Jrampup=60 -Jduration=300
+```
+
+In the test plan, reference these with `${__P(threads,10)}` (with a default value of 10).
+
+## Performance Gates
+
+To fail a build when performance degrades, check the APDEX score or error rate from the dashboard report:
+
+### Using the Dashboard Report
+
+The [Dashboard Report](/user-manual/generating-dashboard/) generates a `statistics.json` file alongside the HTML report. Parse it to extract:
+
+- **Overall APDEX score** — threshold for build pass/fail
+- **Error percentage** — must be below a target (e.g., 1%)
+- **95th percentile response time** — must not exceed a target
+
+### Example: Bash Script Gate
+
+```bash
+# Extract error rate from statistics.json
+ERROR_RATE=$(jq '.Total.errorPct' report/statistics.json)
+APDEX=$(jq '.Total.apdexSummary.apdex' report/statistics.json)
+
+if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then
+  echo "FAIL: Error rate $ERROR_RATE exceeds 1%"
+  exit 1
+fi
+
+if (( $(echo "$APDEX < 0.85" | bc -l) )); then
+  echo "FAIL: APDEX $APDEX below 0.85"
+  exit 1
+fi
+
+echo "PASS: Error rate=$ERROR_RATE, APDEX=$APDEX"
+```
+
+## CI System Integration
+
+### GitHub Actions
+
+```yaml
+- name: Run JMeter Load Test
+  run: |
+    docker run --rm -v ${{ github.workspace }}:/test justb4/jmeter:5.6 \
+      -n -t /test/test-plan.jmx -l /test/results.jtl -e -o /test/report
+
+- name: Check Performance Gate
+  run: |
+    ERROR_RATE=$(jq '.Total.errorPct' report/statistics.json)
+    if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then exit 1; fi
+
+- name: Upload Report
+  uses: actions/upload-artifact@v4
+  with:
+    name: jmeter-report
+    path: report/
+```
+
+### Jenkins
+
+Use the JMeter plugin or a simple shell build step. Archive the `report/` directory as a build artifact and use the Performance Plugin to track trends across builds.
+
+## Best Practices for CI/CD
+
+Follow the [Best Practices](/user-manual/best-practices/) guide:
+
+- Always use non-GUI mode in pipelines
+- Keep test plans under version control alongside application code
+- Use CSV Data Set Config for test data — don't hardcode values
+- Generate the [Dashboard Report](/user-manual/generating-dashboard/) for every run
+- Store historical results for trend analysis
+
+<RelatedContent>
+<Fragment slot="next-step">
+Add a performance gate to your existing pipeline using the statistics.json approach described above.
+</Fragment>
+<Fragment slot="related">
+- [Dashboard Report](/user-manual/generating-dashboard/) — configure custom APDEX thresholds
+- [Building JMeter from Source](/reference/building/) — build a custom JMeter for your CI environment
+</Fragment>
+<Fragment slot="mistakes">
+- Running GUI mode in CI causes resource waste and potential hangs
+- Not setting timeouts on the JMeter process can block the pipeline indefinitely
+</Fragment>
+</RelatedContent>

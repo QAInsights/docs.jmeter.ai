@@ -7,26 +7,55 @@ import { buildHowToJsonLd } from '../howto-schema.mjs';
 const route = Astro.locals.starlightRoute;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
 
-const rawTitle = route?.entry?.data?.title?.trim();
+const entryData = route?.entry?.data;
+const rawTitle = entryData?.title?.trim();
 const isHome = Astro.url.pathname === '/' || !rawTitle;
 
-// Clean up title and description for SEO
-const seoTitle = isHome ? 'docs.jmeter.ai - Apache JMeter Community Documentation' : `${rawTitle} | docs.jmeter.ai`;
-const seoDescription = route?.entry?.data?.description || 'Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience.';
+// SEO frontmatter overrides
+const seoTitleRaw = entryData?.seoTitle;
+const displayTitle = seoTitleRaw || rawTitle;
+const seoTitle = isHome ? 'docs.jmeter.ai - Apache JMeter Community Documentation' : `${displayTitle} | docs.jmeter.ai`;
+const seoDescription = entryData?.description || 'Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience.';
+const seoKeywords = entryData?.keywords;
+const seoDifficulty = entryData?.difficulty;
+const seoCanonicalTopic = entryData?.canonicalTopic;
+
+// Resolve date for structured data (Starlight provides lastUpdated from git
+// as a top-level Date on the route object, not on entry.data)
+const resolvedDate = route?.lastUpdated instanceof Date
+  ? route.lastUpdated.toISOString()
+  : null;
+
+// Difficulty → schema.org proficiencyLevel mapping
+const proficiencyMap: Record<string, string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
+};
 
 // TechArticle JSON-LD for doc pages
 const isDocPage = Astro.url.pathname !== '/' && !Astro.url.pathname.startsWith('/404');
 const jsonLd = isDocPage ? {
   '@context': 'https://schema.org',
   '@type': 'TechArticle',
-  headline: rawTitle || 'docs.jmeter.ai',
+  headline: displayTitle || 'docs.jmeter.ai',
   description: seoDescription,
   url: canonicalUrl,
+  ...(resolvedDate ? { dateModified: resolvedDate, datePublished: resolvedDate } : {}),
   publisher: {
     '@type': 'Organization',
     name: 'docs.jmeter.ai',
     url: 'https://docs.jmeter.ai',
   },
+  author: {
+    '@type': 'Organization',
+    name: 'Apache JMeter Community',
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': canonicalUrl,
+  },
+  ...(seoDifficulty && proficiencyMap[seoDifficulty] ? { proficiencyLevel: proficiencyMap[seoDifficulty] } : {}),
   about: {
     '@type': 'SoftwareApplication',
     name: 'Apache JMeter',
@@ -123,6 +152,19 @@ gtag('config', 'G-MVZN6CMXYQ');`,
   // Inject robots meta tag
   if (!hasTag('meta', 'name', 'robots')) {
     route.head.push({ tag: 'meta', attrs: { name: 'robots', content: 'index, follow' } });
+  }
+
+  // Inject keywords meta tag from frontmatter
+  if (seoKeywords && seoKeywords.length > 0 && !hasTag('meta', 'name', 'keywords')) {
+    route.head.push({ tag: 'meta', attrs: { name: 'keywords', content: seoKeywords.join(', ') } });
+  }
+
+  // Inject canonical-topic link for topic-cluster signals
+  if (seoCanonicalTopic && !hasTag('link', 'rel', 'canonical-topic')) {
+    route.head.push({
+      tag: 'link',
+      attrs: { rel: 'canonical-topic', href: `/topics/${seoCanonicalTopic}/` },
+    });
   }
 
   // Satoshi typeface from Fontshare (variable weight)
