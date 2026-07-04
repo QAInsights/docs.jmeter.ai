@@ -19,6 +19,18 @@ export const sidebar = [
     ],
   },
   {
+    label: 'Topic Guides',
+    collapsed: false,
+    items: [
+      { label: 'API Load Testing', link: '/topics/api-load-testing' },
+      { label: 'Distributed Testing', link: '/topics/distributed-testing' },
+      { label: 'HTTP Recorder', link: '/topics/http-recorder' },
+      { label: 'Functions & Variables', link: '/topics/functions-and-variables' },
+      { label: 'CI/CD Load Testing', link: '/topics/ci-cd-load-testing' },
+      { label: 'JMeter vs Alternatives', link: '/topics/jmeter-vs-alternatives' },
+    ],
+  },
+  {
     label: 'User Manual',
     collapsed: false,
     items: [
@@ -47,18 +59,6 @@ export const sidebar = [
       { label: 'Functions and Variables', link: '/user-manual/functions' },
       { label: 'Properties Reference', link: '/user-manual/properties-reference' },
       { label: 'Component Reference', link: '/user-manual/component-reference' },
-    ],
-  },
-  {
-    label: 'Topic Guides',
-    collapsed: true,
-    items: [
-      { label: 'API Load Testing', link: '/topics/api-load-testing' },
-      { label: 'Distributed Testing', link: '/topics/distributed-testing' },
-      { label: 'HTTP Recorder', link: '/topics/http-recorder' },
-      { label: 'Functions & Variables', link: '/topics/functions-and-variables' },
-      { label: 'CI/CD Load Testing', link: '/topics/ci-cd-load-testing' },
-      { label: 'JMeter vs Alternatives', link: '/topics/jmeter-vs-alternatives' },
     ],
   },
   {
