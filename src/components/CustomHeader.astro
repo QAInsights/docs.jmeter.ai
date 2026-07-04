@@ -20,7 +20,6 @@ const shouldRenderSearch =
     <div class="header-left">
         <div class="site-title-wrapper">
             <SiteTitle />
-            <NavBar />
         </div>
     </div>
 
@@ -30,6 +29,9 @@ const shouldRenderSearch =
 
     <div class="header-right">
         <nav class="header-nav">
+            <div class="nav-links-inline">
+                <NavBar />
+            </div>
             <div>
                 <SocialIcons />
             </div>
@@ -132,7 +134,16 @@ const shouldRenderSearch =
         align-items: center;
     }
 
+    .nav-links-inline {
+        display: none;
+    }
+
     @media (min-width: 1024px) {
+        .nav-links-inline {
+            display: flex;
+            align-items: center;
+        }
+
         .mobile-search-wrapper {
             display: none;
         }

@@ -125,6 +125,18 @@ gtag('config', 'G-MVZN6CMXYQ');`,
     route.head.push({ tag: 'meta', attrs: { name: 'robots', content: 'index, follow' } });
   }
 
+  // Satoshi typeface from Fontshare (variable weight)
+  if (!hasTag('link', 'data-font', 'satoshi')) {
+    route.head.unshift({
+      tag: 'link',
+      attrs: {
+        rel: 'stylesheet',
+        href: 'https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap',
+        'data-font': 'satoshi',
+      },
+    });
+  }
+
   // Inject manifest link
   if (!hasTag('link', 'rel', 'manifest')) {
     route.head.push({ tag: 'link', attrs: { rel: 'manifest', href: '/manifest.json' } });

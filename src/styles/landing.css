@@ -87,7 +87,7 @@ main:has(.landing) [slot='doc-title-description'] {
   align-items: center;
   gap: 0.5rem;
   padding: 0.7rem 1.5rem;
-  border-radius: 0.5rem;
+  border-radius: 9999px;
   font-weight: 600;
   font-size: 0.95rem;
   text-decoration: none;
