@@ -2,18 +2,23 @@
 import StarlightHead from '@astrojs/starlight/components/Head.astro';
 import type { Props } from '@astrojs/starlight/props';
 
-const props = Astro.props as unknown as Props;
+const route = Astro.locals.starlightRoute;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
-const title = props.entry?.data?.title || 'docs.jmeter.ai';
-const description = props.entry?.data?.description || 'Community documentation for Apache JMeter';
+
+const rawTitle = route?.entry?.data?.title?.trim();
+const isHome = Astro.url.pathname === '/' || !rawTitle;
+
+// Clean up title and description for SEO
+const seoTitle = isHome ? 'docs.jmeter.ai - Apache JMeter Community Documentation' : `${rawTitle} | docs.jmeter.ai`;
+const seoDescription = route?.entry?.data?.description || 'Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience.';
 
 // TechArticle JSON-LD for doc pages
 const isDocPage = Astro.url.pathname !== '/' && !Astro.url.pathname.startsWith('/404');
 const jsonLd = isDocPage ? {
   '@context': 'https://schema.org',
   '@type': 'TechArticle',
-  headline: title,
-  description: description,
+  headline: rawTitle || 'docs.jmeter.ai',
+  description: seoDescription,
   url: canonicalUrl,
   publisher: {
     '@type': 'Organization',
@@ -49,29 +54,93 @@ const breadcrumbJsonLd = breadcrumbItems.length > 1 ? {
     item: item.url,
   })),
 } : null;
+
+// Modify the Starlight route head array dynamically to replace auto-generated title/description tags
+if (route && route.head) {
+  route.head = route.head.map((tag) => {
+    // 1. Update Title tag
+    if (tag.tag === 'title') {
+      return { ...tag, content: seoTitle };
+    }
+    
+    // 2. Update Description tag
+    if (tag.tag === 'meta' && tag.attrs?.name === 'description') {
+      return { ...tag, attrs: { ...tag.attrs, content: seoDescription } };
+    }
+
+    // 3. Update OG Title
+    if (tag.tag === 'meta' && tag.attrs?.property === 'og:title') {
+      return { ...tag, attrs: { ...tag.attrs, content: seoTitle } };
+    }
+
+    // 4. Update OG Description
+    if (tag.tag === 'meta' && tag.attrs?.property === 'og:description') {
+      return { ...tag, attrs: { ...tag.attrs, content: seoDescription } };
+    }
+
+    // 5. Update Twitter Title
+    if (tag.tag === 'meta' && tag.attrs?.name === 'twitter:title') {
+      return { ...tag, attrs: { ...tag.attrs, content: seoTitle } };
+    }
+
+    // 6. Update Twitter Description
+    if (tag.tag === 'meta' && tag.attrs?.name === 'twitter:description') {
+      return { ...tag, attrs: { ...tag.attrs, content: seoDescription } };
+    }
+
+    // 7. Make sure twitter:card is summary_large_image
+    if (tag.tag === 'meta' && tag.attrs?.name === 'twitter:card') {
+      return { ...tag, attrs: { ...tag.attrs, content: 'summary_large_image' } };
+    }
+
+    return tag;
+  });
+
+  // Helper to check if a tag already exists
+  const hasTag = (tagType: string, attrKey: string, attrVal: string) => 
+    route.head.some(t => t.tag === tagType && t.attrs?.[attrKey] === attrVal);
+
+  // Inject robots meta tag
+  if (!hasTag('meta', 'name', 'robots')) {
+    route.head.push({ tag: 'meta', attrs: { name: 'robots', content: 'index, follow' } });
+  }
+
+  // Inject manifest link
+  if (!hasTag('link', 'rel', 'manifest')) {
+    route.head.push({ tag: 'link', attrs: { rel: 'manifest', href: '/manifest.json' } });
+  }
+
+  // Inject Open Graph Image tags
+  if (!hasTag('meta', 'property', 'og:image')) {
+    route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: 'https://docs.jmeter.ai/images/og_preview.png' } });
+    route.head.push({ tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } });
+    route.head.push({ tag: 'meta', attrs: { property: 'og:image:height', content: '628' } });
+    route.head.push({ tag: 'meta', attrs: { property: 'og:image:type', content: 'image/png' } });
+    route.head.push({ tag: 'meta', attrs: { property: 'og:image:alt', content: seoTitle } });
+  }
+
+  // Inject Twitter Image tags
+  if (!hasTag('meta', 'name', 'twitter:image')) {
+    route.head.push({ tag: 'meta', attrs: { name: 'twitter:image', content: 'https://docs.jmeter.ai/images/og_preview.png' } });
+    route.head.push({ tag: 'meta', attrs: { name: 'twitter:image:alt', content: seoTitle } });
+  }
+
+  // Inject JSON-LD scripts
+  if (jsonLd && !hasTag('script', 'data-schema', 'tech-article')) {
+    route.head.push({
+      tag: 'script',
+      attrs: { type: 'application/ld+json', 'data-schema': 'tech-article' },
+      content: JSON.stringify(jsonLd)
+    });
+  }
+  if (breadcrumbJsonLd && !hasTag('script', 'data-schema', 'breadcrumb')) {
+    route.head.push({
+      tag: 'script',
+      attrs: { type: 'application/ld+json', 'data-schema': 'breadcrumb' },
+      content: JSON.stringify(breadcrumbJsonLd)
+    });
+  }
+}
 ---
 
-<StarlightHead {...Astro.props}>
-  <link rel="canonical" href={canonicalUrl} />
-  <link rel="manifest" href="/manifest.json" />
-
-  {/* Open Graph */}
-  <meta property="og:type" content="article" />
-  <meta property="og:url" content={canonicalUrl} />
-  <meta property="og:title" content={title} />
-  <meta property="og:description" content={description} />
-  <meta property="og:site_name" content="docs.jmeter.ai" />
-
-  {/* Twitter Card */}
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content={title} />
-  <meta name="twitter:description" content={description} />
-
-  {/* JSON-LD Structured Data */}
-  {jsonLd && (
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
-  )}
-  {breadcrumbJsonLd && (
-    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
-  )}
-</StarlightHead>
+<StarlightHead {...Astro.props} />
