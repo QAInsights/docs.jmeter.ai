@@ -1,6 +1,8 @@
 User-agent: *
 Allow: /
 
+# Algolia-Crawler-Verif: A1AC26C4F37BAA25
+
 # Explicitly allow AI and LLM crawlers/search agents
 User-agent: GPTBot
 Allow: /
