@@ -466,14 +466,7 @@ button:where(.astro-v37mnknz)[disabled] {
    Wider search button + dialog
    ========================================================================== */
 @media (min-width: 50rem) {
-  /* Wider search trigger in the header — fill the middle grid cell up to the right group */
-  button:where(.astro-v37mnknz)[data-open-modal] {
-    width: 85% !important;
-    max-width: 85% !important;
-    justify-self: center !important;
-  }
-
-  /* Wider search results dialog */
+  /* Search results dialog */
   dialog:where(.astro-v37mnknz) {
     max-width: 64rem !important;
     width: 90% !important;
