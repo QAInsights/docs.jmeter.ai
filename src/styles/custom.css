@@ -45,6 +45,10 @@
   font-size: 0.8rem;
   line-height: 1.6;
   color: var(--sl-color-gray-2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .site-footer a {
@@ -55,6 +59,27 @@
 
 .site-footer a:hover {
   color: var(--sl-color-accent);
+}
+
+.site-footer-top,
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.site-footer-trademark {
+  max-width: 42rem;
+  color: var(--sl-color-gray-3);
+  font-size: 0.75rem;
+  margin: 0.25rem 0 0;
+}
+
+.footer-divider {
+  color: var(--sl-color-gray-4);
+  opacity: 0.5;
 }
 
 /* Component reference property tables */
@@ -438,11 +463,19 @@ button:where(.astro-v37mnknz)[disabled] {
 }
 
 /* ==========================================================================
-   Wider search dialog
+   Wider search button + dialog
    ========================================================================== */
 @media (min-width: 50rem) {
+  /* Wider search trigger in the header — fill the middle grid cell up to the right group */
+  button:where(.astro-v37mnknz)[data-open-modal] {
+    width: 85% !important;
+    max-width: 85% !important;
+    justify-self: center !important;
+  }
+
+  /* Wider search results dialog */
   dialog:where(.astro-v37mnknz) {
-    max-width: 56rem !important;
+    max-width: 64rem !important;
     width: 90% !important;
   }
 }
@@ -681,4 +714,11 @@ button:where(.astro-v37mnknz)[disabled] {
   mask-size: contain;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
+}
+
+/* ==========================================================================
+   Hide Lucode's empty footer (footerText is set to '')
+   ========================================================================== */
+[data-slot='layout'] > footer:has([data-slot='footer-text']:empty) {
+  display: none !important;
 }

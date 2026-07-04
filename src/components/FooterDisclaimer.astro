@@ -17,18 +17,26 @@ const isLandingPage = Astro.url.pathname === '/';
     {!isLandingPage && <Pagination />}
   </footer>
   <footer class="site-footer">
-    <p>
-      Created by <a href="https://qaautomationlabs.com">NaveenKumar Namachivayam</a>.
-      Content synced from <a href="https://github.com/apache/jmeter">apache/jmeter</a> under Apache License 2.0.
-      <a href="/legal/disclaimer">Full disclaimer</a> &middot; <a href="/legal/notice">NOTICE</a>
-    </p>
-    <p>
+    <div class="site-footer-top">
+      <span>
+        Created by <a href="https://qainsights.com" target="_blank" rel="noopener noreferrer">NaveenKumar Namachivayam</a>
+      </span>
+      <span class="footer-divider">&middot;</span>
+      <span>
+        Content synced from <a href="https://github.com/apache/jmeter" target="_blank" rel="noopener noreferrer">apache/jmeter</a> under Apache License 2.0
+      </span>
+    </div>
+    <div class="site-footer-links">
+      <a href="/legal/disclaimer">Disclaimer</a>
+      <span class="footer-divider">&middot;</span>
+      <a href="/legal/notice">NOTICE</a>
+      <span class="footer-divider">&middot;</span>
+      <a href="https://jmeter.apache.org" target="_blank" rel="noopener noreferrer">Official JMeter Site</a>
+    </div>
+    <p class="site-footer-trademark">
       Apache, Apache JMeter, JMeter, and the Apache JMeter logo are trademarks of the
       Apache Software Foundation. This site is an independent community resource and is
       not affiliated with, endorsed by, or sponsored by the Apache Software Foundation.
-    </p>
-    <p>
-      <a href="https://jmeter.apache.org">Official JMeter Site</a>
     </p>
   </footer>
   <GoToTop />

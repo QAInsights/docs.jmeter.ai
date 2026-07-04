@@ -1,11 +1,12 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import lucode from 'lucode-starlight';
 
 export default defineConfig({
   site: 'https://docs.jmeter.ai',
   integrations: [
     starlight({
-      title: 'docs.jmeter.ai',
+      title: 'JMeter Docs',
       description: 'Community documentation for Apache JMeter',
       favicon: '/favicon.svg',
       logo: {
@@ -13,6 +14,9 @@ export default defineConfig({
         dark: './src/assets/logo-dark.svg',
         replacesTitle: false,
       },
+      plugins: [
+        lucode({ footerText: '' }),
+      ],
       customCss: ['./src/styles/custom.css', './src/styles/landing.css'],
       components: {
         Footer: './src/components/FooterDisclaimer.astro',
@@ -20,10 +24,10 @@ export default defineConfig({
         ThemeSelect: './src/components/ThemeToggle.astro',
       },
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/jmeter-docs/jmeter-docs' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/QAInsights/docs.jmeter.ai' },
       ],
       editLink: {
-        baseUrl: 'https://github.com/jmeter-docs/jmeter-docs/edit/main/',
+        baseUrl: 'https://github.com/QAInsights/docs.jmeter.ai/edit/main/',
       },
       sidebar: [
         {
