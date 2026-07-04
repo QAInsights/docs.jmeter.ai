@@ -4,7 +4,7 @@
 
 Site: https://docs.jmeter.ai
 Pages: 39
-Generated: 2026-07-04T16:23:52.827Z
+Generated: 2026-07-04T16:46:58.718Z
 ---
 Title: User's Manual: Getting Started
 URL: https://docs.jmeter.ai/getting-started/get-started/

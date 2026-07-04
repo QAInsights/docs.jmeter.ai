@@ -21,9 +21,11 @@ const shouldRenderSearch =
     <NavBar />
 </div>
 
-<div class="header-right">
+<div class="search-container-center">
     {shouldRenderSearch && <Search />}
+</div>
 
+<div class="header-right">
     <nav class="header-nav">
         <div>
             <SocialIcons />
@@ -46,20 +48,32 @@ const shouldRenderSearch =
     @media (min-width: 768px) {
         .site-title-wrapper {
             display: flex;
+            align-items: center;
+            width: 30%;
+            flex-shrink: 0;
         }
+    }
+
+    .search-container-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-grow: 1;
+        max-width: 600px;
+        margin: 0 auto;
     }
 
     .header-right {
         gap: 0.5rem;
-        justify-content: space-between;
         align-items: center;
-        flex: 1 1 0%;
         display: flex;
+        justify-content: flex-end;
+        flex-shrink: 0;
     }
 
     @media (min-width: 768px) {
         .header-right {
-            justify-content: flex-end;
+            width: 30%;
         }
     }
 
@@ -89,5 +103,67 @@ const shouldRenderSearch =
         height: 1rem;
         background-color: color-mix(in oklab, var(--border) 85%, transparent);
         transform: translateY(-50%);
+    }
+
+</style>
+
+<style is:global>
+    /* Google-style Animated Gradient Border on the Search Button */
+    .DocSearch-Button {
+        position: relative !important;
+        z-index: 1 !important;
+        border: none !important;
+        background: transparent !important;
+        overflow: visible !important;
+    }
+
+    .DocSearch-Button:hover {
+        background: transparent !important;
+    }
+
+    /* Animated gradient background */
+    .DocSearch-Button::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        z-index: -2 !important;
+        border-radius: 0.5rem !important;
+        background: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A564, #4285F4) !important;
+        background-size: 400% 100% !important;
+        animation: google-gradient 4s linear infinite !important;
+    }
+
+    /* Solid inner mask background */
+    .DocSearch-Button::after {
+        content: '' !important;
+        position: absolute !important;
+        top: 1px !important;
+        left: 1px !important;
+        right: 1px !important;
+        bottom: 1px !important;
+        z-index: -1 !important;
+        border-radius: calc(0.5rem - 1px) !important;
+        background: var(--sl-color-black) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .DocSearch-Button:hover::after {
+        top: 2px !important;
+        left: 2px !important;
+        right: 2px !important;
+        bottom: 2px !important;
+        border-radius: calc(0.5rem - 2px) !important;
+    }
+
+    @keyframes google-gradient {
+        0% {
+            background-position: 0% 50%;
+        }
+        100% {
+            background-position: 400% 50%;
+        }
     }
 </style>
