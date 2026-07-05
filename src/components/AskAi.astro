@@ -1,0 +1,130 @@
+---
+/**
+ * Ask AI — global chatbot trigger + slide-in panel.
+ *
+ * The trigger button lives in the site header (rendered by CustomHeader).
+ * The panel is a `popover="manual"` element promoted to the top layer so
+ * it overlays every page regardless of stacking context. Chat state,
+ * persistence, streaming, and markdown rendering are handled by the
+ * client module in src/scripts/ask-ai-chat.ts.
+ */
+const turnstileSitekey = import.meta.env.PUBLIC_TURNSTILE_SITEKEY || import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '';
+
+// Shared SVG icons (avoid inlining the same markup multiple times).
+const ArrowIcon = '<svg class="ask-ai-suggestion__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>';
+---
+
+<button
+  id="ask-ai-trigger"
+  class="ask-ai-trigger"
+  aria-controls="ask-ai-panel"
+  aria-expanded="false"
+  aria-haspopup="dialog"
+  type="button"
+  title="Ask AI about JMeter"
+>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z" />
+    <path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14z" />
+  </svg>
+  <span class="ask-ai-trigger__label">Ask AI</span>
+  <span class="ask-ai-trigger__dot" aria-hidden="true"></span>
+</button>
+
+<aside
+  id="ask-ai-panel"
+  class="ask-ai-panel"
+  popover="manual"
+  aria-label="Ask AI assistant"
+  role="dialog"
+  aria-modal="true"
+>
+ <div class="ask-ai-sheet" id="ask-ai-sheet">
+  <header class="ask-ai-header">
+    <span class="ask-ai-header__icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z" />
+      </svg>
+    </span>
+    <span class="ask-ai-header__titles">
+      <span class="ask-ai-header__title">Ask AI</span>
+      <span class="ask-ai-header__subtitle">JMeter docs · powered by Gemini</span>
+    </span>
+    <span class="ask-ai-header__actions">
+      <button id="ask-ai-clear" class="ask-ai-icon-btn" type="button" title="Clear conversation" aria-label="Clear conversation">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18" />
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+        </svg>
+      </button>
+      <button id="ask-ai-close" class="ask-ai-icon-btn" type="button" title="Close" aria-label="Close assistant">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </span>
+  </header>
+
+  <div id="ask-ai-body" class="ask-ai-body" tabindex="-1">
+    <div id="ask-ai-empty" class="ask-ai-empty">
+      <div class="ask-ai-empty__hero">
+        <span class="ask-ai-empty__heading">Ask anything about JMeter</span>
+        <span class="ask-ai-empty__lede">
+          I answer from the full JMeter Docs. Get help building test plans,
+          troubleshooting runs, or learning best practices.
+        </span>
+      </div>
+      <div class="ask-ai-suggestions">
+        <span class="ask-ai-suggestions__label">Try one of these</span>
+        <button class="ask-ai-suggestion" type="button" data-prompt="How do I build a basic HTTP load test plan in JMeter?">
+          How do I build a basic HTTP load test plan?
+          <Fragment set:html={ArrowIcon} />
+        </button>
+        <button class="ask-ai-suggestion" type="button" data-prompt="How do I set up distributed testing with a controller and remote workers?">
+          How do I set up distributed testing with controller and workers?
+          <Fragment set:html={ArrowIcon} />
+        </button>
+        <button class="ask-ai-suggestion" type="button" data-prompt="How do I read the HTML dashboard report: APDEX, percentiles, and throughput?">
+          How do I read the HTML dashboard report (APDEX, percentiles)?
+          <Fragment set:html={ArrowIcon} />
+        </button>
+        <button class="ask-ai-suggestion" type="button" data-prompt="My JMeter test runs fine in GUI but fails in non-GUI mode. How do I troubleshoot?">
+          My test works in GUI but fails in non-GUI mode. How to troubleshoot?
+          <Fragment set:html={ArrowIcon} />
+        </button>
+      </div>
+    </div>
+    <div id="ask-ai-messages" class="ask-ai-messages" aria-live="polite" aria-atomic="false"></div>
+  </div>
+
+  <footer class="ask-ai-composer">
+    <div id="ask-ai-error" class="ask-ai-error" hidden></div>
+    <div class="ask-ai-composer__row">
+      <textarea
+        id="ask-ai-input"
+        class="ask-ai-textarea"
+        rows="1"
+        maxlength="2000"
+        placeholder="Ask about JMeter... (Enter to send, Shift+Enter for newline)"
+        aria-label="Ask a question"
+      ></textarea>
+      <button id="ask-ai-send" class="ask-ai-send" type="button" aria-label="Send message" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m22 2-7 20-4-9-9-4 20-7z" />
+        </svg>
+      </button>
+    </div>
+    <div class="ask-ai-composer__meta">
+      <span id="ask-ai-status">Answers are AI-generated and grounded in JMeter Docs.</span>
+      <button id="ask-ai-new" type="button">New chat</button>
+    </div>
+    <div id="ask-ai-turnstile" class="ask-ai-turnstile" data-sitekey={turnstileSitekey}></div>
+  </footer>
+ </div>
+</aside>
+
+<script>
+  import '../scripts/ask-ai-chat.ts';
+</script>

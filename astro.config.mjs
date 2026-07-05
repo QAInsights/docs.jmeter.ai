@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import lucode from 'lucode-starlight';
 import starlightDocSearch from '@astrojs/starlight-docsearch';
+import vercel from '@astrojs/vercel';
 import { loadEnv } from 'vite';
 import { sidebar } from './src/sidebar.mjs';
 import remarkImageOptimize from './src/remark-image-optimize.mjs';
@@ -10,6 +11,9 @@ const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 
 export default defineConfig({
   site: 'https://docs.jmeter.ai',
+  // Vercel adapter enables on-demand serverless routes (e.g. /api/chat)
+  // while keeping every docs page prerendered as static HTML.
+  adapter: vercel({ maxDuration: 30 }),
   markdown: {
     remarkPlugins: [remarkImageOptimize],
   },
@@ -39,7 +43,7 @@ export default defineConfig({
           ],
         }),
       ],
-      customCss: ['./src/styles/custom.css', './src/styles/landing.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/landing.css', './src/styles/ask-ai.css'],
       components: {
         Footer: './src/components/FooterDisclaimer.astro',
         Head: './src/components/SeoHead.astro',
