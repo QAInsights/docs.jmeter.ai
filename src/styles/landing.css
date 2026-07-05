@@ -298,6 +298,7 @@ main:has(.landing) [slot='doc-title-description'] {
   background: var(--sl-color-gray-6);
   cursor: pointer;
   padding: 0.9rem 1rem;
+  margin: 0;
 }
 
 .goal-option:has(input:checked) {
