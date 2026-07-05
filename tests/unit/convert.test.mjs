@@ -26,6 +26,15 @@ import {
   FILE_MAP,
   ROUTE_MAP,
   ENTITIES,
+  splitFrontmatter,
+  parseFrontmatterFields,
+  serializeFrontmatter,
+  extractImportLines,
+  extractLeadingAdmonitions,
+  extractCustomSections,
+  computeAutoDescription,
+  mergeFrontmatter,
+  PRESERVED_FM_FIELDS,
 } from '../../tools/convert.mjs';
 
 // Helper: parse XML string into ordered node array
@@ -965,5 +974,483 @@ describe('copyDirRecursive', () => {
     const dest = path.join(tmpDir, 'nonexistent');
     copyDirRecursive(path.join(tmpDir, 'nope'), dest);
     expect(fs.existsSync(dest)).toBe(false);
+  });
+});
+
+// ── Content preservation tests ───────────────────────────────────────
+
+describe('splitFrontmatter', () => {
+  it('splits frontmatter from body', () => {
+    const content = '---\ntitle: "Test"\ndescription: "Desc"\n---\n\nBody text';
+    const { frontmatter, rest } = splitFrontmatter(content);
+    expect(frontmatter).toBe('title: "Test"\ndescription: "Desc"');
+    expect(rest).toBe('\nBody text');
+  });
+
+  it('returns empty frontmatter when none present', () => {
+    const { frontmatter, rest } = splitFrontmatter('Just body');
+    expect(frontmatter).toBe('');
+    expect(rest).toBe('Just body');
+  });
+
+  it('handles CRLF line endings', () => {
+    const content = '---\r\ntitle: "Test"\r\n---\r\nBody';
+    const { frontmatter, rest } = splitFrontmatter(content);
+    expect(frontmatter).toBe('title: "Test"');
+    expect(rest).toBe('Body');
+  });
+});
+
+describe('parseFrontmatterFields', () => {
+  it('parses key-value pairs preserving order', () => {
+    const entries = parseFrontmatterFields('title: "A"\ndescription: "B"\ndifficulty: "C"');
+    expect(entries).toHaveLength(3);
+    expect(entries[0]).toEqual({ key: 'title', value: 'A' });
+    expect(entries[1]).toEqual({ key: 'description', value: 'B' });
+    expect(entries[2]).toEqual({ key: 'difficulty', value: 'C' });
+  });
+
+  it('strips surrounding double quotes', () => {
+    const entries = parseFrontmatterFields('title: "Hello World"');
+    expect(entries[0].value).toBe('Hello World');
+  });
+
+  it('preserves unquoted values', () => {
+    const entries = parseFrontmatterFields('difficulty: advanced');
+    expect(entries[0].value).toBe('advanced');
+  });
+
+  it('returns empty array for empty input', () => {
+    expect(parseFrontmatterFields('')).toEqual([]);
+    expect(parseFrontmatterFields(null)).toEqual([]);
+  });
+});
+
+describe('serializeFrontmatter', () => {
+  it('serializes entries with double-quoted values', () => {
+    const result = serializeFrontmatter([
+      { key: 'title', value: 'Test' },
+      { key: 'difficulty', value: 'advanced' },
+    ]);
+    expect(result).toContain('title: "Test"');
+    expect(result).toContain('difficulty: "advanced"');
+    expect(result).toMatch(/^---\n/);
+    expect(result).toMatch(/\n---\n\n$/);
+  });
+
+  it('escapes double quotes in values', () => {
+    const result = serializeFrontmatter([{ key: 'title', value: 'Say "hi"' }]);
+    expect(result).toContain("Say 'hi'");
+  });
+});
+
+describe('extractImportLines', () => {
+  it('extracts import statements', () => {
+    const content = "import RelatedContent from '../../components/RelatedContent.astro';\n\n## Heading";
+    expect(extractImportLines(content)).toBe("import RelatedContent from '../../components/RelatedContent.astro';");
+  });
+
+  it('extracts multiple import statements', () => {
+    const content = "import A from 'a';\nimport B from 'b';\n\n## Heading";
+    const result = extractImportLines(content);
+    expect(result).toContain("import A from 'a';");
+    expect(result).toContain("import B from 'b';");
+  });
+
+  it('returns empty string when no imports', () => {
+    expect(extractImportLines('## Heading\n\nBody')).toBe('');
+  });
+});
+
+describe('extractLeadingAdmonitions', () => {
+  it('extracts :::tip and :::caution after first heading', () => {
+    const content = `## 16. Best Practices
+
+:::tip[Use CLI mode]
+Use CLI mode.
+:::
+
+:::caution[Avoid VRT]
+Avoid View Results Tree.
+:::
+
+## 16.1 Next Section
+
+Content here.`;
+    const result = extractLeadingAdmonitions(content);
+    expect(result).toContain(':::tip[Use CLI mode]');
+    expect(result).toContain('Use CLI mode.');
+    expect(result).toContain(':::caution[Avoid VRT]');
+    expect(result).toContain('Avoid View Results Tree.');
+  });
+
+  it('extracts :::note with title (custom) but not without (converter-generated)', () => {
+    const content = `## Heading
+
+:::note[Version-specific behavior]
+Custom note.
+:::
+
+:::note
+Converter-generated note.
+:::
+
+Content here.`;
+    const result = extractLeadingAdmonitions(content);
+    expect(result).toContain(':::note[Version-specific behavior]');
+    expect(result).toContain('Custom note.');
+    expect(result).not.toContain('Converter-generated note.');
+  });
+
+  it('stops at first non-admonition content', () => {
+    const content = `## Heading
+
+:::tip[Tip]
+Tip text.
+:::
+
+This is regular content.
+
+:::caution[Late]
+This should not be captured.
+:::`;
+    const result = extractLeadingAdmonitions(content);
+    expect(result).toContain(':::tip[Tip]');
+    expect(result).not.toContain(':::caution[Late]');
+  });
+
+  it('returns empty when no custom admonitions after heading', () => {
+    const content = `## Heading
+
+Regular content here.`;
+    expect(extractLeadingAdmonitions(content)).toBe('');
+  });
+
+  it('returns empty when no heading found', () => {
+    expect(extractLeadingAdmonitions('Just text, no heading')).toBe('');
+  });
+});
+
+describe('extractCustomSections', () => {
+  it('extracts from marker-based files', () => {
+    const rest = `import RelatedContent from '../../components/RelatedContent.astro';
+
+<!-- SYNCED-BODY:START -->
+## Heading
+
+<!-- CUSTOM-INTRO:START -->
+:::tip[Custom]
+Custom tip.
+:::
+<!-- CUSTOM-INTRO:END -->
+
+Content.
+<!-- SYNCED-BODY:END -->
+
+<!-- CUSTOM-FOOTER:START -->
+<RelatedContent>
+<Fragment slot="next">Next</Fragment>
+</RelatedContent>
+<!-- CUSTOM-FOOTER:END -->`;
+    const result = extractCustomSections(rest);
+    expect(result.imports).toContain('import RelatedContent');
+    expect(result.customIntro).toContain(':::tip[Custom]');
+    expect(result.customFooter).toContain('<RelatedContent>');
+  });
+
+  it('extracts from unmarked files heuristically', () => {
+    const rest = `import RelatedContent from '../../components/RelatedContent.astro';
+
+## Heading
+
+:::caution[Warning]
+Custom warning.
+:::
+
+Content here.
+
+<RelatedContent>
+<Fragment slot="next">Next</Fragment>
+</RelatedContent>`;
+    const result = extractCustomSections(rest);
+    expect(result.imports).toContain('import RelatedContent');
+    expect(result.customIntro).toContain(':::caution[Warning]');
+    expect(result.customFooter).toContain('<RelatedContent>');
+  });
+
+  it('returns empty sections for empty input', () => {
+    const result = extractCustomSections('');
+    expect(result.imports).toBe('');
+    expect(result.customIntro).toBe('');
+    expect(result.customFooter).toBe('');
+  });
+});
+
+describe('computeAutoDescription', () => {
+  it('extracts first paragraph as description', () => {
+    const body = 'This is a long enough first paragraph to use as description.\n\n## Heading';
+    expect(computeAutoDescription(body, 'Title')).toBe('This is a long enough first paragraph to use as description.');
+  });
+
+  it('falls back to title when no paragraph', () => {
+    const body = '## Heading\n\n## Another Heading';
+    expect(computeAutoDescription(body, 'My Title')).toBe('My Title');
+  });
+
+  it('truncates to 157 characters', () => {
+    const longPara = 'A'.repeat(200);
+    const result = computeAutoDescription(longPara, 'Title');
+    expect(result.length).toBe(157);
+  });
+});
+
+describe('mergeFrontmatter', () => {
+  it('refreshes title from upstream', () => {
+    const existing = [{ key: 'title', value: 'Old Title' }];
+    const merged = mergeFrontmatter(existing, 'New Title', 'Auto Desc');
+    expect(merged.find(e => e.key === 'title').value).toBe('New Title');
+  });
+
+  it('preserves custom description when it differs from auto', () => {
+    const existing = [
+      { key: 'title', value: 'Title' },
+      { key: 'description', value: 'My custom SEO description' },
+    ];
+    const merged = mergeFrontmatter(existing, 'Title', 'Auto-generated desc');
+    expect(merged.find(e => e.key === 'description').value).toBe('My custom SEO description');
+  });
+
+  it('uses auto description when existing equals title (fallback)', () => {
+    const existing = [
+      { key: 'title', value: 'Title' },
+      { key: 'description', value: 'Title' },
+    ];
+    const merged = mergeFrontmatter(existing, 'Title', 'Auto desc');
+    expect(merged.find(e => e.key === 'description').value).toBe('Auto desc');
+  });
+
+  it('uses auto description when existing equals new auto (unchanged)', () => {
+    const existing = [
+      { key: 'title', value: 'Title' },
+      { key: 'description', value: 'Same auto desc' },
+    ];
+    const merged = mergeFrontmatter(existing, 'Title', 'Same auto desc');
+    expect(merged.find(e => e.key === 'description').value).toBe('Same auto desc');
+  });
+
+  it('preserves custom frontmatter fields', () => {
+    const existing = [
+      { key: 'title', value: 'Title' },
+      { key: 'difficulty', value: 'advanced' },
+      { key: 'guideType', value: 'reference' },
+      { key: 'estimatedReadTime', value: '10 min read' },
+      { key: 'lastVerified', value: 'JMeter 5.6' },
+    ];
+    const merged = mergeFrontmatter(existing, 'New Title', 'Auto');
+    expect(merged.find(e => e.key === 'difficulty').value).toBe('advanced');
+    expect(merged.find(e => e.key === 'guideType').value).toBe('reference');
+    expect(merged.find(e => e.key === 'estimatedReadTime').value).toBe('10 min read');
+    expect(merged.find(e => e.key === 'lastVerified').value).toBe('JMeter 5.6');
+  });
+
+  it('adds title and description for brand-new files', () => {
+    const merged = mergeFrontmatter([], 'New Title', 'Auto desc');
+    expect(merged.find(e => e.key === 'title').value).toBe('New Title');
+    expect(merged.find(e => e.key === 'description').value).toBe('Auto desc');
+  });
+
+  it('preserves field order from existing', () => {
+    const existing = [
+      { key: 'title', value: 'T' },
+      { key: 'description', value: 'D' },
+      { key: 'difficulty', value: 'advanced' },
+    ];
+    const merged = mergeFrontmatter(existing, 'T', 'D');
+    expect(merged.map(e => e.key)).toEqual(['title', 'description', 'difficulty']);
+  });
+});
+
+describe('PRESERVED_FM_FIELDS', () => {
+  it('contains expected custom fields', () => {
+    expect(PRESERVED_FM_FIELDS).toContain('difficulty');
+    expect(PRESERVED_FM_FIELDS).toContain('guideType');
+    expect(PRESERVED_FM_FIELDS).toContain('estimatedReadTime');
+    expect(PRESERVED_FM_FIELDS).toContain('lastVerified');
+  });
+});
+
+describe('convertFile: content preservation', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'convert-preserve-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeSrc(name, xml) {
+    const srcPath = path.join(tmpDir, name);
+    fs.writeFileSync(srcPath, xml, 'utf-8');
+    return srcPath;
+  }
+
+  const SIMPLE_XML = (title, body) => `<document><title>${title}</title><body>${body}</body></document>`;
+
+  it('preserves custom frontmatter fields across re-convert', () => {
+    const srcPath = writeSrc('test.xml', SIMPLE_XML('Test Page', '<p>Body text here for description.</p>'));
+    const destPath = path.join(tmpDir, 'out.mdx');
+
+    convertFile(srcPath, destPath);
+    let mdx = fs.readFileSync(destPath, 'utf-8');
+
+    const { frontmatter, rest } = splitFrontmatter(mdx);
+    const entries = parseFrontmatterFields(frontmatter);
+    entries.push(
+      { key: 'difficulty', value: 'advanced' },
+      { key: 'guideType', value: 'reference' },
+      { key: 'estimatedReadTime', value: '10 min read' },
+      { key: 'lastVerified', value: 'JMeter 5.6' },
+    );
+    fs.writeFileSync(destPath, serializeFrontmatter(entries) + rest, 'utf-8');
+
+    convertFile(srcPath, destPath);
+    mdx = fs.readFileSync(destPath, 'utf-8');
+
+    expect(mdx).toContain('difficulty: "advanced"');
+    expect(mdx).toContain('guideType: "reference"');
+    expect(mdx).toContain('estimatedReadTime: "10 min read"');
+    expect(mdx).toContain('lastVerified: "JMeter 5.6"');
+  });
+
+  it('preserves custom SEO description across re-convert', () => {
+    const srcPath = writeSrc('test.xml', SIMPLE_XML('Test Page', '<p>Auto-generated body text here.</p>'));
+    const destPath = path.join(tmpDir, 'out.mdx');
+
+    convertFile(srcPath, destPath);
+
+    let mdx = fs.readFileSync(destPath, 'utf-8');
+    mdx = mdx.replace(
+      /description: ".*"/,
+      'description: "My custom SEO description that is unique"'
+    );
+    fs.writeFileSync(destPath, mdx, 'utf-8');
+
+    convertFile(srcPath, destPath);
+    mdx = fs.readFileSync(destPath, 'utf-8');
+
+    expect(mdx).toContain('My custom SEO description that is unique');
+  });
+
+  it('preserves import lines across re-convert', () => {
+    const srcPath = writeSrc('test.xml', SIMPLE_XML('Test', '<p>Body text for description here.</p>'));
+    const destPath = path.join(tmpDir, 'out.mdx');
+
+    convertFile(srcPath, destPath);
+
+    let mdx = fs.readFileSync(destPath, 'utf-8');
+    const { frontmatter, rest } = splitFrontmatter(mdx);
+    mdx = serializeFrontmatter(parseFrontmatterFields(frontmatter))
+      + "import RelatedContent from '../../components/RelatedContent.astro';\n\n"
+      + rest;
+    fs.writeFileSync(destPath, mdx, 'utf-8');
+
+    convertFile(srcPath, destPath);
+    mdx = fs.readFileSync(destPath, 'utf-8');
+
+    expect(mdx).toContain("import RelatedContent from '../../components/RelatedContent.astro';");
+  });
+
+  it('preserves RelatedContent footer across re-convert', () => {
+    const srcPath = writeSrc('test.xml', SIMPLE_XML('Test', '<p>Body text for description here.</p>'));
+    const destPath = path.join(tmpDir, 'out.mdx');
+
+    convertFile(srcPath, destPath);
+
+    let mdx = fs.readFileSync(destPath, 'utf-8');
+    mdx = mdx.trimEnd() + '\n\n<RelatedContent>\n<Fragment slot="next">Next step</Fragment>\n</RelatedContent>\n';
+    fs.writeFileSync(destPath, mdx, 'utf-8');
+
+    convertFile(srcPath, destPath);
+    mdx = fs.readFileSync(destPath, 'utf-8');
+
+    expect(mdx).toContain('<RelatedContent>');
+    expect(mdx).toContain('<Fragment slot="next">Next step</Fragment>');
+    expect(mdx).toContain('</RelatedContent>');
+  });
+
+  it('preserves custom admonitions across re-convert', () => {
+    const srcXml = `<document><title>Test</title><body>
+<section name="Overview"><p>Section content here for description.</p></section>
+</body></document>`;
+    const srcPath = writeSrc('test.xml', srcXml);
+    const destPath = path.join(tmpDir, 'out.mdx');
+
+    convertFile(srcPath, destPath);
+
+    let mdx = fs.readFileSync(destPath, 'utf-8');
+    mdx = mdx.replace(
+      '## Overview',
+      '## Overview\n\n:::tip[Custom Tip]\nThis is a custom tip.\n:::'
+    );
+    fs.writeFileSync(destPath, mdx, 'utf-8');
+
+    convertFile(srcPath, destPath);
+    mdx = fs.readFileSync(destPath, 'utf-8');
+
+    expect(mdx).toContain(':::tip[Custom Tip]');
+    expect(mdx).toContain('This is a custom tip.');
+  });
+
+  it('always ends with a trailing newline', () => {
+    const srcPath = writeSrc('test.xml', SIMPLE_XML('Test', '<p>Body text for description.</p>'));
+    const destPath = path.join(tmpDir, 'out.mdx');
+
+    convertFile(srcPath, destPath);
+    const mdx = fs.readFileSync(destPath, 'utf-8');
+
+    expect(mdx.endsWith('\n')).toBe(true);
+  });
+
+  it('is idempotent: second convert produces identical output', () => {
+    const srcPath = writeSrc('test.xml', SIMPLE_XML('Test', '<p>Body text for description.</p>'));
+    const destPath = path.join(tmpDir, 'out.mdx');
+
+    convertFile(srcPath, destPath);
+    const firstRun = fs.readFileSync(destPath, 'utf-8');
+
+    convertFile(srcPath, destPath);
+    const secondRun = fs.readFileSync(destPath, 'utf-8');
+
+    expect(secondRun).toBe(firstRun);
+  });
+
+  it('is idempotent with custom content', () => {
+    const srcXml = `<document><title>Test</title><body>
+<section name="Overview"><p>Section content here for description.</p></section>
+</body></document>`;
+    const srcPath = writeSrc('test.xml', srcXml);
+    const destPath = path.join(tmpDir, 'out.mdx');
+
+    convertFile(srcPath, destPath);
+
+    let mdx = fs.readFileSync(destPath, 'utf-8');
+    const { frontmatter, rest } = splitFrontmatter(mdx);
+    const entries = parseFrontmatterFields(frontmatter);
+    entries.push({ key: 'difficulty', value: 'advanced' });
+    mdx = serializeFrontmatter(entries)
+      + "import RelatedContent from '../../components/RelatedContent.astro';\n\n"
+      + rest.replace('## Overview', '## Overview\n\n:::tip[Custom]\nTip text.\n:::')
+      + '\n\n<RelatedContent>\n<Fragment slot="next">Next</Fragment>\n</RelatedContent>';
+    fs.writeFileSync(destPath, mdx, 'utf-8');
+
+    convertFile(srcPath, destPath);
+    const secondRun = fs.readFileSync(destPath, 'utf-8');
+
+    convertFile(srcPath, destPath);
+    const thirdRun = fs.readFileSync(destPath, 'utf-8');
+
+    expect(thirdRun).toBe(secondRun);
   });
 });
