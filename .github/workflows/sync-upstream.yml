@@ -55,8 +55,17 @@ jobs:
           git add -A
           if git diff --cached --quiet; then
             echo "changes=false" >> $GITHUB_OUTPUT
+            echo "changed_files=" >> $GITHUB_OUTPUT
           else
             echo "changes=true" >> $GITHUB_OUTPUT
+            # Capture the list of changed files for the failure report
+            FILES=$(git diff --cached --name-only | head -50)
+            # Write as a multi-line output value (use EOF delimiter)
+            {
+              echo "changed_files<<EOF"
+              echo "$FILES"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
           fi
 
       - name: Verify build passes
@@ -108,10 +117,35 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const changes = '${{ steps.diff.outputs.changes }}';
+            const changedFiles = `${{ steps.diff.outputs.changed_files }}`;
+            const hadUpstreamChanges = changes === 'true';
+
+            let body = `The upstream sync workflow failed on ${new Date().toISOString()}.\n\n`;
+            body += `[View run](${context.payload.repository.html_url}/actions/runs/${context.runId})\n\n`;
+
+            if (hadUpstreamChanges) {
+              body += `**Upstream changes were detected** but the workflow failed before a PR could be created.\n`;
+              body += `The documentation is now out of date and needs manual intervention.\n\n`;
+              body += `**Changed files (up to 50):**\n\`\`\`\n${changedFiles}\n\`\`\`\n\n`;
+              body += `To resolve:\n`;
+              body += `1. Check the failed step in the run log above.\n`;
+              body += `2. Run \`node tools/convert.mjs\` locally with \`JMETER_XDOCS\` set to a fresh jmeter checkout.\n`;
+              body += `3. Fix the converter or build issue, commit, and push.\n`;
+              body += `4. Re-run the workflow via \`workflow_dispatch\` or wait for the next nightly run.\n`;
+            } else {
+              body += `**No upstream changes were detected.** The failure happened during conversion or build of existing content, not because of new upstream changes.\n\n`;
+              body += `To resolve:\n`;
+              body += `1. Check the failed step in the run log above.\n`;
+              body += `2. This is likely a converter or environment issue, not a content sync issue.\n`;
+            }
+
             github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: 'Sync workflow failed',
-              body: `The upstream sync workflow failed on ${new Date().toISOString()}.\n\n[View run](${context.payload.repository.html_url}/actions/runs/${context.runId})\n\nPlease investigate and fix the issue to prevent documentation from going stale.`,
+              title: hadUpstreamChanges
+              ? 'Sync workflow failed - upstream changes pending'
+              : 'Sync workflow failed - no upstream changes',
+              body,
               labels: ['bug', 'sync']
             })
