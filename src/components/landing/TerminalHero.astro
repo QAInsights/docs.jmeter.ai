@@ -1,9 +1,20 @@
 ---
+const now = new Date();
+const formattedDate = now.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric'
+}) + ' ' + now.toLocaleTimeString('en-US', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit'
+});
+
 const lines = [
   { text: '$ jmeter -n -t test-plan.jmx -l results.jtl', cls: 'cmd' },
   { text: 'Creating summariser <main>' },
   { text: 'Created the tree successfully' },
-  { text: 'Starting the test @ 2026 Jul 3 06:32:00 PM' },
+  { text: `Starting the test @ ${formattedDate}` },
   { text: 'summary +   1247 in 00:00:12 =  103.9/s  Avg:   245  Min:    12  Max:  1823  Err:     0 (0.00%)', cls: 'ok' },
   { text: 'summary =   1247 in 00:00:12 =  103.9/s  Avg:   245  Min:    12  Max:  1823  Err:     0 (0.00%)', cls: 'ok' },
 ];
