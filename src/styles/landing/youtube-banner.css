@@ -1,0 +1,330 @@
+/* ==========================================================================
+   YouTube Playlist Banner
+   Animated gradient banner with learning-themed CSS shapes
+   ========================================================================== */
+
+.youtube-banner-section {
+  padding: 0.5rem 0 1.25rem;
+}
+
+.yt-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 1.5rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, var(--sl-color-gray-5));
+  border-radius: 0.75rem;
+  padding: 1.35rem 1.5rem;
+  color: inherit;
+  text-decoration: none;
+  background: var(--sl-color-gray-6);
+  transition: transform 200ms var(--mx-ease),
+              border-color 200ms var(--mx-ease),
+              box-shadow 200ms var(--mx-ease);
+}
+
+.yt-banner:hover {
+  border-color: var(--sl-color-accent);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--sl-color-accent) 25%, transparent),
+    0 16px 40px -16px color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+}
+
+.yt-banner:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 3px;
+}
+
+/* --- Animated gradient background --------------------------------------- */
+.yt-banner-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.yt-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.55;
+}
+
+.yt-orb-a {
+  width: 14rem;
+  height: 14rem;
+  top: -4rem;
+  left: -2rem;
+  background: radial-gradient(circle, var(--sl-color-accent-high), transparent 70%);
+  animation: yt-drift-a 12s ease-in-out infinite;
+}
+
+.yt-orb-b {
+  width: 10rem;
+  height: 10rem;
+  right: 8%;
+  bottom: -3rem;
+  background: radial-gradient(circle, var(--sl-color-accent), transparent 70%);
+  animation: yt-drift-b 10s ease-in-out infinite;
+}
+
+.yt-orb-c {
+  width: 8rem;
+  height: 8rem;
+  top: 20%;
+  right: 35%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--sl-color-accent-high) 60%, #fff), transparent 70%);
+  animation: yt-drift-c 14s ease-in-out infinite;
+}
+
+@keyframes yt-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(2rem, 1.5rem) scale(1.08); }
+}
+
+@keyframes yt-drift-b {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-1.5rem, -1rem) scale(1.1); }
+}
+
+@keyframes yt-drift-c {
+  0%, 100% { transform: translate(0, 0); opacity: 0.45; }
+  50% { transform: translate(-1rem, 0.75rem); opacity: 0.7; }
+}
+
+/* --- Learning scene (CSS shapes) -------------------------------------- */
+.yt-banner-visual {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.yt-scene {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+}
+
+.yt-page {
+  position: absolute;
+  width: 1.6rem;
+  height: 2rem;
+  border-radius: 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 40%, var(--sl-color-gray-5));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--sl-color-accent-low) 80%, var(--sl-color-gray-6)),
+    var(--sl-color-gray-6)
+  );
+}
+
+.yt-page::after {
+  content: '';
+  position: absolute;
+  top: 0.45rem;
+  left: 0.3rem;
+  right: 0.3rem;
+  height: 0.12rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--sl-color-accent) 50%, transparent);
+  box-shadow: 0 0.35rem 0 -0.15rem color-mix(in srgb, var(--sl-color-gray-4) 60%, transparent);
+}
+
+.yt-page-1 {
+  top: 0.6rem;
+  left: 0;
+  transform: rotate(-12deg);
+  animation: yt-page-float 5s ease-in-out infinite;
+}
+
+.yt-page-2 {
+  top: 0.2rem;
+  left: 1.1rem;
+  transform: rotate(4deg);
+  animation: yt-page-float 5s ease-in-out infinite 0.6s;
+}
+
+.yt-page-3 {
+  top: 0.85rem;
+  left: 2.1rem;
+  transform: rotate(14deg);
+  animation: yt-page-float 5s ease-in-out infinite 1.2s;
+}
+
+@keyframes yt-page-float {
+  0%, 100% { transform: translateY(0) rotate(var(--yt-rot, 0deg)); }
+  50% { transform: translateY(-0.25rem) rotate(var(--yt-rot, 0deg)); }
+}
+
+.yt-page-1 { --yt-rot: -12deg; }
+.yt-page-2 { --yt-rot: 4deg; }
+.yt-page-3 { --yt-rot: 14deg; }
+
+.yt-path {
+  position: absolute;
+  bottom: 0.35rem;
+  left: 0.4rem;
+  right: 0.4rem;
+  height: 0.12rem;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--sl-color-accent) 50%, transparent) 20%,
+    color-mix(in srgb, var(--sl-color-accent-high) 60%, transparent) 80%,
+    transparent
+  );
+}
+
+.yt-node {
+  position: absolute;
+  top: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--sl-color-accent-high);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sl-color-accent-low) 80%, transparent);
+  animation: yt-node-pulse 2.4s ease-in-out infinite;
+}
+
+.yt-node-1 { left: 15%; animation-delay: 0s; }
+.yt-node-2 { left: 50%; animation-delay: 0.4s; }
+.yt-node-3 { left: 85%; animation-delay: 0.8s; }
+
+@keyframes yt-node-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+  50% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+}
+
+.yt-play-ring {
+  position: absolute;
+  right: 0;
+  bottom: 0.5rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 45%, transparent);
+  animation: yt-ring-pulse 3s ease-out infinite;
+}
+
+@keyframes yt-ring-pulse {
+  0% { transform: scale(0.92); opacity: 0.9; }
+  70% { transform: scale(1.15); opacity: 0; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+
+.yt-play {
+  position: absolute;
+  right: 0.15rem;
+  bottom: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, var(--sl-color-accent), var(--sl-color-accent-high));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--sl-color-accent) 45%, transparent);
+  animation: yt-play-bob 4s ease-in-out infinite;
+}
+
+.yt-play svg {
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.1rem;
+}
+
+@keyframes yt-play-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-0.2rem); }
+}
+
+/* --- Copy & CTA ------------------------------------------------------- */
+.yt-banner-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.yt-banner-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.45rem;
+  padding: 0.2rem 0.55rem 0.2rem 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, var(--sl-color-gray-5));
+  background: color-mix(in srgb, var(--sl-color-accent-low) 40%, var(--sl-color-gray-6));
+  color: var(--sl-color-accent-high);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.yt-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+}
+
+.yt-banner-title {
+  margin: 0 0 0.4rem;
+  color: var(--sl-color-white);
+  font-size: clamp(1.35rem, 3.2vw, 1.65rem);
+  font-weight: 750;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.yt-accent {
+  color: var(--sl-color-accent-high);
+  font-size: 1.12em;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.yt-banner-desc {
+  margin: 0 0 0.85rem;
+  max-width: 38rem;
+  color: var(--sl-color-gray-3);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.yt-banner-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--sl-color-accent-high);
+  font-size: 0.88rem;
+  font-weight: 750;
+  transition: gap 200ms var(--mx-ease), color 200ms var(--mx-ease);
+}
+
+.yt-banner-cta svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+}
+
+.yt-banner:hover .yt-banner-cta {
+  gap: 0.55rem;
+  color: var(--sl-color-accent);
+}
+
+/* --- Reduced motion --------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .yt-orb,
+  .yt-page,
+  .yt-node,
+  .yt-play-ring,
+  .yt-play {
+    animation: none;
+  }
+}

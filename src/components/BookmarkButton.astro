@@ -1,0 +1,156 @@
+---
+/**
+ * Bookmark toggle button - star icon that adds/removes the current page
+ * from the user's bookmark list in localStorage.
+ */
+
+const { title, href } = Astro.props;
+const pathname = href.replace(/\/+$/, '') || '/';
+---
+
+<button
+  class="bookmark-btn"
+  type="button"
+  data-bookmark-toggle
+  data-page-href={pathname}
+  data-page-title={title}
+  aria-label="Bookmark this page"
+  aria-pressed="false"
+  title="Bookmark this page"
+>
+  <svg class="icon-star-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+  <svg class="icon-star-filled" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+</button>
+
+<script>
+  (() => {
+    if (window.__jmeterBookmarkBtnReady) return;
+    window.__jmeterBookmarkBtnReady = true;
+
+    const KEY = 'jmeter-docs:bookmarks';
+
+    function normalizeHref(href) {
+      return href.replace(/\/+$/, '') || '/';
+    }
+
+    function getBookmarks() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    function saveBookmarks(list) {
+      try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {}
+    }
+
+    function isBookmarked(href) {
+      const norm = normalizeHref(href);
+      return getBookmarks().some((b) => normalizeHref(b.href) === norm);
+    }
+
+    function updateButtonUI(btn, bookmarked) {
+      const outline = btn.querySelector('.icon-star-outline');
+      const filled = btn.querySelector('.icon-star-filled');
+      if (outline) outline.hidden = bookmarked;
+      if (filled) filled.hidden = !bookmarked;
+      btn.setAttribute('aria-pressed', String(bookmarked));
+      btn.title = bookmarked ? 'Remove bookmark' : 'Bookmark this page';
+      btn.setAttribute('aria-label', bookmarked ? 'Remove bookmark' : 'Bookmark this page');
+    }
+
+    function initButtons() {
+      document.querySelectorAll('[data-bookmark-toggle]').forEach((btn) => {
+        const href = btn.dataset.pageHref || '';
+        updateButtonUI(btn, isBookmarked(href));
+
+        btn.addEventListener('click', () => {
+          const pageHref = btn.dataset.pageHref || '';
+          const pageTitle = btn.dataset.pageTitle || '';
+          const norm = normalizeHref(pageHref);
+          let list = getBookmarks();
+          const idx = list.findIndex((b) => normalizeHref(b.href) === norm);
+
+          if (idx >= 0) {
+            list.splice(idx, 1);
+            saveBookmarks(list);
+            updateButtonUI(btn, false);
+          } else {
+            list.unshift({ href: norm, title: pageTitle, ts: Date.now(), pinned: false });
+            if (list.length > 50) list.length = 50;
+            saveBookmarks(list);
+            updateButtonUI(btn, true);
+          }
+
+          // Notify the reading widget to refresh
+          window.dispatchEvent(new CustomEvent('jmeter:bookmarks-changed'));
+        });
+      });
+    }
+
+    initButtons();
+
+    // Listen for external bookmark changes (widget removing a bookmark)
+    window.addEventListener('jmeter:bookmarks-changed', () => {
+      document.querySelectorAll('[data-bookmark-toggle]').forEach((btn) => {
+        const href = btn.dataset.pageHref || '';
+        updateButtonUI(btn, isBookmarked(href));
+      });
+    });
+  })();
+</script>
+
+<style>
+  .bookmark-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    border: 1px solid var(--sl-color-gray-5);
+    background: transparent;
+    color: var(--sl-color-gray-2);
+    cursor: pointer;
+    padding: 0;
+    transition: color var(--mx-fast) var(--mx-ease),
+                border-color var(--mx-fast) var(--mx-ease),
+                background-color var(--mx-fast) var(--mx-ease),
+                transform var(--mx-fast) var(--mx-ease);
+  }
+
+  .bookmark-btn:hover {
+    color: var(--sl-color-accent);
+    border-color: var(--sl-color-accent);
+    background: var(--sl-color-accent-low);
+  }
+
+  .bookmark-btn:active {
+    transform: scale(0.9);
+  }
+
+  .bookmark-btn[aria-pressed='true'] {
+    color: var(--sl-color-accent);
+    border-color: var(--sl-color-accent);
+    background: var(--sl-color-accent-low);
+  }
+
+  .bookmark-btn:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 2px;
+  }
+
+  .bookmark-btn svg {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  }
+
+  .bookmark-btn svg[hidden] {
+    display: none;
+  }
+</style>

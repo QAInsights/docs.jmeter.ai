@@ -4,6 +4,7 @@
 @import './landing/base.css';
 @import './landing/hero.css';
 @import './landing/workflow.css';
+@import './landing/youtube-banner.css';
 @import './landing/goal-selector.css';
 @import './landing/bento-grid.css';
 @import './landing/docs-graph.css';

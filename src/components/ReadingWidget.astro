@@ -1,0 +1,509 @@
+---
+/**
+ * Reading widget - right sidebar panel with "Recent" and "Bookmarks" tabs.
+ * Renders entirely from localStorage on the client side.
+ */
+---
+
+<div class="reading-widget" data-reading-widget>
+  <div class="rw-tabs" role="tablist" aria-label="Reading lists">
+    <button
+      class="rw-tab"
+      type="button"
+      role="tab"
+      data-rw-tab="recent"
+      aria-selected="true"
+      aria-controls="rw-panel-recent"
+      id="rw-tab-recent"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Recent
+    </button>
+    <button
+      class="rw-tab"
+      type="button"
+      role="tab"
+      data-rw-tab="bookmarks"
+      aria-selected="false"
+      aria-controls="rw-panel-bookmarks"
+      id="rw-tab-bookmarks"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      Bookmarks
+    </button>
+  </div>
+
+  <div class="rw-panels">
+    <div
+      class="rw-panel"
+      id="rw-panel-recent"
+      role="tabpanel"
+      aria-labelledby="rw-tab-recent"
+      data-rw-panel="recent"
+    >
+      <ul class="rw-list" data-rw-list="recent"></ul>
+      <p class="rw-empty" data-rw-empty="recent" hidden>No pages viewed yet</p>
+    </div>
+    <div
+      class="rw-panel"
+      id="rw-panel-bookmarks"
+      role="tabpanel"
+      aria-labelledby="rw-tab-bookmarks"
+      data-rw-panel="bookmarks"
+      hidden
+    >
+      <ul class="rw-list" data-rw-list="bookmarks"></ul>
+      <p class="rw-empty" data-rw-empty="bookmarks" hidden>No bookmarks yet</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  (() => {
+    if (window.__jmeterReadingWidgetReady) return;
+    window.__jmeterReadingWidgetReady = true;
+
+    const RECENT_KEY = 'jmeter-docs:recent';
+    const BOOKMARKS_KEY = 'jmeter-docs:bookmarks';
+
+    function normalizeHref(href) {
+      return href.replace(/\/+$/, '') || '/';
+    }
+
+    function safeRead(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    function safeWrite(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    }
+
+    function relativeTime(ts) {
+      const diff = Date.now() - ts;
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins}m ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      if (days < 30) return `${days}d ago`;
+      return new Date(ts).toLocaleDateString();
+    }
+
+    function createListItem(item, type) {
+      const li = document.createElement('li');
+      li.className = 'rw-item';
+      if (item.pinned) li.classList.add('rw-item-pinned');
+
+      const currentPath = normalizeHref(window.location.pathname);
+      if (normalizeHref(item.href) === currentPath) {
+        li.classList.add('rw-item-current');
+      }
+
+      const link = document.createElement('a');
+      link.href = item.href;
+      link.className = 'rw-item-link';
+      link.textContent = item.title || item.href;
+      link.title = item.title || item.href;
+      if (normalizeHref(item.href) === currentPath) {
+        link.setAttribute('aria-current', 'page');
+      }
+      li.appendChild(link);
+
+      // Trailing slot: shows timestamp by default, swapped to actions on hover
+      const trail = document.createElement('div');
+      trail.className = 'rw-item-trail';
+
+      const timeEl = document.createElement('span');
+      timeEl.className = 'rw-item-time';
+      timeEl.textContent = relativeTime(item.ts);
+      timeEl.title = new Date(item.ts).toLocaleString();
+      trail.appendChild(timeEl);
+
+      const actions = document.createElement('div');
+      actions.className = 'rw-item-actions';
+
+      if (type === 'bookmarks') {
+        const pinBtn = document.createElement('button');
+        pinBtn.type = 'button';
+        pinBtn.className = 'rw-action-btn';
+        pinBtn.dataset.action = 'pin';
+        pinBtn.title = item.pinned ? 'Unpin' : 'Pin to top';
+        pinBtn.setAttribute('aria-label', item.pinned ? 'Unpin bookmark' : 'Pin bookmark to top');
+        pinBtn.innerHTML = item.pinned
+          ? '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+        pinBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const list = safeRead(BOOKMARKS_KEY);
+          const entry = list.find((b) => normalizeHref(b.href) === normalizeHref(item.href));
+          if (entry) {
+            entry.pinned = !entry.pinned;
+            safeWrite(BOOKMARKS_KEY, list);
+            renderBookmarks();
+            window.dispatchEvent(new CustomEvent('jmeter:bookmarks-changed'));
+          }
+        });
+        actions.appendChild(pinBtn);
+      }
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'rw-action-btn';
+      removeBtn.dataset.action = 'remove';
+      removeBtn.title = type === 'recent' ? 'Remove' : 'Remove';
+      removeBtn.setAttribute('aria-label', type === 'recent' ? 'Remove from recent' : 'Remove bookmark');
+      removeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      removeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const key = type === 'recent' ? RECENT_KEY : BOOKMARKS_KEY;
+        let list = safeRead(key);
+        list = list.filter((b) => normalizeHref(b.href) !== normalizeHref(item.href));
+        safeWrite(key, list);
+        if (type === 'recent') renderRecent();
+        else {
+          renderBookmarks();
+          window.dispatchEvent(new CustomEvent('jmeter:bookmarks-changed'));
+        }
+      });
+      actions.appendChild(removeBtn);
+      trail.appendChild(actions);
+
+      li.appendChild(trail);
+
+      return li;
+    }
+
+    function renderRecent() {
+      const list = safeRead(RECENT_KEY);
+      const ul = document.querySelector('[data-rw-list="recent"]');
+      const empty = document.querySelector('[data-rw-empty="recent"]');
+      if (!ul) return;
+      ul.innerHTML = '';
+      if (list.length === 0) {
+        empty.hidden = false;
+      } else {
+        empty.hidden = true;
+        list.forEach((item) => ul.appendChild(createListItem(item, 'recent')));
+      }
+    }
+
+    function renderBookmarks() {
+      const list = safeRead(BOOKMARKS_KEY);
+      // Sort: pinned first, then by date
+      list.sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return b.ts - a.ts;
+      });
+      const ul = document.querySelector('[data-rw-list="bookmarks"]');
+      const empty = document.querySelector('[data-rw-empty="bookmarks"]');
+      if (!ul) return;
+      ul.innerHTML = '';
+      if (list.length === 0) {
+        empty.hidden = false;
+      } else {
+        empty.hidden = true;
+        list.forEach((item) => ul.appendChild(createListItem(item, 'bookmarks')));
+      }
+    }
+
+    // Tab switching
+    document.querySelectorAll('[data-rw-tab]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const name = tab.dataset.rwTab;
+        document.querySelectorAll('[data-rw-tab]').forEach((t) => {
+          t.setAttribute('aria-selected', String(t === tab));
+        });
+        document.querySelectorAll('[data-rw-panel]').forEach((panel) => {
+          panel.hidden = panel.dataset.rwPanel !== name;
+        });
+      });
+    });
+
+    // Keyboard navigation for tabs
+    const tablist = document.querySelector('[data-reading-widget] [role="tablist"]');
+    if (tablist) {
+      tablist.addEventListener('keydown', (e) => {
+        const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+        const idx = tabs.indexOf(document.activeElement);
+        if (idx < 0) return;
+        let next = -1;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (idx + 1) % tabs.length;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (idx - 1 + tabs.length) % tabs.length;
+        if (next >= 0) {
+          e.preventDefault();
+          tabs[next].focus();
+          tabs[next].click();
+        }
+      });
+    }
+
+    // Initial render
+    renderRecent();
+    renderBookmarks();
+
+    // Re-render when bookmarks change (from BookmarkButton or other sources)
+    window.addEventListener('jmeter:bookmarks-changed', renderBookmarks);
+  })();
+</script>
+
+<style>
+  @layer starlight.core {
+    .reading-widget {
+      margin-top: 1rem;
+      border: 1px solid var(--sl-color-gray-5);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--sl-color-gray-6) 50%, transparent);
+    }
+
+    /* Tabs (static markup — scoped) */
+    .rw-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--sl-color-gray-5);
+    }
+
+    .rw-tab {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.55rem 0.5rem;
+      border: none;
+      background: transparent;
+      color: var(--sl-color-gray-3);
+      font: inherit;
+      font-size: var(--sl-text-xs);
+      font-weight: 600;
+      cursor: pointer;
+      transition: color var(--mx-fast) var(--mx-ease),
+                  background-color var(--mx-fast) var(--mx-ease);
+      position: relative;
+    }
+
+    .rw-tab:hover {
+      color: var(--sl-color-gray-2);
+      background: color-mix(in srgb, var(--sl-color-gray-6) 80%, transparent);
+    }
+
+    .rw-tab[aria-selected='true'] {
+      color: var(--sl-color-accent);
+    }
+
+    .rw-tab[aria-selected='true']::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0.5rem;
+      right: 0.5rem;
+      height: 2px;
+      background: var(--sl-color-accent);
+      border-radius: 2px 2px 0 0;
+    }
+
+    .rw-tab:focus-visible {
+      outline: 2px solid var(--sl-color-accent);
+      outline-offset: -2px;
+    }
+
+    .rw-tab svg {
+      width: 0.8rem;
+      height: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    /* Panels (static markup — scoped) */
+    .rw-panels {
+      max-height: 16rem;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--sl-color-gray-4) transparent;
+    }
+
+    .rw-panel {
+      padding: 0.35rem 0;
+    }
+
+    /*
+     * List items are rendered client-side, so :global() is required
+     * for Astro scoped styles to reach dynamically created elements.
+     */
+    .reading-widget :global(.rw-list) {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .reading-widget :global(.rw-item) {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.5rem 0.35rem 0.65rem;
+      border-radius: 0.25rem;
+      margin: 0 0.35rem;
+      border-left: 2px solid transparent;
+      transition: background-color var(--mx-fast) var(--mx-ease),
+                  border-color var(--mx-fast) var(--mx-ease);
+    }
+
+    .reading-widget :global(.rw-item:hover) {
+      background: color-mix(in srgb, var(--sl-color-gray-5) 30%, transparent);
+    }
+
+    .reading-widget :global(.rw-item-current) {
+      border-left-color: var(--sl-color-accent);
+      background: color-mix(in srgb, var(--sl-color-accent-low) 45%, transparent);
+    }
+
+    .reading-widget :global(.rw-item-current:hover) {
+      background: color-mix(in srgb, var(--sl-color-accent-low) 60%, transparent);
+    }
+
+    .reading-widget :global(.rw-item-link) {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: var(--sl-text-xs);
+      color: var(--sl-color-gray-2);
+      text-decoration: none;
+      line-height: 1.45;
+    }
+
+    .reading-widget :global(.rw-item-link:hover) {
+      color: var(--sl-color-white);
+    }
+
+    .reading-widget :global(.rw-item-link[aria-current='page']) {
+      color: var(--sl-color-accent);
+      font-weight: 600;
+    }
+
+    /* Trail: timestamp and actions share a fixed-width slot to avoid layout shift. */
+    .reading-widget :global(.rw-item-trail) {
+      position: relative;
+      flex-shrink: 0;
+      width: 3.75rem;
+      height: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .reading-widget :global(.rw-item-time) {
+      font-size: 0.65rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--sl-color-gray-4);
+      white-space: nowrap;
+      transition: opacity var(--mx-fast) var(--mx-ease);
+    }
+
+    .reading-widget :global(.rw-item:hover .rw-item-time) {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .reading-widget :global(.rw-item-actions) {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.2rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--mx-fast) var(--mx-ease);
+    }
+
+    .reading-widget :global(.rw-item:hover .rw-item-actions),
+    .reading-widget :global(.rw-item:focus-within .rw-item-actions) {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .reading-widget :global(.rw-action-btn) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.4rem;
+      height: 1.4rem;
+      border: 1px solid var(--sl-color-gray-5);
+      border-radius: 9999px;
+      background: var(--sl-color-gray-6);
+      color: var(--sl-color-gray-3);
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+      transition: color var(--mx-fast) var(--mx-ease),
+                  border-color var(--mx-fast) var(--mx-ease),
+                  background-color var(--mx-fast) var(--mx-ease);
+    }
+
+    .reading-widget :global(.rw-action-btn:hover) {
+      color: var(--sl-color-accent);
+      border-color: var(--sl-color-accent);
+      background: var(--sl-color-accent-low);
+    }
+
+    .reading-widget :global(.rw-action-btn[data-action='remove']:hover) {
+      color: #f87171;
+      border-color: color-mix(in srgb, #f87171 60%, var(--sl-color-gray-5));
+      background: color-mix(in srgb, #f87171 12%, transparent);
+    }
+
+    .reading-widget :global(.rw-action-btn:focus-visible) {
+      outline: 2px solid var(--sl-color-accent);
+      outline-offset: 1px;
+    }
+
+    .reading-widget :global(.rw-action-btn svg) {
+      width: 0.7rem;
+      height: 0.7rem;
+      flex-shrink: 0;
+    }
+
+    .reading-widget :global(.rw-item-pinned .rw-action-btn[data-action='pin']) {
+      color: var(--sl-color-accent);
+      border-color: var(--sl-color-accent);
+      background: var(--sl-color-accent-low);
+    }
+
+    /* Touch devices: always show actions since hover is unavailable */
+    @media (hover: none) {
+      .reading-widget :global(.rw-item-trail) {
+        width: auto;
+        min-width: 1.4rem;
+      }
+
+      .reading-widget :global(.rw-item-time) {
+        display: none;
+      }
+
+      .reading-widget :global(.rw-item-actions) {
+        position: static;
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+
+    /* Empty state (static markup — scoped) */
+    .rw-empty {
+      text-align: center;
+      font-size: var(--sl-text-xs);
+      color: var(--sl-color-gray-4);
+      padding: 1rem 0.75rem;
+      margin: 0;
+    }
+  }
+</style>

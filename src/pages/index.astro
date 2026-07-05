@@ -1,6 +1,7 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import TerminalHero from '../components/landing/TerminalHero.astro';
+import YouTubeBanner from '../components/landing/YouTubeBanner.astro';
 import BentoGrid from '../components/landing/BentoGrid.astro';
 import DocsGraph from '../components/landing/DocsGraph.astro';
 
@@ -92,6 +93,10 @@ const goals = [
           </a>
         ))}
       </div>
+    </section>
+
+    <section class="youtube-banner-section" aria-label="Video tutorials">
+      <YouTubeBanner />
     </section>
 
     <section class="goal-section" aria-labelledby="goal-heading">

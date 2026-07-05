@@ -14,6 +14,7 @@ export default defineConfig({
         'src/lib/sharing-urls.mjs',
         'src/lib/path-utils.mjs',
         'src/lib/head-tags.mjs',
+        'src/lib/reading-tracker.mjs',
         'src/faq-schema.mjs',
         'src/howto-schema.mjs',
         'src/sidebar.mjs',
