@@ -32,9 +32,8 @@ export default defineConfig({
         lucode({
           footerText: '',
           navLinks: [
-            { label: 'QAInsights', link: 'https://qainsights.com', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'QAInsights - Performance Testing Blog' } },
             { label: 'I Am Speed', link: 'https://iamspeed.dev', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'I Am Speed - Developer Tools' } },
-            { label: 'Dosa AI', link: 'https://ai.dosa.dev', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'Dosa AI - AI Platform' } },
+            { label: 'Dosa', link: 'https://ai.dosa.dev', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'Dosa AI - AI Platform' } },
           ],
         }),
       ],

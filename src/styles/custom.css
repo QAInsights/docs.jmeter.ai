@@ -5,13 +5,10 @@
   border-radius: 9999px;
 }
 
-/* Pill-shaped nav links */
-.nav-bar a {
-  border-radius: 9999px;
-}
 
 /* Stylish separator before each nav link */
-nav.nav-bar a::before {
+nav.nav-bar a::before,
+.left-nav-links a::before {
   content: '//' !important;
   display: inline-block !important;
   margin-right: 0.4rem !important;
