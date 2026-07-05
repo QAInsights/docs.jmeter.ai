@@ -19,6 +19,14 @@ nav.nav-bar a::before,
   opacity: 0.85;
 }
 
+/* Hide QAInsights and JMeter AI from the right-side navbar on desktop (>=1024px) */
+@media (min-width: 1024px) {
+  .nav-bar a[href="https://qainsights.com"],
+  .nav-bar a[href="https://jmeter.ai"] {
+    display: none !important;
+  }
+}
+
 /* Color system  -  "flame" warm palette.
    Brand accent sits in the JMeter logo's orange-red family (#dd552c → #f79a23).
    Neutrals are low-chroma warm grays (stone), tinted toward the brand hue so
