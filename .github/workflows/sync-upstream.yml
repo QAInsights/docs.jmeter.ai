@@ -59,6 +59,10 @@ jobs:
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Verify build passes
+        if: steps.diff.outputs.changes == 'true'
+        run: npm run build
+
       - name: Create PR with changes
         if: steps.diff.outputs.changes == 'true'
         run: |
@@ -83,6 +87,8 @@ jobs:
           - Converting upstream xdocs XML to MDX format
           - Updating images and screenshots
           - Updating the NOTICE file
+
+          Build verification passed locally before PR creation.
 
           Please review and merge if the changes look correct." \
             --label "automated,sync"
