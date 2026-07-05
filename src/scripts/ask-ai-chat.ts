@@ -34,6 +34,49 @@ const MAX_CONVERSATIONS = 10; // 10 user+assistant pairs per thread
 const TEXTAREA_MAX_HEIGHT = 128; // px — auto-resize cap for the input
 const ERROR_PREVIEW_LENGTH = 300; // chars — truncate server error details
 
+// Low-value messages (pure greetings, thanks, farewells) that don't warrant
+// a Gemini API call. The check normalizes to lowercase + strips punctuation,
+// and only matches if the ENTIRE message is one of these — "Hi, how do I..."
+// still goes through to the API.
+const LOW_VALUE_PATTERNS = new Set([
+  // Greetings
+  'hi', 'hello', 'hey', 'yo', 'sup', 'howdy', 'hola', 'hiya',
+  'good morning', 'good afternoon', 'good evening', 'good night',
+  'gm', 'gn',
+  // Farewells
+  'bye', 'goodbye', 'cya', 'see you', 'see ya', 'later',
+  // Gratitude
+  'thanks', 'thank you', 'thx', 'ty', 'tyvm', 'appreciate it',
+  'much appreciated', 'thanks a lot', 'thanks a bunch',
+  // Acknowledgements
+  'ok', 'okay', 'k', 'cool', 'nice', 'great', 'got it', 'understood',
+  'sounds good', 'will do',
+]);
+
+const LOW_VALUE_RESPONSES: Record<string, string> = {
+  greeting: "Hi! I'm the JMeter Docs AI assistant. Ask me anything about Apache JMeter — test plans, listeners, timers, assertions, distributed testing, reports, and more.",
+  farewell: 'Goodbye! Come back anytime you have JMeter questions.',
+  thanks: "You're welcome! Feel free to ask another JMeter question anytime.",
+  ack: 'Got it! Let me know if you have a JMeter question.',
+};
+
+/** Classify a message as low-value (greeting/thanks/farewell/ack) or null. */
+function classifyLowValue(msg: string): string | null {
+  const normalized = msg.toLowerCase().trim().replace(/[.!?,;]+$/g, '').trim();
+  if (!normalized || normalized.length > 40) return null; // skip long messages
+  if (!LOW_VALUE_PATTERNS.has(normalized)) return null;
+  // Classify into a category for the canned response.
+  const greetings = ['hi', 'hello', 'hey', 'yo', 'sup', 'howdy', 'hola', 'hiya',
+    'good morning', 'good afternoon', 'good evening', 'good night', 'gm', 'gn'];
+  const farewells = ['bye', 'goodbye', 'cya', 'see you', 'see ya', 'later'];
+  const thanks = ['thanks', 'thank you', 'thx', 'ty', 'tyvm', 'appreciate it',
+    'much appreciated', 'thanks a lot', 'thanks a bunch'];
+  if (greetings.includes(normalized)) return 'greeting';
+  if (farewells.includes(normalized)) return 'farewell';
+  if (thanks.includes(normalized)) return 'thanks';
+  return 'ack';
+}
+
 // --- DOM references -------------------------------------------------------
 const trigger = document.getElementById('ask-ai-trigger') as HTMLButtonElement | null;
 const panel = document.getElementById('ask-ai-panel') as HTMLElement | null;
@@ -350,6 +393,24 @@ async function send(text: string) {
     showError(
       `This thread has reached the ${MAX_CONVERSATIONS}-message limit. Start a new chat to continue.`,
     );
+    return;
+  }
+
+  // Short-circuit low-value messages (greetings, thanks, farewells) with a
+  // canned response — no API call, no Turnstile token needed.
+  const lowValueCategory = classifyLowValue(trimmed);
+  if (lowValueCategory) {
+    const userMsg: ChatMessage = { id: uid(), role: 'user', content: trimmed };
+    const assistantMsg: ChatMessage = {
+      id: uid(),
+      role: 'assistant',
+      content: LOW_VALUE_RESPONSES[lowValueCategory],
+    };
+    state.messages.push(userMsg, assistantMsg);
+    saveState();
+    renderAll();
+    setInput('');
+    scrollToBottom(true);
     return;
   }
 

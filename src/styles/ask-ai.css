@@ -252,6 +252,73 @@
   height: 1.05rem;
 }
 
+/* --- Install CTA (animated gradient border) ------------------------------ */
+.ask-ai-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border: 2px solid transparent;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--sl-color-white);
+  /* Solid fill for the padding box + animated gradient for the border box.
+     The first background clips to padding-box (interior), the second to
+     border-box (the 2px transparent border shows the gradient through). */
+  background:
+    linear-gradient(var(--sl-color-black), var(--sl-color-black)) padding-box,
+    linear-gradient(110deg,
+      var(--sl-color-accent),
+      var(--sl-color-accent-high),
+      #6366f1,
+      var(--sl-color-accent)
+    ) border-box;
+  background-size: 100% 100%, 300% 100%;
+  animation: ask-ai-gradient 4s linear infinite;
+  transition: transform var(--mx-base) var(--mx-ease),
+    box-shadow var(--mx-base) var(--mx-ease);
+  white-space: nowrap;
+}
+
+.ask-ai-install:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px -4px color-mix(in oklab, var(--sl-color-accent) 60%, transparent);
+}
+
+.ask-ai-install:focus-visible {
+  outline: 2px solid var(--sl-color-white);
+  outline-offset: 2px;
+}
+
+.ask-ai-install svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+}
+
+@keyframes ask-ai-gradient {
+  0%   { background-position: 0% 50%, 0% 50%; }
+  100% { background-position: 0% 50%, 300% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-ai-install {
+    animation: none;
+  }
+}
+
+/* Responsive: hide the "Install" label on very narrow panels, keep icon */
+@media (max-width: 420px) {
+  .ask-ai-install__label {
+    display: none;
+  }
+  .ask-ai-install {
+    padding: 0.3rem;
+  }
+}
+
 /* --- Messages scroll area ----------------------------------------------- */
 .ask-ai-body {
   flex: 1;

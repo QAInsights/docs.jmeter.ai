@@ -71,15 +71,38 @@
 }
 
 .hero-cta .cta-secondary {
-  background: var(--sl-color-gray-6);
+  /* Solid fill for the padding box + animated gradient for the border box.
+     The first background clips to padding-box (interior), the second to
+     border-box (the transparent border shows the gradient through). */
+  background:
+    linear-gradient(var(--sl-color-gray-6), var(--sl-color-gray-6)) padding-box,
+    linear-gradient(110deg,
+      var(--sl-color-accent),
+      var(--sl-color-accent-high),
+      #6366f1,
+      var(--sl-color-accent)
+    ) border-box;
+  background-size: 100% 100%, 300% 100%;
+  border: 2px solid transparent;
   color: var(--sl-color-white);
-  border: 1px solid var(--sl-color-gray-5);
+  animation: hero-gradient-border 4s linear infinite;
 }
 
 .hero-cta .cta-secondary:hover {
-  border-color: var(--sl-color-accent);
   color: var(--sl-color-accent);
   transform: translateY(-1px);
+  box-shadow: 0 4px 16px -4px color-mix(in oklab, var(--sl-color-accent) 60%, transparent);
+}
+
+@keyframes hero-gradient-border {
+  0%   { background-position: 0% 50%, 0% 50%; }
+  100% { background-position: 0% 50%, 300% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-cta .cta-secondary {
+    animation: none;
+  }
 }
 
 .hero-cta kbd {

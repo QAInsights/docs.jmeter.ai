@@ -155,6 +155,24 @@ function messageText(m: ModelMessage): string {
   return '';
 }
 
+// Low-value messages (pure greetings, thanks, farewells) that don't warrant
+// a Gemini API call. Server-side safety net — the client also checks this.
+const LOW_VALUE_PATTERNS = new Set([
+  'hi', 'hello', 'hey', 'yo', 'sup', 'howdy', 'hola', 'hiya',
+  'good morning', 'good afternoon', 'good evening', 'good night', 'gm', 'gn',
+  'bye', 'goodbye', 'cya', 'see you', 'see ya', 'later',
+  'thanks', 'thank you', 'thx', 'ty', 'tyvm', 'appreciate it',
+  'much appreciated', 'thanks a lot', 'thanks a bunch',
+  'ok', 'okay', 'k', 'cool', 'nice', 'great', 'got it', 'understood',
+  'sounds good', 'will do',
+]);
+
+function isLowValueMessage(text: string): boolean {
+  const normalized = text.toLowerCase().trim().replace(/[.!?,;]+$/g, '').trim();
+  if (!normalized || normalized.length > 40) return false;
+  return LOW_VALUE_PATTERNS.has(normalized);
+}
+
 function lastUserText(messages: ModelMessage[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
@@ -205,6 +223,16 @@ export async function POST({ request }: { request: Request }) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+  }
+
+  // Short-circuit low-value messages (greetings, thanks, farewells) without
+  // calling Gemini — saves API quota and reduces latency.
+  const lastUser = lastUserText(messages);
+  if (isLowValueMessage(lastUser)) {
+    return new Response(
+      "Hi! I'm the JMeter Docs AI assistant. Ask me anything about Apache JMeter — test plans, listeners, timers, assertions, distributed testing, reports, and more.",
+      { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Grounded': 'false' } },
+    );
   }
 
   if (!GEMINI_API_KEY) {
