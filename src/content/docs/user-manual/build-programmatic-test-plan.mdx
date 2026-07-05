@@ -3,7 +3,7 @@ title: "User's Manual: Building a Test Plan Programmatically"
 description: "Build JMeter test plans programmatically using the JMeter Java API. Create Thread Groups, Samplers, and tree structures with ListedHashTree without the GUI."
 ---
 
-<!-- SYNCED-BODY:START -->
+{/* SYNCED-BODY:START */}
 ## Building a Test Plan Programmatically
 
       
@@ -264,4 +264,4 @@ ListedHashTree root = testTree(b -> { // (1)
 - Note how adding element returns the subtree, so we add `threadGroup` under `testPlan` in `(2)`
 - If no children needed, you could omit the lambda parameter as in `(3)`
 - By default, JMeter uses no-argument constructors to create elements, however, you can add `TestElement` instances to the tree as well, see `(4)`
-<!-- SYNCED-BODY:END -->
+{/* SYNCED-BODY:END */}

@@ -3,7 +3,7 @@ title: "User's Manual: Hints and Tips"
 description: "Community JMeter tips and tricks - pass variables between threads using properties, enable debug logging, optimize thread counts, and handle CSV datasets."
 ---
 
-<!-- SYNCED-BODY:START -->
+{/* SYNCED-BODY:START */}
 ## 22. Hints and Tips
 
 This section is a collection of various hints and tips that have been suggested by various questions on the JMeter User list.
@@ -244,4 +244,4 @@ The binding above are made for Windows QWERTY keyboards. For other platforms and
 - Follow this [documentation](https://openjfx.io/openjfx-docs/) to install Java FX for your OS and Java version.              If you don't want to read it, here are the necessary steps:                  - Go to [Gluon website](https://gluonhq.com/products/javafx/) and download the runtime for your Java version and OS - Unzip it - Then configure a variable pointing to lib folder:                         Linux/MacOSX:                          ``` export PATH_TO_FX=path/to/javafx-sdk-XX/lib ```                         Windows:                          ``` set PATH_TO_FX=path/to/javafx-sdk-XX/lib ```
 - Then open bin/jmeter file for Linux/MacOSX, bin/jmeter.bat for Windows, find JAVA9_OPTS variable and add:                Linux/MacOSX:                 ``` --module-path $PATH_TO_FX --add-modules javafx.web,javafx.swing ```                Windows:                 ``` --module-path %PATH_TO_FX% --add-modules javafx.web,javafx.swing ```
 -
-<!-- SYNCED-BODY:END -->
+{/* SYNCED-BODY:END */}

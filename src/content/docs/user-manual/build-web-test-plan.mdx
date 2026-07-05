@@ -9,10 +9,10 @@ lastVerified: "JMeter 5.6"
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-<!-- SYNCED-BODY:START -->
+{/* SYNCED-BODY:START */}
 ## 4. Building a Web Test Plan
 
-<!-- CUSTOM-INTRO:START -->
+{/* CUSTOM-INTRO:START */}
 :::tip[Use CLI mode for real load]
 After the web flow is validated, save the plan and run it with `jmeter -n`. GUI listeners should stay disabled during the real load run.
 :::
@@ -20,7 +20,7 @@ After the web flow is validated, save the plan and run it with `jmeter -n`. GUI 
 :::caution[Avoid View Results Tree in load tests]
 View Results Tree helps inspect recorded requests and assertions, but it should be disabled before sustained web load tests.
 :::
-<!-- CUSTOM-INTRO:END -->
+{/* CUSTOM-INTRO:END */}
 
 In this section, you will learn how to create a basic
 [Test Plan](/user-manual/build-test-plan/) to test a Web site.  You will
@@ -222,9 +222,9 @@ _Figure 4.11. Use Thread Group to control CacheManager_
 
 ![Figure 4.12. Use Thread Group to control Authorization Manager](/images/screenshots/webtest/threadgroup6.png)
 _Figure 4.12. Use Thread Group to control Authorization Manager_
-<!-- SYNCED-BODY:END -->
+{/* SYNCED-BODY:END */}
 
-<!-- CUSTOM-FOOTER:START -->
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Try the [Advanced Web Test Plan](/user-manual/build-adv-web-test-plan/) to handle session management and URL rewriting.
@@ -238,4 +238,4 @@ Try the [Advanced Web Test Plan](/user-manual/build-adv-web-test-plan/) to handl
 - Use [View Results Tree](/user-manual/listeners/) during debugging, but remove it for load tests
 </Fragment>
 </RelatedContent>
-<!-- CUSTOM-FOOTER:END -->
+{/* CUSTOM-FOOTER:END */}
