@@ -2,8 +2,10 @@
 title: "User's Manual: Live Statistics"
 description: "Stream JMeter test results in real time to InfluxDB, Graphite, or Grafana dashboards using the Backend Listener for live monitoring during load tests."
 ---
+
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+<!-- SYNCED-BODY:START -->
 ## 15. Real-time results
 
 Since JMeter 2.13 you can get real-time results sent to a backend through the
@@ -212,7 +214,9 @@ _Graphite configuration_
 
     ![Graphite pickle sender](/images/screenshots/backend_listener_graphite_pickle.png)
 _Graphite pickle sender_
+<!-- SYNCED-BODY:END -->
 
+<!-- CUSTOM-FOOTER:START -->
 <RelatedContent>
 <Fragment slot="next-step">
 Set up a Grafana dashboard to visualize the InfluxDB metrics streamed by the Backend Listener.
@@ -226,3 +230,4 @@ Set up a Grafana dashboard to visualize the InfluxDB metrics streamed by the Bac
 - Graphite connections may be rejected if Carbon's `auth` pattern doesn't match your JMeter host
 </Fragment>
 </RelatedContent>
+<!-- CUSTOM-FOOTER:END -->

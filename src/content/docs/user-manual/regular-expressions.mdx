@@ -2,8 +2,10 @@
 title: "User's Manual: Regular Expressions"
 description: "JMeter regular expressions guide - use Jakarta ORO and JDK regex engines for response assertions, extractors, and pattern matching in test plans."
 ---
+
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+<!-- SYNCED-BODY:START -->
 ## 21. Regular Expressions
 
 ### 21.1 Overview
@@ -243,7 +245,9 @@ Another approach is to use a simple test plan to test the regular expressions.
 The Java Request sampler can be used to generate a sample, or the HTTP Sampler can be used to load a file.
 Add a Debug Sampler and a Tree View Listener and changes to the regular expression can be tested quickly,
 without needing to access any external servers.
+<!-- SYNCED-BODY:END -->
 
+<!-- CUSTOM-FOOTER:START -->
 <RelatedContent>
 <Fragment slot="next-step">
 Use a Regular Expression Extractor to capture dynamic tokens (like CSRF tokens) for subsequent requests.
@@ -257,3 +261,4 @@ Use a Regular Expression Extractor to capture dynamic tokens (like CSRF tokens) 
 - Not testing regex patterns with the RegExp Tester in View Results Tree before running load tests
 </Fragment>
 </RelatedContent>
+<!-- CUSTOM-FOOTER:END -->

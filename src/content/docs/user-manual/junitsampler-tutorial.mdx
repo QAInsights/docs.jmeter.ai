@@ -3,6 +3,7 @@ title: "JUnit Sampler Tutorial"
 description: "Run JUnit tests inside JMeter with the JUnit Sampler. Load test jars, configure setUp/tearDown methods, and integrate unit testing into performance test plans."
 ---
 
+<!-- SYNCED-BODY:START -->
 ## 27. JUnit Sampler Tutorial
 
 This tutorial attempts to explain the basic design, functionality and usage of the new JUnit Sampler for JMeter.
@@ -169,3 +170,4 @@ runs multi-threaded, it is important to keep certain things in mind.
 - If a test method is configurable, be careful about where the properties are stored. Reading       the properties from the Jar file is recommended.
 - Each sampler creates an instance of the test class, so write your test so the setup happens       in `oneTimeSetUp` and `oneTimeTearDown`.
 - If you select a class and no methods show up, it means the sampler had a problem creating an       instance of the test class. The best way to debug this is to add some `System.out`       to your class constructor and see what is happening.
+<!-- SYNCED-BODY:END -->

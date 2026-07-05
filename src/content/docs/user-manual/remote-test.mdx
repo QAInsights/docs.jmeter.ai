@@ -1,15 +1,18 @@
 ---
 title: "User's Manual: Remote (Distributed) Testing"
 description: "Configure JMeter distributed testing to scale load across multiple remote engines. Control worker nodes from a single client and aggregate results centrally."
-difficulty: advanced
-guideType: reference
-estimatedReadTime: 14 min read
-lastVerified: JMeter 5.6
+difficulty: "advanced"
+guideType: "reference"
+estimatedReadTime: "14 min read"
+lastVerified: "JMeter 5.6"
 ---
+
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+<!-- SYNCED-BODY:START -->
 ## 13. Remote Testing
 
+<!-- CUSTOM-INTRO:START -->
 :::caution[Security-sensitive setting]
 Remote testing exposes control channels between machines. Restrict network access, use trusted test plans, and review RMI SSL settings before enabling workers.
 :::
@@ -17,6 +20,7 @@ Remote testing exposes control channels between machines. Restrict network acces
 :::note[Version-specific behavior]
 Remote testing requires compatible JMeter and Java versions across controller and workers. Re-check RMI and SSL defaults after upgrades.
 :::
+<!-- CUSTOM-INTRO:END -->
 
 In the event that your JMeter client machine is unable, performance-wise, to simulate
 enough users to stress your server or is limited at network level, an option exists to control multiple, remote JMeter
@@ -508,7 +512,9 @@ grant {
 :::note
 The usage of `java.security.AllPermission` is an easy way to make your test plans work, but it might be a dangerous shortcut on your path to security.
 :::
+<!-- SYNCED-BODY:END -->
 
+<!-- CUSTOM-FOOTER:START -->
 <RelatedContent>
 <Fragment slot="next-step">
 Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-testing-step-by-step/) tutorial for a guided setup.
@@ -522,3 +528,4 @@ Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-te
 - Not disabling SSL for RMI in non-production environments causes connection failures
 </Fragment>
 </RelatedContent>
+<!-- CUSTOM-FOOTER:END -->

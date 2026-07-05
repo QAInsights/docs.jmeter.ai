@@ -1,15 +1,18 @@
 ---
 title: "User's Manual: Best Practices"
 description: "JMeter best practices for reliable performance testing - thread count optimization, Coordinated Omission, version selection, and Cookie Manager setup."
-difficulty: intermediate
-guideType: reference
-estimatedReadTime: 10 min read
-lastVerified: JMeter 5.6
+difficulty: "intermediate"
+guideType: "reference"
+estimatedReadTime: "10 min read"
+lastVerified: "JMeter 5.6"
 ---
+
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+<!-- SYNCED-BODY:START -->
 ## 16. Best Practices
 
+<!-- CUSTOM-INTRO:START -->
 :::tip[Use CLI mode for real load]
 Use the GUI to build and validate a test plan, then run the actual load test from the command line so rendering and listeners do not distort injector performance.
 :::
@@ -17,6 +20,7 @@ Use the GUI to build and validate a test plan, then run the actual load test fro
 :::caution[Avoid View Results Tree in load tests]
 View Results Tree is useful for debugging, but it keeps detailed sample data in memory. Disable it before any sustained or high-volume load test.
 :::
+<!-- CUSTOM-INTRO:END -->
 
 ## 16.1 Always use latest version of JMeter
 
@@ -383,7 +387,9 @@ of the element from there.
 :::note
 Please note that deprecated elements in version N will be removed definitely in version N+1, so ensure you stop using them as soon as possible.
 :::
+<!-- SYNCED-BODY:END -->
 
+<!-- CUSTOM-FOOTER:START -->
 <RelatedContent>
 <Fragment slot="next-step">
 Apply these practices to a [Web Test Plan](/user-manual/build-web-test-plan/) and measure the difference.
@@ -397,3 +403,4 @@ Apply these practices to a [Web Test Plan](/user-manual/build-web-test-plan/) an
 - Not accounting for Coordinated Omission skews percentile response times
 </Fragment>
 </RelatedContent>
+<!-- CUSTOM-FOOTER:END -->

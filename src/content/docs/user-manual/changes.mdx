@@ -1,17 +1,20 @@
 ---
 title: "Changes"
 description: "JMeter 6.0.0 changelog - latest bug fixes, improvements, and breaking changes. Requires Java 17 or later with Java 21 recommended."
-difficulty: intermediate
-guideType: reference
-estimatedReadTime: 15 min read
-lastVerified: JMeter 6.0
+difficulty: "intermediate"
+guideType: "reference"
+estimatedReadTime: "15 min read"
+lastVerified: "JMeter 6.0"
 ---
 
+<!-- SYNCED-BODY:START -->
 ## Changes
 
+<!-- CUSTOM-INTRO:START -->
 :::note[Version-specific behavior]
 Use this page when behavior differs between JMeter releases, especially for components, properties, Java support, and distributed testing defaults.
 :::
+<!-- CUSTOM-INTRO:END -->
 
 :::note
 **This page details the changes made in the current version only.**
@@ -120,3 +123,4 @@ Apologies if we have omitted anyone else.
 - Note that under some windows systems you may have this WARNING: ``` java.util.prefs.WindowsPreferences WARNING: Could not open/create prefs root node Software\JavaSoft\Prefs at root 0 x80000002. Windows RegCreateKeyEx(…) returned error code 5. ``` The fix is to run JMeter as Administrator, it will create the registry key for you, then you can restart JMeter as a normal user and you won't have the warning anymore.
 - You may encounter the following error: ``` java.security.cert.CertificateException: Certificates does not conform to algorithm constraints ```  if you run a HTTPS request on a web site with a SSL certificate (itself or one of SSL certificates in its chain of trust) with a signature  algorithm using MD2 (like `md2WithRSAEncryption`) or with a SSL certificate with a size lower than 1024 bits. This error is related to increased security in Java 8+. To allow you to perform your HTTPS request, you can downgrade the security of your Java installation by editing the Java `jdk.certpath.disabledAlgorithms` property. Remove the MD2 value or the constraint on size, depending on your case. This property is in this file: ``` JAVA_HOME/jre/lib/security/java.security ``` See  [Bug 56357](https://bz.apache.org/bugzilla/show_bug.cgi?id=56357) for details.
 - With Java 15 the JavaScript implementation [Nashorn has been removed](https://openjdk.java.net/jeps/372). JMeter now ships with a JSR-223 compatible JavaScript engine by default (Mozilla Rhino 1.8.0), so you do not need to download Rhino separately anymore. If you prefer to use Nashorn instead, you can still add it as a module. One way to download version 15.7 (or later) and its dependencies and set the module path is outlined below:    ``` mkdir lib/modules pushd lib/modules wget https://repo1.maven.org/maven2/org/openjdk/nashorn/nashorn-core/15.7/nashorn-core-15.7.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm/9.9.1/asm-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-commons/9.9.1/asm-commons-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-util/9.9.1/asm-util-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-tree/9.9.1/asm-tree-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-analysis/9.9.1/asm-analysis-9.9.1.jar popd export JVM_ARGS="--module-path $PWD/lib/modules" ./bin/jmeter ```
+<!-- SYNCED-BODY:END -->
