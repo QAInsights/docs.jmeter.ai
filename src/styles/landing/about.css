@@ -1,0 +1,16 @@
+/* ==========================================================================
+   About strip
+   ========================================================================== */
+
+.about-strip {
+  text-align: center;
+  padding: 2rem 0 3rem;
+  border-top: 1px solid var(--sl-color-gray-5);
+  font-size: 0.85rem;
+  color: var(--sl-color-gray-3);
+  line-height: 1.6;
+}
+
+.about-strip a {
+  color: var(--sl-color-accent);
+}

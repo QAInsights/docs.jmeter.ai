@@ -1,0 +1,199 @@
+/* ==========================================================================
+   Motion system
+   Theme crossfade, hover/press feedback, focus rings, entrance animations,
+   scroll-driven reveals, inline link hover, search modal, reduced-motion.
+   All spatial movement is gated behind prefers-reduced-motion: no-preference.
+   ========================================================================== */
+
+/* --- Theme toggle: smooth color crossfade on structural surfaces -------- */
+@media (prefers-reduced-motion: no-preference) {
+  body,
+  .header,
+  .sidebar-pane,
+  .right-sidebar,
+  .content-panel,
+  .sl-markdown-content,
+  .starlight-aside,
+  .prop-table th,
+  .component-links,
+  .component-screenshot,
+  .site-footer,
+  dialog[aria-label] {
+    transition: background-color 200ms var(--mx-ease),
+      border-color 200ms var(--mx-ease), color 200ms var(--mx-ease);
+  }
+}
+
+/* --- Hover + press feedback on interactive elements --------------------- */
+.sl-markdown-content a,
+.site-footer a,
+.site-title,
+.right-sidebar-panel a,
+.starlight-toc a,
+.pagination-link,
+.kudos,
+.expressive-code .copy button {
+  transition: color var(--mx-base) var(--mx-ease),
+    border-color var(--mx-base) var(--mx-ease),
+    background-color var(--mx-base) var(--mx-ease),
+    transform var(--mx-base) var(--mx-ease),
+    box-shadow var(--mx-base) var(--mx-ease);
+}
+
+/* Pagination cards lift on hover (pointer devices only) */
+@media (hover: hover) {
+  .pagination-link:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sl-shadow-lg);
+  }
+}
+
+/* Press feedback  -  scale 0.97, fast. Links and buttons alike. */
+.site-title:active,
+.pagination-link:active,
+.kudos:active,
+.expressive-code .copy button:active {
+  transform: scale(0.97);
+}
+
+/* --- Focus rings: consistent, intentional, accent-colored ---------------- */
+:where(
+  .starlight-toc a,
+  .pagination-link,
+  .site-title,
+  .sl-markdown-content a,
+  .right-sidebar-panel a,
+  .expressive-code .copy button,
+  starlight-toc summary
+):focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+  transition: outline-offset var(--mx-base) var(--mx-ease);
+}
+
+/* --- Article H1: quiet rise on load (top of page, no scroll needed) ----- */
+@media (prefers-reduced-motion: no-preference) {
+  .sl-markdown-content > h1:first-child {
+    animation: mx-rise 400ms var(--mx-out) both;
+  }
+}
+
+/* --- Hero: composed entrance on the landing page only ------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .hero .copy > * {
+    animation: mx-rise 500ms var(--mx-out) both;
+  }
+  .hero .copy > *:nth-child(2) {
+    animation-delay: 80ms;
+  }
+  .hero .copy > *:nth-child(3) {
+    animation-delay: 160ms;
+  }
+  .hero > img,
+  .hero > .hero-html {
+    animation: mx-rise 600ms var(--mx-out) both;
+    animation-delay: 120ms;
+  }
+}
+
+/* --- Scroll-driven reveal of section landmarks (progressive enhancement)
+   Browsers without animation-timeline support skip the block entirely via
+   @supports, so content stays fully visible  -  no flash of hidden content. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .sl-markdown-content :is(h2, h3, h4),
+    .sl-markdown-content pre,
+    .sl-markdown-content table,
+    .sl-markdown-content .starlight-aside,
+    .sl-markdown-content .component-screenshot,
+    .sl-markdown-content .component-links,
+    .sl-markdown-content .prop-table {
+      animation: mx-rise var(--mx-reveal) var(--mx-out) both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 45%;
+    }
+  }
+}
+
+@keyframes mx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Inline link hover effect: accent background fill
+   Keeps Starlight's default underline, adds background highlight on hover. */
+@media (prefers-reduced-motion: no-preference) {
+  .sl-markdown-content a:not(.landing *) {
+    position: relative;
+    z-index: 0;
+    padding: 0.1em 0.2em;
+    margin: -0.1em -0.2em;
+    border-radius: 0.2em;
+    background-image: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--sl-color-accent) 75%, transparent) 100%,
+      transparent 0
+    );
+    background-size: 100% 0%;
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    transition: color 0.15s ease-in-out, background-size 0.2s ease-in-out;
+  }
+
+  .sl-markdown-content a:not(.landing *):hover {
+    color: var(--sl-color-text-accent);
+    background-size: 100% 100%;
+    text-decoration-color: var(--sl-color-accent);
+  }
+}
+
+/* --- Search modal: fade + slight rise on open/close (allow-discrete) ---- */
+@supports (transition-behavior: allow-discrete) {
+  @media (prefers-reduced-motion: no-preference) {
+    dialog[aria-label] {
+      transition: opacity 200ms var(--mx-ease),
+        transform 200ms var(--mx-ease), overlay 200ms allow-discrete,
+        display 200ms allow-discrete;
+      transition-behavior: allow-discrete;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    dialog[aria-label]:not([open]) {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    @starting-style {
+      dialog[aria-label][open] {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+    dialog[aria-label]::backdrop {
+      transition: background-color 200ms var(--mx-ease);
+    }
+  }
+}
+
+/* --- Reduced motion: neutralize all spatial movement and animation.
+   Functional signals (focus rings, selection, theme) still apply  -  they
+   just snap instead of animating. Scroll snapping reverts to instant. ----- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

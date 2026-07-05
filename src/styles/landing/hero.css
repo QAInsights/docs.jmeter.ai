@@ -1,0 +1,166 @@
+/* ==========================================================================
+   Terminal Hero
+   Hero section grid, text, CTA buttons, terminal window
+   ========================================================================== */
+
+.hero-section {
+  padding-top: 2.5rem;
+  padding-bottom: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 3rem;
+}
+
+.hero-section .hero-text {
+  text-align: left;
+}
+
+.hero-section .hero-text h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 0.75rem;
+  color: var(--sl-color-white);
+}
+
+.hero-section .hero-text h1 .accent {
+  background: linear-gradient(135deg, var(--sl-color-accent), var(--sl-color-accent-high));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: inherit;
+}
+
+.hero-section .hero-text p {
+  font-size: 1.15rem;
+  color: var(--sl-color-gray-3);
+  max-width: 36rem;
+  margin: 0 0 1.5rem;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.hero-cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: transform 150ms var(--mx-ease), box-shadow 150ms var(--mx-ease), background-color 150ms var(--mx-ease);
+}
+
+.hero-cta .cta-primary {
+  background: var(--sl-color-accent);
+  color: #fff;
+}
+
+.hero-cta .cta-primary:hover {
+  background: var(--sl-color-accent-high);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.3);
+}
+
+.hero-cta .cta-secondary {
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+  border: 1px solid var(--sl-color-gray-5);
+}
+
+.hero-cta .cta-secondary:hover {
+  border-color: var(--sl-color-accent);
+  color: var(--sl-color-accent);
+  transform: translateY(-1px);
+}
+
+.hero-cta kbd {
+  font-family: var(--sl-font-system-mono);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  background: var(--sl-color-gray-5);
+  color: var(--sl-color-gray-2);
+  border: 1px solid var(--sl-color-gray-4);
+}
+
+/* --- Terminal window ---------------------------------------------------- */
+.terminal {
+  width: 100%;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #0d0b0a;
+  border: 1px solid var(--sl-color-gray-5);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 20px 60px -12px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme='light'] .terminal {
+  background: #1c1917;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 20px 60px -12px rgba(0, 0, 0, 0.25);
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.dot-red { background: #ff5f57; }
+.dot-yellow { background: #febc2e; }
+.dot-green { background: #28c840; }
+
+.terminal-title {
+  display: none;
+}
+
+.terminal-body {
+  padding: 1.25rem;
+  font-family: var(--sl-font-system-mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: #a8a29e;
+  overflow-x: auto;
+}
+
+.term-line {
+  opacity: 0;
+  animation: term-reveal 0.01ms forwards;
+  animation-delay: var(--line-delay, 0s);
+}
+
+.term-line.cmd .term-text {
+  color: #f97316;
+}
+
+.term-line.ok .term-text {
+  color: #4ade80;
+}
+
+.term-cursor .term-text {
+  color: #a8a29e;
+}
+
+.blink {
+  animation: blink-cursor 1s step-end infinite;
+}

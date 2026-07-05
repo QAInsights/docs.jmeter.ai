@@ -1,0 +1,103 @@
+/* ==========================================================================
+   Landing page responsive breakpoints
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .landing {
+    padding: 0 1rem;
+  }
+
+  .hero-section {
+    padding-top: 2rem;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .hero-section .hero-text {
+    text-align: center;
+  }
+
+  .hero-cta {
+    justify-content: center;
+  }
+
+  .workflow-grid,
+  .goal-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-card {
+    min-height: auto;
+  }
+
+  .goal-option {
+    grid-template-columns: auto 1fr;
+  }
+
+  .goal-option a {
+    grid-column: 2;
+    justify-self: start;
+    padding-left: 0;
+  }
+
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bento-large,
+  .bento-medium,
+  .bento-small {
+    grid-column: span 1;
+  }
+
+  .terminal {
+    font-size: 0.72rem;
+  }
+
+  .terminal-body {
+    padding: 1rem;
+  }
+
+  .docs-graph-viewport {
+    min-height: 280px;
+    max-height: 360px;
+  }
+
+  .docs-graph-svg {
+    min-height: 280px;
+    max-height: 360px;
+  }
+
+  .graph-node-label-page {
+    display: none;
+  }
+
+  .graph-node.is-active .graph-node-label-page,
+  .graph-node.is-connected .graph-node-label-page {
+    display: block;
+  }
+
+  .docs-graph-detail {
+    min-width: 180px;
+    max-width: 260px;
+    padding: 0.7rem 0.85rem;
+  }
+
+  .docs-graph-fallback-group ul {
+    columns: 1;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .bento-grid,
+  .workflow-grid,
+  .goal-selector {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bento-large,
+  .bento-medium,
+  .bento-small {
+    grid-column: span 1;
+  }
+}

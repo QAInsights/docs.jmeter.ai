@@ -1,0 +1,337 @@
+/* ==========================================================================
+   Component styles
+   Footer, prop-table, screenshot, component-links, related-content cards,
+   image lightbox, note-aside lightbulb, Lucode footer hide, markdown images,
+   nav separator.
+   ========================================================================== */
+
+/* Stylish separator before each nav link */
+nav.nav-bar a::before,
+.left-nav-links a::before {
+  content: '//' !important;
+  display: inline-block !important;
+  margin-right: 0.4rem !important;
+  color: var(--sl-color-accent) !important;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* Hide QAInsights and JMeter AI from the right-side navbar on desktop (>=1024px) */
+@media (min-width: 1024px) {
+  .nav-bar a[href="https://qainsights.com"],
+  .nav-bar a[href="https://jmeter.ai"] {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Footer disclaimer
+   ========================================================================== */
+.site-footer {
+  border-top: 1px solid var(--sl-color-gray-5);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--sl-color-gray-2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.site-footer a {
+  color: var(--sl-color-accent-high);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.site-footer a:hover {
+  color: var(--sl-color-accent);
+}
+
+.site-footer-top,
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.site-footer-trademark {
+  max-width: 42rem;
+  color: var(--sl-color-gray-3);
+  font-size: 0.75rem;
+  margin: 0.25rem 0 0;
+}
+
+.footer-divider {
+  color: var(--sl-color-gray-4);
+  opacity: 0.5;
+}
+
+/* ==========================================================================
+   Component reference property tables
+   ========================================================================== */
+.prop-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.prop-table th {
+  background: var(--sl-color-gray-6);
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+}
+
+.prop-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+  vertical-align: top;
+}
+
+.prop-table td:first-child {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.prop-required {
+  color: var(--sl-color-accent-high);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* ==========================================================================
+   Component screenshot
+   ========================================================================== */
+.component-screenshot {
+  margin: 1rem 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--sl-color-gray-5);
+}
+
+.component-screenshot img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ==========================================================================
+   Component links section
+   ========================================================================== */
+.component-links {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--sl-color-gray-6);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.component-links h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sl-color-gray-3);
+}
+
+.component-links ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.component-links li {
+  margin: 0.25rem 0;
+}
+
+/* ==========================================================================
+   Markdown images - rounded + clickable, constrained to content area
+   ========================================================================== */
+.sl-markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--sl-color-gray-5);
+  cursor: pointer;
+  transition: transform 200ms var(--mx-ease), box-shadow 200ms var(--mx-ease);
+  display: block;
+}
+
+.sl-markdown-content img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   Image lightbox
+   ========================================================================== */
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 2rem;
+  cursor: pointer;
+}
+
+.image-lightbox.active {
+  display: flex;
+}
+
+.image-lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.image-lightbox-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms var(--mx-ease);
+}
+
+.image-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================================================
+   Note aside icon: replace info circle with lightbulb, hide "Note" text
+   ========================================================================== */
+.starlight-aside--note .starlight-aside__icon {
+  display: none;
+}
+
+.starlight-aside--note .starlight-aside__title {
+  font-size: 0;
+}
+
+.starlight-aside--note .starlight-aside__title::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 0;
+  vertical-align: -3px;
+  font-size: 1rem;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7zm2.9 11.1L14 14v2h-4v-2l-.9-.9C7.8 12.2 7 10.7 7 9c0-2.8 2.2-5 5-5s5 2.2 5 5c0 1.7-.8 3.2-2.1 4.1z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7zm2.9 11.1L14 14v2h-4v-2l-.9-.9C7.8 12.2 7 10.7 7 9c0-2.8 2.2-5 5-5s5 2.2 5 5c0 1.7-.8 3.2-2.1 4.1z'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* ==========================================================================
+   Hide Lucode's empty footer (footerText is set to '')
+   ========================================================================== */
+[data-slot='layout'] > footer:has([data-slot='footer-text']:empty) {
+  display: none !important;
+}
+
+/* ==========================================================================
+   Related Content cards  -  end-of-page internal-link modules
+   ========================================================================== */
+.related-content {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--sl-color-gray-5);
+}
+
+.related-content-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: var(--sl-color-white);
+}
+
+.related-content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.related-card {
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+}
+
+.related-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.related-card-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.related-card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sl-color-gray-2);
+  margin: 0;
+}
+
+.related-card-body {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--sl-color-gray-2);
+}
+
+.related-card-body p {
+  margin: 0 0 0.5rem;
+}
+
+.related-card-body p:last-child {
+  margin-bottom: 0;
+}
+
+.related-card-body a {
+  color: var(--sl-color-accent-high);
+  text-decoration: none;
+}
+
+.related-card-body a:hover {
+  text-decoration: underline;
+}
+
+.related-card-body ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.related-card-body li {
+  margin-bottom: 0.25rem;
+}

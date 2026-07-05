@@ -13,11 +13,11 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { flattenSidebar } from './sidebar.mjs';
-import { stripFrontmatter, parseFrontmatter } from '../scripts/generate-llms-full.mjs';
+import { flattenSidebar } from '../../src/sidebar.mjs';
+import { stripFrontmatter, parseFrontmatter } from '../../scripts/generate-llms-full.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 const DOCS_DIR = path.join(ROOT, 'src/content/docs');
 
 /**

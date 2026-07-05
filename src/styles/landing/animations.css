@@ -1,0 +1,49 @@
+/* ==========================================================================
+   Landing page animations
+   Terminal reveal, cursor blink, hero entrance, bento scroll reveal,
+   docs-graph reduced motion
+   ========================================================================== */
+
+/* Terminal line reveal */
+@keyframes term-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Cursor blink */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Hero entrance */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-section .hero-text {
+    animation: mx-rise 500ms var(--mx-out) both;
+  }
+  .hero-section .terminal {
+    animation: mx-rise 600ms var(--mx-out) both;
+    animation-delay: 200ms;
+  }
+}
+
+/* Bento scroll reveal */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .bento-card {
+      animation: mx-rise 300ms var(--mx-out) both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 40%;
+    }
+  }
+}
+
+/* Docs graph reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .graph-link,
+  .graph-node-circle,
+  .graph-node-label,
+  .docs-graph-detail {
+    transition: none;
+  }
+}

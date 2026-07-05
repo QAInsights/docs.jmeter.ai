@@ -1,0 +1,73 @@
+/* ==========================================================================
+   Workflow Navigation
+   Section headings, workflow cards grid
+   ========================================================================== */
+
+.section-heading {
+  max-width: 42rem;
+  margin: 0 auto 1.25rem;
+  text-align: center;
+}
+
+.section-heading h2 {
+  margin: 0 0 0.4rem;
+  color: var(--sl-color-white);
+  font-size: 1.5rem;
+  font-weight: 750;
+}
+
+.section-heading p {
+  margin: 0;
+  color: var(--sl-color-gray-3);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.workflow-section {
+  padding: 1rem 0 1.5rem;
+}
+
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.workflow-card {
+  display: flex;
+  min-height: 11rem;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  background: var(--sl-color-gray-6);
+  color: inherit;
+  padding: 1.2rem;
+  text-decoration: none;
+  transition: transform 180ms var(--mx-ease), border-color 180ms var(--mx-ease), background-color 180ms var(--mx-ease);
+}
+
+.workflow-card:hover {
+  border-color: var(--sl-color-accent);
+  background: color-mix(in srgb, var(--sl-color-gray-6) 82%, var(--sl-color-accent-low));
+  transform: translateY(-2px);
+}
+
+.workflow-title {
+  color: var(--sl-color-white);
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.workflow-desc {
+  color: var(--sl-color-gray-3);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  margin: 0.75rem 0 1rem;
+}
+
+.workflow-action {
+  color: var(--sl-color-accent-high);
+  font-size: 0.82rem;
+  font-weight: 750;
+}

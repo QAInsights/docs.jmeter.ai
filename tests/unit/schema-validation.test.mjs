@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { faqSchema, buildFaqJsonLd } from './faq-schema.mjs';
-import { howtoSchema, buildHowToJsonLd } from './howto-schema.mjs';
+import { faqSchema, buildFaqJsonLd } from '../../src/faq-schema.mjs';
+import { howtoSchema, buildHowToJsonLd } from '../../src/howto-schema.mjs';
 
 describe('faq-schema', () => {
   it('should have at least one entry', () => {

@@ -6,7 +6,18 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['tools/convert.mjs', 'astro.config.mjs', 'src/lib/docs-graph-data.mjs'],
+      include: [
+        'tools/convert.mjs',
+        'astro.config.mjs',
+        'src/lib/docs-graph-data.mjs',
+        'src/lib/docs-graph-physics.mjs',
+        'src/lib/sharing-urls.mjs',
+        'src/lib/path-utils.mjs',
+        'src/lib/head-tags.mjs',
+        'src/faq-schema.mjs',
+        'src/howto-schema.mjs',
+        'src/sidebar.mjs',
+      ],
       exclude: ['scripts/sync.mjs', '**/*.test.*'],
       thresholds: {
         lines: 80,

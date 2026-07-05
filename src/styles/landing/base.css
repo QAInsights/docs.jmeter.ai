@@ -1,0 +1,36 @@
+/* ==========================================================================
+   Landing page base
+   Page wrapper, section padding, Starlight overrides for landing
+   ========================================================================== */
+
+/* Hide Starlight's auto-generated H1 when landing page is present.
+   Structure: main > .content-panel > h1#_top  (first panel)
+              main > .content-panel > .landing  (second panel) */
+main:has(.landing) > .content-panel:first-child {
+  display: none;
+}
+
+/* --- Page wrapper: full-bleed sections ---------------------------------- */
+.landing {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.landing section {
+  padding: 2rem 0;
+}
+
+/* Reduce Lucode's main padding on the landing page */
+main:has(.landing) {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Hide Lucode's PageTitle description on the landing page  -  it duplicates
+   the hero text. The doc-title block is in a sibling content-panel, not
+   inside .landing, so use :has() to detect the landing page. */
+main:has(.landing) [slot='doc-title-description'] {
+  display: none;
+}

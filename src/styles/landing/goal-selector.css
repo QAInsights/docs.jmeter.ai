@@ -1,0 +1,80 @@
+/* ==========================================================================
+   Goal Selector
+   Radio-style goal picker with 2-column grid
+   ========================================================================== */
+
+.goal-section {
+  padding: 1.5rem 0 2rem;
+}
+
+.goal-selector {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.goal-option {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  align-self: stretch;
+  gap: 0.8rem;
+  min-height: 5.5rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  background: var(--sl-color-gray-6);
+  cursor: pointer;
+  padding: 0.9rem 1rem;
+  margin: 0;
+}
+
+.goal-option:has(input:checked) {
+  border-color: var(--sl-color-accent);
+  background: color-mix(in srgb, var(--sl-color-accent-low) 35%, var(--sl-color-gray-6));
+}
+
+.goal-option input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--sl-color-accent);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.goal-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+.goal-label {
+  color: var(--sl-color-white);
+  font-size: 0.95rem;
+  font-weight: 750;
+}
+
+.goal-detail {
+  color: var(--sl-color-gray-3);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.goal-option a {
+  border-radius: 9999px;
+  color: var(--sl-color-accent-high);
+  font-size: 0.78rem;
+  font-weight: 750;
+  padding: 0.35rem 0.6rem;
+  text-decoration: none;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.goal-option a:hover {
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent);
+}
