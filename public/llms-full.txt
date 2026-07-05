@@ -4,7 +4,7 @@
 
 Site: https://docs.jmeter.ai
 Pages: 45
-Generated: 2026-07-05T04:42:35.563Z
+Generated: 2026-07-05T14:17:24.580Z
 ---
 Title: User's Manual: Getting Started
 URL: https://docs.jmeter.ai/getting-started/get-started/
@@ -12,6 +12,7 @@ URL: https://docs.jmeter.ai/getting-started/get-started/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 1. Getting Started
 
 ### 1.0 Overview
@@ -930,7 +931,9 @@ Note: You can define additional JMeter properties in the file defined by the
   
 
 **See also the comments in the `jmeter.properties`, `user.properties` and `system.properties` files for further information on other settings you can change.**
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Build your first test plan with the [Building a Test Plan](/user-manual/build-test-plan/) guide.
@@ -944,6 +947,7 @@ Build your first test plan with the [Building a Test Plan](/user-manual/build-te
 - Use View Results Tree in Validate mode to debug before running full tests
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -1473,6 +1477,7 @@ URL: https://docs.jmeter.ai/user-manual/build-test-plan/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 2. Building a Test Plan
 
 A test plan describes a series of steps JMeter will execute when run.  A complete
@@ -1578,7 +1583,9 @@ If a test is not behaving as you expect, please check the log file in case any e
 Sampling errors (e.g. HTTP 404 - file not found) are not normally reported in the log file.
 Instead these are stored as attributes of the sample result.
 The status of a sample result can be seen in the various different Listeners.
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Start with the [Building a Web Test Plan](/user-manual/build-web-test-plan/) tutorial for a hands-on walkthrough.
@@ -1592,6 +1599,7 @@ Start with the [Building a Web Test Plan](/user-manual/build-web-test-plan/) tut
 - Not using Timers causes unrealistic request rates
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -1599,6 +1607,7 @@ Title: User's Manual: Elements of a Test Plan
 URL: https://docs.jmeter.ai/user-manual/test-plan/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 3. Elements of a Test Plan
 
 This section describes the different parts of a test plan.
@@ -2039,6 +2048,7 @@ You can then change some or all of the values on the command-line as follows:
 ```
 jmeter … -Jhost=www3.example.org -Jloops=13
 ```
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -2048,8 +2058,10 @@ URL: https://docs.jmeter.ai/user-manual/build-web-test-plan/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 4. Building a Web Test Plan
 
+{/* CUSTOM-INTRO:START */}
 :::tip[Use CLI mode for real load]
 After the web flow is validated, save the plan and run it with `jmeter -n`. GUI listeners should stay disabled during the real load run.
 :::
@@ -2057,6 +2069,7 @@ After the web flow is validated, save the plan and run it with `jmeter -n`. GUI 
 :::caution[Avoid View Results Tree in load tests]
 View Results Tree helps inspect recorded requests and assertions, but it should be disabled before sustained web load tests.
 :::
+{/* CUSTOM-INTRO:END */}
 
 In this section, you will learn how to create a basic
 [Test Plan](/user-manual/build-test-plan/) to test a Web site.  You will
@@ -2258,7 +2271,9 @@ _Figure 4.11. Use Thread Group to control CacheManager_
 
 ![Figure 4.12. Use Thread Group to control Authorization Manager](/images/screenshots/webtest/threadgroup6.png)
 _Figure 4.12. Use Thread Group to control Authorization Manager_
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Try the [Advanced Web Test Plan](/user-manual/build-adv-web-test-plan/) to handle session management and URL rewriting.
@@ -2272,6 +2287,7 @@ Try the [Advanced Web Test Plan](/user-manual/build-adv-web-test-plan/) to handl
 - Use [View Results Tree](/user-manual/listeners/) during debugging, but remove it for load tests
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -2279,6 +2295,7 @@ Title: User's Manual: Building an Advanced Web Test Plan
 URL: https://docs.jmeter.ai/user-manual/build-adv-web-test-plan/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 5. Building an Advanced Web Test Plan
 
 In this section, you will learn how to create advanced
@@ -2325,6 +2342,7 @@ The [HTTP Header Manager](/user-manual/component-reference/#HTTP_Header_Manager)
 should probably be added at the Thread Group level, unless for some reason you wish to
 specify different headers for the different [HTTP Request](/user-manual/component-reference/#HTTP_Request) objects in
 your test.
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -2334,6 +2352,7 @@ URL: https://docs.jmeter.ai/user-manual/build-db-test-plan/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 6. Building a Database Test Plan
 
 In this section, you will learn how to create a basic
@@ -2495,7 +2514,9 @@ The listener shows the results.
 
 ![Figure 6.7. Graph results Listener](/images/screenshots/jdbctest/jdbc-results.png)
 _Figure 6.7. Graph results Listener_
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Add [Assertions](/user-manual/test-plan/) to validate that SQL responses contain expected data.
@@ -2509,6 +2530,7 @@ Add [Assertions](/user-manual/test-plan/) to validate that SQL responses contain
 - Not setting the JDBC Connection Configuration before the JDBC Request sampler in the test tree
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -2516,6 +2538,7 @@ Title: User's Manual: Building an FTP Test Plan
 URL: https://docs.jmeter.ai/user-manual/build-ftp-test-plan/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 7. Building an FTP Test Plan
 
 In this section, you will learn how to create a basic
@@ -2670,6 +2693,7 @@ Run your test and view the results.
 
 ![Figure 7.7. View Results in Table Listener](/images/screenshots/ftptest/ftp-results.png)
 _Figure 7.7. View Results in Table Listener_
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -2677,6 +2701,7 @@ Title: User's Manual: Building an LDAP Test Plan
 URL: https://docs.jmeter.ai/user-manual/build-ldap-test-plan/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 8a. Building an LDAP Test Plan
 
         In this section, you will learn how to create a basic Test Plan to test an LDAP server.
@@ -2843,6 +2868,7 @@ Users element and add a View Results in Table
 
 ![Figure 8a.6 View Results in Table Listener](/images/screenshots/ldaptest/viewtable.png)
 _Figure 8a.6 View Results in Table Listener_
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -2850,6 +2876,7 @@ Title: User's Manual: Building an Extended LDAP Test Plan
 URL: https://docs.jmeter.ai/user-manual/build-ldapext-test-plan/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 8b. Building an Extended LDAP Test Plan
 
 In this section, you will learn how to create a basic Test Plan to test an LDAP
@@ -3080,6 +3107,7 @@ In this listener you have three tabs to view, the sampler result, the request an
 1. The sampler result just contains the response time, the returncode and return message
 2. The request gives a short description of the request that was made, in practice no relevant information is contained here.
 3. The response data contains the full details of the sent request, as well the full details of the received answer, this is given in a (self defined) xml-style. [The full description can be found here.](/ldapanswer-xml/)
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -3087,6 +3115,7 @@ Title: User's Manual: Building a SOAP WebService Test Plan
 URL: https://docs.jmeter.ai/user-manual/build-ws-test-plan/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 9. Building a WebService Test Plan
 
 In this section, you will learn how to create a
@@ -3214,6 +3243,7 @@ Testing a REST Webservice is very similar as you only need to modify in HTTP Req
 - `Body Data`: which can be JSON, XML or any custom text
 
 You may also need to modify "`HTTP Header Manager`" to select the correct "`Content-Type`"
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -3221,6 +3251,7 @@ Title: User's Manual: Building a JMS (Java Messaging Service) Point-to-Point Tes
 URL: https://docs.jmeter.ai/user-manual/build-jms-point-to-point-test-plan/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 10. Building a JMS Point-to-Point Test Plan
 
         
@@ -3357,6 +3388,7 @@ Browse button and browse to a directory and then enter a filename.
 
             ![Figure 10.2. Graph Results Listener](/images/screenshots/graph_results.png)
 _Figure 10.2. Graph Results Listener_
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -3364,6 +3396,7 @@ Title: User's Manual: Building a JMS (Java Messaging Service) Test Plan
 URL: https://docs.jmeter.ai/user-manual/build-jms-topic-test-plan/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 11. Building a JMS Topic Test Plan
 
 :::note
@@ -3502,6 +3535,7 @@ Browse button and browse to a directory and then enter a filename.
 
 ![Figure 11.4. Graph Results Listener](/images/screenshots/graph_results.png)
 _Figure 11.4. Graph Results Listener_
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -3509,6 +3543,7 @@ Title: User's Manual: Building a Test Plan Programmatically
 URL: https://docs.jmeter.ai/user-manual/build-programmatic-test-plan/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Building a Test Plan Programmatically
 
       
@@ -3769,6 +3804,7 @@ ListedHashTree root = testTree(b -> { // (1)
 - Note how adding element returns the subtree, so we add `threadGroup` under `testPlan` in `(2)`
 - If no children needed, you could omit the lambda parameter as in `(3)`
 - By default, JMeter uses no-argument constructors to create elements, however, you can add `TestElement` instances to the tree as well, see `(4)`
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -3778,11 +3814,14 @@ URL: https://docs.jmeter.ai/user-manual/listeners/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 12. Introduction to listeners
 
+{/* CUSTOM-INTRO:START */}
 :::caution[Avoid View Results Tree in load tests]
 Listeners that render or retain detailed sample data can consume significant memory. Keep View Results Tree for debugging only and use `.jtl` files plus dashboard reports for real load runs.
 :::
+{/* CUSTOM-INTRO:END */}
 
 A listener is a component that shows the results of the
 samples. The results can be shown in a tree, tables, graphs or simply written to a log
@@ -4233,7 +4272,9 @@ e.g. a spreadsheet or text editor.
 
 ![Figure 1 - **Edit → Save Node As Image**](/images/screenshots/save_image.png)
 _Figure 1 - **Edit → Save Node As Image**_
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Set up [Real-time Results](/user-manual/realtime-results/) to stream listener data to InfluxDB or Graphite.
@@ -4247,6 +4288,7 @@ Set up [Real-time Results](/user-manual/realtime-results/) to stream listener da
 - Not configuring result file output loses data if JMeter crashes mid-test
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -4256,8 +4298,10 @@ URL: https://docs.jmeter.ai/user-manual/remote-test/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 13. Remote Testing
 
+{/* CUSTOM-INTRO:START */}
 :::caution[Security-sensitive setting]
 Remote testing exposes control channels between machines. Restrict network access, use trusted test plans, and review RMI SSL settings before enabling workers.
 :::
@@ -4265,6 +4309,7 @@ Remote testing exposes control channels between machines. Restrict network acces
 :::note[Version-specific behavior]
 Remote testing requires compatible JMeter and Java versions across controller and workers. Re-check RMI and SSL defaults after upgrades.
 :::
+{/* CUSTOM-INTRO:END */}
 
 In the event that your JMeter client machine is unable, performance-wise, to simulate
 enough users to stress your server or is limited at network level, an option exists to control multiple, remote JMeter
@@ -4756,7 +4801,9 @@ grant {
 :::note
 The usage of `java.security.AllPermission` is an easy way to make your test plans work, but it might be a dangerous shortcut on your path to security.
 :::
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-testing-step-by-step/) tutorial for a guided setup.
@@ -4770,6 +4817,7 @@ Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-te
 - Not disabling SSL for RMI in non-production environments causes connection failures
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -4779,6 +4827,7 @@ URL: https://docs.jmeter.ai/user-manual/generating-dashboard/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 14. Generating Report Dashboard
 
             JMeter supports dashboard report generation to get graphs and
@@ -5401,7 +5450,9 @@ jmeter.reportgenerator.graph.custom_testGraph.property.set_Content_Message=Numbe
             can read this [developer documentation](/../devguide-dashboard/).
 
             Read this [documentation](/../building/) on contributing.
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Combine dashboard reports with [Real-time Results](/user-manual/realtime-results/) for live monitoring during tests.
@@ -5415,6 +5466,7 @@ Combine dashboard reports with [Real-time Results](/user-manual/realtime-results
 - APDEX thresholds may need tuning for your application's expected response times
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -5424,6 +5476,7 @@ URL: https://docs.jmeter.ai/user-manual/realtime-results/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 15. Real-time results
 
 Since JMeter 2.13 you can get real-time results sent to a backend through the
@@ -5632,7 +5685,9 @@ _Graphite configuration_
 
     ![Graphite pickle sender](/images/screenshots/backend_listener_graphite_pickle.png)
 _Graphite pickle sender_
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Set up a Grafana dashboard to visualize the InfluxDB metrics streamed by the Backend Listener.
@@ -5646,6 +5701,7 @@ Set up a Grafana dashboard to visualize the InfluxDB metrics streamed by the Bac
 - Graphite connections may be rejected if Carbon's `auth` pattern doesn't match your JMeter host
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -5655,8 +5711,10 @@ URL: https://docs.jmeter.ai/user-manual/best-practices/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 16. Best Practices
 
+{/* CUSTOM-INTRO:START */}
 :::tip[Use CLI mode for real load]
 Use the GUI to build and validate a test plan, then run the actual load test from the command line so rendering and listeners do not distort injector performance.
 :::
@@ -5664,6 +5722,7 @@ Use the GUI to build and validate a test plan, then run the actual load test fro
 :::caution[Avoid View Results Tree in load tests]
 View Results Tree is useful for debugging, but it keeps detailed sample data in memory. Disable it before any sustained or high-volume load test.
 :::
+{/* CUSTOM-INTRO:END */}
 
 ## 16.1 Always use latest version of JMeter
 
@@ -6030,7 +6089,9 @@ of the element from there.
 :::note
 Please note that deprecated elements in version N will be removed definitely in version N+1, so ensure you stop using them as soon as possible.
 :::
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Apply these practices to a [Web Test Plan](/user-manual/build-web-test-plan/) and measure the difference.
@@ -6044,6 +6105,7 @@ Apply these practices to a [Web Test Plan](/user-manual/build-web-test-plan/) an
 - Not accounting for Coordinated Omission skews percentile response times
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -6051,6 +6113,7 @@ Title: User's Manual: My boss wants me to …
 URL: https://docs.jmeter.ai/user-manual/boss/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 17. Help! My boss wants me to load test our application!
 
 This is a fairly open-ended proposition. There are a number of questions to
@@ -6234,6 +6297,7 @@ management code that you will need to benchmark your application. Java is
 aware of HTTP, FTP, and HTTPS - as well as RMI, IIOP, and JDBC (not to mention
 cookies, URL-encoding, and URL-rewriting). In addition Java gives you automatic
 garbage-collection, and byte-code level security.
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -6241,6 +6305,7 @@ Title: User's Manual: Curl
 URL: https://docs.jmeter.ai/user-manual/curl/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 24. Curl
 
 This method is to create http requests from curl command. If you want to know more about curl, please click the [Curl document](https://curl.haxx.se/).
@@ -6431,6 +6496,7 @@ curl "https://example.invalid" -u 'user:passwd' --basic
 ```
 curl "https://example.invalid" --dns-servers '0.0.0.0,1.1.1.1'
 ```
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -6438,6 +6504,7 @@ Title: User's Manual: Hints and Tips
 URL: https://docs.jmeter.ai/user-manual/hints-and-tips/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 22. Hints and Tips
 
 This section is a collection of various hints and tips that have been suggested by various questions on the JMeter User list.
@@ -6678,6 +6745,7 @@ The binding above are made for Windows QWERTY keyboards. For other platforms and
 - Follow this [documentation](https://openjfx.io/openjfx-docs/) to install Java FX for your OS and Java version.              If you don't want to read it, here are the necessary steps:                  - Go to [Gluon website](https://gluonhq.com/products/javafx/) and download the runtime for your Java version and OS - Unzip it - Then configure a variable pointing to lib folder:                         Linux/MacOSX:                          ``` export PATH_TO_FX=path/to/javafx-sdk-XX/lib ```                         Windows:                          ``` set PATH_TO_FX=path/to/javafx-sdk-XX/lib ```
 - Then open bin/jmeter file for Linux/MacOSX, bin/jmeter.bat for Windows, find JAVA9_OPTS variable and add:                Linux/MacOSX:                 ``` --module-path $PATH_TO_FX --add-modules javafx.web,javafx.swing ```                Windows:                 ``` --module-path %PATH_TO_FX% --add-modules javafx.web,javafx.swing ```
 -
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -6685,6 +6753,7 @@ Title: User's Manual: Glossary
 URL: https://docs.jmeter.ai/user-manual/glossary/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 23. Glossary
 
 <a id="Elapsed"></a>. JMeter measures the elapsed time from just before sending the request to
@@ -6750,6 +6819,7 @@ The time is calculated from the start of the first sample to the end of the last
 This includes any intervals between samples, as it is supposed to represent the load on the server.
 
 The formula is: Throughput = (number of requests) / (total time).
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -6759,6 +6829,7 @@ URL: https://docs.jmeter.ai/user-manual/regular-expressions/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 21. Regular Expressions
 
 ### 21.1 Overview
@@ -6998,7 +7069,9 @@ Another approach is to use a simple test plan to test the regular expressions.
 The Java Request sampler can be used to generate a sample, or the HTTP Sampler can be used to load a file.
 Add a Debug Sampler and a Tree View Listener and changes to the regular expression can be tested quickly,
 without needing to access any external servers.
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Use a Regular Expression Extractor to capture dynamic tokens (like CSRF tokens) for subsequent requests.
@@ -7012,6 +7085,7 @@ Use a Regular Expression Extractor to capture dynamic tokens (like CSRF tokens) 
 - Not testing regex patterns with the RegExp Tester in View Results Tree before running load tests
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -7021,6 +7095,7 @@ URL: https://docs.jmeter.ai/user-manual/functions/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 20. Functions and Variables
 
 JMeter functions are special values that can populate fields of any Sampler or other
@@ -8921,7 +8996,9 @@ For convenience, the `START` properties are also copied to variables with the sa
 
 Please note that the `START` variables / properties represent JMeter startup time, not the test start time.
 They are mainly intended for use in file names etc.
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Practice by parameterizing an HTTP Request sampler with `${__Random()}` and `${__time()}` functions.
@@ -8935,6 +9012,7 @@ Practice by parameterizing an HTTP Request sampler with `${__Random()}` and `${_
 - Using `${variable}` when you need `${__V(variable)}` for nested variable resolution
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -8942,8 +9020,10 @@ Title: User's Manual: Properties Reference
 URL: https://docs.jmeter.ai/user-manual/properties-reference/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 19 Introduction
 
+{/* CUSTOM-INTRO:START */}
 :::caution[Security-sensitive setting]
 Properties can affect SSL, remote execution, scripting, file access, and report contents. Review changes before committing shared `user.properties` or CI overrides.
 :::
@@ -8951,6 +9031,7 @@ Properties can affect SSL, remote execution, scripting, file access, and report 
 :::note[Version-specific behavior]
 Property names and defaults can change across JMeter releases. Check the installed `jmeter.properties` file when upgrading.
 :::
+{/* CUSTOM-INTRO:END */}
 
 This document describes JMeter properties. The properties present in `jmeter.properties` or `reportgenerator.properties` should be set in the `user.properties` file.
 These properties are only taken into account after restarting JMeter as they are usually resolved when the class is loaded.
@@ -9664,6 +9745,7 @@ Advanced properties for documentation generation
 |------|----------|-------------|
 | security.provider | No | The value must be in this format: &lt;ClassName&gt;[:&lt;Postion&gt;[:&lt;ConfigString&gt;]] |
 | security.provider.&lt;n&gt; | No | Replace the `&lt;n&gt;` with any number. The SecurityProviders will be added in the alphabetical         order of the property names. (First: `security.provider` and then `security.provider.2`, `security.provider.3`,...)         See property `security.provider` |
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -9673,11 +9755,14 @@ URL: https://docs.jmeter.ai/user-manual/component-reference/
 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
+{/* SYNCED-BODY:START */}
 ## 18 Introduction
 
+{/* CUSTOM-INTRO:START */}
 :::note[Version-specific behavior]
 Component fields, defaults, and save formats can change across JMeter versions. Verify component behavior against the version used by your test runners.
 :::
+{/* CUSTOM-INTRO:END */}
 
  
 :::note
@@ -15854,7 +15939,9 @@ If Test Plan is stopped, tearDown will not run even if option is checked.
 _Figure 1 - Run tearDown Thread Groups after shutdown of main threads_
 
 [^](#)
+{/* SYNCED-BODY:END */}
 
+{/* CUSTOM-FOOTER:START */}
 <RelatedContent>
 <Fragment slot="next-step">
 Use the Component Reference alongside the [Building a Test Plan](/user-manual/build-test-plan/) guide to configure elements.
@@ -15868,6 +15955,7 @@ Use the Component Reference alongside the [Building a Test Plan](/user-manual/bu
 - [Best Practices](/user-manual/best-practices/)  -  which components to use and which to avoid in load tests
 </Fragment>
 </RelatedContent>
+{/* CUSTOM-FOOTER:END */}
 
 
 ---
@@ -15875,6 +15963,7 @@ Title: Extending JMeter
 URL: https://docs.jmeter.ai/extending/extending-jmeter/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Extending JMeter
 
 ### Extending JMeter
@@ -16610,6 +16699,7 @@ Study the other SaveHandler objects and the TagHandler class to learn more
 about how saving is accomplished.  Once you understand the design, writing your
 
 own SaveHandler is very easy.
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -16617,6 +16707,7 @@ Title: Developer's guide: Dashboard generator
 URL: https://docs.jmeter.ai/extending/devguide-dashboard/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Dashboard generator
 
             
@@ -16840,6 +16931,7 @@ _Figure 2 - Consumers chain_
 - The chain building is dispatched between the                             `org.apache.jmeter.report.dashboard.ReportGenerator.generate`                             method                             and the implementation of the consumers. So the code in                             charge of                             the building is split and furthermore some consumers can                             be                             redundant and harm the performance of report generation, not                             load testing.                                                                               E.g. Each                             `LatencyVSRequestGraphConsumer`                             and                             `ResponseTimeVSRequestGraphConsumer`                             instances use an embedded                             consumer that could be shared depending                             on                             `granularity`                             and                             `exclude_controllers`                             properties.                                                                               So we should enable the consumers to define the chain they                             require and provide a single chain builder that processes these                             chain requirements to instantiate needed consumers on demand.                             I.e.                             for the same chain requirement declaration, the same consumer                             instances are used. Otherwise if the declaration differs, a new                             branch of consumers is created.
 - The graphs (DOM elements) in the generated HTML page should be                             dynamically build in order to match the graphs defined in JMeter                             properties.
 - Some improvements can be done on the generated html pages:                              - Using a single page, and hide graphs depending on the                                     navigation menu selection. - Adding a loading animation when graphs are build or                                     refreshed. - Let the user determine if a graph is zoomable using a JMeter                                     property. - Using the                                     `jquery.plot.setData()`                                     method to handle series                                     activation/deactivation rather than                                     rebuild the graph.
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -16847,11 +16939,14 @@ Title: Changes
 URL: https://docs.jmeter.ai/user-manual/changes/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Changes
 
+{/* CUSTOM-INTRO:START */}
 :::note[Version-specific behavior]
 Use this page when behavior differs between JMeter releases, especially for components, properties, Java support, and distributed testing defaults.
 :::
+{/* CUSTOM-INTRO:END */}
 
 :::note
 **This page details the changes made in the current version only.**
@@ -16960,6 +17055,7 @@ Apologies if we have omitted anyone else.
 - Note that under some windows systems you may have this WARNING: ``` java.util.prefs.WindowsPreferences WARNING: Could not open/create prefs root node Software\JavaSoft\Prefs at root 0 x80000002. Windows RegCreateKeyEx(…) returned error code 5. ``` The fix is to run JMeter as Administrator, it will create the registry key for you, then you can restart JMeter as a normal user and you won't have the warning anymore.
 - You may encounter the following error: ``` java.security.cert.CertificateException: Certificates does not conform to algorithm constraints ```  if you run a HTTPS request on a web site with a SSL certificate (itself or one of SSL certificates in its chain of trust) with a signature  algorithm using MD2 (like `md2WithRSAEncryption`) or with a SSL certificate with a size lower than 1024 bits. This error is related to increased security in Java 8+. To allow you to perform your HTTPS request, you can downgrade the security of your Java installation by editing the Java `jdk.certpath.disabledAlgorithms` property. Remove the MD2 value or the constraint on size, depending on your case. This property is in this file: ``` JAVA_HOME/jre/lib/security/java.security ``` See  [Bug 56357](https://bz.apache.org/bugzilla/show_bug.cgi?id=56357) for details.
 - With Java 15 the JavaScript implementation [Nashorn has been removed](https://openjdk.java.net/jeps/372). JMeter now ships with a JSR-223 compatible JavaScript engine by default (Mozilla Rhino 1.8.0), so you do not need to download Rhino separately anymore. If you prefer to use Nashorn instead, you can still add it as a module. One way to download version 15.7 (or later) and its dependencies and set the module path is outlined below:    ``` mkdir lib/modules pushd lib/modules wget https://repo1.maven.org/maven2/org/openjdk/nashorn/nashorn-core/15.7/nashorn-core-15.7.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm/9.9.1/asm-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-commons/9.9.1/asm-commons-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-util/9.9.1/asm-util-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-tree/9.9.1/asm-tree-9.9.1.jar wget https://repo1.maven.org/maven2/org/ow2/asm/asm-analysis/9.9.1/asm-analysis-9.9.1.jar popd export JVM_ARGS="--module-path $PWD/lib/modules" ./bin/jmeter ```
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -16967,6 +17063,7 @@ Title: History of Previous Changes
 URL: https://docs.jmeter.ai/user-manual/changes-history/
 ---
 
+{/* SYNCED-BODY:START */}
 ## History of Previous Changes
 
 :::note
@@ -25487,6 +25584,7 @@ TBA
  **Apache JMeter 1.0** - Dec 15 1998
 
 - Initial version. (SM)
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -25494,6 +25592,7 @@ Title: User's Manual: History/Future
 URL: https://docs.jmeter.ai/user-manual/history-future/
 ---
 
+{/* SYNCED-BODY:START */}
 ## 25. History and Future
 
 ### 25.1 History
@@ -25521,6 +25620,7 @@ The primary goal of further developments will be:
 :::note
 You can help us by contributing to JMeter through any piece of work, read [this document](/../building/)
 :::
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -25528,6 +25628,7 @@ Title: Building and Contributing to JMeter
 URL: https://docs.jmeter.ai/reference/building/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Building JMeter
 
 Before you can compile JMeter, you will need a few things:
@@ -25674,6 +25775,7 @@ Just download the binary archive and add the jars to the classpath or use Maven 
 You may want to also download the source so it can be used by the IDE.
 
 See the `extras/addons*` files in the source tree for some suggestions
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -25681,6 +25783,7 @@ Title: User guide: Customizables templates
 URL: https://docs.jmeter.ai/reference/creating-templates/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Customizable template
 
             
@@ -25826,6 +25929,7 @@ _Figure 5 - JMeter asks you the value you want to put for the key_
                         Then, you will find the expected value in the created template where you placed the [=xmlFileName] tag :
                         ![Figure 6 - the value changed](/images/screenshots/templates/template_recording_retrieved_value.png)
 _Figure 6 - the value changed_
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -25833,6 +25937,7 @@ Title: Download Apache JMeter
 URL: https://docs.jmeter.ai/reference/download-jmeter/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Download Apache JMeter
 
       
@@ -25928,6 +26033,7 @@ URL: https://docs.jmeter.ai/reference/download-jmeter/
     
     It is essential that you verify the integrity of the downloaded files using the PGP signature.
     Please read [Verifying Apache Software Foundation Releases](http://www.apache.org/info/verification.html) for more information on why you should verify our releases.
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -25935,11 +26041,14 @@ Title: Security
 URL: https://docs.jmeter.ai/reference/security/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Security Model
 
+{/* CUSTOM-INTRO:START */}
 :::caution[Security-sensitive setting]
 Treat `.jmx` files and distributed workers as trusted execution inputs. Opening or running a test plan can execute code through configured elements or scripts.
 :::
+{/* CUSTOM-INTRO:END */}
 
   
     The purpose of JMeter is to execute the workload specified
@@ -25980,6 +26089,7 @@ Treat `.jmx` files and distributed workers as trusted execution inputs. Opening 
 - The project publicly announces the vulnerability and describes how to apply the fix.
 
     Committers should read a [more detailed description of the process](https://www.apache.org/security/committers.html). Reporters of security vulnerabilities may also find it useful.
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -25987,6 +26097,7 @@ Title: Issues
 URL: https://docs.jmeter.ai/reference/issues/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Issue tracker
 
   
@@ -26107,6 +26218,7 @@ Use the checklist below to guide you.
 
 <strong>See also the following [Bug writing guidelines](https://bz.apache.org/bugwritinghelp.html),
 also the terms and conditions noted on the [GitHub Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service)</strong>
+{/* SYNCED-BODY:END */}
 
 
 ---
@@ -26114,6 +26226,7 @@ Title: Mailing Lists
 URL: https://docs.jmeter.ai/reference/mail/
 ---
 
+{/* SYNCED-BODY:START */}
 ## Mailing Lists - Guidelines
 
 A mailing list is an electronic discussion forum that anyone can
@@ -26240,6 +26353,7 @@ you a listing of the different mailing lists that you can join. If you
 managed to find this without reading the above information, chances
 are you will be sent back here. You might as well read it now and save
 yourself the embarrassment.
+{/* SYNCED-BODY:END */}
 
 
 ---
