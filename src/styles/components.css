@@ -345,3 +345,8 @@ nav.nav-bar a::after,
 .related-card-body li {
   margin-bottom: 0.25rem;
 }
+
+/* Hide Starlight's default heading anchor links to prevent duplication with custom copy-link buttons */
+.sl-markdown-content .sl-anchor-link {
+  display: none !important;
+}

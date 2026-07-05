@@ -288,6 +288,12 @@ const { toc } = Astro.locals.starlightRoute;
 			padding: 0.15rem 0.3rem;
 			vertical-align: middle;
 		}
+		:global(.heading-copy-link span) {
+			display: none;
+		}
+		:global(.heading-copy-link[data-copied='true'] span) {
+			display: inline;
+		}
 		:global(.sl-markdown-content :is(h2, h3, h4):hover .heading-copy-link),
 		:global(.heading-copy-link:focus-visible),
 		:global(.heading-copy-link[data-copied='true']) {
