@@ -1,3 +1,0 @@
-{
-  "installCommand": "npm install && npm install @rolldown/binding-linux-x64-gnu@1.1.4"
-}

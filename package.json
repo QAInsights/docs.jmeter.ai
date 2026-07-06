@@ -3,9 +3,10 @@
   "type": "module",
   "version": "1.0.0",
   "description": "Community documentation site for Apache JMeter",
+  "packageManager": "pnpm@10.33.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "npm run lint && node scripts/generate-llms-full.mjs && node scripts/generate-llms-chunks.mjs && astro build",
+    "build": "pnpm run lint && node scripts/generate-llms-full.mjs && node scripts/generate-llms-chunks.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "convert": "node tools/convert.mjs",
