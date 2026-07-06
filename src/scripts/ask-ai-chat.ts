@@ -485,8 +485,7 @@ async function send(text: string) {
       ? parseSourcesHeader(decodeURIComponent(sourcesHeader))
       : [];
 
-    hideTyping(bubble);
-    await readStream(res, bubble);
+    await readStream(res, bubble, () => hideTyping(bubble));
 
     // First successful response means the server accepted our Turnstile
     // token and set a session cookie. Subsequent sends skip Turnstile.
@@ -541,10 +540,11 @@ async function send(text: string) {
   }
 }
 
-async function readStream(res: Response, bubble: HTMLElement) {
+async function readStream(res: Response, bubble: HTMLElement, onFirstChunk?: () => void) {
   if (!res.body) {
     // Fallback: read as plain text.
     const text = await res.text();
+    onFirstChunk?.();
     pendingAssistantText = text;
     scheduleStreamRender(bubble);
     return;
@@ -552,9 +552,14 @@ async function readStream(res: Response, bubble: HTMLElement) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let firstChunk = true;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
+    if (firstChunk) {
+      firstChunk = false;
+      onFirstChunk?.();
+    }
     buffer += decoder.decode(value, { stream: true });
     // The text stream protocol sends raw text chunks; no framing to parse.
     pendingAssistantText = buffer;
