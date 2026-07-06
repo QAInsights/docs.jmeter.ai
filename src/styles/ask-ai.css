@@ -112,6 +112,10 @@
   color: var(--sl-color-white);
   border-left: 1px solid var(--sl-color-gray-5);
   box-shadow: -24px 0 60px -30px rgba(0, 0, 0, 0.55);
+  /* Establish a container so descendants can use cqw/cqh units for
+     responsive sizing that tracks the panel width, not the viewport. */
+  container-type: inline-size;
+  container-name: ask-ai-sheet;
 }
 
 /* --- Entry / exit animation (top-layer aware) --------------------------- */
@@ -328,24 +332,30 @@
   flex-direction: column;
   gap: 0.85rem;
   scrollbar-width: thin;
-  scrollbar-color: var(--sl-color-gray-4) transparent;
+  scrollbar-color: var(--sl-color-accent) transparent;
 }
 
 .ask-ai-body::-webkit-scrollbar {
   width: 8px;
 }
 .ask-ai-body::-webkit-scrollbar-thumb {
-  background: var(--sl-color-gray-4);
+  background: var(--sl-color-accent);
   border-radius: 4px;
 }
 .ask-ai-body:hover::-webkit-scrollbar-thumb {
-  background: var(--sl-color-accent);
+  background: var(--sl-color-accent-high);
 }
 
 /* --- Empty state / suggested prompts ------------------------------------ */
+/* When there are no messages, the empty state fills the scroll area and
+   centers its content vertically so the hero + suggestions sit in the
+   optical middle of the panel rather than pinned to the top. */
 .ask-ai-empty {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  min-block-size: 100%;
   gap: 1rem;
   padding: 0.5rem 0.25rem 1rem;
   color: var(--sl-color-gray-3);
@@ -551,7 +561,7 @@
   font-size: 0.8rem;
   line-height: 1.5;
   scrollbar-width: thin;
-  scrollbar-color: var(--sl-color-gray-4) transparent;
+  scrollbar-color: var(--sl-color-accent) transparent;
 }
 .ask-ai-msg__bubble pre code {
   background: transparent;
@@ -693,7 +703,11 @@
 .ask-ai-composer {
   flex-shrink: 0;
   border-top: 1px solid var(--sl-color-gray-5);
-  padding: 0.7rem 0.85rem 0.85rem;
+  /* Horizontal padding gives the textarea + send button breathing room
+     from the panel edges. Scales slightly on wider panels via clamp().
+     The floor is bumped so the larger send button always has a visible
+     gap from the right edge, even on the narrowest phone panels. */
+  padding: 0.75rem clamp(1.1rem, 3cqw, 1.4rem) 0.9rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -709,10 +723,16 @@
 .ask-ai-textarea {
   flex: 1;
   resize: none;
-  min-height: 2.5rem;
-  max-height: 8rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.6rem;
+  /* Responsive height: taller default, scales with viewport via clamp().
+     min-block-size keeps an empty field comfortable on phones, while
+     max-block-size caps growth so long messages scroll instead of pushing
+     the composer footer off-screen. Units in rem honor user font-size prefs. */
+  min-block-size: clamp(3.25rem, 8dvh, 4.5rem);
+  max-block-size: clamp(7rem, 22dvh, 12rem);
+  /* Rounded rectangle — pronounced but not pill-shaped. clamp() keeps the
+     radius proportional to the panel width on small screens. */
+  border-radius: clamp(0.75rem, 1.2cqw, 1.1rem);
+  padding: 0.75rem 0.9rem;
   border: 1px solid var(--sl-color-gray-5);
   background: var(--sl-color-gray-6);
   color: var(--sl-color-white);
@@ -722,7 +742,23 @@
   transition: border-color var(--mx-base) var(--mx-ease),
     box-shadow var(--mx-base) var(--mx-ease);
   scrollbar-width: thin;
-  scrollbar-color: var(--sl-color-gray-4) transparent;
+  scrollbar-color: var(--sl-color-accent) transparent;
+}
+
+/* On very narrow panels, give the textarea a bit more vertical breathing
+   room and a softer radius so it doesn't feel cramped. */
+@container (max-width: 380px) {
+  .ask-ai-textarea {
+    min-block-size: 3.5rem;
+    padding: 0.8rem 0.85rem;
+  }
+}
+
+/* On coarse pointers (touch), bump tap target per WCAG 2.5.8. */
+@media (pointer: coarse) {
+  .ask-ai-textarea {
+    min-block-size: 3.75rem;
+  }
 }
 
 .ask-ai-textarea::placeholder {
@@ -740,9 +776,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.6rem;
+  /* Responsive size: matches the textarea's taller default via clamp().
+     min-block-size/min-inline-size enforce the WCAG 2.5.8 24x24 floor and
+     grow on touch devices. Using min-* lets the button grow if the
+     textarea grows taller than the default. */
+  min-block-size: clamp(3.25rem, 8dvh, 4.5rem);
+  block-size: auto;
+  inline-size: clamp(3.25rem, 8dvh, 4.5rem);
+  /* Rounded rectangle — matches the textarea radius for visual rhythm. */
+  border-radius: clamp(0.75rem, 1.2cqw, 1.1rem);
   background: var(--sl-color-accent);
   color: #fff;
   cursor: pointer;
@@ -771,8 +813,20 @@
 }
 
 .ask-ai-send svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* On coarse pointers (touch), bump the tap target per WCAG 2.5.8. */
+@media (pointer: coarse) {
+  .ask-ai-send {
+    min-block-size: 3.75rem;
+    inline-size: 3.75rem;
+  }
+  .ask-ai-send svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
 }
 
 .ask-ai-send--stop {

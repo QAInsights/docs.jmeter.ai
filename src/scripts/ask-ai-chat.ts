@@ -31,7 +31,7 @@ interface ChatState {
 const STORAGE_KEY = 'jmeter-ai-chat:v1';
 const API_ENDPOINT = '/api/chat';
 const MAX_CONVERSATIONS = 10; // 10 user+assistant pairs per thread
-const TEXTAREA_MAX_HEIGHT = 128; // px — auto-resize cap for the input
+const TEXTAREA_MAX_HEIGHT = 192; // px — auto-resize cap for the input (matches CSS max-block-size upper bound of 12rem)
 const ERROR_PREVIEW_LENGTH = 300; // chars — truncate server error details
 
 // Low-value messages (pure greetings, thanks, farewells) that don't warrant

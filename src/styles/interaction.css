@@ -11,6 +11,29 @@ button[disabled]:where([data-open-modal]) {
 }
 
 /* --- Overflow affordance: scrollable tables and code blocks -------------- */
+/* Main page scrollbar (browser window) — accent-colored to match the brand. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-color-accent) transparent;
+}
+
+html::-webkit-scrollbar {
+  width: 10px;
+}
+
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+  background: var(--sl-color-accent);
+  border-radius: 5px;
+}
+
+html:hover::-webkit-scrollbar-thumb {
+  background: var(--sl-color-accent-high);
+}
+
 .sl-markdown-content table,
 .sl-markdown-content pre {
   scrollbar-width: thin;
@@ -30,13 +53,13 @@ button[disabled]:where([data-open-modal]) {
 
 .sl-markdown-content table::-webkit-scrollbar-thumb,
 .sl-markdown-content pre::-webkit-scrollbar-thumb {
-  background: var(--sl-color-gray-4);
+  background: var(--sl-color-accent);
   border-radius: 4px;
 }
 
 .sl-markdown-content table:hover::-webkit-scrollbar-thumb,
 .sl-markdown-content pre:hover::-webkit-scrollbar-thumb {
-  background: var(--sl-color-accent);
+  background: var(--sl-color-accent-high);
 }
 
 /* --- Component-links: give the "See Also" links real affordance ----------- */
