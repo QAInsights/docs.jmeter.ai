@@ -17,8 +17,12 @@ const vercelAdapter = vercel({
   maxDuration: 30,
   ...(isLinux ? {
     includeFiles: [
-      './node_modules/@rolldown/binding-linux-x64-gnu/**/*',
-      './node_modules/.pnpm/@rolldown+binding-linux-x64-gnu@*/node_modules/@rolldown/binding-linux-x64-gnu/**/*',
+      // Hoisted layout (shamefully-hoist=true)
+      './node_modules/@rolldown/binding-linux-x64-gnu/rolldown-binding.linux-x64-gnu.node',
+      './node_modules/@rolldown/binding-linux-x64-gnu/package.json',
+      // pnpm store layout (fallback if not hoisted)
+      './node_modules/.pnpm/@rolldown+binding-linux-x64-gnu@1.1.4/node_modules/@rolldown/binding-linux-x64-gnu/rolldown-binding.linux-x64-gnu.node',
+      './node_modules/.pnpm/@rolldown+binding-linux-x64-gnu@1.1.4/node_modules/@rolldown/binding-linux-x64-gnu/package.json',
     ],
   } : {}),
 });
