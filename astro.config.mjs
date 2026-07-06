@@ -9,11 +9,25 @@ import remarkImageOptimize from './src/remark-image-optimize.mjs';
 
 const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 
+// On Linux (Vercel build), force-include the rolldown native binding in the
+// serverless bundle — @vercel/nft can't trace dynamically-loaded .node files.
+// On Windows (local dev), the Linux binding doesn't exist so we skip it.
+const isLinux = process.platform === 'linux';
+const vercelAdapter = vercel({
+  maxDuration: 30,
+  ...(isLinux ? {
+    includeFiles: [
+      './node_modules/@rolldown/binding-linux-x64-gnu/**/*',
+      './node_modules/.pnpm/@rolldown+binding-linux-x64-gnu@*/node_modules/@rolldown/binding-linux-x64-gnu/**/*',
+    ],
+  } : {}),
+});
+
 export default defineConfig({
   site: 'https://docs.jmeter.ai',
   // Vercel adapter enables on-demand serverless routes (e.g. /api/chat)
   // while keeping every docs page prerendered as static HTML.
-  adapter: vercel({ maxDuration: 30 }),
+  adapter: vercelAdapter,
   markdown: {
     remarkPlugins: [remarkImageOptimize],
   },
