@@ -26,6 +26,22 @@
     grid-template-columns: 1fr;
   }
 
+  .yt-banner {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.15rem 1.1rem;
+    text-align: center;
+  }
+
+  .yt-banner-visual {
+    justify-self: center;
+  }
+
+  .yt-banner-desc {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .workflow-card {
     min-height: auto;
   }

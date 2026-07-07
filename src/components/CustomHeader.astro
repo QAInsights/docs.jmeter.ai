@@ -8,6 +8,7 @@ import SiteTitle from 'lucode-starlight/components/overrides/SiteTitle.astro';
 
 import NavBar from '../../node_modules/lucode-starlight/components/overrides/parts/NavBar.astro';
 import MobileMenuToggle from '../../node_modules/lucode-starlight/components/overrides/parts/MobileMenuToggle.astro';
+import AskAi from './AskAi.astro';
 
 /** render the `Search` component if Pagefind is enabled or the default search component has been overridden. */
 const shouldRenderSearch =
@@ -41,6 +42,9 @@ const shouldRenderSearch =
             </div>
             <div>
                 <ThemeSelect />
+            </div>
+            <div>
+                <AskAi />
             </div>
             <div>
                 <LanguageSelect />

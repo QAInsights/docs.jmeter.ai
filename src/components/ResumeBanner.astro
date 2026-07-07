@@ -1,0 +1,191 @@
+---
+/**
+ * Resume banner - shows a "Continue reading" link to the user's last
+ * visited page, with a dismiss button. Only renders when the last
+ * visited page differs from the current page.
+ */
+
+const currentPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+---
+
+<div
+  class="resume-banner"
+  data-resume-banner
+  data-current-page={currentPath}
+  hidden
+  role="status"
+  aria-live="polite"
+>
+  <a class="resume-link" data-resume-link href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>
+    <span>Continue reading: <strong data-resume-title></strong></span>
+  </a>
+  <button
+    class="resume-dismiss"
+    type="button"
+    data-resume-dismiss
+    aria-label="Dismiss continue reading suggestion"
+    title="Dismiss"
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+</div>
+
+<script>
+  (() => {
+    if (window.__jmeterResumeBannerReady) return;
+    window.__jmeterResumeBannerReady = true;
+
+    const LAST_KEY = 'jmeter-docs:last-visited';
+    const DISMISSED_KEY = 'jmeter-docs:dismissed-resume';
+
+    function normalizeHref(href) {
+      return href.replace(/\/+$/, '') || '/';
+    }
+
+    function safeRead(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+
+    function safeWrite(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    }
+
+    function getDismissed() {
+      return safeRead(DISMISSED_KEY) || [];
+    }
+
+    function initBanners() {
+      document.querySelectorAll('[data-resume-banner]').forEach((banner) => {
+        const current = banner.dataset.currentPage || '';
+        const last = safeRead(LAST_KEY);
+        if (!last) return;
+
+        const lastHref = normalizeHref(last.href);
+        const currentNorm = normalizeHref(current);
+
+        // Don't show if the last visited page IS the current page
+        if (lastHref === currentNorm) return;
+
+        // Don't show if dismissed for this page
+        const dismissed = getDismissed();
+        if (dismissed.includes(lastHref)) return;
+
+        const link = banner.querySelector('[data-resume-link]');
+        const titleEl = banner.querySelector('[data-resume-title]');
+        if (link) link.href = last.href;
+        if (titleEl) titleEl.textContent = last.title || 'Previous page';
+
+        banner.hidden = false;
+
+        const dismissBtn = banner.querySelector('[data-resume-dismiss]');
+        if (dismissBtn) {
+          dismissBtn.addEventListener('click', () => {
+            const set = getDismissed();
+            if (!set.includes(lastHref)) {
+              set.push(lastHref);
+              if (set.length > 100) set.splice(0, set.length - 100);
+              safeWrite(DISMISSED_KEY, set);
+            }
+            banner.style.opacity = '0';
+            banner.style.transform = 'translateY(-0.5rem)';
+            setTimeout(() => { banner.hidden = true; }, 200);
+          });
+        }
+      });
+    }
+
+    initBanners();
+  })();
+</script>
+
+<style>
+  .resume-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+    background: color-mix(in srgb, var(--sl-color-accent-low) 60%, transparent);
+    font-size: var(--sl-text-sm);
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 200ms var(--mx-ease), transform 200ms var(--mx-ease);
+  }
+
+  .resume-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 0;
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+    transition: color var(--mx-fast) var(--mx-ease);
+  }
+
+  .resume-link:hover {
+    color: var(--sl-color-accent);
+  }
+
+  .resume-link svg {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--sl-color-accent);
+  }
+
+  .resume-link span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .resume-link strong {
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+
+  .resume-dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 9999px;
+    background: transparent;
+    color: var(--sl-color-gray-3);
+    cursor: pointer;
+    padding: 0;
+    transition: color var(--mx-fast) var(--mx-ease),
+                background-color var(--mx-fast) var(--mx-ease);
+  }
+
+  .resume-dismiss:hover {
+    color: var(--sl-color-accent);
+    background: color-mix(in srgb, var(--sl-color-accent) 15%, transparent);
+  }
+
+  .resume-dismiss:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 2px;
+  }
+
+  .resume-dismiss svg {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+</style>

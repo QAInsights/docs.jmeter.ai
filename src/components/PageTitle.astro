@@ -1,4 +1,7 @@
 ---
+import BookmarkButton from './BookmarkButton.astro';
+import ResumeBanner from './ResumeBanner.astro';
+
 const {
     entry: { data },
     pagination: { prev, next },
@@ -28,11 +31,17 @@ const leftArrow = 'M15 18l-6-6 6-6';
 const rightArrow = 'M9 18l6-6-6-6';
 ---
 
+{!isHomePage && <ResumeBanner />}
+
 <div data-slot="doc-title">
     <div data-slot="doc-title-header">
         <h1 id="_top">{title}</h1>
 
         <div data-slot="doc-title-actions">
+            {
+                !isHomePage && <BookmarkButton title={title} href={Astro.url.pathname} />
+            }
+
             {
                 !isHomePage && prev && (
                     <a class="link-button secondary icon-md" data-size="icon-md" href={prev.href} rel="prev" aria-label="Previous page">
@@ -71,6 +80,49 @@ const rightArrow = 'M9 18l6-6-6-6';
         )
     }
 </div>
+
+<script>
+  (() => {
+    if (window.__jmeterPageTrackReady) return;
+    window.__jmeterPageTrackReady = true;
+
+    const RECENT_KEY = 'jmeter-docs:recent';
+    const LAST_KEY = 'jmeter-docs:last-visited';
+    const MAX_RECENT = 20;
+
+    function normalizeHref(href) {
+      return href.replace(/\/+$/, '') || '/';
+    }
+
+    function safeRead(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+
+    function safeWrite(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    }
+
+    const titleEl = document.querySelector('[data-slot="doc-title"] h1');
+    if (!titleEl) return;
+
+    const title = titleEl.textContent?.trim() || '';
+    const href = normalizeHref(window.location.pathname);
+    const now = Date.now();
+
+    // Track in recent list
+    let list = safeRead(RECENT_KEY) || [];
+    list = list.filter((item) => normalizeHref(item.href) !== href);
+    list.unshift({ href, title, ts: now });
+    if (list.length > MAX_RECENT) list.length = MAX_RECENT;
+    safeWrite(RECENT_KEY, list);
+
+    // Update last visited
+    safeWrite(LAST_KEY, { href, title, ts: now });
+  })();
+</script>
 
 <style>
     div[data-slot='doc-title'] {

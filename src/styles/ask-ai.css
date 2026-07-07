@@ -1,0 +1,963 @@
+/* ==========================================================================
+   Ask AI  —  slide-in chat sidebar (Vercel-style interactions, JMeter palette)
+   Uses the site's flame/stone design tokens. The panel is a popover="manual"
+   element promoted to the top layer, animated with @starting-style +
+   transition-behavior: allow-discrete for smooth entry/exit.
+   ========================================================================== */
+
+/* --- Trigger button (sits in the site header) --------------------------- */
+.ask-ai-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: calc(var(--radius) - 2px);
+  border: 1px solid color-mix(in oklab, var(--sl-color-accent) 45%, transparent);
+  background: color-mix(in oklab, var(--sl-color-accent) 12%, transparent);
+  color: var(--sl-color-accent-high);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background-color var(--mx-base) var(--mx-ease),
+    border-color var(--mx-base) var(--mx-ease),
+    color var(--mx-base) var(--mx-ease),
+    transform var(--mx-base) var(--mx-ease);
+}
+
+.ask-ai-trigger:hover {
+  background: color-mix(in oklab, var(--sl-color-accent) 22%, transparent);
+  border-color: var(--sl-color-accent);
+  color: var(--sl-color-accent);
+}
+
+.ask-ai-trigger:active {
+  transform: scale(0.97);
+}
+
+.ask-ai-trigger:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+.ask-ai-trigger svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+}
+
+.ask-ai-trigger .ask-ai-trigger__label {
+  white-space: nowrap;
+}
+
+/* A soft pulsing dot that signals the assistant is live */
+.ask-ai-trigger__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: var(--sl-color-accent);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--sl-color-accent) 60%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ask-ai-trigger__dot {
+    animation: ask-ai-pulse 2.4s var(--mx-ease) infinite;
+  }
+}
+
+@keyframes ask-ai-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--sl-color-accent) 55%, transparent); }
+  70% { box-shadow: 0 0 0 0.4rem color-mix(in oklab, var(--sl-color-accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--sl-color-accent) 0%, transparent); }
+}
+
+/* --- Panel (popover) base + reset UA popover styling --------------------- */
+/* The popover element fills the viewport so its ::backdrop dims the whole
+   page and clicks on the dimmed area (outside the sheet) can be detected
+   for light-dismiss. The visible UI lives in the inner .ask-ai-sheet. */
+.ask-ai-panel {
+  --ask-ai-width: min(30rem, 100dvw);
+  width: 100dvw;
+  max-width: 100dvw;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sl-color-white);
+  overflow: visible;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  position: fixed;
+  inset: 0;
+}
+
+/* Backdrop: restrained glassmorphism — a dim + slight blur */
+.ask-ai-panel::backdrop {
+  background: color-mix(in oklab, var(--sl-color-black) 55%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* The visible sheet, anchored to the right edge. */
+.ask-ai-sheet {
+  width: var(--ask-ai-width);
+  max-width: 100dvw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--sl-color-black);
+  color: var(--sl-color-white);
+  border-left: 1px solid var(--sl-color-gray-5);
+  box-shadow: -24px 0 60px -30px rgba(0, 0, 0, 0.55);
+  /* Establish a container so descendants can use cqw/cqh units for
+     responsive sizing that tracks the panel width, not the viewport. */
+  container-type: inline-size;
+  container-name: ask-ai-sheet;
+}
+
+/* --- Entry / exit animation (top-layer aware) --------------------------- */
+/* The sheet slides in/out from the right; the popover's display + overlay
+   are transitioned with allow-discrete so the exit slide is visible. */
+.ask-ai-sheet {
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 320ms var(--mx-out),
+    opacity 220ms var(--mx-ease);
+}
+
+.ask-ai-panel:not(:popover-open) .ask-ai-sheet {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+@starting-style {
+  .ask-ai-panel:popover-open .ask-ai-sheet {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.ask-ai-panel {
+  transition: display 320ms allow-discrete,
+    overlay 320ms allow-discrete;
+  transition-behavior: allow-discrete;
+}
+
+.ask-ai-panel::backdrop {
+  transition: background-color 280ms var(--mx-ease),
+    display 320ms allow-discrete,
+    overlay 320ms allow-discrete;
+  transition-behavior: allow-discrete;
+}
+
+@starting-style {
+  .ask-ai-panel:popover-open::backdrop {
+    background: color-mix(in oklab, var(--sl-color-black) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-ai-sheet,
+  .ask-ai-panel::backdrop {
+    transition-duration: 1ms;
+  }
+  .ask-ai-panel:not(:popover-open) .ask-ai-sheet {
+    transform: none;
+  }
+  @starting-style {
+    .ask-ai-panel:popover-open .ask-ai-sheet {
+      transform: none;
+    }
+  }
+}
+
+/* --- Panel header ------------------------------------------------------- */
+.ask-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+  flex-shrink: 0;
+}
+
+.ask-ai-header__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--sl-color-accent) 16%, transparent);
+  color: var(--sl-color-accent-high);
+  flex-shrink: 0;
+}
+
+.ask-ai-header__icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.ask-ai-header__titles {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.ask-ai-header__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--sl-color-white);
+}
+
+.ask-ai-header__subtitle {
+  font-size: 0.7rem;
+  color: var(--sl-color-gray-3);
+  letter-spacing: 0.02em;
+}
+
+/* --- Chat counter badge (header) ----------------------------------------- */
+.ask-ai-count {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--sl-color-accent-high);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  margin-top: 0.15rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  opacity: 0;
+  animation: ask-ai-count-in 0.4s ease-out forwards;
+}
+
+.ask-ai-count::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--sl-color-accent);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px color-mix(in oklab, var(--sl-color-accent) 70%, transparent);
+}
+
+@keyframes ask-ai-count-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-ai-count {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.ask-ai-header__actions {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ask-ai-icon-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.4rem;
+  color: var(--sl-color-gray-3);
+  cursor: pointer;
+  transition: color var(--mx-base) var(--mx-ease),
+    background-color var(--mx-base) var(--mx-ease);
+}
+
+.ask-ai-icon-btn:hover {
+  color: var(--sl-color-white);
+  background: var(--sl-color-gray-6);
+}
+
+.ask-ai-icon-btn:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+.ask-ai-icon-btn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* --- Install CTA (animated gradient border) ------------------------------ */
+.ask-ai-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border: 2px solid transparent;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--sl-color-white);
+  /* Solid fill for the padding box + animated gradient for the border box.
+     The first background clips to padding-box (interior), the second to
+     border-box (the 2px transparent border shows the gradient through). */
+  background:
+    linear-gradient(var(--sl-color-black), var(--sl-color-black)) padding-box,
+    linear-gradient(110deg,
+      var(--sl-color-accent),
+      var(--sl-color-accent-high),
+      #6366f1,
+      var(--sl-color-accent)
+    ) border-box;
+  background-size: 100% 100%, 300% 100%;
+  animation: ask-ai-gradient 4s linear infinite;
+  transition: transform var(--mx-base) var(--mx-ease),
+    box-shadow var(--mx-base) var(--mx-ease);
+  white-space: nowrap;
+}
+
+.ask-ai-install:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px -4px color-mix(in oklab, var(--sl-color-accent) 60%, transparent);
+}
+
+.ask-ai-install:focus-visible {
+  outline: 2px solid var(--sl-color-white);
+  outline-offset: 2px;
+}
+
+.ask-ai-install svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+}
+
+@keyframes ask-ai-gradient {
+  0%   { background-position: 0% 50%, 0% 50%; }
+  100% { background-position: 0% 50%, 300% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-ai-install {
+    animation: none;
+  }
+}
+
+/* Responsive: hide the "Install" label on very narrow panels, keep icon */
+@media (max-width: 420px) {
+  .ask-ai-install__label {
+    display: none;
+  }
+  .ask-ai-install {
+    padding: 0.3rem;
+  }
+}
+
+/* --- Messages scroll area ----------------------------------------------- */
+.ask-ai-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-color-accent) transparent;
+}
+
+.ask-ai-body::-webkit-scrollbar {
+  width: 8px;
+}
+.ask-ai-body::-webkit-scrollbar-thumb {
+  background: var(--sl-color-accent);
+  border-radius: 4px;
+}
+.ask-ai-body:hover::-webkit-scrollbar-thumb {
+  background: var(--sl-color-accent-high);
+}
+
+/* --- Empty state / suggested prompts ------------------------------------ */
+/* When there are no messages, the empty state fills the scroll area and
+   centers its content vertically so the hero + suggestions sit in the
+   optical middle of the panel rather than pinned to the top. */
+.ask-ai-empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  min-block-size: 100%;
+  gap: 1rem;
+  padding: 0.5rem 0.25rem 1rem;
+  color: var(--sl-color-gray-3);
+}
+
+.ask-ai-empty__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.ask-ai-empty__heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--sl-color-white);
+}
+
+.ask-ai-empty__lede {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--sl-color-gray-3);
+}
+
+.ask-ai-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ask-ai-suggestions__label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-color-gray-4);
+  font-weight: 600;
+  margin-bottom: 0.1rem;
+}
+
+.ask-ai-suggestion {
+  all: unset;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--sl-color-gray-5);
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-gray-2);
+  font-size: 0.83rem;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--mx-base) var(--mx-ease),
+    background-color var(--mx-base) var(--mx-ease),
+    transform var(--mx-base) var(--mx-ease);
+}
+
+.ask-ai-suggestion:hover {
+  border-color: color-mix(in oklab, var(--sl-color-accent) 50%, transparent);
+  background: color-mix(in oklab, var(--sl-color-accent) 9%, var(--sl-color-gray-6));
+  color: var(--sl-color-white);
+}
+
+.ask-ai-suggestion:active {
+  transform: scale(0.99);
+}
+
+.ask-ai-suggestion:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+.ask-ai-suggestion__arrow {
+  margin-inline-start: auto;
+  color: var(--sl-color-accent-high);
+  flex-shrink: 0;
+  align-self: center;
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+/* --- Message bubbles ---------------------------------------------------- */
+.ask-ai-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 100%;
+  animation: ask-ai-msg-in 280ms var(--mx-out) both;
+}
+
+@keyframes ask-ai-msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ask-ai-msg__role {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-color-gray-4);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ask-ai-msg--user {
+  align-items: flex-end;
+}
+
+.ask-ai-msg--user .ask-ai-msg__bubble {
+  background: color-mix(in oklab, var(--sl-color-accent) 16%, var(--sl-color-gray-6));
+  border: 1px solid color-mix(in oklab, var(--sl-color-accent) 30%, transparent);
+  color: var(--sl-color-white);
+  border-radius: 0.85rem 0.85rem 0.2rem 0.85rem;
+}
+
+.ask-ai-msg--assistant .ask-ai-msg__bubble {
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+  color: var(--sl-color-gray-1);
+  border-radius: 0.85rem 0.85rem 0.85rem 0.2rem;
+}
+
+.ask-ai-msg__bubble {
+  padding: 0.7rem 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* --- Markdown content inside assistant bubbles -------------------------- */
+.ask-ai-msg__bubble :where(p, ul, ol, pre, table, blockquote) {
+  margin: 0 0 0.6rem;
+}
+.ask-ai-msg__bubble :where(p, ul, ol, pre, table, blockquote):last-child {
+  margin-bottom: 0;
+}
+
+/* Constrain images and media so they never overflow the bubble. */
+.ask-ai-msg__bubble img,
+.ask-ai-msg__bubble video,
+.ask-ai-msg__bubble svg {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  display: block;
+  margin: 0 0 0.6rem;
+}
+.ask-ai-msg__bubble img:last-child,
+.ask-ai-msg__bubble video:last-child {
+  margin-bottom: 0;
+}
+
+.ask-ai-msg__bubble h1,
+.ask-ai-msg__bubble h2,
+.ask-ai-msg__bubble h3,
+.ask-ai-msg__bubble h4 {
+  margin: 0.8rem 0 0.4rem;
+  line-height: 1.3;
+  color: var(--sl-color-white);
+}
+.ask-ai-msg__bubble h1 { font-size: 1.05rem; }
+.ask-ai-msg__bubble h2 { font-size: 1rem; }
+.ask-ai-msg__bubble h3 { font-size: 0.92rem; }
+.ask-ai-msg__bubble h4 { font-size: 0.85rem; }
+
+.ask-ai-msg__bubble ul,
+.ask-ai-msg__bubble ol {
+  padding-inline-start: 1.25rem;
+}
+.ask-ai-msg__bubble li {
+  margin: 0.2rem 0;
+}
+
+.ask-ai-msg__bubble a {
+  color: var(--sl-color-accent-high);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--sl-color-accent) 45%, transparent);
+}
+.ask-ai-msg__bubble a:hover {
+  color: var(--sl-color-accent);
+  text-decoration-color: var(--sl-color-accent);
+}
+
+.ask-ai-msg__bubble code {
+  font-family: var(--sl-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.82em;
+  background: var(--sl-color-gray-5);
+  padding: 0.12em 0.35em;
+  border-radius: 0.3rem;
+}
+
+.ask-ai-msg__bubble pre {
+  background: var(--sl-color-black);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.85rem;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-color-accent) transparent;
+}
+.ask-ai-msg__bubble pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  color: var(--sl-color-gray-1);
+}
+
+.ask-ai-msg__bubble blockquote {
+  border-inline-start: 3px solid var(--sl-color-accent);
+  padding-inline-start: 0.75rem;
+  color: var(--sl-color-gray-3);
+}
+
+.ask-ai-msg__bubble table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.ask-ai-msg__bubble th,
+.ask-ai-msg__bubble td {
+  border: 1px solid var(--sl-color-gray-5);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+}
+.ask-ai-msg__bubble th {
+  background: var(--sl-color-gray-6);
+  font-weight: 600;
+}
+
+/* highlight.js theme — minimal, token-colored, no full theme import */
+.ask-ai-msg__bubble .hljs-keyword,
+.ask-ai-msg__bubble .hljs-built_in,
+.ask-ai-msg__bubble .hljs-type { color: #f97316; }
+.ask-ai-msg__bubble .hljs-string,
+.ask-ai-msg__bubble .hljs-attr { color: #84cc16; }
+.ask-ai-msg__bubble .hljs-number,
+.ask-ai-msg__bubble .hljs-literal { color: #fbbf24; }
+.ask-ai-msg__bubble .hljs-comment { color: var(--sl-color-gray-4); font-style: italic; }
+.ask-ai-msg__bubble .hljs-function,
+.ask-ai-msg__bubble .hljs-title { color: #38bdf8; }
+.ask-ai-msg__bubble .hljs-variable,
+.ask-ai-msg__bubble .hljs-params { color: var(--sl-color-gray-1); }
+.ask-ai-msg__bubble .hljs-meta { color: var(--sl-color-gray-3); }
+
+/* --- Sources chips ------------------------------------------------------ */
+.ask-ai-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.1rem;
+}
+
+.ask-ai-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid var(--sl-color-gray-5);
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-gray-2);
+  font-size: 0.7rem;
+  text-decoration: none;
+  transition: border-color var(--mx-base) var(--mx-ease),
+    color var(--mx-base) var(--mx-ease);
+}
+
+.ask-ai-source:hover {
+  border-color: var(--sl-color-accent);
+  color: var(--sl-color-accent-high);
+}
+
+.ask-ai-source svg {
+  width: 0.7rem;
+  height: 0.7rem;
+  color: var(--sl-color-accent-high);
+}
+
+/* --- Typing indicator (JMeter gauge spinner) ---------------------------- */
+.ask-ai-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.85rem 0.85rem 0.85rem 0.2rem;
+}
+
+.ask-ai-typing__gauge {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.ask-ai-typing__gauge svg {
+  width: 100%;
+  height: 100%;
+  /* Reset bubble SVG defaults that break the gauge layout */
+  margin: 0;
+  border-radius: 0;
+}
+
+.ask-ai-typing__arc {
+  stroke: var(--sl-color-gray-5);
+}
+
+.ask-ai-typing__needle {
+  stroke: var(--sl-color-accent);
+  transform-origin: 50% 90%;
+  transform: rotate(-60deg);
+}
+
+.ask-ai-typing__pivot {
+  fill: var(--sl-color-accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ask-ai-typing__needle {
+    animation: ask-ai-gauge-sweep 1.4s var(--mx-ease) infinite;
+  }
+}
+
+@keyframes ask-ai-gauge-sweep {
+  0%   { transform: rotate(-60deg); }
+  50%  { transform: rotate(60deg); }
+  100% { transform: rotate(-60deg); }
+}
+
+.ask-ai-typing__label {
+  font-size: 0.75rem;
+  color: var(--sl-color-gray-3);
+  letter-spacing: 0.02em;
+}
+
+/* --- Composer (footer) -------------------------------------------------- */
+.ask-ai-composer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--sl-color-gray-5);
+  /* Horizontal padding gives the textarea + send button breathing room
+     from the panel edges. Scales slightly on wider panels via clamp().
+     The floor is bumped so the larger send button always has a visible
+     gap from the right edge, even on the narrowest phone panels. */
+  padding: 0.75rem clamp(1.1rem, 3cqw, 1.4rem) 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--sl-color-black);
+}
+
+.ask-ai-composer__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.ask-ai-textarea {
+  flex: 1;
+  resize: none;
+  /* Responsive height: taller default, scales with viewport via clamp().
+     min-block-size keeps an empty field comfortable on phones, while
+     max-block-size caps growth so long messages scroll instead of pushing
+     the composer footer off-screen. Units in rem honor user font-size prefs. */
+  min-block-size: clamp(3.25rem, 8dvh, 4.5rem);
+  max-block-size: clamp(7rem, 22dvh, 12rem);
+  /* Rounded rectangle — pronounced but not pill-shaped. clamp() keeps the
+     radius proportional to the panel width on small screens. */
+  border-radius: clamp(0.75rem, 1.2cqw, 1.1rem);
+  padding: 0.75rem 0.9rem;
+  /* Animated gradient border (same technique as .ask-ai-install):
+     solid fill clips to padding-box (interior), animated gradient clips to
+     border-box (shows through the 2px transparent border). */
+  border: 2px solid transparent;
+  background-color: var(--sl-color-gray-6);
+  background-image:
+    linear-gradient(var(--sl-color-gray-6), var(--sl-color-gray-6)),
+    linear-gradient(110deg,
+      var(--sl-color-accent),
+      var(--sl-color-accent-high),
+      #6366f1,
+      var(--sl-color-accent)
+    );
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 300% 100%;
+  background-position: 0% 50%, 0% 50%;
+  animation: ask-ai-input-gradient 5s linear infinite;
+  color: var(--sl-color-white);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-family: inherit;
+  transition: box-shadow var(--mx-base) var(--mx-ease);
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-color-accent) transparent;
+}
+
+@keyframes ask-ai-input-gradient {
+  0%   { background-position: 0% 50%, 0% 50%; }
+  100% { background-position: 0% 50%, 300% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-ai-textarea {
+    animation: none;
+  }
+}
+
+/* On very narrow panels, give the textarea a bit more vertical breathing
+   room and a softer radius so it doesn't feel cramped. */
+@container (max-width: 380px) {
+  .ask-ai-textarea {
+    min-block-size: 3.5rem;
+    padding: 0.8rem 0.85rem;
+  }
+}
+
+/* On coarse pointers (touch), bump tap target per WCAG 2.5.8. */
+@media (pointer: coarse) {
+  .ask-ai-textarea {
+    min-block-size: 3.75rem;
+  }
+}
+
+.ask-ai-textarea::placeholder {
+  color: var(--sl-color-gray-4);
+}
+
+.ask-ai-textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--sl-color-accent) 22%, transparent),
+    0 0 16px -4px color-mix(in oklab, var(--sl-color-accent) 50%, transparent);
+}
+
+.ask-ai-send {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Responsive size: matches the textarea's taller default via clamp().
+     min-block-size/min-inline-size enforce the WCAG 2.5.8 24x24 floor and
+     grow on touch devices. Using min-* lets the button grow if the
+     textarea grows taller than the default. */
+  min-block-size: clamp(3.25rem, 8dvh, 4.5rem);
+  block-size: auto;
+  inline-size: clamp(3.25rem, 8dvh, 4.5rem);
+  /* Rounded rectangle — matches the textarea radius for visual rhythm. */
+  border-radius: clamp(0.75rem, 1.2cqw, 1.1rem);
+  background: var(--sl-color-accent);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color var(--mx-base) var(--mx-ease),
+    transform var(--mx-base) var(--mx-ease),
+    opacity var(--mx-base) var(--mx-ease);
+}
+
+.ask-ai-send:hover {
+  background: var(--sl-color-accent-high);
+}
+
+.ask-ai-send:active {
+  transform: scale(0.95);
+}
+
+.ask-ai-send:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+.ask-ai-send:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ask-ai-send svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* On coarse pointers (touch), bump the tap target per WCAG 2.5.8. */
+@media (pointer: coarse) {
+  .ask-ai-send {
+    min-block-size: 3.75rem;
+    inline-size: 3.75rem;
+  }
+  .ask-ai-send svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+}
+
+.ask-ai-send--stop {
+  background: var(--sl-color-gray-5);
+  color: var(--sl-color-white);
+}
+
+.ask-ai-send--stop:hover {
+  background: var(--sl-color-gray-4);
+}
+
+.ask-ai-composer__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.68rem;
+  color: var(--sl-color-gray-4);
+}
+
+.ask-ai-composer__meta a,
+.ask-ai-composer__meta button {
+  all: unset;
+  color: var(--sl-color-gray-4);
+  cursor: pointer;
+  transition: color var(--mx-base) var(--mx-ease);
+}
+
+.ask-ai-composer__meta a:hover,
+.ask-ai-composer__meta button:hover {
+  color: var(--sl-color-accent-high);
+}
+
+.ask-ai-error {
+  font-size: 0.75rem;
+  color: #fca5a5;
+  background: color-mix(in oklab, #dc2626 14%, transparent);
+  border: 1px solid color-mix(in oklab, #dc2626 35%, transparent);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  line-height: 1.45;
+}
+
+/* --- Mobile: full-width sheet ------------------------------------------ */
+@media (max-width: 640px) {
+  .ask-ai-panel {
+    --ask-ai-width: 100dvw;
+  }
+  .ask-ai-sheet {
+    border-left: 0;
+  }
+  .ask-ai-trigger .ask-ai-trigger__label {
+    display: none;
+  }
+  .ask-ai-trigger {
+    padding: 0 0.55rem;
+  }
+}
+
+/* --- Cloudflare Turnstile (bot protection) ------------------------------- */
+.ask-ai-turnstile {
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 0;
+  max-height: 0;
+  transition: max-height var(--mx-base) var(--mx-ease);
+}
+.ask-ai-turnstile--visible {
+  max-height: 4rem;
+}

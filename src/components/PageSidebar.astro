@@ -1,6 +1,7 @@
 ---
 import TableOfContents from 'virtual:starlight/components/TableOfContents';
 import DocActions from './DocActions.astro';
+import ReadingWidget from './ReadingWidget.astro';
 
 const { toc } = Astro.locals.starlightRoute;
 ---
@@ -28,6 +29,7 @@ const { toc } = Astro.locals.starlightRoute;
 						</div>
 						<button class="toc-toggle" type="button" data-toc-toggle hidden>Show more</button>
 					</div>
+					<ReadingWidget />
 				</div>
 			</div>
 		</>

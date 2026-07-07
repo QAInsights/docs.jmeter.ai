@@ -2,14 +2,36 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import lucode from 'lucode-starlight';
 import starlightDocSearch from '@astrojs/starlight-docsearch';
+import vercel from '@astrojs/vercel';
 import { loadEnv } from 'vite';
 import { sidebar } from './src/sidebar.mjs';
 import remarkImageOptimize from './src/remark-image-optimize.mjs';
 
 const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 
+// On Linux (Vercel build), force-include the rolldown native binding in the
+// serverless bundle — @vercel/nft can't trace dynamically-loaded .node files.
+// On Windows (local dev), the Linux binding doesn't exist so we skip it.
+const isLinux = process.platform === 'linux';
+const vercelAdapter = vercel({
+  maxDuration: 30,
+  ...(isLinux ? {
+    includeFiles: [
+      // Hoisted layout (shamefully-hoist=true)
+      './node_modules/@rolldown/binding-linux-x64-gnu/rolldown-binding.linux-x64-gnu.node',
+      './node_modules/@rolldown/binding-linux-x64-gnu/package.json',
+      // pnpm store layout (fallback if not hoisted)
+      './node_modules/.pnpm/@rolldown+binding-linux-x64-gnu@1.1.4/node_modules/@rolldown/binding-linux-x64-gnu/rolldown-binding.linux-x64-gnu.node',
+      './node_modules/.pnpm/@rolldown+binding-linux-x64-gnu@1.1.4/node_modules/@rolldown/binding-linux-x64-gnu/package.json',
+    ],
+  } : {}),
+});
+
 export default defineConfig({
   site: 'https://docs.jmeter.ai',
+  // Vercel adapter enables on-demand serverless routes (e.g. /api/chat)
+  // while keeping every docs page prerendered as static HTML.
+  adapter: vercelAdapter,
   markdown: {
     remarkPlugins: [remarkImageOptimize],
   },
@@ -39,7 +61,7 @@ export default defineConfig({
           ],
         }),
       ],
-      customCss: ['./src/styles/custom.css', './src/styles/landing.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/landing.css', './src/styles/ask-ai.css'],
       components: {
         Footer: './src/components/FooterDisclaimer.astro',
         Head: './src/components/SeoHead.astro',
