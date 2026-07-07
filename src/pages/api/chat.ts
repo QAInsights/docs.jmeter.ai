@@ -37,6 +37,7 @@ import {
 } from 'ai';
 import { createHmac } from 'node:crypto';
 import { retrieve, buildSystemPrompt, buildUngroundedPrompt } from '../../lib/rag.mjs';
+import { incrementChatCount } from '../../lib/counter.mjs';
 
 // Allow streaming responses up to 30 seconds on Vercel.
 export const prerender = false;
@@ -278,10 +279,19 @@ export async function POST({ request }: { request: Request }) {
       messages,
     });
 
+    // Increment the global chat counter. A single REST INCR is ~50ms; we
+    // await it so the X-Chat-Count header carries the accurate new value.
+    // Failures are swallowed inside incrementChatCount() — the chat still
+    // works if Redis is down or unconfigured.
+    const newCount = await incrementChatCount();
+
     const headers: Record<string, string> = {
       'X-Model': MODEL,
       'X-Grounded': String(isGrounded),
     };
+    if (newCount !== null) {
+      headers['X-Chat-Count'] = String(newCount);
+    }
     if (isGrounded) {
       headers['X-Sources'] = encodeURIComponent(
         sources.map((s) => `${s.title}|${s.url}`).join(','),

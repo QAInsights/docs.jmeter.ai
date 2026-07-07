@@ -30,6 +30,7 @@ interface ChatState {
 
 const STORAGE_KEY = 'jmeter-ai-chat:v1';
 const API_ENDPOINT = '/api/chat';
+const CHAT_COUNT_ENDPOINT = '/api/chat-count';
 const MAX_CONVERSATIONS = 10; // 10 user+assistant pairs per thread
 const TEXTAREA_MAX_HEIGHT = 192; // px — auto-resize cap for the input (matches CSS max-block-size upper bound of 12rem)
 const ERROR_PREVIEW_LENGTH = 300; // chars — truncate server error details
@@ -82,7 +83,6 @@ const trigger = document.getElementById('ask-ai-trigger') as HTMLButtonElement |
 const panel = document.getElementById('ask-ai-panel') as HTMLElement | null;
 const closeBtn = document.getElementById('ask-ai-close') as HTMLButtonElement | null;
 const clearBtn = document.getElementById('ask-ai-clear') as HTMLButtonElement | null;
-const newBtn = document.getElementById('ask-ai-new') as HTMLButtonElement | null;
 const body = document.getElementById('ask-ai-body') as HTMLElement | null;
 const empty = document.getElementById('ask-ai-empty') as HTMLElement | null;
 const messagesEl = document.getElementById('ask-ai-messages') as HTMLElement | null;
@@ -91,6 +91,7 @@ const sendBtn = document.getElementById('ask-ai-send') as HTMLButtonElement | nu
 const errorEl = document.getElementById('ask-ai-error') as HTMLElement | null;
 const statusEl = document.getElementById('ask-ai-status') as HTMLElement | null;
 const turnstileContainer = document.getElementById('ask-ai-turnstile') as HTMLElement | null;
+const countEl = document.getElementById('ask-ai-count') as HTMLElement | null;
 
 // --- State (declared before init() runs to avoid TDZ) ---------------------
 let state: ChatState = { messages: [] };
@@ -99,6 +100,8 @@ let abortController: AbortController | null = null;
 let renderScheduled = false;
 let pendingAssistantEl: HTMLElement | null = null;
 let pendingAssistantText = '';
+let displayedCount = 0; // last count rendered into the badge
+let countFetched = false; // whether we've already fetched the count this session
 
 // --- Turnstile (bot protection) -------------------------------------------
 let turnstileSitekey = '';
@@ -220,7 +223,6 @@ if (
   panel &&
   closeBtn &&
   clearBtn &&
-  newBtn &&
   body &&
   empty &&
   messagesEl &&
@@ -479,8 +481,14 @@ async function send(text: string) {
     // Sources travel in a response header (URL-encoded, comma-separated "title|url").
     // X-Grounded indicates whether the answer came from doc context (RAG) or
     // general Gemini knowledge (fallback when no docs matched).
+    // X-Chat-Count carries the incremented global counter from Upstash.
     const grounded = res.headers.get('X-Grounded') !== 'false';
     const sourcesHeader = res.headers.get('X-Sources') || '';
+    const chatCountHeader = res.headers.get('X-Chat-Count');
+    if (chatCountHeader) {
+      const n = Number(chatCountHeader);
+      if (Number.isFinite(n) && n > 0) renderCount(n);
+    }
     const sources = sourcesHeader
       ? parseSourcesHeader(decodeURIComponent(sourcesHeader))
       : [];
@@ -611,10 +619,6 @@ function wireUI() {
   trigger!.addEventListener('click', openPanel);
   closeBtn!.addEventListener('click', closePanel);
   clearBtn!.addEventListener('click', clearState);
-  newBtn!.addEventListener('click', () => {
-    clearState();
-    input?.focus();
-  });
 
   // Suggested prompts
   document.querySelectorAll<HTMLButtonElement>('.ask-ai-suggestion').forEach((btn) => {
@@ -676,6 +680,8 @@ function onOpened() {
   // Mark the rest of the document inert so keyboard/AT users can't reach
   // content hidden behind the panel.
   setInertOutside(panel!, true);
+  // Fetch the global chat count once to populate the header badge.
+  void fetchAndRenderCount();
   // Focus the input if there's already a conversation, otherwise focus the
   // first suggestion so keyboard users get a quick start.
   if (state.messages.length > 0) {
@@ -705,7 +711,71 @@ function setInertOutside(exclude: HTMLElement, on: boolean) {
   });
 }
 
-// --- Helpers --------------------------------------------------------------
+// --- Chat counter badge ---------------------------------------------------
+/**
+ * Fetch the global chat count from /api/chat-count and render it into the
+ * header badge. Called once when the panel first opens. Subsequent updates
+ * arrive via the X-Chat-Count header on chat responses (see send()).
+ */
+async function fetchAndRenderCount() {
+  if (countFetched || !countEl) return;
+  countFetched = true;
+  try {
+    const res = await fetch(CHAT_COUNT_ENDPOINT);
+    if (!res.ok) return;
+    const data = (await res.json()) as { count?: number };
+    if (typeof data.count === 'number') {
+      renderCount(data.count);
+    }
+  } catch {
+    /* non-fatal — badge stays hidden */
+  }
+}
+
+/**
+ * Render the count into the badge with a count-up animation from the
+ * previously displayed value. The phrase: "AI answered N JMeter questions".
+ */
+function renderCount(target: number) {
+  if (!countEl || target < 0) return;
+  countEl.hidden = false;
+  if (target === displayedCount) {
+    countEl.textContent = formatCountPhrase(target);
+    return;
+  }
+  const start = displayedCount;
+  const diff = target - start;
+  const duration = 600;
+  const startTime = performance.now();
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReducedMotion) {
+    displayedCount = target;
+    countEl.textContent = formatCountPhrase(target);
+    return;
+  }
+
+  const tick = (now: number) => {
+    const elapsed = now - startTime;
+    const t = Math.min(1, elapsed / duration);
+    // ease-out cubic
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = Math.round(start + diff * eased);
+    countEl.textContent = formatCountPhrase(current);
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      displayedCount = target;
+    }
+  };
+  requestAnimationFrame(tick);
+}
+
+function formatCountPhrase(n: number): string {
+  return `AI answered ${n.toLocaleString()} JMeter question${n === 1 ? '' : 's'}`;
+}
+
+
 function setStreaming(on: boolean) {
   isStreaming = on;
   if (sendBtn) {

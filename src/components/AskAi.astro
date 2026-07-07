@@ -49,6 +49,7 @@ const ArrowIcon = '<svg class="ask-ai-suggestion__arrow" xmlns="http://www.w3.or
     <span class="ask-ai-header__titles">
       <span class="ask-ai-header__title">Ask AI</span>
       <span class="ask-ai-header__subtitle">JMeter docs · powered by Gemini</span>
+      <span id="ask-ai-count" class="ask-ai-count" aria-live="polite" hidden></span>
     </span>
     <span class="ask-ai-header__actions">
       <a
@@ -132,7 +133,6 @@ const ArrowIcon = '<svg class="ask-ai-suggestion__arrow" xmlns="http://www.w3.or
     </div>
     <div class="ask-ai-composer__meta">
       <span id="ask-ai-status">Answers are AI-generated and grounded in JMeter Docs.</span>
-      <button id="ask-ai-new" type="button">New chat</button>
     </div>
     <div id="ask-ai-turnstile" class="ask-ai-turnstile" data-sitekey={turnstileSitekey}></div>
   </footer>
