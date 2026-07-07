@@ -9,6 +9,14 @@ import remarkImageOptimize from './src/remark-image-optimize.mjs';
 
 const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 
+// Algolia DocSearch credentials may be absent in CI (e.g. the upstream sync
+// workflow's build-verification step). Fall back to placeholders so the config
+// schema validates and the site builds; the real values are only needed at
+// runtime in the deployed site, where Vercel injects them.
+const algoliaAppId = env.PUBLIC_ALGOLIA_APP_ID || 'placeholder-app-id';
+const algoliaApiKey = env.PUBLIC_ALGOLIA_API_KEY || 'placeholder-api-key';
+const algoliaIndexName = env.PUBLIC_ALGOLIA_INDEX_NAME || 'placeholder-index';
+
 // On Linux (Vercel build), force-include the rolldown native binding in the
 // serverless bundle — @vercel/nft can't trace dynamically-loaded .node files.
 // On Windows (local dev), the Linux binding doesn't exist so we skip it.
@@ -47,9 +55,9 @@ export default defineConfig({
       },
       plugins: [
         starlightDocSearch({
-          appId: env.PUBLIC_ALGOLIA_APP_ID,
-          apiKey: env.PUBLIC_ALGOLIA_API_KEY,
-          indexName: env.PUBLIC_ALGOLIA_INDEX_NAME,
+          appId: algoliaAppId,
+          apiKey: algoliaApiKey,
+          indexName: algoliaIndexName,
         }),
         lucode({
           footerText: '',
