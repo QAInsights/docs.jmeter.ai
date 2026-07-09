@@ -1,6 +1,7 @@
 ---
 import type { Props } from '@astrojs/starlight/props';
 import { buildShareUrls } from '../lib/sharing-urls.mjs';
+import { buildCitation } from '../lib/page-export.mjs';
 
 type Variant = 'footer' | 'sidebar';
 
@@ -12,11 +13,23 @@ const props = Astro.props as ComponentProps;
 const variant = props.variant ?? 'footer';
 const currentUrl = new URL(Astro.url.pathname, Astro.site).toString();
 const title = props.entry?.data?.title || '';
+const description = props.entry?.data?.description || '';
+const route = Astro.locals.starlightRoute;
+const lastUpdated =
+  route?.lastUpdated instanceof Date
+    ? route.lastUpdated.toISOString().slice(0, 10)
+    : null;
 
 const isDocPage = Astro.url.pathname !== '/' && !Astro.url.pathname.startsWith('/404')
   && !Astro.url.pathname.startsWith('/legal');
 
 const urls = buildShareUrls(currentUrl, title);
+const citation = buildCitation({
+  title,
+  url: currentUrl,
+  description,
+  lastUpdated,
+});
 
 const showText = variant === 'footer';
 ---
@@ -69,7 +82,40 @@ const showText = variant === 'footer';
           <svg data-check-icon hidden viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
           </svg>
-          {showText && <span data-copy-text>Copy</span>}
+          {showText && <span data-copy-text>Copy URL</span>}
+          <span class="sr-only" aria-live="polite" data-copy-status></span>
+        </button>
+        <button
+          class="doc-action-btn"
+          type="button"
+          data-copy-markdown
+          data-page-title={title}
+          data-page-url={currentUrl}
+          aria-label="Copy page as Markdown for AI"
+        >
+          <svg data-copy-icon viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+          </svg>
+          <svg data-check-icon hidden viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+          </svg>
+          {showText && <span data-copy-text>Copy MD</span>}
+          <span class="sr-only" aria-live="polite" data-copy-status></span>
+        </button>
+        <button
+          class="doc-action-btn"
+          type="button"
+          data-copy-citation
+          data-citation={citation}
+          aria-label="Copy citation for AI"
+        >
+          <svg data-copy-icon viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
+          </svg>
+          <svg data-check-icon hidden viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+          </svg>
+          {showText && <span data-copy-text>Cite</span>}
           <span class="sr-only" aria-live="polite" data-copy-status></span>
         </button>
         <a href={urls.chatgpt} target="_blank" rel="noopener noreferrer" class="doc-action-btn" aria-label="Discuss with ChatGPT">
@@ -90,9 +136,20 @@ const showText = variant === 'footer';
 )}
 
 <script>
+  import {
+    htmlToMarkdown,
+    buildMarkdownExport,
+  } from '../lib/page-export.mjs';
+
   (() => {
     if (window.__jmeterDocActionsReady) return;
     window.__jmeterDocActionsReady = true;
+
+    const DEFAULT_LABELS = {
+      'data-copy-page-url': 'Copy URL',
+      'data-copy-markdown': 'Copy MD',
+      'data-copy-citation': 'Cite',
+    };
 
     const copyText = async (text) => {
       if (navigator.clipboard?.writeText) {
@@ -111,29 +168,73 @@ const showText = variant === 'footer';
       textarea.remove();
     };
 
-    document.addEventListener('click', async (event) => {
-      const button = event.target.closest('[data-copy-page-url]');
-      if (!button) return;
+    const flashCopied = (button, defaultLabel, successMessage) => {
       const textLabel = button.querySelector('[data-copy-text]');
       const status = button.querySelector('[data-copy-status]');
       const copyIcon = button.querySelector('[data-copy-icon]');
       const checkIcon = button.querySelector('[data-check-icon]');
-      try {
-        await copyText(window.location.href);
-        button.dataset.copied = 'true';
-        if (textLabel) textLabel.textContent = 'Copied';
-        if (status) status.textContent = 'Copied page URL';
-        if (copyIcon) copyIcon.hidden = true;
-        if (checkIcon) checkIcon.hidden = false;
-        window.setTimeout(() => {
-          button.dataset.copied = 'false';
-          if (textLabel) textLabel.textContent = 'Copy';
-          if (status) status.textContent = '';
-          if (copyIcon) copyIcon.hidden = false;
-          if (checkIcon) checkIcon.hidden = true;
-        }, 1800);
-      } catch {
-        if (status) status.textContent = 'Copy failed';
+      button.dataset.copied = 'true';
+      if (textLabel) textLabel.textContent = 'Copied';
+      if (status) status.textContent = successMessage;
+      if (copyIcon) copyIcon.hidden = true;
+      if (checkIcon) checkIcon.hidden = false;
+      window.setTimeout(() => {
+        button.dataset.copied = 'false';
+        if (textLabel) textLabel.textContent = defaultLabel;
+        if (status) status.textContent = '';
+        if (copyIcon) copyIcon.hidden = false;
+        if (checkIcon) checkIcon.hidden = true;
+      }, 1800);
+    };
+
+    const getArticleRoot = () =>
+      document.querySelector('.sl-markdown-content') ||
+      document.querySelector('main .content-panel') ||
+      document.querySelector('article') ||
+      document.querySelector('main');
+
+    document.addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const urlBtn = target.closest('[data-copy-page-url]');
+      if (urlBtn) {
+        try {
+          await copyText(window.location.href);
+          flashCopied(urlBtn, DEFAULT_LABELS['data-copy-page-url'], 'Copied page URL');
+        } catch {
+          const status = urlBtn.querySelector('[data-copy-status]');
+          if (status) status.textContent = 'Copy failed';
+        }
+        return;
+      }
+
+      const citeBtn = target.closest('[data-copy-citation]');
+      if (citeBtn) {
+        try {
+          const citation = citeBtn.getAttribute('data-citation') || window.location.href;
+          await copyText(citation);
+          flashCopied(citeBtn, DEFAULT_LABELS['data-copy-citation'], 'Copied citation');
+        } catch {
+          const status = citeBtn.querySelector('[data-copy-status]');
+          if (status) status.textContent = 'Copy failed';
+        }
+        return;
+      }
+
+      const mdBtn = target.closest('[data-copy-markdown]');
+      if (mdBtn) {
+        try {
+          const title = mdBtn.getAttribute('data-page-title') || document.title;
+          const url = mdBtn.getAttribute('data-page-url') || window.location.href;
+          const markdown = htmlToMarkdown(getArticleRoot());
+          const payload = buildMarkdownExport({ title, url, markdown });
+          await copyText(payload);
+          flashCopied(mdBtn, DEFAULT_LABELS['data-copy-markdown'], 'Copied Markdown');
+        } catch {
+          const status = mdBtn.querySelector('[data-copy-status]');
+          if (status) status.textContent = 'Copy failed';
+        }
       }
     });
   })();
