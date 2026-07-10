@@ -1,0 +1,100 @@
+---
+import { propertiesCheatsheet, listPropertyCategories } from '../../lib/properties-data.mjs';
+
+const categories = listPropertyCategories(propertiesCheatsheet);
+const dataJson = JSON.stringify(propertiesCheatsheet);
+---
+
+<div class="tool" data-properties-cheatsheet data-properties={dataJson}>
+  <div class="tool-grid" style="grid-template-columns: 2fr 1fr">
+    <label class="tool-field tool-field-wide" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto;grid-column:1/-1">
+      <span class="tool-label">Filter properties</span>
+      <div class="tool-input-wrap" style="grid-template-columns: 1fr">
+        <input type="search" name="q" placeholder="e.g. ssl, csv, distributed, timeout" autocomplete="off" style="grid-column:1/-1" />
+      </div>
+      <span class="tool-hint">Searches name, category, summary, and tags. Prefer user.properties over editing jmeter.properties.</span>
+    </label>
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Category</span>
+      <select name="category" style="min-height:var(--tool-control-h);width:100%;border:var(--tool-border);border-radius:0.65rem;background:var(--sl-color-black);color:var(--sl-color-white);padding:0 0.75rem;font:inherit">
+        <option value="">All categories</option>
+        {categories.map((c) => <option value={c}>{c}</option>)}
+      </select>
+    </label>
+  </div>
+
+  <p class="tool-empty" data-count aria-live="polite"></p>
+
+  <div class="tool-table-wrap">
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Property</th>
+          <th>Default</th>
+          <th>Summary</th>
+        </tr>
+      </thead>
+      <tbody data-tbody></tbody>
+    </table>
+  </div>
+
+  <p class="tool-disclaimer">
+    Curated cheat sheet, not exhaustive. Full list:{' '}
+    <a href="/user-manual/properties-reference/">Properties Reference</a>.
+  </p>
+</div>
+
+<script>
+  import { filterProperties } from '../../lib/properties-data.mjs';
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    let items = [];
+    try {
+      items = JSON.parse(root.getAttribute('data-properties') || '[]');
+    } catch {
+      items = [];
+    }
+
+    const qInput = root.querySelector('input[name="q"]');
+    const catSelect = root.querySelector('select[name="category"]');
+    const tbody = root.querySelector('[data-tbody]');
+    const countEl = root.querySelector('[data-count]');
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function render() {
+      let list = filterProperties(items, qInput.value);
+      const cat = catSelect.value;
+      if (cat) list = list.filter((p) => p.category === cat);
+      if (countEl) countEl.textContent = `Showing ${list.length} of ${items.length} properties`;
+      if (!tbody) return;
+      tbody.innerHTML = list
+        .map(
+          (p) => `<tr>
+            <td><code>${escapeHtml(p.name)}</code><div class="tool-hint" style="height:auto;min-height:0;max-height:none">${escapeHtml(p.category)}</div></td>
+            <td><code>${escapeHtml(p.defaultValue)}</code></td>
+            <td>${escapeHtml(p.summary)}</td>
+          </tr>`,
+        )
+        .join('');
+    }
+
+    qInput.addEventListener('input', render);
+    catSelect.addEventListener('change', render);
+    render();
+  }
+
+  document.querySelectorAll('[data-properties-cheatsheet]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll('[data-properties-cheatsheet]').forEach(init);
+  });
+</script>

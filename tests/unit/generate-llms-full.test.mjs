@@ -114,6 +114,20 @@ describe('buildPageBlock', () => {
     expect(block).toContain('# Just a heading');
   });
 
+  it('resolves directory index.mdx for hub links like /tools', () => {
+    const dir = makeDocsDir({
+      'tools/index.mdx': '---\ntitle: "JMeter Tools"\n---\n\nHub body.',
+    });
+    const block = buildPageBlock(
+      { label: 'Tools Hub', link: '/tools' },
+      dir,
+      'https://docs.jmeter.ai'
+    );
+    expect(block).toContain('Title: JMeter Tools');
+    expect(block).toContain('URL: https://docs.jmeter.ai/tools/');
+    expect(block).toContain('Hub body.');
+  });
+
   it('adds a trailing slash to the URL when the link has none', () => {
     const dir = makeDocsDir({
       'foo/bar.mdx': '---\ntitle: "T"\n---\n\nbody',

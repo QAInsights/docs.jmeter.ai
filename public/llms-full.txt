@@ -3,8 +3,8 @@
 > Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience. This is an independent community resource and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation. For official documentation, visit jmeter.apache.org.
 
 Site: https://docs.jmeter.ai
-Pages: 45
-Generated: 2026-07-07T02:55:12.920Z
+Pages: 50
+Generated: 2026-07-09T22:54:11.045Z
 ---
 Title: User's Manual: Getting Started
 URL: https://docs.jmeter.ai/getting-started/get-started/
@@ -950,6 +950,249 @@ Build your first test plan with the [Building a Test Plan](/user-manual/build-te
 </Fragment>
 </RelatedContent>
 {/* CUSTOM-FOOTER:END */}
+
+
+---
+Title: JMeter Tools
+URL: https://docs.jmeter.ai/tools/
+---
+
+# JMeter Tools
+
+Interactive helpers for common load-testing decisions. All tools run **in your browser** on [docs.jmeter.ai](https://docs.jmeter.ai) — no account, no upload of test data.
+
+## Available tools
+
+| Tool | Use it when you need to… |
+|------|--------------------------|
+| [Thread Calculator](/tools/thread-calculator/) | Estimate concurrent threads / RPS and ramp-up |
+| [Heap Estimator](/tools/heap-estimator/) | Pick a starting `-Xmx` for injectors |
+| [Properties Cheat Sheet](/tools/properties-cheatsheet/) | Find high-impact `user.properties` quickly |
+| [Regex Tester](/tools/regex-tester/) | Preview Regular Expression Extractor groups |
+
+## Why these tools
+
+Docs alone rank for “what is…”, but practitioners search for **calculators and cheat sheets**. Each tool has shareable URL state, SEO metadata, and links back into the manual so answers stay grounded in JMeter concepts.
+
+## Related reading
+
+- [Best Practices](/user-manual/best-practices/)
+- [Properties Reference](/user-manual/properties-reference/)
+- [Regular Expressions](/user-manual/regular-expressions/)
+- [Remote Testing](/user-manual/remote-test/)
+
+
+---
+Title: JMeter Thread Group Calculator
+URL: https://docs.jmeter.ai/tools/thread-calculator/
+---
+
+import ThreadCalculator from '../../../components/tools/ThreadCalculator.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Thread Group Calculator
+
+Size your Thread Group before you hit Coordinated Omission. Enter a target **requests per second (RPS)** and expected **average response time** to estimate concurrent threads, ramp-up, and a rough CLI heap.
+
+<ThreadCalculator />
+
+## How the estimate works
+
+With **no think time**, busy threads produce roughly:
+
+```text
+threads ≈ ceil(target_RPS × response_time_ms / 1000)
+```
+
+This is Little’s Law: concurrency ≈ arrival rate × service time.
+
+### Example
+
+| Target RPS | Avg response time | Recommended threads |
+|------------|-------------------|---------------------|
+| 50         | 200 ms            | 10                  |
+| 100        | 500 ms            | 50                  |
+| 200        | 100 ms            | 20                  |
+
+## What this does not include
+
+- Think time / pacing (real users pause between actions)
+- Injector CPU, bandwidth, and listener overhead
+- Server saturation (response time rises under load — re-measure)
+- Splitting load across engines — see [Remote Testing](/user-manual/remote-test/)
+
+## Recommended workflow
+
+1. Measure average response time with a small pilot.
+2. Use this calculator for an initial thread count and ramp-up.
+3. Run CLI mode (`jmeter -n -t plan.jmx -l results.jtl`) without View Results Tree.
+4. Compare achieved throughput in the [HTML dashboard](/user-manual/generating-dashboard/).
+5. Scale out with [distributed testing](/topics/distributed-testing/) when one injector is saturated.
+
+## Related reading
+
+- [Best Practices](/user-manual/best-practices/)
+- [Building a Test Plan](/user-manual/build-test-plan/)
+- [Glossary](/user-manual/glossary/)
+- [Heap Estimator](/tools/heap-estimator/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    [Open Best Practices](/user-manual/best-practices/) and apply CLI-mode guidance before your first load run.
+  </Fragment>
+  <Fragment slot="related">
+    [Thread Group concepts](/user-manual/test-plan/) · [Remote testing](/user-manual/remote-test/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Setting thousands of threads with a 1-second ramp-up and View Results Tree enabled.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    Achieved RPS far below estimate? Re-measure response time under load and check injector CPU.
+  </Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter Heap / JVM Sizing Estimator
+URL: https://docs.jmeter.ai/tools/heap-estimator/
+---
+
+import HeapEstimator from '../../../components/tools/HeapEstimator.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Heap / JVM Sizing Estimator
+
+Pick a **starting** `-Xmx` for injectors. Memory depends on threads, samplers, scripting, listeners, and response sizes — this tool gives a conservative first guess you should validate with GC logs.
+
+<HeapEstimator />
+
+## How to apply the flags
+
+On the command line (example):
+
+```bash
+JVM_ARGS="-Xms512m -Xmx2048m" jmeter -n -t plan.jmx -l results.jtl
+```
+
+Or set `HEAP` in your JMeter startup script / environment for the version you ship.
+
+## Practical tips
+
+- Prefer **CLI mode** for load; GUI burns heap on rendering.
+- Disable **View Results Tree / Table** during load tests.
+- In distributed mode, size **each engine** for its share of threads.
+- Controllers usually need less heap than injectors.
+
+## Related reading
+
+- [Best Practices](/user-manual/best-practices/)
+- [Thread Calculator](/tools/thread-calculator/)
+- [Remote Testing](/user-manual/remote-test/)
+- [Listeners](/user-manual/listeners/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    Size threads with the [Thread Calculator](/tools/thread-calculator/), then re-check heap.
+  </Fragment>
+  <Fragment slot="related">
+    [Properties cheat sheet](/tools/properties-cheatsheet/) · [Dashboard report](/user-manual/generating-dashboard/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Raising -Xmx endlessly while View Results Tree is still enabled.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    Still OOM? Reduce threads per engine, strip listeners, avoid saving response data.
+  </Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter Properties Cheat Sheet
+URL: https://docs.jmeter.ai/tools/properties-cheatsheet/
+---
+
+import PropertiesCheatsheet from '../../../components/tools/PropertiesCheatsheet.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Properties Cheat Sheet
+
+Search the properties people actually change for load tests. Always set overrides in **`user.properties`** (or `-J` / `-q`) — do not edit stock `jmeter.properties` if you can avoid it.
+
+<PropertiesCheatsheet />
+
+## Related reading
+
+- Full catalog: [Properties Reference](/user-manual/properties-reference/)
+- [Best Practices](/user-manual/best-practices/)
+- [Remote Testing](/user-manual/remote-test/)
+- [Dashboard Report](/user-manual/generating-dashboard/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    Copy a property into <code>user.properties</code>, restart JMeter, and verify with a small CLI run.
+  </Fragment>
+  <Fragment slot="related">
+    [Hints and tips](/user-manual/hints-and-tips/) · [Heap estimator](/tools/heap-estimator/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Editing jmeter.properties in place so upgrades wipe your customizations.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    Property not applied? Confirm user.properties path and that JMeter was fully restarted.
+  </Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter Regex Extractor Tester
+URL: https://docs.jmeter.ai/tools/regex-tester/
+---
+
+import RegexTester from '../../../components/tools/RegexTester.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Regex Extractor Tester
+
+Prototype patterns for the **Regular Expression Extractor** before you wire them into a plan. Capture groups are shown as JMeter-style templates (`$1$`, `$2$`, …).
+
+<RegexTester />
+
+## Extractor field mapping
+
+| Extractor field | This tool |
+|-----------------|-----------|
+| Regular Expression | Pattern input |
+| Template | Built from groups (`$1$$2$` …) |
+| Match No. | Match No. field (1 = first match) |
+| Default Value | Not simulated — set in the extractor |
+
+## Tips
+
+- Prefer **JSON Extractor** / **JSON JMESPath** for JSON when possible — more robust than regex.
+- Escape literal braces and dots carefully when matching structured text.
+- Browser JS RegExp ≈ Java for common cases; edge features may differ — verify in JMeter.
+
+## Related reading
+
+- [Regular Expressions](/user-manual/regular-expressions/)
+- [Functions and Variables](/user-manual/functions/)
+- [HTTP Recorder](/topics/http-recorder/)
+- [Component Reference](/user-manual/component-reference/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    Paste your pattern into a Regular Expression Extractor and Debug Sampler to confirm variables.
+  </Fragment>
+  <Fragment slot="related">
+    [Functions guide](/topics/functions-and-variables/) · [Best practices](/user-manual/best-practices/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Using Match No. 0 (random) in load tests when you need a stable extraction.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    No match? Check body encoding, escaped quotes, and whether the token appears only after login.
+  </Fragment>
+</RelatedContent>
 
 
 ---
@@ -5719,6 +5962,10 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 {/* CUSTOM-INTRO:START */}
 :::tip[Use CLI mode for real load]
 Use the GUI to build and validate a test plan, then run the actual load test from the command line so rendering and listeners do not distort injector performance.
+:::
+
+:::tip[Size threads from target RPS]
+Not sure how many concurrent users you need? Use the free [JMeter Thread Calculator](/tools/thread-calculator/) to estimate threads and ramp-up from target RPS and average response time, then validate with a pilot run.
 :::
 
 :::caution[Avoid View Results Tree in load tests]

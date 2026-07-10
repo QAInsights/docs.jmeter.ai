@@ -1,0 +1,155 @@
+---
+import { EMPTY_VALUE, HEAP_ESTIMATOR } from '../../lib/tools-config.mjs';
+
+const { limits, defaults } = HEAP_ESTIMATOR;
+---
+
+<div class="tool" data-heap-estimator>
+  <div class="tool-grid">
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Total threads</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="threads" min={limits.threads.min} max={limits.threads.max} step="1" value={defaults.threads} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">thr</span>
+      </div>
+      <span class="tool-hint">Across the whole test (all engines)</span>
+    </label>
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Injector engines</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="engines" min={limits.engines.min} max={limits.engines.max} step="1" value={defaults.engines} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">n</span>
+      </div>
+      <span class="tool-hint">Distributed engines (not counting controller)</span>
+    </label>
+    <div class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto;justify-content:center">
+      <label class="tool-check"><input type="checkbox" name="scripting" /> <span>Heavy JSR223 / Groovy scripting</span></label>
+      <label class="tool-check"><input type="checkbox" name="listeners" /> <span>Heavy listeners (View Results Tree)</span></label>
+      <label class="tool-check"><input type="checkbox" name="large" /> <span>Large response bodies retained</span></label>
+    </div>
+  </div>
+
+  <div class="tool-results" aria-live="polite">
+    <div class="tool-card tool-card-primary">
+      <span class="tool-card-label">Suggested -Xmx</span>
+      <span class="tool-card-value tool-card-sm" data-xmx>{EMPTY_VALUE}</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Threads / engine</span>
+      <span class="tool-card-value" data-per-engine>{EMPTY_VALUE}</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">JVM flags</span>
+      <span class="tool-card-value tool-card-sm" data-flags style="font-size:0.95rem">{EMPTY_VALUE}</span>
+    </div>
+  </div>
+
+  <ul class="tool-notes" data-notes></ul>
+
+  <div class="tool-actions">
+    <button type="button" class="tool-btn" data-copy-flags>Copy JVM flags</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-link>Copy shareable link</button>
+    <span class="tool-status" data-copy-status aria-live="polite" hidden></span>
+  </div>
+
+  <p class="tool-disclaimer">
+    Heuristic only. Validate with GC logs. Prefer CLI mode and minimal listeners.
+    {' '}See <a href="/user-manual/best-practices/">Best Practices</a>
+    {' '}and{' '}
+    <a href="/user-manual/remote-test/">Remote Testing</a>.
+  </p>
+</div>
+
+<script>
+  import { EMPTY_VALUE } from '../../lib/tools-config.mjs';
+  import { copyText } from '../../lib/tools-utils.mjs';
+  import {
+    estimateInjectorHeap,
+    parseHeapParams,
+    serializeHeapParams,
+  } from '../../lib/heap-estimator.mjs';
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const threadsInput = root.querySelector('input[name="threads"]');
+    const enginesInput = root.querySelector('input[name="engines"]');
+    const scriptingInput = root.querySelector('input[name="scripting"]');
+    const listenersInput = root.querySelector('input[name="listeners"]');
+    const largeInput = root.querySelector('input[name="large"]');
+    const xmxEl = root.querySelector('[data-xmx]');
+    const perEl = root.querySelector('[data-per-engine]');
+    const flagsEl = root.querySelector('[data-flags]');
+    const notesEl = root.querySelector('[data-notes]');
+    const status = root.querySelector('[data-copy-status]');
+
+    function state() {
+      return {
+        threads: Number(threadsInput.value) || 0,
+        engines: Number(enginesInput.value) || 1,
+        scripting: scriptingInput.checked,
+        heavyListeners: listenersInput.checked,
+        largeResponses: largeInput.checked,
+      };
+    }
+
+    function showStatus(msg) {
+      if (!status) return;
+      status.hidden = !msg;
+      status.textContent = msg || '';
+      if (msg) setTimeout(() => showStatus(''), 1600);
+    }
+
+    function recompute() {
+      const s = state();
+      const result = estimateInjectorHeap(s);
+      if (xmxEl) xmxEl.textContent = `${result.heapMb} MB`;
+      if (perEl) perEl.textContent = result.perEngineThreads > 0 ? String(result.perEngineThreads) : EMPTY_VALUE;
+      if (flagsEl) flagsEl.textContent = result.xmxFlag;
+      if (notesEl) {
+        notesEl.innerHTML = result.notes.map((n) => `<li>${n}</li>`).join('');
+      }
+      root.dataset.shareQuery = serializeHeapParams(s);
+      root.dataset.flags = result.xmxFlag;
+    }
+
+    [threadsInput, enginesInput, scriptingInput, listenersInput, largeInput].forEach((el) => {
+      el.addEventListener('input', recompute);
+      el.addEventListener('change', recompute);
+    });
+
+    root.querySelector('[data-copy-flags]')?.addEventListener('click', async () => {
+      try {
+        await copyText(root.dataset.flags || '');
+        showStatus('Flags copied');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector('[data-copy-link]')?.addEventListener('click', async () => {
+      const url = `${window.location.origin}${window.location.pathname}?${root.dataset.shareQuery || ''}`;
+      try {
+        await copyText(url);
+        history.replaceState(null, '', `?${root.dataset.shareQuery || ''}`);
+        showStatus('Link copied');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    const params = parseHeapParams(new URLSearchParams(window.location.search));
+    threadsInput.value = String(params.threads);
+    enginesInput.value = String(params.engines);
+    scriptingInput.checked = params.scripting;
+    listenersInput.checked = params.heavyListeners;
+    largeInput.checked = params.largeResponses;
+    recompute();
+  }
+
+  document.querySelectorAll('[data-heap-estimator]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll('[data-heap-estimator]').forEach(init);
+  });
+</script>

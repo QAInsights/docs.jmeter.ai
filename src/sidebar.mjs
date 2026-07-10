@@ -19,6 +19,17 @@ export const sidebar = [
     ],
   },
   {
+    label: 'Interactive Tools',
+    collapsed: false,
+    items: [
+      { label: 'Tools Hub', link: '/tools' },
+      { label: 'Thread Calculator', link: '/tools/thread-calculator' },
+      { label: 'Heap Estimator', link: '/tools/heap-estimator' },
+      { label: 'Properties Cheat Sheet', link: '/tools/properties-cheatsheet' },
+      { label: 'Regex Extractor Builder', link: '/tools/regex-tester' },
+    ],
+  },
+  {
     label: 'Topic Guides',
     collapsed: false,
     items: [

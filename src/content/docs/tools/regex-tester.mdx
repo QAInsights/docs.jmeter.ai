@@ -1,0 +1,72 @@
+---
+title: "JMeter Regex Extractor Builder"
+description: "Paste an HTTP response body and get Regular Expression Extractor fields for dynamic values (tokens, CSRF, UUIDs). Browser-only; nothing is uploaded. Max 1 MB."
+seoTitle: "JMeter Regex Extractor Builder (Paste Response)"
+keywords:
+  - JMeter regex extractor
+  - JMeter extract token
+  - JMeter CSRF regex
+  - JMeter dynamic parameters
+  - Regular Expression Extractor
+  - extract session id JMeter
+difficulty: beginner
+guideType: how-to
+estimatedReadTime: 4 min read
+lastVerified: JMeter 5.6
+---
+
+import RegexTester from '../../../components/tools/RegexTester.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Regex Extractor Builder
+
+Paste a response body. The tool scans for likely **dynamic values** (tokens, CSRF fields, UUIDs, JWTs) and proposes **Regular Expression Extractor** settings you can copy into JMeter.
+
+<RegexTester />
+
+## Privacy and limits
+
+| Rule | Detail |
+|------|--------|
+| **Where it runs** | 100% in your browser (this page). |
+| **What is sent** | Nothing: no upload, no server analysis. |
+| **Max body size** | **1 MB** (1,048,576 bytes). Larger pastes are rejected so the tab stays responsive. |
+| **Scope** | **Regular Expression Extractor** only (not JSON Extractor / Boundary Extractor). |
+
+## Extractor field mapping
+
+| JMeter field | This tool |
+|--------------|-----------|
+| Name of created variable | Suggested from key / type |
+| Regular Expression | Generated pattern with one capture group |
+| Template | `$1$` |
+| Match No. | `1` (first match) |
+| Default Value | `NOT_FOUND` |
+
+## Tips
+
+- Prefer **JSON Extractor** when the entire body is JSON; more stable than regex.
+- Always verify with a **Debug Sampler** or View Results Tree; browser JS RegExp is close to Java but not identical.
+- If nothing is found, paste a **smaller fragment** that still includes the token and its key.
+
+## Related reading
+
+- [Regular Expressions](/user-manual/regular-expressions/)
+- [Functions and Variables](/user-manual/functions/)
+- [HTTP Recorder](/topics/http-recorder/)
+- [Component Reference](/user-manual/component-reference/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    Add a Regular Expression Extractor under your sampler, paste the fields, then confirm with a Debug Sampler.
+  </Fragment>
+  <Fragment slot="related">
+    [Functions guide](/topics/functions-and-variables/) · [Best practices](/user-manual/best-practices/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Using Match No. 0 (random) in load tests when you need a stable extraction.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    No candidates? Paste only the JSON/HTML section that contains the token, or check that the value is quoted text.
+  </Fragment>
+</RelatedContent>

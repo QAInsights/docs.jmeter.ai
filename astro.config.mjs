@@ -69,7 +69,7 @@ export default defineConfig({
           ],
         }),
       ],
-      customCss: ['./src/styles/custom.css', './src/styles/landing.css', './src/styles/ask-ai.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/landing.css', './src/styles/ask-ai.css', './src/styles/tools.css'],
       components: {
         Footer: './src/components/FooterDisclaimer.astro',
         Head: './src/components/SeoHead.astro',

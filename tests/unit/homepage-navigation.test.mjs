@@ -11,7 +11,11 @@ const docsRoot = join(root, 'src/content/docs');
 function contentPathForLink(link) {
   const normalized = link.replace(/^\/|\/$/g, '');
   if (!normalized) return null;
-  return join(docsRoot, `${normalized}.mdx`);
+  const direct = join(docsRoot, `${normalized}.mdx`);
+  if (existsSync(direct)) return direct;
+  const index = join(docsRoot, normalized, 'index.mdx');
+  if (existsSync(index)) return index;
+  return direct;
 }
 
 describe('homepage practitioner navigation', () => {

@@ -110,6 +110,55 @@ export const faqSchema = {
       a: 'Never modify jmeter.properties directly. Instead, copy the property from jmeter.properties and modify its value in user.properties. This eases migration to the next version of JMeter. The user.properties file supersedes properties defined in jmeter.properties.',
     },
   ],
+
+  '/tools/thread-calculator': [
+    {
+      q: 'How many threads do I need in JMeter for a target RPS?',
+      a: 'As a first estimate with no think time, threads are approximately target RPS multiplied by average response time in seconds. For example, 50 RPS at 200 ms average response time needs about 10 concurrent threads. Always validate with a pilot run because real response times rise under load.',
+    },
+    {
+      q: 'What is the formula for JMeter thread group sizing?',
+      a: 'Use concurrency approximately equal to arrival rate times service time. In JMeter terms: threads approximately equals ceil of target RPS times response time in milliseconds divided by 1000. Add think time, ramp-up, and client limits on top of that estimate.',
+    },
+    {
+      q: 'How long should JMeter ramp-up be?',
+      a: 'A common starting point is about one second of ramp-up per thread so load increases gradually. Very short ramp-ups create a thundering herd that spikes errors and distorts early samples. Adjust after you see injector and server CPU during a pilot.',
+    },
+    {
+      q: 'Why is my JMeter throughput lower than the calculator estimate?',
+      a: 'The calculator assumes busy threads with no think time and a stable response time. Lower throughput usually means response time grew under load, the injector CPU or listeners are saturated, think time is present, or the server is throttling. Re-measure average response time under load and resize.',
+    },
+  ],
+
+  '/tools/heap-estimator': [
+    {
+      q: 'How much heap memory does JMeter need?',
+      a: 'It depends on threads, samplers, scripting, listeners, and response size. A rough starting point is several hundred megabytes of base overhead plus about one megabyte per concurrent thread on the injector, then validate with GC logs. Prefer CLI mode and disable View Results Tree during load.',
+    },
+    {
+      q: 'How do I set JMeter Xmx heap size?',
+      a: 'Set JVM heap via JVM_ARGS or the HEAP environment variable used by JMeter startup scripts, for example -Xms512m -Xmx2048m, then restart JMeter. Size each distributed engine for its share of threads rather than only the controller.',
+    },
+  ],
+
+  '/tools/regex-tester': [
+    {
+      q: 'How do JMeter regex extractor templates like $1$ work?',
+      a: 'Parentheses in the regular expression create capture groups. The template field can reference those groups as $1$, $2$, and so on, or $0$ for the full match. Match No. selects which occurrence to use when the pattern matches multiple times.',
+    },
+    {
+      q: 'Should I use regex or JSON Extractor in JMeter?',
+      a: 'For JSON responses, prefer JSON Extractor or JMESPath when possible because they understand structure better than brittle regular expressions. Use regular expressions for HTML snippets, tokens in free text, or protocols without a dedicated extractor.',
+    },
+    {
+      q: 'Does the Regex Extractor Builder upload my response body?',
+      a: 'No. The builder runs entirely in your browser. The pasted response is analyzed locally and is not uploaded to any server. Maximum paste size is 1 MB so the page stays responsive.',
+    },
+    {
+      q: 'How do I extract a CSRF or access token with JMeter Regular Expression Extractor?',
+      a: 'Paste a sample response into the Regex Extractor Builder, pick the token candidate, then copy Name of created variable, Regular Expression, Template $1$, Match No. 1, and a Default Value such as NOT_FOUND into a Regular Expression Extractor under the sampler that returns that body.',
+    },
+  ],
 };
 
 /**

@@ -1,0 +1,46 @@
+---
+title: "JMeter Properties Cheat Sheet"
+description: "Filterable cheat sheet of high-impact JMeter properties for results, HTTP, SSL, distributed testing, CLI, and dashboard reports."
+seoTitle: "JMeter Properties Cheat Sheet (Filterable)"
+keywords:
+  - jmeter.properties
+  - user.properties
+  - JMeter properties
+  - JMeter configuration
+  - JMeter cheat sheet
+difficulty: intermediate
+guideType: reference
+estimatedReadTime: 4 min read
+lastVerified: JMeter 5.6
+---
+
+import PropertiesCheatsheet from '../../../components/tools/PropertiesCheatsheet.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Properties Cheat Sheet
+
+Search the properties people actually change for load tests. Always set overrides in **`user.properties`** (or `-J` / `-q`); do not edit stock `jmeter.properties` if you can avoid it.
+
+<PropertiesCheatsheet />
+
+## Related reading
+
+- Full catalog: [Properties Reference](/user-manual/properties-reference/)
+- [Best Practices](/user-manual/best-practices/)
+- [Remote Testing](/user-manual/remote-test/)
+- [Dashboard Report](/user-manual/generating-dashboard/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    Copy a property into <code>user.properties</code>, restart JMeter, and verify with a small CLI run.
+  </Fragment>
+  <Fragment slot="related">
+    [Hints and tips](/user-manual/hints-and-tips/) · [Heap estimator](/tools/heap-estimator/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Editing jmeter.properties in place so upgrades wipe your customizations.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    Property not applied? Confirm user.properties path and that JMeter was fully restarted.
+  </Fragment>
+</RelatedContent>

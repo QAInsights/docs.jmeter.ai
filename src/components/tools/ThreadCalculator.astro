@@ -1,0 +1,321 @@
+---
+/**
+ * Interactive JMeter thread / RPS calculator (client-side).
+ * Both modes share one primary input and a fixed 3-column layout.
+ */
+import { EMPTY_VALUE, THREAD_CALCULATOR } from '../../lib/tools-config.mjs';
+
+const { limits, defaults } = THREAD_CALCULATOR;
+---
+
+<div class="tool tool--calculator" data-thread-calculator data-mode="rps">
+  <div class="tool-seg" role="tablist" aria-label="Calculator mode">
+    <button type="button" class="tool-seg__btn is-active" data-mode="rps" role="tab" aria-selected="true" id="tc-tab-rps">
+      <span class="tool-seg__full">Target RPS &rarr; Threads</span>
+      <span class="tool-seg__short">RPS &rarr; Threads</span>
+    </button>
+    <button type="button" class="tool-seg__btn" data-mode="threads" role="tab" aria-selected="false" id="tc-tab-threads">
+      <span class="tool-seg__full">Threads &rarr; Est. RPS</span>
+      <span class="tool-seg__short">Threads &rarr; RPS</span>
+    </button>
+  </div>
+
+  <div class="tool-form" role="tabpanel" aria-labelledby="tc-tab-rps">
+    <div class="tool-form__grid">
+      <div class="tool-field">
+        <label class="tool-label" for="tc-primary" data-primary-field-label>Target RPS</label>
+        <div class="tool-input-wrap">
+          <input
+            id="tc-primary"
+            type="number"
+            data-primary-input
+            min={limits.rps.min}
+            max={limits.rps.max}
+            step="1"
+            value={defaults.rps}
+            inputmode="decimal"
+          />
+          <span class="tool-suffix" data-primary-suffix aria-hidden="true">rps</span>
+        </div>
+        <span class="tool-hint" data-primary-hint>Requests / second (max {limits.rps.max.toLocaleString('en-US')})</span>
+      </div>
+
+      <div class="tool-field">
+        <label class="tool-label" for="tc-rt">Avg response time</label>
+        <div class="tool-input-wrap">
+          <input
+            id="tc-rt"
+            type="number"
+            data-rt-input
+            min={limits.responseTimeMs.min}
+            max={limits.responseTimeMs.max}
+            step="1"
+            value={defaults.responseTimeMs}
+            inputmode="numeric"
+          />
+          <span class="tool-suffix" aria-hidden="true">ms</span>
+        </div>
+        <span class="tool-hint">1 ms to 120 s (typical sample time)</span>
+      </div>
+
+      <div class="tool-field">
+        <label class="tool-label" for="tc-ramp">Ramp-up pace</label>
+        <div class="tool-input-wrap">
+          <input
+            id="tc-ramp"
+            type="number"
+            data-ramp-input
+            min={limits.rampPerThread.min}
+            max={limits.rampPerThread.max}
+            step="0.1"
+            value={defaults.rampPerThread}
+            inputmode="decimal"
+          />
+          <span class="tool-suffix" aria-hidden="true">s/th</span>
+        </div>
+        <span class="tool-hint">0.1 to 60 s of ramp per thread</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tool-metrics" aria-live="polite">
+    <div class="tool-metric tool-metric--primary">
+      <span class="tool-metric__label" data-primary-label>Recommended threads</span>
+      <span class="tool-metric__value" data-primary-value>{EMPTY_VALUE}</span>
+    </div>
+    <div class="tool-metric">
+      <span class="tool-metric__label">Suggested ramp-up</span>
+      <span class="tool-metric__value" data-ramp-value>{EMPTY_VALUE}</span>
+    </div>
+    <div class="tool-metric">
+      <span class="tool-metric__label">Est. heap (CLI)</span>
+      <span class="tool-metric__value" data-heap-value>{EMPTY_VALUE}</span>
+    </div>
+  </div>
+
+  <div class="tool-formula" data-formula></div>
+
+  <div class="tool-actions">
+    <button type="button" class="tool-btn" data-copy-link>Copy shareable link</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
+    <span class="tool-status" data-copy-status aria-live="polite" hidden></span>
+  </div>
+
+  <p class="tool-disclaimer">
+    Estimate only: concurrency ≈ RPS × response time (no think time).
+    {' '}Validate with a pilot run.
+    {' '}See <a href="/user-manual/best-practices/">Best Practices</a>.
+  </p>
+</div>
+
+<script>
+  import { EMPTY_VALUE, THREAD_CALCULATOR } from '../../lib/tools-config.mjs';
+  import { clampToRange, copyText } from '../../lib/tools-utils.mjs';
+  import {
+    threadsForRps,
+    rpsForThreads,
+    suggestRampUpSeconds,
+    estimateHeapMb,
+    parseCalculatorParams,
+    serializeCalculatorParams,
+  } from '../../lib/thread-calculator.mjs';
+
+  const { limits, defaults } = THREAD_CALCULATOR;
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const primaryInput = root.querySelector('[data-primary-input]');
+    const rtInput = root.querySelector('[data-rt-input]');
+    const rampInput = root.querySelector('[data-ramp-input]');
+    const primaryFieldLabel = root.querySelector('[data-primary-field-label]');
+    const primaryHint = root.querySelector('[data-primary-hint]');
+    const primarySuffix = root.querySelector('[data-primary-suffix]');
+    const primaryOutLabel = root.querySelector('[data-primary-label]');
+    const primaryValue = root.querySelector('[data-primary-value]');
+    const rampValue = root.querySelector('[data-ramp-value]');
+    const heapValue = root.querySelector('[data-heap-value]');
+    const formulaEl = root.querySelector('[data-formula]');
+    const copyStatus = root.querySelector('[data-copy-status]');
+    const modeButtons = root.querySelectorAll('.tool-seg__btn[data-mode]');
+    const panel = root.querySelector('.tool-form');
+
+    let mode = 'rps';
+    let rps = defaults.rps;
+    let threads = defaults.threads;
+
+    function primaryRange() {
+      return mode === 'rps' ? limits.rps : limits.threads;
+    }
+
+    function formatPrimaryValue(n) {
+      return mode === 'rps' ? String(Number(n.toFixed(2))) : String(Math.round(n));
+    }
+
+    function applyMode() {
+      const isRps = mode === 'rps';
+      root.dataset.mode = mode;
+      const range = primaryRange();
+
+      primaryInput.min = String(range.min);
+      primaryInput.max = String(range.max);
+      primaryInput.step = '1';
+      primaryInput.inputMode = isRps ? 'decimal' : 'numeric';
+      primaryInput.value = formatPrimaryValue(isRps ? rps : threads);
+
+      if (primaryFieldLabel) primaryFieldLabel.textContent = isRps ? 'Target RPS' : 'Thread count';
+      if (primaryHint) {
+        primaryHint.textContent = isRps
+          ? `Requests / second (max ${limits.rps.max.toLocaleString('en-US')})`
+          : `Concurrent threads (max ${limits.threads.max.toLocaleString('en-US')})`;
+      }
+      if (primarySuffix) primarySuffix.textContent = isRps ? 'rps' : 'thr';
+      if (primaryOutLabel) {
+        primaryOutLabel.textContent = isRps ? 'Recommended threads' : 'Estimated RPS';
+      }
+
+      modeButtons.forEach((btn) => {
+        const active = btn.dataset.mode === mode;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-selected', String(active));
+      });
+      if (panel) {
+        panel.setAttribute('aria-labelledby', isRps ? 'tc-tab-rps' : 'tc-tab-threads');
+      }
+      recompute();
+    }
+
+    function readAndClampPrimary({ writeBack = false } = {}) {
+      const range = primaryRange();
+      const raw = Number(primaryInput.value);
+      if (!Number.isFinite(raw) || raw <= 0) {
+        if (mode === 'rps') rps = 0;
+        else threads = 0;
+        return;
+      }
+      const clamped = clampToRange(raw, range);
+      if (mode === 'rps') rps = clamped;
+      else threads = clamped;
+      if (writeBack && clamped !== raw) primaryInput.value = formatPrimaryValue(clamped);
+    }
+
+    function clampSecondaryInputs({ writeBack = false } = {}) {
+      const rt = clampToRange(Number(rtInput.value), limits.responseTimeMs, defaults.responseTimeMs);
+      const ramp = clampToRange(Number(rampInput.value), limits.rampPerThread, defaults.rampPerThread);
+      if (writeBack) {
+        if (Number(rtInput.value) !== rt) rtInput.value = String(Math.round(rt));
+        if (Number(rampInput.value) !== ramp) rampInput.value = String(Number(ramp.toFixed(2)));
+      }
+      return { responseTimeMs: rt, rampPerThread: ramp };
+    }
+
+    function recompute() {
+      readAndClampPrimary();
+      const { responseTimeMs, rampPerThread } = clampSecondaryInputs();
+      let outThreads = threads;
+      let outRps = rps;
+
+      if (mode === 'rps') {
+        outThreads = threadsForRps(rps, responseTimeMs);
+        if (primaryValue) primaryValue.textContent = outThreads > 0 ? String(outThreads) : EMPTY_VALUE;
+        if (formulaEl) {
+          formulaEl.textContent =
+            outThreads > 0
+              ? `threads ≈ ceil(${rps} RPS × ${responseTimeMs} ms / 1000) = ${outThreads}`
+              : 'Enter a positive RPS and response time.';
+        }
+      } else {
+        outRps = rpsForThreads(threads, responseTimeMs);
+        if (primaryValue) {
+          primaryValue.textContent =
+            outRps > 0 ? (outRps >= 10 ? String(Math.round(outRps)) : outRps.toFixed(2)) : EMPTY_VALUE;
+        }
+        if (formulaEl) {
+          formulaEl.textContent =
+            outRps > 0
+              ? `RPS ≈ ${threads} threads ÷ (${responseTimeMs} ms / 1000) = ${outRps.toFixed(2)}`
+              : 'Enter a positive thread count and response time.';
+        }
+      }
+
+      const rampSec = suggestRampUpSeconds(outThreads, rampPerThread);
+      if (rampValue) rampValue.textContent = rampSec > 0 ? `${rampSec}s` : EMPTY_VALUE;
+      const heap = estimateHeapMb(outThreads);
+      if (heapValue) heapValue.textContent = outThreads > 0 ? `~${heap.heapMb} MB` : EMPTY_VALUE;
+
+      root.dataset.shareQuery = serializeCalculatorParams({
+        mode,
+        rps: mode === 'rps' ? rps : outRps,
+        threads: outThreads,
+        responseTimeMs,
+        rampPerThread,
+      });
+    }
+
+    function showStatus(msg) {
+      if (!copyStatus) return;
+      copyStatus.hidden = !msg;
+      copyStatus.textContent = msg || '';
+      if (msg) setTimeout(() => showStatus(''), 1600);
+    }
+
+    modeButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        readAndClampPrimary({ writeBack: true });
+        mode = btn.dataset.mode === 'threads' ? 'threads' : 'rps';
+        applyMode();
+      });
+    });
+
+    primaryInput.addEventListener('input', recompute);
+    rtInput.addEventListener('input', recompute);
+    rampInput.addEventListener('input', recompute);
+    primaryInput.addEventListener('change', () => {
+      readAndClampPrimary({ writeBack: true });
+      recompute();
+    });
+    rtInput.addEventListener('change', () => {
+      clampSecondaryInputs({ writeBack: true });
+      recompute();
+    });
+    rampInput.addEventListener('change', () => {
+      clampSecondaryInputs({ writeBack: true });
+      recompute();
+    });
+
+    root.querySelector('[data-copy-link]')?.addEventListener('click', async () => {
+      const url = `${window.location.origin}${window.location.pathname}?${root.dataset.shareQuery || ''}`;
+      try {
+        await copyText(url);
+        showStatus('Link copied');
+        history.replaceState(null, '', `?${root.dataset.shareQuery || ''}`);
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector('[data-reset]')?.addEventListener('click', () => {
+      mode = 'rps';
+      rps = defaults.rps;
+      threads = defaults.threads;
+      rtInput.value = String(defaults.responseTimeMs);
+      rampInput.value = String(defaults.rampPerThread);
+      applyMode();
+      history.replaceState(null, '', window.location.pathname);
+    });
+
+    const params = parseCalculatorParams(new URLSearchParams(window.location.search));
+    mode = params.mode;
+    rps = params.rps;
+    threads = params.threads;
+    rtInput.value = String(params.responseTimeMs);
+    rampInput.value = String(params.rampPerThread);
+    applyMode();
+  }
+
+  document.querySelectorAll('[data-thread-calculator]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll('[data-thread-calculator]').forEach(init);
+  });
+</script>

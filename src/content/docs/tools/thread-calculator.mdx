@@ -1,0 +1,79 @@
+---
+title: "JMeter Thread Group Calculator"
+description: "Free JMeter thread and RPS calculator: estimate concurrent users, ramp-up, and injector heap from target throughput and response time."
+seoTitle: "JMeter Thread Calculator (RPS to Users)"
+keywords:
+  - JMeter thread calculator
+  - JMeter RPS calculator
+  - how many threads JMeter
+  - JMeter ramp-up calculator
+  - thread group sizing
+difficulty: beginner
+guideType: how-to
+estimatedReadTime: 3 min read
+lastVerified: JMeter 5.6
+---
+
+import ThreadCalculator from '../../../components/tools/ThreadCalculator.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Thread Group Calculator
+
+Size your Thread Group before you hit Coordinated Omission. Enter a target **requests per second (RPS)** and expected **average response time** to estimate concurrent threads, ramp-up, and a rough CLI heap.
+
+<ThreadCalculator />
+
+## How the estimate works
+
+With **no think time**, busy threads produce roughly:
+
+```text
+threads ≈ ceil(target_RPS × response_time_ms / 1000)
+```
+
+This is Little's Law: concurrency ≈ arrival rate × service time.
+
+### Example
+
+| Target RPS | Avg response time | Recommended threads |
+|------------|-------------------|---------------------|
+| 50         | 200 ms            | 10                  |
+| 100        | 500 ms            | 50                  |
+| 200        | 100 ms            | 20                  |
+
+## What this does not include
+
+- Think time / pacing (real users pause between actions)
+- Injector CPU, bandwidth, and listener overhead
+- Server saturation (response time rises under load; re-measure)
+- Splitting load across engines; see [Remote Testing](/user-manual/remote-test/)
+
+## Recommended workflow
+
+1. Measure average response time with a small pilot.
+2. Use this calculator for an initial thread count and ramp-up.
+3. Run CLI mode (`jmeter -n -t plan.jmx -l results.jtl`) without View Results Tree.
+4. Compare achieved throughput in the [HTML dashboard](/user-manual/generating-dashboard/).
+5. Scale out with [distributed testing](/topics/distributed-testing/) when one injector is saturated.
+
+## Related reading
+
+- [Best Practices](/user-manual/best-practices/)
+- [Building a Test Plan](/user-manual/build-test-plan/)
+- [Glossary](/user-manual/glossary/)
+- [Heap Estimator](/tools/heap-estimator/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    [Open Best Practices](/user-manual/best-practices/) and apply CLI-mode guidance before your first load run.
+  </Fragment>
+  <Fragment slot="related">
+    [Thread Group concepts](/user-manual/test-plan/) · [Remote testing](/user-manual/remote-test/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Setting thousands of threads with a 1-second ramp-up and View Results Tree enabled.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    Achieved RPS far below estimate? Re-measure response time under load and check injector CPU.
+  </Fragment>
+</RelatedContent>

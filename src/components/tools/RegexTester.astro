@@ -1,0 +1,370 @@
+---
+/**
+ * JMeter Regular Expression Extractor builder.
+ * Paste response body, detect dynamic params, copy extractor fields.
+ * Browser-only; body never leaves the client.
+ */
+import { EMPTY_VALUE, REGEX_EXTRACTOR } from '../../lib/tools-config.mjs';
+import { SAMPLE_HTTP_BODY } from '../../lib/regex-extractor-builder.mjs';
+
+const { maxBodyBytes, maxBodyLabel } = REGEX_EXTRACTOR;
+---
+
+<div
+  class="tool tool--extractor"
+  data-regex-extractor-builder
+  data-max-bytes={maxBodyBytes}
+  data-max-label={maxBodyLabel}
+>
+  <div class="tool-privacy" role="note">
+    <strong>Browser-only.</strong>
+    {' '}Your response body is analyzed in this tab and is never uploaded.
+    {' '}Max paste size: <strong>{maxBodyLabel}</strong>
+    {' '}({maxBodyBytes.toLocaleString('en-US')} bytes).
+    {' '}Focus: <strong>Regular Expression Extractor</strong> only.
+  </div>
+
+  <div class="tool-extractor-layout">
+    <div class="tool-extractor-pane">
+      <label class="tool-label" for="rx-body">Response body</label>
+      <textarea
+        id="rx-body"
+        class="tool-extractor-body"
+        data-body
+        spellcheck="false"
+        placeholder="Paste HTTP response body (JSON, HTML, or text)..."
+      >{SAMPLE_HTTP_BODY}</textarea>
+      <div class="tool-extractor-meta">
+        <span data-size-label>0 B</span>
+        <span data-body-kind></span>
+        <span data-size-warn class="tool-error" hidden></span>
+      </div>
+      <div class="tool-actions tool-actions--extractor">
+        <button type="button" class="tool-btn" data-analyze>Find dynamic params</button>
+        <button type="button" class="tool-btn tool-btn-ghost" data-load-sample>Load sample</button>
+        <button type="button" class="tool-btn tool-btn-ghost" data-clear>Clear</button>
+      </div>
+    </div>
+
+    <div class="tool-extractor-pane">
+      <span class="tool-label">Candidates</span>
+      <p class="tool-hint tool-hint--static" data-empty-hint>
+        Paste a body and click <strong>Find dynamic params</strong>.
+        {' '}We suggest fields for the Regular Expression Extractor
+        {' '}(variable, regex, template, match no.).
+      </p>
+      <ul class="tool-candidate-list" data-candidate-list hidden></ul>
+    </div>
+  </div>
+
+  <div class="tool-extractor-detail" data-detail hidden>
+    <div class="tool-metrics">
+      <div class="tool-metric tool-metric--primary">
+        <span class="tool-metric__label">Selected</span>
+        <span class="tool-metric__value tool-metric__value--sm" data-detail-label>{EMPTY_VALUE}</span>
+      </div>
+      <div class="tool-metric">
+        <span class="tool-metric__label">Confidence</span>
+        <span class="tool-metric__value tool-metric__value--sm" data-detail-confidence>{EMPTY_VALUE}</span>
+      </div>
+      <div class="tool-metric">
+        <span class="tool-metric__label">Preview $1$</span>
+        <span class="tool-metric__value tool-metric__value--sm" data-detail-preview>{EMPTY_VALUE}</span>
+      </div>
+    </div>
+
+    <p class="tool-hint tool-hint--static" data-detail-reason></p>
+
+    <div class="tool-form__grid tool-form__grid--extractor">
+      <div class="tool-field">
+        <span class="tool-label">Name of created variable</span>
+        <div class="tool-input-wrap">
+          <input type="text" readonly data-field-var />
+          <button type="button" class="tool-suffix tool-suffix--btn" data-copy="var">copy</button>
+        </div>
+      </div>
+      <div class="tool-field">
+        <span class="tool-label">Template</span>
+        <div class="tool-input-wrap">
+          <input type="text" readonly data-field-template />
+          <button type="button" class="tool-suffix tool-suffix--btn" data-copy="template">copy</button>
+        </div>
+      </div>
+      <div class="tool-field">
+        <span class="tool-label">Match No.</span>
+        <div class="tool-input-wrap">
+          <input type="text" readonly data-field-match />
+          <button type="button" class="tool-suffix tool-suffix--btn" data-copy="match">copy</button>
+        </div>
+      </div>
+      <div class="tool-field tool-field-wide">
+        <span class="tool-label">Regular Expression</span>
+        <div class="tool-input-wrap tool-input-wrap--grow">
+          <input type="text" readonly data-field-regex />
+          <button type="button" class="tool-suffix tool-suffix--btn" data-copy="regex">copy</button>
+        </div>
+      </div>
+      <div class="tool-field tool-field-wide">
+        <span class="tool-label">Default Value</span>
+        <div class="tool-input-wrap">
+          <input type="text" readonly data-field-default />
+          <button type="button" class="tool-suffix tool-suffix--btn" data-copy="default">copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-actions tool-actions--extractor">
+      <button type="button" class="tool-btn" data-copy-all>Copy all extractor fields</button>
+      <span class="tool-status" data-copy-status hidden></span>
+    </div>
+    <p class="tool-disclaimer" data-detail-note></p>
+  </div>
+
+  <ul class="tool-notes" data-tips></ul>
+
+  <p class="tool-disclaimer">
+    Output targets the <strong>Regular Expression Extractor</strong> post-processor.
+    {' '}For pure JSON, prefer the{' '}
+    <a href="/user-manual/component-reference/">JSON Extractor</a>.
+    {' '}Docs:{' '}
+    <a href="/user-manual/regular-expressions/">Regular Expressions</a>.
+  </p>
+</div>
+
+<script>
+  import { REGEX_EXTRACTOR } from '../../lib/tools-config.mjs';
+  import { copyText, formatBytes, utf8ByteLength } from '../../lib/tools-utils.mjs';
+  import {
+    SAMPLE_HTTP_BODY,
+    analyzeResponseBody,
+  } from '../../lib/regex-extractor-builder.mjs';
+
+  const { maxBodyBytes, maxBodyLabel } = REGEX_EXTRACTOR;
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const bodyEl = root.querySelector('[data-body]');
+    const sizeLabel = root.querySelector('[data-size-label]');
+    const sizeWarn = root.querySelector('[data-size-warn]');
+    const bodyKindEl = root.querySelector('[data-body-kind]');
+    const listEl = root.querySelector('[data-candidate-list]');
+    const emptyHint = root.querySelector('[data-empty-hint]');
+    const detail = root.querySelector('[data-detail]');
+    const tipsEl = root.querySelector('[data-tips]');
+    const statusEl = root.querySelector('[data-copy-status]');
+
+    const fieldVar = root.querySelector('[data-field-var]');
+    const fieldRegex = root.querySelector('[data-field-regex]');
+    const fieldTemplate = root.querySelector('[data-field-template]');
+    const fieldMatch = root.querySelector('[data-field-match]');
+    const fieldDefault = root.querySelector('[data-field-default]');
+    const detailLabel = root.querySelector('[data-detail-label]');
+    const detailConfidence = root.querySelector('[data-detail-confidence]');
+    const detailPreview = root.querySelector('[data-detail-preview]');
+    const detailReason = root.querySelector('[data-detail-reason]');
+    const detailNote = root.querySelector('[data-detail-note]');
+
+    let candidates = [];
+    let selectedId = null;
+
+    function showStatus(msg) {
+      if (!statusEl) return;
+      statusEl.hidden = !msg;
+      statusEl.textContent = msg || '';
+      if (msg) setTimeout(() => showStatus(''), 1600);
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(s) {
+      return escapeHtml(s).replace(/'/g, '&#39;');
+    }
+
+    function truncate(s, n) {
+      const t = String(s || '');
+      return t.length > n ? `${t.slice(0, n - 1)}...` : t;
+    }
+
+    function updateSize() {
+      const bytes = utf8ByteLength(bodyEl.value);
+      if (sizeLabel) sizeLabel.textContent = formatBytes(bytes);
+      const over = bytes > maxBodyBytes;
+      if (sizeWarn) {
+        sizeWarn.hidden = !over;
+        sizeWarn.textContent = over
+          ? `Over limit (${formatBytes(bytes)} / ${maxBodyLabel}). Trim the paste.`
+          : '';
+      }
+      bodyEl.classList.toggle('is-over-limit', over);
+    }
+
+    function renderTips(tips) {
+      if (!tipsEl) return;
+      tipsEl.innerHTML = (tips || []).map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+    }
+
+    function renderList() {
+      if (!listEl || !emptyHint) return;
+      if (!candidates.length) {
+        listEl.hidden = true;
+        emptyHint.hidden = false;
+        detail.hidden = true;
+        return;
+      }
+      emptyHint.hidden = true;
+      listEl.hidden = false;
+      listEl.innerHTML = candidates
+        .map((c) => {
+          const active = c.id === selectedId ? ' is-active' : '';
+          const preview = c.preview.selected?.group1 || c.sampleValue;
+          return `<li>
+            <button type="button" class="tool-candidate${active}" data-id="${escapeAttr(c.id)}">
+              <span class="tool-candidate__top">
+                <span class="tool-candidate__label">${escapeHtml(c.label)}</span>
+                <span class="tool-candidate__badge tool-candidate__badge--${c.confidence}">${c.confidence}</span>
+              </span>
+              <span class="tool-candidate__value">${escapeHtml(truncate(preview, 64))}</span>
+            </button>
+          </li>`;
+        })
+        .join('');
+    }
+
+    function selectCandidate(id) {
+      selectedId = id;
+      const c = candidates.find((x) => x.id === id);
+      if (!c) {
+        detail.hidden = true;
+        return;
+      }
+      detail.hidden = false;
+      const ex = c.extractor;
+      fieldVar.value = ex.variableName;
+      fieldRegex.value = ex.regex;
+      fieldTemplate.value = ex.template;
+      fieldMatch.value = ex.matchNo;
+      fieldDefault.value = ex.defaultValue;
+      detailLabel.textContent = c.label;
+      detailConfidence.textContent = c.confidence;
+      detailPreview.textContent = truncate(c.preview.selected?.group1 || c.sampleValue, 48);
+      detailReason.textContent = c.reason;
+      detailNote.textContent = ex.note || '';
+      renderList();
+    }
+
+    function runAnalyze() {
+      const result = analyzeResponseBody(bodyEl.value);
+      updateSize();
+      if (bodyKindEl) {
+        bodyKindEl.textContent = result.ok ? `Detected: ${result.bodyKind}` : '';
+      }
+      if (!result.ok) {
+        candidates = [];
+        selectedId = null;
+        renderList();
+        renderTips([result.error].filter(Boolean));
+        if (emptyHint) {
+          emptyHint.hidden = false;
+          emptyHint.textContent = result.error || 'Could not analyze body.';
+        }
+        return;
+      }
+      candidates = result.candidates;
+      renderTips(result.tips);
+      if (candidates.length) {
+        selectCandidate(candidates[0].id);
+      } else {
+        selectedId = null;
+        renderList();
+        if (emptyHint) {
+          emptyHint.hidden = false;
+          emptyHint.textContent =
+            'No strong dynamic parameters found. Try a smaller fragment that includes the token.';
+        }
+      }
+    }
+
+    listEl?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-id]');
+      if (!btn) return;
+      selectCandidate(btn.getAttribute('data-id'));
+    });
+
+    root.querySelector('[data-analyze]')?.addEventListener('click', runAnalyze);
+    root.querySelector('[data-load-sample]')?.addEventListener('click', () => {
+      bodyEl.value = SAMPLE_HTTP_BODY;
+      updateSize();
+      runAnalyze();
+    });
+    root.querySelector('[data-clear]')?.addEventListener('click', () => {
+      bodyEl.value = '';
+      candidates = [];
+      selectedId = null;
+      updateSize();
+      renderList();
+      renderTips([
+        'This tool runs entirely in your browser. The response body is never uploaded.',
+        `Max paste size: ${maxBodyLabel}.`,
+      ]);
+      if (emptyHint) {
+        emptyHint.hidden = false;
+        emptyHint.textContent = 'Paste a response body to begin.';
+      }
+      if (bodyKindEl) bodyKindEl.textContent = '';
+    });
+
+    const fieldMap = () => ({
+      var: fieldVar.value,
+      regex: fieldRegex.value,
+      template: fieldTemplate.value,
+      match: fieldMatch.value,
+      default: fieldDefault.value,
+    });
+
+    root.querySelectorAll('[data-copy]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const key = btn.getAttribute('data-copy');
+        try {
+          await copyText(fieldMap()[key] || '');
+          showStatus('Copied');
+        } catch {
+          showStatus('Copy failed');
+        }
+      });
+    });
+
+    root.querySelector('[data-copy-all]')?.addEventListener('click', async () => {
+      const f = fieldMap();
+      const block = [
+        `Name of created variable: ${f.var}`,
+        `Regular Expression: ${f.regex}`,
+        `Template: ${f.template}`,
+        `Match No.: ${f.match}`,
+        `Default Value: ${f.default}`,
+      ].join('\n');
+      try {
+        await copyText(block);
+        showStatus('All fields copied');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    bodyEl.addEventListener('input', updateSize);
+    updateSize();
+    runAnalyze();
+  }
+
+  document.querySelectorAll('[data-regex-extractor-builder]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll('[data-regex-extractor-builder]').forEach(init);
+  });
+</script>

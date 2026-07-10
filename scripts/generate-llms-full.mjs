@@ -63,13 +63,19 @@ export function parseFrontmatter(fmRaw) {
  */
 export function buildPageBlock({ label, link }, docsDir, site) {
   if (!link || link === '/') return null;
-  const rel = link.replace(/^\//, '');
+  const rel = link.replace(/^\//, '').replace(/\/$/, '');
   const file = path.join(docsDir, `${rel}.mdx`);
-  if (!fs.existsSync(file)) {
-    console.warn(`[llms-full] skipping ${link}: no file at ${path.relative(process.cwd(), file)}`);
+  const indexFile = path.join(docsDir, rel, 'index.mdx');
+  const resolved = fs.existsSync(file)
+    ? file
+    : fs.existsSync(indexFile)
+      ? indexFile
+      : null;
+  if (!resolved) {
+    console.warn(`[llms-full] skipping ${link}: no file at ${path.relative(process.cwd(), file)} or index.mdx`);
     return null;
   }
-  const raw = fs.readFileSync(file, 'utf8');
+  const raw = fs.readFileSync(resolved, 'utf8');
   const { frontmatter, body } = stripFrontmatter(raw);
   const fm = parseFrontmatter(frontmatter);
   const title = fm.title || label;

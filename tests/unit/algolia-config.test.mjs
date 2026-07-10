@@ -22,9 +22,13 @@ describe('Algolia DocSearch configuration', () => {
     const raw = await import('node:fs').then((fs) =>
       fs.promises.readFile(new URL('../../astro.config.mjs', import.meta.url), 'utf-8')
     );
-    expect(raw).toMatch(/appId:\s*env\.PUBLIC_ALGOLIA_APP_ID/);
-    expect(raw).toMatch(/apiKey:\s*env\.PUBLIC_ALGOLIA_API_KEY/);
-    expect(raw).toMatch(/indexName:\s*env\.PUBLIC_ALGOLIA_INDEX_NAME/);
+    // Credentials resolve with CI-safe placeholders, then pass into DocSearch.
+    expect(raw).toMatch(/const algoliaAppId\s*=\s*env\.PUBLIC_ALGOLIA_APP_ID/);
+    expect(raw).toMatch(/const algoliaApiKey\s*=\s*env\.PUBLIC_ALGOLIA_API_KEY/);
+    expect(raw).toMatch(/const algoliaIndexName\s*=\s*env\.PUBLIC_ALGOLIA_INDEX_NAME/);
+    expect(raw).toMatch(/appId:\s*algoliaAppId/);
+    expect(raw).toMatch(/apiKey:\s*algoliaApiKey/);
+    expect(raw).toMatch(/indexName:\s*algoliaIndexName/);
   });
 
   it('starlightDocSearch should be registered inside plugins array', async () => {

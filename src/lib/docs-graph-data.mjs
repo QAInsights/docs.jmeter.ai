@@ -22,6 +22,13 @@ export const crossLinks = [
   ['/user-manual/listeners', '/user-manual/realtime-results'],
   ['/user-manual/component-reference', '/extending/extending-jmeter'],
   ['/user-manual/best-practices', '/user-manual/build-test-plan'],
+  ['/user-manual/best-practices', '/tools/thread-calculator'],
+  ['/user-manual/properties-reference', '/tools/properties-cheatsheet'],
+  ['/user-manual/regular-expressions', '/tools/regex-tester'],
+  ['/user-manual/remote-test', '/tools/heap-estimator'],
+  ['/tools', '/tools/thread-calculator'],
+  ['/tools/thread-calculator', '/tools/heap-estimator'],
+  ['/tools/heap-estimator', '/tools/thread-calculator'],
   ['/reference/download-jmeter', '/getting-started/get-started'],
 ];
 

@@ -17,6 +17,10 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 Use the GUI to build and validate a test plan, then run the actual load test from the command line so rendering and listeners do not distort injector performance.
 :::
 
+:::tip[Size threads from target RPS]
+Not sure how many concurrent users you need? Use the free [JMeter Thread Calculator](/tools/thread-calculator/) to estimate threads and ramp-up from target RPS and average response time, then validate with a pilot run.
+:::
+
 :::caution[Avoid View Results Tree in load tests]
 View Results Tree is useful for debugging, but it keeps detailed sample data in memory. Disable it before any sustained or high-volume load test.
 :::

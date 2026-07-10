@@ -1,0 +1,63 @@
+---
+title: "JMeter Heap / JVM Sizing Estimator"
+description: "Estimate JMeter injector heap (-Xmx) from thread count, engine count, scripting, and listeners. Free client-side tool on docs.jmeter.ai."
+seoTitle: "JMeter Heap Size Calculator"
+keywords:
+  - JMeter heap size
+  - JMeter OutOfMemoryError
+  - JMeter Xmx
+  - JMeter JVM settings
+  - JMeter memory
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: 3 min read
+lastVerified: JMeter 5.6
+---
+
+import HeapEstimator from '../../../components/tools/HeapEstimator.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Heap / JVM Sizing Estimator
+
+Pick a **starting** `-Xmx` for injectors. Memory depends on threads, samplers, scripting, listeners, and response sizes. This tool gives a conservative first guess you should validate with GC logs.
+
+<HeapEstimator />
+
+## How to apply the flags
+
+On the command line (example):
+
+```bash
+JVM_ARGS="-Xms512m -Xmx2048m" jmeter -n -t plan.jmx -l results.jtl
+```
+
+Or set `HEAP` in your JMeter startup script / environment for the version you ship.
+
+## Practical tips
+
+- Prefer **CLI mode** for load; GUI burns heap on rendering.
+- Disable **View Results Tree / Table** during load tests.
+- In distributed mode, size **each engine** for its share of threads.
+- Controllers usually need less heap than injectors.
+
+## Related reading
+
+- [Best Practices](/user-manual/best-practices/)
+- [Thread Calculator](/tools/thread-calculator/)
+- [Remote Testing](/user-manual/remote-test/)
+- [Listeners](/user-manual/listeners/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    Size threads with the [Thread Calculator](/tools/thread-calculator/), then re-check heap.
+  </Fragment>
+  <Fragment slot="related">
+    [Properties cheat sheet](/tools/properties-cheatsheet/) · [Dashboard report](/user-manual/generating-dashboard/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Raising -Xmx endlessly while View Results Tree is still enabled.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    Still OOM? Reduce threads per engine, strip listeners, avoid saving response data.
+  </Fragment>
+</RelatedContent>

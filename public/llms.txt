@@ -2,6 +2,14 @@
 
 > Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience. This is an independent community resource and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation. For official documentation, visit jmeter.apache.org.
 
+## Tools
+
+- [Tools Hub](https://docs.jmeter.ai/tools/): Interactive free JMeter utilities (calculators and helpers)
+- [Thread Group Calculator](https://docs.jmeter.ai/tools/thread-calculator/): Estimate concurrent threads, ramp-up, and injector heap from target RPS and response time
+- [Heap / JVM Estimator](https://docs.jmeter.ai/tools/heap-estimator/): Suggest starting -Xmx for injectors from threads and engines
+- [Properties Cheat Sheet](https://docs.jmeter.ai/tools/properties-cheatsheet/): Filterable high-impact jmeter.properties / user.properties
+- [Regex Extractor Builder](https://docs.jmeter.ai/tools/regex-tester/): Paste a response body (max 1 MB, browser-only) to detect dynamic values and copy Regular Expression Extractor fields
+
 ## User Manual
 
 - [Getting Started](https://docs.jmeter.ai/getting-started/get-started/): Installation, configuration, and first steps with JMeter
