@@ -85,6 +85,25 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+### Important: MDX files are generated
+
+The `src/content/docs/**/*.mdx` files are **generated artifacts** produced by
+`tools/convert.mjs` from the upstream [Apache JMeter](https://github.com/apache/jmeter)
+`xdocs/` XML. A nightly workflow (`.github/workflows/sync-upstream.yml`) regenerates
+them and opens a sync PR.
+
+**Direct edits to MDX files will be overwritten** by the next sync run. To make a
+lasting change to documentation content:
+
+- **Prefer fixing the converter** in `tools/convert.mjs` so the change applies to all
+  generated pages and survives syncs.
+- **Or upstream the change** to `apache/jmeter` `xdocs/` so it flows down naturally.
+- **Or open an issue** describing the desired change so maintainers can decide the
+  best path.
+
+Changes to non-generated files (components, styles, tools, tests, config) are not
+affected by the sync and can be edited directly.
+
 ## License
 
 Licensed under the Apache License, Version 2.0 (the "License");

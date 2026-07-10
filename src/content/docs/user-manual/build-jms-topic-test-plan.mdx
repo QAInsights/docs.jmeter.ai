@@ -4,6 +4,8 @@ description: "Load test JMS topic (pub/sub) messaging with JMeter. Configure pub
 ---
 
 {/* SYNCED-BODY:START */}
+<a id="building"></a>
+
 ## 11. Building a JMS Topic Test Plan
 
 :::note
@@ -30,6 +32,8 @@ normal HTTP requests. In HTTP, a single user sends a request and gets a response
 Messaging system can work in synchronous and asynchronous mode.  A JMS sampler needs
 the JMS implementation jar files; for example, from Apache ActiveMQ.
 See [here](/getting-started/get-started/#libraries_activemq) for the list of jars provided by ActiveMQ.
+
+<a id="adding_users"></a>
 
 ## 11.1 Adding Users
 
@@ -85,6 +89,8 @@ name of an element, the tree will be updated with the new text after you
 leave the Control Panel (for example, when selecting another tree element).
 :::
 
+<a id="adding_subscriber_publisher"></a>
+
 ## 11.2 Adding JMS Subscriber and Publisher
 
 Make sure the required jar files are in JMeter's `lib` directory. If they are
@@ -127,6 +133,8 @@ Then, select the JMS Publisher element in the tree and edit the following proper
 
 ![Figure 11.3. JMS Publisher](/images/screenshots/jms/jms_pub.png)
 _Figure 11.3. JMS Publisher_
+
+<a id="adding_listener"></a>
 
 ## 11.3 Adding a Listener to View Store the Test Results
 

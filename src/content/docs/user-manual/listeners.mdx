@@ -10,6 +10,8 @@ lastVerified: "JMeter 5.6"
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 {/* SYNCED-BODY:START */}
+<a id="intro"></a>
+
 ## 12. Introduction to listeners
 
 {/* CUSTOM-INTRO:START */}
@@ -44,6 +46,8 @@ then the path is assumed to be relative to the JMX file location.
 If you only wish to record certain samples, add the Listener as a child of the sampler.
 Or you can use a Simple Controller to group a set of samplers, and add the Listener to that.
 The same filename can be used by multiple samplers - but make sure they all use the same configuration!
+
+<a id="defaults"></a>
 
 ## 12.1 Default Configuration
 
@@ -197,12 +201,16 @@ Matching is now also strict (non-lenient).
 JMeter 2.8 and earlier used lenient mode which could result in timestamps with incorrect dates
 (times were usually correct).
 
+<a id="sample_variables"></a>
+
 ### 12.1.1 Sample Variables
 
 JMeter supports the `sample_variables`
 property to define a list of additional JMeter variables which are to be saved with
 each sample in the JTL files. The values are written to CSV files as additional columns,
 and as additional attributes in XML files. See above for an example.
+
+<a id="sample_configuration"></a>
 
 ### 12.1.2 Sample Result Save Configuration
 
@@ -215,6 +223,8 @@ CSV format cannot currently be used to save any items that include line-breaks.
 _**Configuration dialogue**_
 
 Note that cookies, method and the query string are saved as part of the "`Sampler Data`" option.
+
+<a id="batch"></a>
 
 ## 12.2 CLI mode (batch) test runs
 
@@ -240,6 +250,8 @@ as a `SimpleDateFormat` format applied to the current date, for example:
 `log_file='jmeter_'yyyyMMddHHmmss'.tmp'`.
 This can be used to generate a unique name for each test run.
 
+<a id="resources"></a>
+
 ## 12.3 Resource usage
 
 :::note
@@ -262,6 +274,8 @@ Less memory is now needed, especially if most samples only take a second or two 
 - Aggregate Graph
 
 To minimize the amount of memory needed, use the Simple Data Writer, and use the CSV format.
+
+<a id="csvlogformat"></a>
 
 ## 12.4 CSV Log format
 
@@ -292,6 +306,8 @@ The order of appearance of columns is fixed, and is as follows:
 - `Hostname` - where the sample was generated
 - `IdleTime` - number of milliseconds of 'Idle' time (normally 0)
 - `Variables`, if specified
+
+<a id="xmlformat2.1"></a>
 
 ## 12.5 XML Log format 2.1
 
@@ -384,9 +400,13 @@ Content-Type: text/html; charset=ISO-8859-1
 
 Note that the sample node name may be either "`sample`" or "`httpSample`".
 
+<a id="xmlformat2.2"></a>
+
 ## 12.6 XML Log format 2.2
 
 The format of the JTL files is identical for 2.2 and 2.1. Format 2.2 only affects JMX files.
+
+<a id="attributes"></a>
 
 ## 12.7 Sample Attributes
 
@@ -422,6 +442,8 @@ The testplan variable name is used as the attribute name.
 See [Sample variables](#sample_variables) (above) for more information.
 :::
 
+<a id="saving"></a>
+
 ## 12.8 Saving response data
 
 As shown above, the response data can be saved in the XML log file if required.
@@ -433,6 +455,8 @@ Another solution is to use the Post-Processor [Save_Responses_to_a_file](/user-m
 This generates a new file for each sample, and saves the file name with the sample.
 The file name can then be included in the sample log output.
 The data will be retrieved from the file if necessary when the sample log file is reloaded.
+
+<a id="loading"></a>
 
 ## 12.9 Loading (reading) response data
 
@@ -451,6 +475,8 @@ or
   **Run → Clear All → (Ctrl+E)**
 before loading the file.
 :::
+
+<a id="screencap"></a>
 
 ## 12.10 Saving Listener GUI data
 

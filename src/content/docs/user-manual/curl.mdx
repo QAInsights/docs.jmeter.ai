@@ -4,9 +4,13 @@ description: "Import cURL commands directly into JMeter test plans. Convert curl
 ---
 
 {/* SYNCED-BODY:START */}
+<a id="hints"></a>
+
 ## 24. Curl
 
 This method is to create http requests from curl command. If you want to know more about curl, please click the [Curl document](https://curl.haxx.se/).
+
+<a id="enter_command"></a>
 
 ### 24.1 How to enter (a) command(s)
 
@@ -15,6 +19,8 @@ Create a Test Plan From a cURL Command
 1. To create an import from a cURL, open the `Tools` menu and click `Import from cURL`.     ![Figure 1 - The menu where curl is located](/images/screenshots/curl/choose_curl.png) _Figure 1 - The menu where curl is located_
 2. There are two ways to enter the curl command line. Firstly, we can enter it manually. Secondly, we can import a file containing the curl command line.     This tool supports input of multiple curl command lines at the same time.     ![Figure 2.1 - Enter curl command in text panel](/images/screenshots/curl/enter_command.png) _Figure 2.1 - Enter curl command in text panel_     ![Figure 2.2 - Enter curl command from file](/images/screenshots/curl/enter_command_from_file.png) _Figure 2.2 - Enter curl command from file_
 3. Then, click `Create Test Plan` button and a new HTTP Sample will be added to the Test Plan.     ![Figure 3 - result of Test Plan](/images/screenshots/curl/result.png) _Figure 3 - result of Test Plan_
+
+<a id="curl_options"></a>
 
 ### 24.2 Curl options supported
 
@@ -156,12 +162,16 @@ Create a Test Plan From a cURL Command
 **`--noproxy &lt;no-proxy-list&gt;`**
 : Comma-separated list of hosts which do not use a proxy, if one is specified.
 
+<a id="warning"></a>
+
 ### 24.3 Warning
 
 When the command you entered is ignored or contains warning content, we will display warning in the comment section of HTTP Request.
 
 ![Figure 1 -Warning](/images/screenshots/curl/http_request_warning.png)
 _Figure 1 -Warning_
+
+<a id="example"></a>
 
 ### 24.4 Examples
 

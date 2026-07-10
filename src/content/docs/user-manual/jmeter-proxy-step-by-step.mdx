@@ -4,15 +4,21 @@ description: "Record HTTP and HTTPS traffic into JMeter test plans with the Test
 ---
 
 {/* SYNCED-BODY:START */}
+<a id="script-recorder"></a>
+
 ## 26. Apache JMeter HTTP(S) Test Script Recorder
 
 This tutorial attempts to explain the exact steps for recording HTTP/HTTPS. For those new to JMeter, one easy way to create a test plan is to use the Recorder.
+
+<a id="configuration"></a>
 
 ### 26.1 JMeter configuration
 
 Since JMeter 2.10, recording has been improved to better handle embedded resources and creation of certificates on the fly.
 To enable these features, JMeter uses `keytool` utility (available in JRE/JDK) so you need to ensure your
 configuration is correct, read [this wiki page before starting.](https://cwiki.apache.org/confluence/display/JMETER/TestRecording210)
+
+<a id="basic-instructions"></a>
 
 ### 26.2 Basic Instructions
 
@@ -28,6 +34,8 @@ A file called `ApacheJMeterTemporaryRootCA.crt` will be generated in `JMETER_HOM
 folder. Install this certificate in your browser, if you don't know how to do it,
 read [Installing the JMeter CA certificate for HTTPS recording](/user-manual/component-reference/#HTTP%28S%29_Test_Script_Recorder)
 
+<a id="configure-browser"></a>
+
 ### 26.3 Configure your browser to use the JMeter Proxy
 
 At this point, JMeter's proxy is running. For this exercise, we will use Iceweasel/Firefox
@@ -40,6 +48,8 @@ to view some pages on the JMeter website.
 5. On the new pop-up, check `Manual proxy configuration`. The address and       port fields should be enabled now.      **`Address`** : enter `localhost` or the IP address of your system **`Port`** : enter `8888`.     ![firefox-configure-proxy.png](/images/screenshots/firefox-configure-proxy.png)
 6. Check `Use this proxy server for all protocols`
 7. Click `OK` button. This should return you to the browser
+
+<a id="navigation-recording"></a>
 
 ### 26.4 Record your navigation
 
@@ -62,6 +72,8 @@ is required by all pages, the request defaults is where one would add the entrie
 
 1. Select `Thread Group` and change a few defaults:      **`Number of Threads (users)`** : enter `5` **`Ramp-Up Period (in seconds)`** : do not change **`Loop Count`** : enter `100`     ![example-thread-group.png](/images/screenshots/example-thread-group.png)
 
+<a id="validate-script"></a>
+
 ### 26.5 Validate the script
 
 Now we need to validate the script before to run our test plan. Save the test plan.
@@ -71,6 +83,8 @@ Right click on the `Thread Group`
   ![Validate-Test-Plan.png](/images/screenshots/Validate-Test-Plan.png)
 
 Check with `View Results Tree` element if all is ok.
+
+<a id="correlate-start"></a>
 
 ### 26.6 Variabilize and Correlate the script
 
@@ -89,6 +103,8 @@ To correlate, we can get data from a request with `Post Processors` like `JSON E
 
 To find data to correlate, the easiest way to do it is to use the Search function in `View Results Tree`.
 ![Search-Correlation.png](/images/screenshots/Search-Correlation.png)
+
+<a id="test-start"></a>
 
 ### 26.7 Start the test
 

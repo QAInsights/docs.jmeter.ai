@@ -4,10 +4,14 @@ description: "Run JUnit tests inside JMeter with the JUnit Sampler. Load test ja
 ---
 
 {/* SYNCED-BODY:START */}
+<a id="junit"></a>
+
 ## 27. JUnit Sampler Tutorial
 
 This tutorial attempts to explain the basic design, functionality and usage of the new JUnit Sampler for JMeter.
 The sampler was introduced in version 2.1.2 release of JMeter. Earlier releases do not have the sampler.
+
+<a id="design"></a>
 
 ### 27.1 Design
 
@@ -22,6 +26,8 @@ with some differences.
 - Each time the test method is called, JMeter will pass the result to the listeners.
 - Support for `oneTimeSetUp` and `oneTimeTearDown` is done as a method.       Since JMeter is multi-threaded, we cannot call `oneTimeSetUp`/`oneTimeTearDown`       the same way maven does it.
 - The sampler reports unexpected exceptions as errors.
+
+<a id="functionality"></a>
 
 ### 27.2 Functionality
 
@@ -111,6 +117,8 @@ public class myTestCase {
 By default, JMeter will provide some default values for the success/failure code and message.
 Users should define a set of unique success and failure codes and use them uniformly across all tests.
 
+<a id="usage"></a>
+
 ### 27.3 Usage
 
 Here is a short step-by-step.
@@ -158,6 +166,8 @@ TestCase1.testSelect100
 TestCase1.testSelect1000
 TestCase2.testAdd100Customers
 ```
+
+<a id="guidelines"></a>
 
 ### 27.4 General Guidelines
 

@@ -10,6 +10,8 @@ lastVerified: "JMeter 5.6"
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 {/* SYNCED-BODY:START */}
+<a id="building"></a>
+
 ## 4. Building a Web Test Plan
 
 {/* CUSTOM-INTRO:START */}
@@ -35,6 +37,8 @@ construct the Test Plan, you will use the following elements:
 
 For a more advanced Test Plan, see
 [Building an Advanced Web Test Plan](/user-manual/build-adv-web-test-plan/).
+
+<a id="adding_users"></a>
 
 ## 4.1 Adding Users
 
@@ -91,6 +95,8 @@ See Figure 4.2 for the completed JMeter Users Thread Group.
 ![Figure 4.2. JMeter Users Thread Group](/images/screenshots/webtest/threadgroup2.png)
 _Figure 4.2. JMeter Users Thread Group_
 
+<a id="adding_defaults"></a>
+
 ## 4.2 Adding Default HTTP Request Properties
 
 Now that we have defined our users, it is time to define the tasks that they
@@ -126,6 +132,8 @@ See Figure 4.4 for the completed HTTP Request Defaults element
 ![Figure 4.4. HTTP Defaults for our Test Plan](/images/screenshots/webtest/http-defaults2.png)
 _Figure 4.4. HTTP Defaults for our Test Plan_
 
+<a id="adding_cookie_support"></a>
+
 ## 4.3 Adding Cookie Support
 
 Nearly all web testing should use cookie support, unless your application
@@ -141,6 +149,8 @@ To add the [HTTP Cookie Manager](/user-manual/component-reference/#HTTP_Cookie_M
 [Thread Group](/user-manual/test-plan/#thread_group), and choose Add →
 Config Element → HTTP
 Cookie Manager, either from the Edit Menu, or from the right-click pop-up menu.
+
+<a id="adding_requests"></a>
 
 ## 4.4 Adding HTTP Requests
 
@@ -172,6 +182,8 @@ Figure 4.7:
 ![Figure 4.7. HTTP Request for JMeter Changes Page](/images/screenshots/webtest/http-request2.png)
 _Figure 4.7. HTTP Request for JMeter Changes Page_
 
+<a id="adding_listener"></a>
+
 ## 4.5 Adding a Listener to View Store the Test Results
 
 The final element you need to add to your Test Plan is a
@@ -181,6 +193,8 @@ a visual model of the data.
 
 Select the JMeter Users element and add a [Graph Results](/user-manual/component-reference/#Graph_Results) listener (Add → Listener
 → Backend Listener).
+
+<a id="logging_in"></a>
 
 ## 4.6 Logging in to a web-site
 
@@ -200,6 +214,8 @@ These will need to be added as well.
 
 ![Figure 4.8. Sample HTTP login request](/images/screenshots/webtest/http_login.png)
 _Figure 4.8. Sample HTTP login request_
+
+<a id="choose_users"></a>
 
 ## 4.7 choose the same user or different users
 

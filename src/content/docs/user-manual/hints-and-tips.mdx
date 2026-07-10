@@ -4,11 +4,15 @@ description: "Community JMeter tips and tricks - pass variables between threads 
 ---
 
 {/* SYNCED-BODY:START */}
+<a id="hints"></a>
+
 ## 22. Hints and Tips
 
 This section is a collection of various hints and tips that have been suggested by various questions on the JMeter User list.
 If you don't find what you are looking for here, please check the [JMeter Wiki](https://cwiki.apache.org/confluence/display/JMETER/Home).
 Also, try search the JMeter User list; someone may well have already provided a solution.
+
+<a id="variable_and_threads"></a>
 
 ### 22.1 Passing variables between threads
 
@@ -26,6 +30,8 @@ and extract the information using a PostProcessor or BeanShell element.
 
 If you can derive the data before starting the test, then it may well be better to store it in a file,
 read it using CSV Dataset.
+
+<a id="debug_logging"></a>
 
 ### 22.2 Enabling Debug logging
 
@@ -53,6 +59,8 @@ To avoid using too much memory, this components limits the number of characters 
 jmeter.loggerpanel.maxlength=80000
 ```
 
+<a id="searching"></a>
+
 ### 22.3 Searching
 
 It is sometimes hard to find in a Test Plan tree and elements using a variable or containing a certain URL or parameter.
@@ -77,6 +85,8 @@ _Figure 3 - Search Regexp in TreeView (in this example we search whole word)_
 
 ![Figure 4 - Result in TreeView](/images/screenshots/searching/regexp-search-result.png)
 _Figure 4 - Result in TreeView_
+
+<a id="hidpi"></a>
 
 ### 22.4 JMeter and a HiDPI screen
 
@@ -135,6 +145,8 @@ This is not a full HiDPI support and only affects
 - Font size into text areas
 :::
 
+<a id="autosave"></a>
+
 ### 22.5 Autosave process configuration
 
     Since JMeter 3.0, JMeter automatically saves up to ten backups of every saved jmx files. When enabled, just before the jmx file is saved,
@@ -181,6 +193,8 @@ jmeter.gui.action.save.keep_backup_max_count=10
 ```
 
     
+<a id="component_hotkeys"></a>
+
 ### 22.5 Adding Elements with Hotkeys
 
         
@@ -232,6 +246,8 @@ The binding above are made for Windows QWERTY keyboards. For other platforms and
 
     
     
+<a id="browser_renderer_view_results_tree"></a>
+
 ### 22.6 Browser renderer is not displaying in View Results Tree
 
         

@@ -4,6 +4,8 @@ description: "Build a JMeter LDAP test plan to stress test directory services. S
 ---
 
 {/* SYNCED-BODY:START */}
+<a id="building"></a>
+
 ## 8a. Building an LDAP Test Plan
 
         In this section, you will learn how to create a basic Test Plan to test an LDAP server.
@@ -19,6 +21,8 @@ the users to run their tests 4 times. So,  the total number of requests is (4 us
         This example assumes that the LDAP Server is available at ldap.test.com.
 
     
+<a id="adding_users"></a>
+
 ## 8a.1 Adding Users
 
         The first step you want to do with every JMeter Test Plan is to add a Thread Group element.
@@ -34,6 +38,8 @@ clicking on the Test Plan element.
 _Figure 8a.1. Thread Group and final test tree_
 
     
+<a id="add_login"></a>
+
 ## 8a.2 Adding Login Config Element
 
         Begin by selecting the `LDAP Users` element. Click your right mouse
@@ -57,6 +63,8 @@ Enter Username field to "your LDAP Username",
 :::
 
     
+<a id="add_defaults"></a>
+
 ## 8a.3 Adding LDAP Request Defaults
 
                 Begin by selecting the `LDAP Users` element. Click your right mouse button
@@ -82,6 +90,8 @@ Enter `DN` field to "`your LDAP Root Distinguished Name`".
 :::
 
     
+<a id="add_requests"></a>
+
 ## 8a.4 Adding LDAP Requests
 
                 In our Test Plan, we need to make four LDAP requests.
@@ -140,6 +150,8 @@ _Figure 8a.4.3 LDAP Request for Inbuilt Modify test_
                 ![Figure 8a.4.4 LDAP Request for Inbuilt Delete test](/images/screenshots/ldaptest/delete.png)
 _Figure 8a.4.4 LDAP Request for Inbuilt Delete test_
 
+<a id="ResponseAssertion"></a>
+
 ## 8a.5 Adding a Response Assertion
 
                You can add a Response Assertion element.
@@ -160,6 +172,8 @@ Note: A this position in the tree,
 _Figure 8a.5 LDAP Response Assertion_
 
  
+<a id="add_listener"></a>
+
 ## 8a.6 Adding a Listener to View/Store the Test Results
 
                The final element you need to add to your Test Plan is a Listener.

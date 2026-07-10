@@ -4,6 +4,8 @@ description: "Developer guide to writing JMeter plugins. Learn the plugin archit
 ---
 
 {/* SYNCED-BODY:START */}
+<a id="howto"></a>
+
 ## 29. How to write a plugin for JMeter
 
 #### Introduction from Peter Lin
@@ -39,6 +41,8 @@ While some folks have successfully dug straight into the code and made improveme
 a real tutorial on how to do this has been lacking. I tried a long time ago to write some
 documentation about it, but most people did not find it useful. Hopefully, with Peter's help, this
 attempt will be more successful.
+
+<a id="basic-structure"></a>
 
 ### 29.1 Basic structure of JMeter
 
@@ -177,6 +181,8 @@ own directory. In terms of difficulty, writing visualizers is probably one of th
 write.
 
   
+<a id="service-lookup"></a>
+
 ### 29.2 JMeter Gui – Service lookup
 
     
@@ -223,6 +229,8 @@ public class IterationCounter extends AbstractFunction implements ThreadListener
 
   
 
+<a id="testelement-contract"></a>
+
 ### 29.3 JMeter Gui – TestElement Contract
 
 When writing any JMeter component, there are certain contracts you must be aware of – ways a
@@ -266,6 +274,8 @@ knows when to call your configure, and `modifyTestElement` methods where you can
 straightforward way.
 
 Writing Visualizers is somewhat of a special case, however.
+
+<a id="visualizer"></a>
 
 ### 29.4 Writing a Visualizer
 
@@ -437,6 +447,8 @@ The last method visualizers should implement is `getPrintableComponent()`. The m
 responsible for returning the JComponent that can be saved or printed. This feature was recently
 added so that users can save a screen capture of any given visualizer.
 
+<a id="graphlistener"></a>
+
 ### 29.5 GraphListener
 
 :::note
@@ -466,6 +478,8 @@ the implementation of `updateGui(Sample s)` should do just that.
 boxes, checkbox and lists. If your visualizer uses one of these and needs to know when it has
 been updated, the visualizer will need to implement the interface. For an example of how to
 implement the interface, please look at `GraphVisualizer`.
+
+<a id="custom-graphs"></a>
 
 ### 29.6 Writing Custom Graphs
 
@@ -601,6 +615,8 @@ isn't a bottleneck is to run it with a tool like Borland OptimizeIt. A good way 
 create a simple test plan and run it. The heap and garbage collection behavior should be regular
 and predictable.
 
+<a id="testbean"></a>
+
 ### 29.7 Making a TestBean Plugin For JMeter
 
 In this part, we will go through the process of creating a simple component for JMeter that uses
@@ -618,6 +634,8 @@ JMeter's `src/components` directory).
 6. Setting up your GUI elements in `CSVDataSetBeanInfo`:      - You can create groupings for your component's properties. Each grouping you create         needs a label and a list of property names to include in that grouping. I.e.: ``` createPropertyGroup("csv_data",         new String[] { "filename", "variableNames" }); ``` - Creates a grouping called `csv_data` that will include GUI input elements for the         `filename` and `variableNames` properties of `CSVDataSet`.         Then, we need to define what kind of properties we want these to be: ``` p = property("filename"); p.setValue(NOT_UNDEFINED, true); p.setValue(DEFAULT, ""); p.setValue(NOT_EXPRESSION, true); p = property("variableNames"); p.setValue(NOT_UNDEFINED, true); p.setValue(DEFAULT, ""); p.setValue(NOT_EXPRESSION, true); ```         This essentially creates two properties whose value is not allowed to be `null`, and         whose default values are `""`. There are several such attributes that can be set for each         property. Here is a rundown:          **`NOT_UNDEFINED`** : The property will not be left `null`. **`DEFAULT`** : A default values must be given if `NOT_UNDEFINED` is `true`. **`NOT_EXPRESSION`** : The value will not be parsed for functions if this is `true`. **`NOT_OTHER`** : This is not a free form entry field – a list of values has to be provided. **`TAGS`** : With a `String[]` as the value, this sets up a predefined             list of acceptable values, and JMeter will create a dropdown select.         Additionally, a custom property editor can be specified for a property: ``` p.setPropertyEditorClass(FileEditor.class); ```         This will create a text input plus browse button that opens a dialog for finding a file.         Usually, complex property settings are not needed, as now. For a more complex         example, look at `org.apache.jmeter.protocol.http.sampler.AccessLogSamplerBeanInfo`
 7. Defining your resource strings. In `CSVDataSetResources.properties` we have to define all our     string resources. To provide translations, one would create additional files such as     `CSVDataSetResources_ja.properties`, and `CSVDataSetResources_de.properties`. For our     component, we must define the following resources:      **`displayName`** : This will provide a name for the element that will appear in menus. **`csv_data.displayName`** : we create a property grouping called `csv_data`,          so we have to provide a label for the grouping **`filename.displayName`** : a label for the filename input element. **`filename.shortDescription`** : a tool-tip-like help text blurb. **`variableNames.displayName`** : a label for the variable name input element. **`variableNames.shortDescription`** : tool tip for the `variableNames` input element.
 8. Debug your component.
+
+<a id="building"></a>
 
 ### 29.8 Building JMeter
 

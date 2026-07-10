@@ -4,6 +4,8 @@ description: "Step-by-step JMeter distributed testing tutorial - set up controll
 ---
 
 {/* SYNCED-BODY:START */}
+<a id="distributed-testing"></a>
+
 ## 25. Apache JMeter Distributed Testing Step-by-step
 
 This short tutorial explains how to use multiple systems to perform stress testing. Before we start, there are a couple of things to check.
@@ -25,6 +27,8 @@ In this tutorial we use GUI Mode just for demonstration. In real life you should
 ![One controller node with multiple worker nodes](/images/screenshots/distributed-jmeter.svg)
 _One controller node with multiple worker nodes_
 
+<a id="terminology"></a>
+
 ### 25.1 Terminology
 
 Before we dive into the step-by-step instructions, it's a good idea to define the terms and make sure the definition is clear.
@@ -42,6 +46,8 @@ Before we dive into the step-by-step instructions, it's a good idea to define th
 ![Categories of systems](/images/screenshots/distributed-names.svg)
 _Categories of systems_
 
+<a id="step-by-step"></a>
+
 ### 25.2 Step-by-Step
 
 1. On the worker nodes, go to `jmeter/bin` directory and execute      `jmeter-server.bat` (`jmeter-server` on unix).
@@ -54,6 +60,8 @@ _Categories of systems_
 
 ![Simple test plan](/images/screenshots/example-simple-plan.png)
 _Simple test plan_
+
+<a id="starting"></a>
 
 ### 25.2 Starting the Test
 
@@ -69,6 +77,8 @@ If you do not see this message, it means `jmeter-server` did not start correctly
 debugging the issue, [go to the tips section](#tips). There are two ways to
 initiate the test: a single system and all systems.
 
+<a id="start-single-client"></a>
+
 ### 25.3 Start a single clients
 
 1. Click Run at the top
@@ -78,6 +88,8 @@ initiate the test: a single system and all systems.
 ![Start a single worker node](/images/screenshots/example-remote-start.png)
 _Start a single worker node_
 
+<a id="start-all-clients"></a>
+
 ### 25.4 Start all clients
 
 1. Click Run at the top
@@ -85,6 +97,8 @@ _Start a single worker node_
 
 ![Start all worker nodes](/images/screenshots/example-remote-start-all.png)
 _Start all worker nodes_
+
+<a id="limitations"></a>
 
 ### 25.5 Limitations
 
@@ -94,11 +108,15 @@ There are some basic limitations for distributed testing. Here's the list of the
 2. Since version 2.9, JMeter sends all the test results stripping Response data to the controlling console, this allows       us to reduce impact on network IO. Ensure you monitor your network traffic so that this traffic does not incur contention
 3. A single JMeter client running on a 2-3 GHz CPU (recent CPU) can handle 1000-2000 threads depending on the type of test.
 
+<a id="additional-resources"></a>
+
 ### 25.6 Additional resources
 
   [Wiki page on remote testing](https://cwiki.apache.org/confluence/display/JMETER/JMeterFAQ#JMeterFAQ-Howtodoremotetestingthe'properway'?)
 
   [Remote Testing in the user manual](/user-manual/remote-test/)
+
+<a id="tips"></a>
 
 ### 25.7 Tips
 

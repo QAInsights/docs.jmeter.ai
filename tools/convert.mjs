@@ -246,7 +246,9 @@ function convertOrderedNode(node, ctx = {}) {
       const name = (attrs.name || '').replaceAll('&sect-num;', sectNum);
       const level = ctx.sectionLevel || 2;
       const hashes = '#'.repeat(level);
-      let out = `\n${hashes} ${name}\n\n`;
+      let out = '';
+      if (attrs.anchor) out += `\n<a id="${attrs.anchor}"></a>\n`;
+      out += `\n${hashes} ${name}\n\n`;
       out += walkOrdered(children, { ...ctx, sectionLevel: level + 1 });
       return out;
     }
@@ -255,7 +257,9 @@ function convertOrderedNode(node, ctx = {}) {
       const name = (attrs.name || '').replaceAll('&sect-num;', sectNum);
       const level = Math.min(ctx.sectionLevel || 3, 6);
       const hashes = '#'.repeat(level);
-      let out = `\n${hashes} ${name}\n\n`;
+      let out = '';
+      if (attrs.anchor) out += `\n<a id="${attrs.anchor}"></a>\n`;
+      out += `\n${hashes} ${name}\n\n`;
       out += walkOrdered(children, { ...ctx, sectionLevel: level + 1 });
       return out;
     }

@@ -6,6 +6,8 @@ description: "Generate JMeter HTML dashboard reports with APDEX scores, response
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 {/* SYNCED-BODY:START */}
+<a id="generation"></a>
+
 ## 14. Generating Report Dashboard
 
             JMeter supports dashboard report generation to get graphs and
@@ -14,6 +16,8 @@ import RelatedContent from '../../../components/RelatedContent.astro';
             This chapter describes how to configure and use the generator.
 
             
+<a id="overview"></a>
+
 ### 14.1 Overview
 
                 The dashboard generator is a modular extension of JMeter.
@@ -37,6 +41,8 @@ import RelatedContent from '../../../components/RelatedContent.astro';
                 
             
             
+<a id="configuration"></a>
+
 ### 14.2 Configuring Dashboard Generation
 
                 
@@ -52,9 +58,13 @@ All report generator properties can be found in file `reportgenerator.properties
                 
 
                 
+<a id="configuration_requirements"></a>
+
 #### 14.2.1 Requirements
 
                     
+<a id="saveservice_requirements"></a>
+
 ##### 14.2.1.1 Filtering configuration
 
                         Ensure you set property `jmeter.reportgenerator.exporter.html.series_filter` to keep only the transactions
@@ -68,6 +78,8 @@ jmeter.reportgenerator.exporter.html.series_filter=^(Search|Order)(-success|-fai
 
                     
                     
+<a id="saveservice_requirements"></a>
+
 ##### 14.2.1.2 Save Service configuration
 
                     
@@ -101,6 +113,8 @@ jmeter.save.saveservice.timestamp_format = ms
 
                     
                     
+<a id="transaction_controller_requirements"></a>
+
 ##### 14.2.1.3 Transaction Controller configuration
 
                     
@@ -115,6 +129,8 @@ jmeter.save.saveservice.timestamp_format = ms
                 
 
                 
+<a id="configuration_general"></a>
+
 #### 14.2.2 General settings
 
                     
@@ -202,6 +218,8 @@ The calculated percentiles might differ from those from the Aggregate Report in 
                 
 
                 
+<a id="configure_graph"></a>
+
 #### 14.2.3 Graph settings
 
                     
@@ -218,6 +236,8 @@ jmeter.reportgenerator.graph.
                     
 
                     
+<a id="general_graph_properties"></a>
+
 ##### 14.2.3.1 General properties
 
                         All graphs support these properties:
@@ -232,6 +252,8 @@ jmeter.reportgenerator.graph.
                     
 
                     
+<a id="specific_graph_properties"></a>
+
 ##### 14.2.3.2 Specific properties
 
                         
@@ -262,6 +284,8 @@ jmeter.reportgenerator.graph.&lt;graph_id&gt;.property.set_granularity=150
                 
 
                 
+<a id="configure_export"></a>
+
 #### 14.2.4 Export settings
 
                     
@@ -276,6 +300,8 @@ jmeter.reportgenerator.exporter
                     
 
                     
+<a id="general_export_properties"></a>
+
 ##### 14.2.4.1 General properties
 
                         All exporters support these properties:
@@ -291,6 +317,8 @@ jmeter.reportgenerator.exporter
                     
 
                     
+<a id="specific_export_properties"></a>
+
 ##### 14.2.4.2 Specific properties
 
                         
@@ -311,6 +339,8 @@ jmeter.reportgenerator.exporter.&lt;exporter_id&gt;.property
                     
 
                     
+<a id="graph_export_properties"></a>
+
 ##### 14.2.4.3 Graph properties
 
                         
@@ -336,6 +366,8 @@ jmeter.reportgenerator.exporter.&lt;exporter_id&gt;.graph_options.&lt;graph_id&g
                     
 
                     
+<a id="export_filtering"></a>
+
 ##### 14.2.4.4 Filtering mechanisms
 
                         
@@ -410,6 +442,8 @@ Incorrect filter configuration can lead to generate empty
                 
 
                 
+<a id="sample_configuration"></a>
+
 #### 14.2.5 Sample configuration
 
                     You can copy the following configuration to your user.properties
@@ -474,6 +508,8 @@ Adapt the parameter
             
 
             
+<a id="report"></a>
+
 ### 14.3 Generating reports
 
                 
@@ -482,6 +518,8 @@ Adapt the parameter
                 
 
                 
+<a id="report_only"></a>
+
 #### 14.3.1 Generation from an existing sample CSV log file
 
                     
@@ -496,6 +534,8 @@ jmeter -g &lt;log file&gt; -o &lt;Path to output folder&gt;
                 
 
                 
+<a id="report_after_load_test"></a>
+
 #### 14.3.2 Generation after load test
 
                     
@@ -511,6 +551,8 @@ jmeter -n -t &lt;test JMX file&gt; -l &lt;test log file&gt; -e -o &lt;Path to ou
             
 
             
+<a id="report_gui"></a>
+
 ### 14.3.3 Generation using GUI Tools menu
 
                 
@@ -540,6 +582,8 @@ If report generation takes more than two minutes, adjust the property `generate_
              
 
             
+<a id="default_graphs"></a>
+
 ### 14.4 Default graphs
 
                 
@@ -577,6 +621,8 @@ Due to limitations of this early version, each default graph
 
             
             
+<a id="customs_graphs"></a>
+
 ### 14.5 Generating customs graphs over time
 
                 
@@ -622,6 +668,8 @@ jmeter.reportgenerator.graph.custom_testGraph.property.set_Content_Message=Numbe
             
 
             
+<a id="development"></a>
+
 ### 14.6  Want to improve Report Dashboard ?
 
             If you want to contribute new graphs or improve current ones, you

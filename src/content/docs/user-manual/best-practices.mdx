@@ -10,6 +10,8 @@ lastVerified: "JMeter 5.6"
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 {/* SYNCED-BODY:START */}
+<a id="best_practices"></a>
+
 ## 16. Best Practices
 
 {/* CUSTOM-INTRO:START */}
@@ -26,12 +28,16 @@ View Results Tree is useful for debugging, but it keeps detailed sample data in 
 :::
 {/* CUSTOM-INTRO:END */}
 
+<a id="use_latest_version"></a>
+
 ## 16.1 Always use latest version of JMeter
 
 The performance of JMeter is being constantly improved, so users are highly encouraged to use the most up to date version. 
 
 Ensure you always read [changes list](/../changes/) to be aware of new improvements and components.
 You should absolutely avoid using versions that are older than 3 versions before the last one.
+
+<a id="sizing_threads"></a>
 
 ## 16.2 Use the correct Number of Threads
 
@@ -48,15 +54,21 @@ It does not require any network access so can give some idea as to the maximum t
 JMeter has an option to delay thread creation until the thread starts sampling, i.e. after any thread group delay and the ramp-up time for the thread itself.
 This allows for a very large total number of threads, provided that not too many are active concurrently.
 
+<a id="put_cookie_manager"></a>
+
 ## 16.3 Where to Put the Cookie Manager
 
 See [Building a Web Test](/user-manual/build-web-test-plan/#adding_cookie_support)
 for information.
 
+<a id="put_auth_manager"></a>
+
 ## 16.4 Where to Put the Authorization Manager
 
 See [Building an Advanced
 Web Test](/user-manual/build-adv-web-test-plan/#header_manager) for information.
+
+<a id="proxy_server"></a>
 
 ## 16.5 Using the HTTP(S) Test Script Recorder
 
@@ -104,6 +116,8 @@ Some browsers ignore proxy settings for `localhost` or `127.0.0.1`; try using th
 The error "`unknown_ca`" probably means that you are trying to record HTTPS, and the browser has not accepted the
 JMeter Proxy server certificate.
 
+<a id="user_variables"></a>
+
 ## 16.6 User variables
 
 Some test plans need to use different values for different users/threads.
@@ -117,6 +131,8 @@ For example:
 - Replace the login name with `\${USER}` and the password with `\${PASS}` on the appropriate samplers
 
 The CSV Data Set element will read a new line for each thread.
+
+<a id="lean_mean"></a>
 
 ## 16.7 Reducing resource requirements
 
@@ -134,6 +150,8 @@ Some suggestions on reducing resource usage.
 
 If your test needs large amounts of data - particularly if it needs to be randomised - create the test data in a file
 that can be read with CSV Dataset. This avoids wasting resources at run-time.
+
+<a id="beanshell_server"></a>
 
 ## 16.8 BeanShell server
 
@@ -223,12 +241,16 @@ For example:
 java -jar ../lib/bshclient.jar localhost 9000 throughput.bsh 70 5 100 60
 ```
 
+<a id="bsh_scripting"></a>
+
 ## 16.9 BeanShell scripting
 
 :::note
 Since JMeter 3.1, we advise switching from BeanShell to JSR223 Test Elements (see JSR223 section below for more details), and switching from `[__Beanshell](/user-manual/functions/#__BeanShell)` function
 to [__groovy](/user-manual/functions/#__groovy) function.
 :::
+
+<a id="bsh_overview"></a>
 
 ### 16.9.1 Overview
 
@@ -251,6 +273,8 @@ $ java -cp bsh-xxx.jar bsh.Interpreter
 bsh% source("file.bsh");
 bsh% exit(); // or use EOF key (e.g. ^Z or ^D)
 ```
+
+<a id="bsh_variables"></a>
 
 ### 16.9.2 Sharing Variables
 
@@ -293,6 +317,8 @@ bsh.shared.myObj.process();
 Rather than creating the object in the test element, it can be created in the startup file
 defined by the JMeter property "`beanshell.init.file`". This is only processed once.
 
+<a id="developing_scripts"></a>
+
 ## 16.10 Developing script functions in Groovy or Jexl3 etc.
 
 It's quite hard to write and test scripts as functions.
@@ -310,6 +336,8 @@ For example, suppose a Groovy script is stored in the variable `RANDOM_NAME`.
 The function call can then be coded as `\${__groovy(\${RANDOM_NAME})}`.
 There is no need to escape any commas in the script,
 because the function call is parsed before the variable's value is interpolated.
+
+<a id="parameterising_tests"></a>
 
 ## 16.11 Parameterising tests
 
@@ -334,6 +362,8 @@ If there are a lot of properties that need to be changed together,
 then one way to achieve this is to use a set of property files.
 The appropriate property file can be passed in to JMeter using the `-q` command-line option.
 
+<a id="jsr223"></a>
+
 ## 16.12 JSR223 Elements
 
 For intensive load testing, the recommended scripting language is one whose ScriptingEngine implements the `[Compilable](https://docs.oracle.com/javase/8/docs/api/javax/script/Compilable.html)` interface.
@@ -354,6 +384,8 @@ vars.get("varName")
 
 You can also pass them as Parameters to the script and use them this way.
 
+<a id="sharing_variables"></a>
+
 ## 16.13 Sharing variables between threads and thread groups
 
 Variables are local to a thread; a variable set in one thread cannot be read in another.
@@ -365,6 +397,8 @@ If the value is not known until the test starts, there are various options:
 - Write variables to a file and re-read them.
 - Use the `bsh.shared` namespace - see [above](#bsh_variables)
 - Write your own Java classes
+
+<a id="properties"></a>
 
 ## 16.14 Managing properties
 
@@ -379,6 +413,8 @@ Note that in the documentation `jmeter.properties` is frequently mentioned but t
 :::note
 `user.properties` file supersedes the properties defined in `jmeter.properties`
 :::
+
+<a id="deprecation"></a>
 
 ## 16.15 Deprecated elements
 

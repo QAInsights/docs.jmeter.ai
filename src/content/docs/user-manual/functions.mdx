@@ -6,6 +6,8 @@ description: "Complete JMeter functions and variables reference. Learn the ${__f
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 {/* SYNCED-BODY:START */}
+<a id="functions"></a>
+
 ## 20. Functions and Variables
 
 JMeter functions are special values that can populate fields of any Sampler or other
@@ -119,6 +121,8 @@ List of functions, loosely grouped into types.
 | String | [urlencode](#__urlencode) | Encode a string to a application/x-www-form-urlencoded string | 2.10 |
 | String | [TestPlanName](#__TestPlanName) | Return name of current test plan | 2.6 |
 
+<a id="what_can_do"></a>
+
 ### 20.1 What can functions do
 
 There are two kinds of functions: user-defined static values (or variables), and built-in functions.
@@ -144,6 +148,8 @@ request throughout the course of the test.
 Functions are shared between threads.
 Each occurrence of a function call in a test plan is handled by a separate function instance.
 :::
+
+<a id="where"></a>
 
 ### 20.2 Where can functions and variables be used?
 
@@ -192,6 +198,8 @@ SELECT item from table where name=\${VAR}
 
 (unless `VAR` itself contains the quotes)
 :::
+
+<a id="how"></a>
 
 ### 20.3 How to reference variables and functions
 
@@ -254,6 +262,8 @@ that can be used to display the values of variables etc. in the Tree View Listen
 variable will override the built-in function.
 :::
 
+<a id="function_helper"></a>
+
 ### 20.4 The Function Helper Dialog
 
 The Function Helper dialog is available from JMeter's Tools menu.
@@ -268,6 +278,8 @@ functions take different arguments.
 
 Once you have done this, click the "generate" button, and the appropriate string is generated
 for you to copy-paste into your test plan wherever you like.
+
+<a id="functions"></a>
 
 ### 20.5 Functions
 
@@ -1881,6 +1893,8 @@ Examples:
 | Append to file? | No | The way to write the string, `true` means append, `false`     means overwrite. If not specified, the default append is `true`. |
 | File encoding if not UTF-8 | No | The encoding to be used to write to the file. If not specified, the default encoding is `UTF-8`. |
 
+<a id="predefinedvars"></a>
+
 ### 20.6 Pre-defined Variables
 
 Most variables are set by calling functions or by test elements such as User Defined Variables;
@@ -1890,6 +1904,8 @@ However some variables are defined internally by JMeter. These are listed below.
 - `COOKIE_cookiename` - contains the cookie value (see [HTTP Cookie Manager](/user-manual/component-reference/#HTTP_Cookie_Manager))
 - `JMeterThread.last_sample_ok` - whether or not the last sample was OK - `true`/`false`. Note: this is updated after PostProcessors and Assertions have been run.
 - `START` variables (see next section)
+
+<a id="predefinedprops"></a>
 
 ### 20.6 Pre-defined Properties
 

@@ -10,6 +10,8 @@ lastVerified: "JMeter 5.6"
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 {/* SYNCED-BODY:START */}
+<a id="introduction"></a>
+
 ## 18 Introduction
 
 {/* CUSTOM-INTRO:START */}
@@ -24,6 +26,8 @@ Several test elements use JMeter properties to control their behaviour.
  These properties are normally resolved when the class is loaded.
  This generally occurs before the test plan starts, so it's not possible to change the settings by using the `[__setProperty()](/user-manual/functions/#__setProperty__)` function.
 :::
+
+<a id="samplers"></a>
 
 ## 18.1 Samplers
 
@@ -1638,6 +1642,8 @@ It is strongly advised to use query parameters, allowing the database to cache a
 
 [^](#)
 
+<a id="logic_controllers"></a>
+
 ## 18.2 Logic Controllers
 
     
@@ -2303,6 +2309,8 @@ Critical Section Controller takes locks only within one JVM, so if using Distrib
 :::
 
 [^](#)
+
+<a id="listeners"></a>
 
 ## 18.3 Listeners
 
@@ -3069,6 +3077,8 @@ _Grafana dashboard_
 | measurement | Yes | Measurement as per [Influx Line Protocol Reference](https://docs.influxdata.com/influxdb/v1.7/write_protocols/line_protocol_reference/).         Defaults to "`jmeter`." |
 
 [^](#)
+
+<a id="config_elements"></a>
 
 ## 18.4 Configuration Elements
 
@@ -3844,6 +3854,8 @@ GUI that they can use while developing new JMeter components.
 
 [^](#)
 
+<a id="assertions"></a>
+
 ## 18.5 Assertions
 
     
@@ -4317,6 +4329,8 @@ When using [indefinite JSON Paths](https://github.com/json-path/JsonPath#what-is
 
 [^](#)
 
+<a id="timers"></a>
+
 ## 18.6 Timers
 
     
@@ -4673,6 +4687,8 @@ Note: if you want to model Poisson arrivals, consider using [Precise Throughput 
 
 [^](#)
 
+<a id="preprocessors"></a>
+
 ## 18.7 Pre Processors
 
     
@@ -4952,6 +4968,8 @@ can be set to `true` to use a separate Runnable thread instead of the Callable.]
 | Sample Timeout | Yes | If the sample takes longer to complete, it will be interrupted. |
 
 [^](#)
+
+<a id="postprocessors"></a>
 
 ## 18.8 Post-Processors
 
@@ -5395,6 +5413,8 @@ generate the template string, and store the result into the given variable name.
 :::note
 If both left and right boundary are null, the whole data selected in scope is returned
 :::
+
+<a id="Miscellaneous_Features"></a>
 
 ## 18.9 Miscellaneous Features
 

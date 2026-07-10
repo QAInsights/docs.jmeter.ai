@@ -6,6 +6,8 @@ description: "Stream JMeter test results in real time to InfluxDB, Graphite, or 
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 {/* SYNCED-BODY:START */}
+<a id="realtime-results"></a>
+
 ## 15. Real-time results
 
 Since JMeter 2.13 you can get real-time results sent to a backend through the
@@ -24,9 +26,13 @@ In this document we will present the configuration setup to graph and historize 
 - Grafana
 - Graphite
 
+<a id="metrics"></a>
+
 ### 15.1 Metrics exposed
 
     
+<a id="metrics-threads"></a>
+
 #### 15.1.1 Thread/Virtual Users metrics
 
     
@@ -52,6 +58,8 @@ In this document we will present the configuration setup to graph and historize 
 
     
     
+<a id="metrics-response-times"></a>
+
 #### 15.1.2 Response times metrics
 
     Response related metrics are the following:
@@ -132,6 +140,8 @@ In this document we will present the configuration setup to graph and historize 
 
     
 
+<a id="jmeter-configuration"></a>
+
 ### 15.2 JMeter configuration
 
     
@@ -140,6 +150,8 @@ In this document we will present the configuration setup to graph and historize 
 
     ![InfluxDB configuration](/images/screenshots/backend_listener.png)
 _InfluxDB configuration_
+
+<a id="influxdb_db_configuration"></a>
 
 ### 15.3 InfluxDB configuration
 
@@ -152,6 +164,8 @@ _InfluxDB configuration_
         `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE jmeter"`
     
 
+<a id="influxdb"></a>
+
 #### 15.3.1 InfluxDB setup for InfluxDBBackendListenerClient
 
 InfluxDB is an open-source, distributed, time-series database that allows to
@@ -159,6 +173,8 @@ easily store metrics.
 Installation and configuration is very easy, read this for more details [InfluxDB documentation](https://docs.influxdata.com/influxdb/latest/introduction/installation/).
 
 InfluxDB data can be easily viewed in a browser through [Grafana](http://grafana.org/).
+
+<a id="influxdb_v2"></a>
 
 #### 15.3.2 InfluxDB 2 setup for InfluxDBBackendListenerClient
 
@@ -178,6 +194,8 @@ InfluxDB data can be easily viewed in a browser through [Grafana](http://grafana
     ![InfluxDB 2 configuration](/images/screenshots/backend_listener_influxdb_v2.png)
 _InfluxDB 2 configuration_
 
+<a id="grafana_configuration"></a>
+
 ### 15.4 Grafana configuration
 
     
@@ -192,6 +210,8 @@ _InfluxDB 2 configuration_
     ![Grafana dashboard](/images/screenshots/grafana_dashboard.png)
 _Grafana dashboard_
 
+<a id="graphite_configuration"></a>
+
 ### 15.5 Graphite Configuration
 
     To make JMeter send metrics to backend, add a BackendListener using the GraphiteBackendListenerClient.
@@ -200,6 +220,8 @@ _Grafana dashboard_
 
     ![Graphite configuration](/images/screenshots/backend_listener_graphite.png)
 _Graphite configuration_
+
+<a id="graphite_sendor"></a>
 
 ### 15.5.1 Graphite Sender
 

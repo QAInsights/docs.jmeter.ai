@@ -395,6 +395,20 @@ describe('convertOrderedNode', () => {
     expect(result).toContain('### Sub');
   });
 
+  it('emits an anchor tag for <section> with an anchor attribute', () => {
+    const node = el('section', [el('p', [textNode('content')])], { name: 'My Section', anchor: 'my_section' });
+    const result = convertOrderedNode(node);
+    expect(result).toContain('<a id="my_section"></a>');
+    expect(result).toContain('## My Section');
+  });
+
+  it('emits an anchor tag for <subsection> with an anchor attribute', () => {
+    const node = el('subsection', [el('p', [textNode('content')])], { name: 'Sub', anchor: 'sub' });
+    const result = convertOrderedNode(node);
+    expect(result).toContain('<a id="sub"></a>');
+    expect(result).toContain('### Sub');
+  });
+
   it('converts <component> with name and screenshot', () => {
     const node = el('component', [textNode('desc')], { name: 'HTTP Request', screenshot: 'http.png' });
     const result = convertOrderedNode(node);

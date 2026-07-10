@@ -6,7 +6,11 @@ description: "JMeter regular expressions guide - use Jakarta ORO and JDK regex e
 import RelatedContent from '../../../components/RelatedContent.astro';
 
 {/* SYNCED-BODY:START */}
+<a id="regex"></a>
+
 ## 21. Regular Expressions
+
+<a id="overview"></a>
 
 ### 21.1 Overview
 
@@ -53,6 +57,8 @@ Unlike Perl, there is no need to (i.e. do not) enclose the regular expression in
 So how does one use the modifiers `ismx` etc. if there is no trailing `/`?
 The solution is to use _extended regular expressions_, i.e. `/abc/i` becomes `(?i)abc`.
 See also [Placement of modifiers](#placement) below.
+
+<a id="examples"></a>
 
 ### 21.2 Examples
 
@@ -136,6 +142,8 @@ The following variables would be set:
 
 These variables can be referred to later on in the JMeter test plan, as `\${MYREF}`, `\${MYREF_g1}` etc.
 
+<a id="line_mode"></a>
+
 ### 21.3 Line mode
 
 The pattern matching behaves in various slightly different ways,
@@ -157,6 +165,8 @@ Multi-line mode only affects how the meta-characters '`^`' and '`$`' are interpr
 Default behaviour is that '`^`' and '`$`' only match at the very beginning and end of the string.
 When Multi-line mode is used, the '`^`' metacharacter matches at the beginning of every line,
 and the '`$`' metacharacter matches at the end of every line.
+
+<a id="meta_chars"></a>
 
 ### 21.4 Meta characters
 
@@ -217,6 +227,8 @@ of the input, `s` enables single line treatment of the input, and `x` enables ex
 
 **Note that `(?&lt;=regexp)` - lookbehind - is not supported.**
 
+<a id="placement"></a>
+
 ### 21.5 Placement of modifiers
 
 Modifiers can be placed anywhere in the regex, and apply from that point onwards.
@@ -233,6 +245,8 @@ Match ExAct case or (?i)ArBiTrARY(?-i) case
 ```
 
 would match `Match ExAct case or arbitrary case` as well as `Match ExAct case or ARBitrary case`, but not `Match exact case or ArBiTrARY case`.
+
+<a id="testing_expressions"></a>
 
 ## 21.6 Testing Regular Expressions
 

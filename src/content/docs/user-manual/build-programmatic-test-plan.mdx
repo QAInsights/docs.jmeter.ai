@@ -4,6 +4,8 @@ description: "Build JMeter test plans programmatically using the JMeter Java API
 ---
 
 {/* SYNCED-BODY:START */}
+<a id="building"></a>
+
 ## Building a Test Plan Programmatically
 
       
@@ -20,6 +22,8 @@ JMeter 5.6 brings experimental classes and methods to build test plans programma
     
 
     
+<a id="low_level_api"></a>
+
 ## Creating a plan with low-level APIs
 
       Let us create `Test Plan =&gt; Thread Group =&gt; Debug Sampler` plan
@@ -52,6 +56,8 @@ Don't confuse `ListedHashTree` with `HashTree`. `HashTree` does not honour eleme
     
 
     
+<a id="generating_code"></a>
+
 ## Generating code from UI
 
       To aid with creating code, JMeter implements `Copy Code` context action, so you could
@@ -149,6 +155,8 @@ org.apache.jmeter.protocol.http.sampler.HTTPSamplerProxy::class {
     
 
     
+<a id="treebuilder_kotlin_dsl"></a>
+
 ## Creating a plan with Kotlin DSL
 
       JMeter 5.6 introduces Kotlin DSL which might make it easier to create and maintain test plans as the structure of the code
@@ -185,6 +193,8 @@ val root = testTree { // (1)
     
 
     
+<a id="extending_treebuilder_kotlin_dsl"></a>
+
 ## Extending Kotlin DSL
 
       As you use the DSL for test plan generation, you might want to factor out the common patterns.
@@ -234,6 +244,8 @@ fun buildTree() {
     
 
     
+<a id="treebuilder_java_dsl"></a>
+
 ## Creating a plan with Java DSL
 
       JMeter 5.6 introduces Java DSL which might make it easier to create and maintain test plans as the structure of the code

@@ -12,6 +12,8 @@ A test plan describes a series of steps JMeter will execute when run.  A complet
 test plan will consist of one or more Thread Groups, logic controllers, sample generating
 controllers, listeners, timers, assertions, and configuration elements.
 
+<a id="add_remove"></a>
+
 ### 2.1 Adding and Removing Elements
 
 Adding [elements to a test plan](/user-manual/test-plan/) can be done by right-clicking on an element in the
@@ -20,6 +22,8 @@ be loaded from file and added by choosing the "`merge`" or "`open`" option.
 
 To remove an element, make sure the element is selected, right-click on the element,
 and choose the "`remove`" option.
+
+<a id="load_save"></a>
 
 ### 2.2 Loading and Saving Elements
 
@@ -31,6 +35,8 @@ To save tree elements, right click on an element and choose the "`Save Selection
 JMeter will save the element selected, plus all child elements beneath it.  In this way,
 you can save test tree fragments and individual elements for later use.
 
+<a id="config_element"></a>
+
 ### 2.3 Configuring Tree Elements
 
 Any element in the test tree will present controls in JMeter's right-hand frame.  These
@@ -40,6 +46,8 @@ configured for an element depends on what type of element it is.
 :::note
 The Test Tree itself can be manipulated by dragging and dropping components around the test tree.
 :::
+
+<a id="saving"></a>
 
 ### 2.4 Saving the Test Plan
 
@@ -57,6 +65,8 @@ Alternatively, select the appropriate Test Plan element  and then select "`Save 
 the Edit menu.
 :::
 
+<a id="run"></a>
+
 ### 2.5 Running a Test Plan
 
 To run your test plan, choose "`Start`" (`Control + r`)
@@ -72,6 +82,8 @@ These only apply to a locally run test; they do not include any threads started 
 :::note
 Using GUI mode as described here should only be used when debugging your Test Plan. To run the real load test, use CLI mode.
 :::
+
+<a id="stop"></a>
 
 ### 2.6 Stopping a Test
 
@@ -99,6 +111,8 @@ The commands currently supported are:
 These commands can be sent by using the `shutdown[.cmd|.sh]` or `stoptest[.cmd|.sh]` script
 respectively. The scripts are to be found in the JMeter `bin` directory.
 The commands will only be accepted if the script is run from the same host.
+
+<a id="error_reporting"></a>
 
 ### 2.7 Error reporting
 

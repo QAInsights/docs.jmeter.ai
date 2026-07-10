@@ -137,6 +137,8 @@ The second example will define `remote_hosts` from the list of servers and then 
 
 The command-line client will exit when all the remote servers have stopped.
 
+<a id="setup_ssl"></a>
+
 ### 13.1 Setting up SSL
 
 :::note
@@ -171,6 +173,8 @@ Copy the generated rmi_keystore.jks to jmeter/bin folder or reference it in prop
 
 The [defaults settings for RMI](/user-manual/properties-reference/#remote) should work with this setup. Copy the file `bin/rmi_keystore.jks` to every JMeter server and client you want to use for your distributed testing setup.
 
+<a id="detail_instructions"></a>
+
 ### 13.2 Doing it Manually
 
 In some cases, the jmeter-server script may not work for you (if you are using an OS platform not anticipated by the JMeter developers).
@@ -200,6 +204,8 @@ Once the RMI Registry application is running, start the JMeter Server.
 Use the "`-s`" option with the jmeter startup script ("`jmeter -s`").
 
 Steps 2 and 3 remain the same.
+
+<a id="tips"></a>
 
 ### 13.3 Tips
 
@@ -261,6 +267,8 @@ in remote testing, since JMeter 2.6:
 - a new property "`client.rmi.localport`" can be set to control the RMI port used by the RemoteSampleListenerImpl
 - To support tunneling RMI traffic over an SSH tunnel as the remote endpoint using a port on the local machine,  loopback interface is now allowed to be used if it has been specified directly using the Java System Property  "`java.rmi.server.hostname`" parameter.
 
+<a id="portchange"></a>
+
 ### 13.4 Using a different port
 
 By default, JMeter uses the standard RMI port `1099`. It is possible to change this. For this to work successfully,
@@ -292,6 +300,8 @@ In both cases, the script starts rmiregistry on the specified port,
 and then starts JMeter in server mode, having defined the "`server_port`" property.
 
 The chosen port will be logged in the server `jmeter.log` file (`rmiregistry` does not create a log file).
+
+<a id="sendermode"></a>
 
 ### 13.5 Using a different sample sender
 
@@ -385,6 +395,8 @@ The following properties apply to the `Batch` and `Statistical` modes:
 **`time_threshold`**
 : number of milliseconds to wait (default 60 seconds)
 
+<a id="retries"></a>
+
 ### 13.6 Dealing with nodes that failed starting
 
   
@@ -405,6 +417,8 @@ The following properties apply to the `Batch` and `Statistical` modes:
     Finally, you might still want to run the test with those generators that succeeded initialization and skipping failed nodes.
     To enable that, set the `client.continue_on_fail=true` property.
   
+
+<a id="security-manager"></a>
 
 ### 13.7 Using a security-manager
 
