@@ -1,6 +1,4 @@
 ---
-import type { Props } from '@astrojs/starlight/props';
-
 const nextStep = await Astro.slots.render('next-step');
 const related = await Astro.slots.render('related');
 const mistakes = await Astro.slots.render('mistakes');
@@ -11,21 +9,28 @@ const sections = [
   { title: 'Related Reference', icon: '📖', slot: related },
   { title: 'Common Mistakes', icon: '⚠', slot: mistakes },
   { title: 'Troubleshooting', icon: '🔧', slot: troubleshooting },
-].filter(s => s.slot);
+].filter((s) => s.slot && String(s.slot).trim());
+
+const colCount = Math.min(4, Math.max(1, sections.length));
 ---
 
 {sections.length > 0 && (
-  <div class="related-content">
+  <div class="related-content" data-related-count={sections.length}>
     <h2 class="related-content-heading">Continue Learning</h2>
-    <div class="related-content-grid">
-      {sections.map(section => (
-        <div class={`related-card related-card--${section.title.toLowerCase().replace(/\s+/g, '-')}`}>
-          <div class="related-card-header">
+    <div
+      class="related-content-grid"
+      style={`--related-cols: ${colCount}`}
+    >
+      {sections.map((section) => (
+        <article
+          class={`related-card related-card--${section.title.toLowerCase().replace(/\s+/g, '-')}`}
+        >
+          <header class="related-card-header">
             <span class="related-card-icon" aria-hidden="true">{section.icon}</span>
             <h3 class="related-card-title">{section.title}</h3>
-          </div>
+          </header>
           <div class="related-card-body" set:html={section.slot} />
-        </div>
+        </article>
       ))}
     </div>
   </div>

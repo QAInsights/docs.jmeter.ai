@@ -264,85 +264,176 @@ nav.nav-bar a::after,
 }
 
 /* ==========================================================================
-   Related Content cards  -  end-of-page internal-link modules
+   Related Content cards - end-of-page internal-link modules
+   Equal columns + equal card heights in each row (grid-auto-rows: 1fr).
    ========================================================================== */
-.related-content {
+.related-content,
+.sl-markdown-content .related-content {
   margin-top: 3rem;
   padding-top: 2rem;
   border-top: 1px solid var(--sl-color-gray-5);
 }
 
-.related-content-heading {
+.related-content-heading,
+.sl-markdown-content .related-content-heading {
   font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 1.25rem;
+  margin: 0 0 1.25rem;
   color: var(--sl-color-white);
 }
 
-.related-content-grid {
+.related-content-grid,
+.sl-markdown-content .related-content-grid {
+  --related-cols: 4;
+  --related-header-h: 2.75rem;
+  --related-body-min-h: 5.5rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  /* Cap at 2 columns: the content column is ~640px wide, so 4 cards cram into
+     ~148px each. Two columns give each card ~300px and an even 2x2 grid. */
+  grid-template-columns: repeat(
+    min(var(--related-cols), 2),
+    minmax(0, 1fr)
+  );
   gap: 1rem;
+  align-items: stretch;
 }
 
-.related-card {
+@media (max-width: 36rem) {
+  .related-content-grid,
+  .sl-markdown-content .related-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.related-card,
+.sl-markdown-content .related-card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 0;
+  /* Force identical outer height regardless of copy length */
+  min-height: calc(
+    var(--related-header-h) + var(--related-body-min-h) + 2rem /* padding */
+  );
+  height: 100%;
+  margin: 0 !important;
   background: var(--sl-color-gray-6);
   border: 1px solid var(--sl-color-gray-5);
   border-radius: 0.5rem;
   padding: 1rem 1.25rem;
 }
 
-.related-card-header {
+/* When browser supports subgrid, share header/body row sizes across a row of cards */
+@supports (grid-template-rows: subgrid) {
+  .related-content-grid,
+  .sl-markdown-content .related-content-grid {
+    grid-auto-rows: auto minmax(var(--related-body-min-h), auto);
+  }
+
+  .related-card,
+  .sl-markdown-content .related-card {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 2;
+    height: auto;
+    min-height: 0;
+    row-gap: 0.75rem;
+    padding-block: 1rem;
+  }
+
+  .related-card-header,
+  .sl-markdown-content .related-card-header {
+    margin-bottom: 0;
+  }
+}
+
+.related-card-header,
+.sl-markdown-content .related-card-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  flex: 0 0 auto;
+  margin: 0 0 0.75rem;
+  min-height: var(--related-header-h);
+  /* Reset Starlight's site-header styles that <header> inherits:
+     sticky positioning + dark background break the card layout. */
+  position: static;
+  z-index: auto;
+  background: transparent;
 }
 
-.related-card-icon {
+.related-card-icon,
+.sl-markdown-content .related-card-icon {
   font-size: 1.1rem;
-  line-height: 1;
+  line-height: 1.25;
   flex-shrink: 0;
+  width: 1.25rem;
+  text-align: center;
 }
 
-.related-card-title {
-  font-size: 0.875rem;
+.related-card-title,
+.sl-markdown-content .related-card-title {
+  font-size: 0.8125rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  word-spacing: 0.06em;
   color: var(--sl-color-gray-2);
   margin: 0;
+  line-height: 1.35;
 }
 
-.related-card-body {
+.related-card-body,
+.sl-markdown-content .related-card-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--related-body-min-h);
   font-size: 0.9rem;
-  line-height: 1.6;
+  line-height: 1.55;
   color: var(--sl-color-gray-2);
 }
 
-.related-card-body p {
-  margin: 0 0 0.5rem;
+/* Normalize markdown slot output so longer copy does not inflate unevenly */
+.related-card-body > :first-child,
+.sl-markdown-content .related-card-body > :first-child {
+  margin-top: 0 !important;
 }
 
-.related-card-body p:last-child {
-  margin-bottom: 0;
+.related-card-body > :last-child,
+.sl-markdown-content .related-card-body > :last-child {
+  margin-bottom: 0 !important;
 }
 
-.related-card-body a {
+.related-card-body p,
+.sl-markdown-content .related-card-body p {
+  margin: 0 0 0.5rem !important;
+}
+
+.related-card-body p:last-child,
+.sl-markdown-content .related-card-body p:last-child {
+  margin-bottom: 0 !important;
+}
+
+.related-card-body a,
+.sl-markdown-content .related-card-body a {
   color: var(--sl-color-accent-high);
   text-decoration: none;
 }
 
-.related-card-body a:hover {
+.related-card-body a:hover,
+.sl-markdown-content .related-card-body a:hover {
   text-decoration: underline;
 }
 
-.related-card-body ul {
-  margin: 0;
+.related-card-body ul,
+.sl-markdown-content .related-card-body ul {
+  margin: 0 !important;
   padding-left: 1.25rem;
 }
 
-.related-card-body li {
+.related-card-body li,
+.sl-markdown-content .related-card-body li {
   margin-bottom: 0.25rem;
 }
 

@@ -102,7 +102,7 @@
    @supports, so content stays fully visible  -  no flash of hidden content. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .sl-markdown-content :is(h2, h3, h4),
+    .sl-markdown-content :is(h2, h3, h4):not(.related-card-title),
     .sl-markdown-content pre,
     .sl-markdown-content table,
     .sl-markdown-content .starlight-aside,
