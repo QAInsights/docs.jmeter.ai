@@ -1,0 +1,405 @@
+/* ==========================================================================
+   Tools Hub Banner
+   Animated gradient banner with tools-themed CSS shapes
+   ========================================================================== */
+
+.tools-hub-banner-section {
+  padding: 0.5rem 0 1.25rem;
+}
+
+.th-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 1.5rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, var(--sl-color-gray-5));
+  border-radius: 0.75rem;
+  padding: 1.35rem 1.5rem;
+  color: inherit;
+  text-decoration: none;
+  background: var(--sl-color-gray-6);
+  transition: transform 200ms var(--mx-ease),
+              border-color 200ms var(--mx-ease),
+              box-shadow 200ms var(--mx-ease);
+}
+
+.th-banner:hover {
+  border-color: var(--sl-color-accent);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--sl-color-accent) 25%, transparent),
+    0 16px 40px -16px color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+}
+
+.th-banner:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 3px;
+}
+
+/* --- Animated gradient background --------------------------------------- */
+.th-banner-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.th-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.55;
+}
+
+.th-orb-a {
+  width: 14rem;
+  height: 14rem;
+  top: -4rem;
+  left: -2rem;
+  background: radial-gradient(circle, var(--sl-color-accent-high), transparent 70%);
+  animation: th-drift-a 12s ease-in-out infinite;
+}
+
+.th-orb-b {
+  width: 10rem;
+  height: 10rem;
+  right: 8%;
+  bottom: -3rem;
+  background: radial-gradient(circle, var(--sl-color-accent), transparent 70%);
+  animation: th-drift-b 10s ease-in-out infinite;
+}
+
+.th-orb-c {
+  width: 8rem;
+  height: 8rem;
+  top: 20%;
+  right: 35%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--sl-color-accent-high) 60%, #fff), transparent 70%);
+  animation: th-drift-c 14s ease-in-out infinite;
+}
+
+@keyframes th-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(2rem, 1.5rem) scale(1.08); }
+}
+
+@keyframes th-drift-b {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-1.5rem, -1rem) scale(1.1); }
+}
+
+@keyframes th-drift-c {
+  0%, 100% { transform: translate(0, 0); opacity: 0.45; }
+  50% { transform: translate(-1rem, 0.75rem); opacity: 0.7; }
+}
+
+/* --- Tools Visual Scene (CSS shapes & micro-animations) ---------------- */
+.th-banner-visual {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.th-scene {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+}
+
+/* Miniature Calculator Card (Thread Calculator) */
+.th-tool-card {
+  position: absolute;
+  border-radius: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 40%, var(--sl-color-gray-5));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--sl-color-accent-low) 80%, var(--sl-color-gray-6)),
+    var(--sl-color-gray-6)
+  );
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.th-card-calc {
+  width: 2.2rem;
+  height: 2.8rem;
+  top: 0.4rem;
+  left: 0.2rem;
+  transform: rotate(-10deg);
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  animation: th-calc-float 6s ease-in-out infinite;
+}
+
+.th-calc-screen {
+  height: 0.5rem;
+  background: color-mix(in srgb, var(--sl-color-accent) 25%, var(--sl-color-gray-6));
+  border-radius: 0.1rem;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+  position: relative;
+}
+
+.th-calc-screen::after {
+  content: '';
+  position: absolute;
+  left: 0.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.8rem;
+  height: 0.15rem;
+  background: var(--sl-color-accent-high);
+  border-radius: 1px;
+  animation: th-calc-typing 3s steps(3, end) infinite;
+}
+
+.th-calc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.1rem;
+  flex: 1;
+}
+
+.th-calc-grid span {
+  background: color-mix(in srgb, var(--sl-color-gray-4) 40%, transparent);
+  border-radius: 1px;
+}
+
+.th-calc-grid span:nth-child(3n) {
+  background: color-mix(in srgb, var(--sl-color-accent) 55%, transparent);
+}
+
+@keyframes th-calc-float {
+  0%, 100% { transform: translateY(0) rotate(-10deg); }
+  50% { transform: translateY(-0.2rem) rotate(-8deg); }
+}
+
+@keyframes th-calc-typing {
+  0%, 100% { width: 0.2rem; }
+  50% { width: 1.2rem; }
+}
+
+/* Miniature RAM / Chip (Heap Estimator) */
+.th-card-ram {
+  width: 2.6rem;
+  height: 1.6rem;
+  bottom: 0.6rem;
+  right: 0.2rem;
+  transform: rotate(8deg);
+  padding: 0.2rem;
+  animation: th-ram-float 6s ease-in-out infinite 1.5s;
+}
+
+.th-ram-chip {
+  display: block;
+  width: 100%;
+  height: 0.7rem;
+  background: color-mix(in srgb, var(--sl-color-accent) 50%, var(--sl-color-accent-high));
+  border-radius: 0.15rem;
+  position: relative;
+}
+
+.th-ram-chip::before {
+  content: '';
+  position: absolute;
+  inset: 0.1rem;
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+  border-radius: 0.1rem;
+}
+
+.th-ram-pins {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 0.1rem;
+  height: 0.3rem;
+}
+
+.th-ram-pins::before, .th-ram-pins::after {
+  content: '';
+  width: 0.2rem;
+  background: color-mix(in srgb, var(--sl-color-gray-4) 60%, transparent);
+  border-radius: 1px;
+}
+
+@keyframes th-ram-float {
+  0%, 100% { transform: translateY(0) rotate(8deg); }
+  50% { transform: translateY(-0.18rem) rotate(10deg); }
+}
+
+/* Pulsating Line / Chart (Metrics & calculator output) */
+.th-pulse-line {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.2rem;
+  width: 3.2rem;
+  height: 1.5rem;
+  color: var(--sl-color-accent);
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.th-chart-line {
+  width: 100%;
+  height: 100%;
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: th-draw-line 4s linear infinite;
+}
+
+.th-chart-dot {
+  position: absolute;
+  width: 0.35rem;
+  height: 0.35rem;
+  background: #fff;
+  border: 1px solid var(--sl-color-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--sl-color-accent);
+  top: 0.8rem;
+  left: 0;
+  animation: th-move-dot 4s linear infinite;
+}
+
+@keyframes th-draw-line {
+  0% { stroke-dashoffset: 200; }
+  50% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -200; }
+}
+
+@keyframes th-move-dot {
+  0% { left: 0%; top: 1.2rem; opacity: 0; }
+  5% { opacity: 1; }
+  25% { left: 30%; top: 0.3rem; }
+  50% { left: 60%; top: 0.8rem; }
+  75% { left: 90%; top: 0.5rem; }
+  95% { opacity: 1; }
+  100% { left: 100%; top: 0.5rem; opacity: 0; }
+}
+
+/* Rotating Gear/Settings element */
+.th-gear-container {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.4rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  color: color-mix(in srgb, var(--sl-color-accent) 45%, var(--sl-color-gray-4));
+  animation: th-spin 12s linear infinite;
+}
+
+.th-gear {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes th-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* --- Copy & CTA ------------------------------------------------------- */
+.th-banner-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.th-banner-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.45rem;
+  padding: 0.2rem 0.55rem 0.2rem 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, var(--sl-color-gray-5));
+  background: color-mix(in srgb, var(--sl-color-accent-low) 40%, var(--sl-color-gray-6));
+  color: var(--sl-color-accent-high);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.th-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+}
+
+.th-banner-title {
+  margin: 0 0 0.4rem;
+  color: var(--sl-color-white);
+  font-size: clamp(1.35rem, 3.2vw, 1.65rem);
+  font-weight: 750;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.th-accent {
+  color: var(--sl-color-accent-high);
+  font-size: 1.12em;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.th-banner-desc {
+  margin: 0 0 0.85rem;
+  max-width: 38rem;
+  color: var(--sl-color-gray-3);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.th-banner-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--sl-color-accent-high);
+  font-size: 0.88rem;
+  font-weight: 750;
+  transition: gap 200ms var(--mx-ease), color 200ms var(--mx-ease);
+}
+
+.th-banner-cta svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+}
+
+.th-banner:hover .th-banner-cta {
+  gap: 0.55rem;
+  color: var(--sl-color-accent);
+}
+
+/* --- Responsive overrides ---------------------------------------------- */
+@media (max-width: 768px) {
+  .th-banner {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.15rem 1.1rem;
+    text-align: center;
+  }
+
+  .th-banner-visual {
+    justify-self: center;
+  }
+
+  .th-banner-desc {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* --- Reduced motion --------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .th-orb,
+  .th-card-calc,
+  .th-card-ram,
+  .th-calc-screen::after,
+  .th-chart-line,
+  .th-chart-dot,
+  .th-gear-container {
+    animation: none;
+  }
+}

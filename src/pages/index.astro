@@ -4,6 +4,7 @@ import TerminalHero from '../components/landing/TerminalHero.astro';
 import YouTubeBanner from '../components/landing/YouTubeBanner.astro';
 import BentoGrid from '../components/landing/BentoGrid.astro';
 import DocsGraph from '../components/landing/DocsGraph.astro';
+import ToolsHubBanner from '../components/landing/ToolsHubBanner.astro';
 
 const workflows = [
   {
@@ -116,6 +117,10 @@ const goals = [
           </label>
         ))}
       </div>
+    </section>
+
+    <section class="tools-hub-banner-section" aria-label="Interactive tools">
+      <ToolsHubBanner />
     </section>
 
     <section class="docs-graph-section">

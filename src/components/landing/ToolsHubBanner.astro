@@ -1,0 +1,64 @@
+---
+const TOOLS_URL = '/tools/';
+---
+
+<a
+  class="th-banner"
+  href={TOOLS_URL}
+  aria-label="Explore interactive JMeter tools in the Tools Hub"
+>
+  <div class="th-banner-bg" aria-hidden="true">
+    <span class="th-orb th-orb-a"></span>
+    <span class="th-orb th-orb-b"></span>
+    <span class="th-orb th-orb-c"></span>
+  </div>
+
+  <div class="th-banner-visual" aria-hidden="true">
+    <div class="th-scene">
+      <div class="th-tool-card th-card-calc">
+        <span class="th-calc-screen"></span>
+        <span class="th-calc-grid">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </span>
+      </div>
+      <div class="th-tool-card th-card-ram">
+        <span class="th-ram-chip"></span>
+        <span class="th-ram-pins"></span>
+      </div>
+      <div class="th-gear-container">
+        <svg class="th-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      </div>
+      <div class="th-pulse-line">
+        <svg class="th-chart-line" viewBox="0 0 100 40" fill="none">
+          <path d="M0,35 Q15,5 30,30 T60,10 T90,20 L100,20" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <span class="th-chart-dot"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="th-banner-copy">
+    <span class="th-banner-eyebrow">
+      <svg class="th-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      Interactive tools
+    </span>
+    <h3 class="th-banner-title">JMeter <span class="th-accent">Tools Hub</span></h3>
+    <p class="th-banner-desc">
+      Solve sizing and configuration choices instantly. Estimate threads and ramp-up, size your heap memory, build regex extractors, and cheat-sheet high-impact properties.
+    </p>
+    <span class="th-banner-cta">
+      Open the Tools Hub
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 17L17 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+  </div>
+</a>
