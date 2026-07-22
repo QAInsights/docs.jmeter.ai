@@ -38,6 +38,12 @@
   --sl-color-black: #ffffff;
 }
 
+/* Layout: tighten the left nav so the content column gets more room
+   (lucode default is 18rem; see issue #18). */
+:root {
+  --sidebar-width: 16rem;
+}
+
 /* Motion tokens */
 :root {
   --mx-fast: 100ms;

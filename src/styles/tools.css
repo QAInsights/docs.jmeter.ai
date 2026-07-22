@@ -870,3 +870,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Widen the content column on tool pages (issue #18).
+   Lucode caps .main at 40rem which cramps tables and interactive widgets.
+   Override only when a .tool component is present so regular docs pages
+   keep the comfortable 40rem reading width.
+   ========================================================================== */
+main[data-slot='docs']:has(.tool) .main {
+  max-width: 50rem;
+}
