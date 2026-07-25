@@ -14,8 +14,13 @@ const isHome = Astro.url.pathname === '/' || !rawTitle;
 // SEO frontmatter overrides
 const seoTitleRaw = entryData?.seoTitle;
 const displayTitle = seoTitleRaw || rawTitle;
-const seoTitle = isHome ? 'docs.jmeter.ai - Apache JMeter Community Documentation' : `${displayTitle} | docs.jmeter.ai`;
-const seoDescription = entryData?.description || 'Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience.';
+const seoTitle = isHome
+  ? 'JMeter Documentation | docs.jmeter.ai'
+  : `${displayTitle} | docs.jmeter.ai`;
+const seoDescription = entryData?.description
+  || (isHome
+    ? 'Modern Apache JMeter docs: user manual, API and CI/CD guides, distributed testing, interactive calculators, and LLM-friendly reference on docs.jmeter.ai.'
+    : 'Community-maintained Apache JMeter documentation with clearer navigation, search, interactive tools, and practical load-testing guides.');
 const seoKeywords = entryData?.keywords;
 const seoDifficulty = entryData?.difficulty;
 const seoCanonicalTopic = entryData?.canonicalTopic;

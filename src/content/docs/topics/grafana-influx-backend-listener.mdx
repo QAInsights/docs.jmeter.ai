@@ -1,0 +1,207 @@
+---
+title: "JMeter Grafana InfluxDB Backend Listener"
+seoTitle: "JMeter Grafana InfluxDB Backend Listener"
+description: "Stream live JMeter metrics to InfluxDB and Grafana with Backend Listener: Influx clients, Graphite, metric prefixes, cardinality tips, and CLI setup."
+keywords:
+  - JMeter Backend Listener
+  - JMeter InfluxDB
+  - JMeter Grafana
+  - real-time JMeter metrics
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: grafana-influx-backend-listener
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter + Grafana / InfluxDB / Backend Listener
+
+For long tests you need **live** visibility, not only a post-run HTML report. Since JMeter 2.13, the [Backend Listener](/user-manual/component-reference/#Backend_Listener) can send metrics to external backends. JMeter ships Graphite and InfluxDB clients; Grafana commonly visualizes InfluxDB or Graphite data. This guide summarizes the official [Real-time results](/user-manual/realtime-results/) chapter and component reference fields so you can wire live dashboards without abandoning CLI + [HTML dashboard](/user-manual/generating-dashboard/) artifacts.
+
+:::tip[Both, not either]
+Use Backend Listener for **during-test** graphs. Still write a JTL with `-l` and generate the HTML report with `-e -o` for durable, shareable results.
+:::
+
+## What Backend Listener is
+
+Backend Listener is a **Listener** implementation that pushes metrics through a `BackendListenerClient` rather than only painting GUI graphs. Official clients include:
+
+| Client | Introduced / notes |
+|--------|--------------------|
+| **GraphiteBackendListenerClient** | Graphite-compatible metrics; also used with InfluxDB Graphite input in some setups |
+| **InfluxdbBackendListenerClient** | Since JMeter **3.2**; direct Influx write, custom schema, annotations support |
+| **InfluxDBRawBackendListenerClient** | Since JMeter **5.4**; writes sample-oriented data (heavier) |
+
+You can implement `AbstractBackendListenerClient` for other backends (JDBC, JMS, custom HTTP), as described in the real-time results overview.
+
+## Metrics exposed (core concepts)
+
+The real-time results doc groups metrics such as:
+
+### Thread / virtual user metrics
+
+- `test.minAT` / `test.maxAT` / `test.meanAT` - active threads  
+- `test.startedT` / `test.endedT` - started / finished threads  
+
+Names are prefixed by a configurable **root metrics prefix**.
+
+### Response-related metrics (per sampler name)
+
+Examples documented:
+
+- `.ok.count` - successful responses  
+- `.h.count` - hits per second (includes sub-results depending on Transaction Controller settings)  
+- `.ok.min` / `.ok.max` - min/max successful response times  
+- Additional percentile and error metrics as documented for your client  
+
+**Transaction Controller note:** for hit-rate style metrics, official text warns about parent sampler generation settings. Keep transaction usage consistent so Grafana panels mean what you think.
+
+## Adding Backend Listener to a plan
+
+1. Add **Backend Listener** under Test Plan or Thread Group (scope like other listeners).  
+2. Choose implementation class (`InfluxdbBackendListenerClient` is the usual Influx path).  
+3. Fill parameters from the [component reference](/user-manual/component-reference/).  
+4. Run a short CLI test and confirm points arrive in Influx.  
+5. Build or import Grafana panels on those measurements.  
+
+### InfluxdbBackendListenerClient parameters (documented)
+
+From the component reference (verify against your JMeter version):
+
+| Parameter | Role |
+|-----------|------|
+| `influxdbUrl` | Write URL, e.g. `http://influxHost:8086/write?db=jmeter` |
+| `influxdbToken` | InfluxDB 2 token (since 5.2); example format in docs |
+| `measurement` | Line protocol measurement; default often `jmeter` |
+| `application` | Tag for separating apps/tests |
+| `title` / run title fields | Help distinguish runs in Grafana |
+| `eventTags` | Tags for Grafana annotations (`events` measurement) |
+| `summaryOnly` | When true, send fewer detail series (lighter) |
+| `samplersRegex` | Filter which sampler labels are sent |
+| `percentiles` | Which percentiles to export |
+
+Exact property rows can evolve; copy from your JMeter UI or the versioned component reference on this site.
+
+### InfluxDB v2
+
+The real-time results chapter includes an **InfluxDB v2** subsection (anchor `influxdb_v2` in the manual). Use org/bucket style URLs and tokens as shown there and in the component reference cloud example for raw client:
+
+`https://.../api/v2/write?org=org-id&bucket=jmeter`
+
+### GraphiteBackendListenerClient
+
+Parameters include `graphiteHost`, `graphitePort` (default **2003**; pickle sender notes for port **2004** in the reference). You can point at Graphite itself or an InfluxDB instance with Graphite input enabled, depending on your stack.
+
+### InfluxDBRawBackendListenerClient
+
+Since 5.4, raw client writes more granular sample data. Expect **higher write volume** and Influx load. Use when you need per-sample analysis in the TSDB; prefer the aggregated Influx client for large tests if summary metrics suffice.
+
+## Grafana setup pattern
+
+Official docs mention Grafana dashboards and InfluxDB annotations. Typical flow:
+
+1. Create Influx datasource in Grafana (URL, token, org/bucket or database).  
+2. Query the `jmeter` measurement (or your `measurement` name).  
+3. Panel active threads (`minAT`/`meanAT`/`maxAT`), throughput, and response time percentiles.  
+4. Enable annotations from the `events` measurement if you set `eventTags` / title fields.  
+5. Variable filters on `application` and `transaction` tags to switch tests.  
+
+Screenshot references appear in the component reference (`grafana_dashboard.png`). Community dashboards exist; always remap metric names to **your** prefix and JMeter version.
+
+## CLI operation
+
+```bash
+jmeter -n -t plan.jmx -l results.jtl \
+  -JinfluxHost=influx.internal \
+  -e -o report/
+```
+
+Backend Listener configuration usually lives in the plan. You can still parameterize hosts with variables if you externalize URL pieces via `\${__P}` where the element allows.
+
+Lean-run rules still apply ([best practices](/user-manual/best-practices/)):
+
+- No View Results Tree under load.  
+- Backend Listener itself costs CPU and network; use `samplersRegex` / `summaryOnly` to reduce series.  
+- Ensure the injector can reach Influx (firewall, DNS).  
+
+## Distributed tests
+
+With [remote testing](/topics/distributed-testing/):
+
+- Each worker runs the plan, so **each worker may send metrics** if Backend Listener is in the plan.  
+- Tag by hostname or application property so Grafana can split injectors.  
+- Controller still aggregates the JTL when using standard remote mode.  
+- Do not overwhelm Influx with thousands of high-cardinality series (unique dynamic sampler names).  
+
+## Cardinality and naming discipline
+
+Bad:
+
+- Sampler labels containing free-text URLs with unique ids every sample.  
+
+Good:
+
+- Stable labels: `Login`, `Search`, `Checkout`.  
+- Dynamic data in body/parameters, not in the sample label.  
+
+High cardinality destroys Influx performance and Grafana usability.
+
+## Failure modes
+
+| Symptom | Check |
+|---------|-------|
+| No data in Grafana | URL/token/db; network from injector; Backend Listener enabled |
+| Partial series | `samplersRegex` too strict; summaryOnly |
+| Influx OOM / heavy writes | Raw client at high RPS; reduce cardinality |
+| Clock skew graphs | NTP on injectors and Influx |
+| Auth errors Influx 2 | Token permissions for org/bucket |
+
+## Related reading
+
+- [Real-time results (manual)](/user-manual/realtime-results/)  
+- [Backend Listener component](/user-manual/component-reference/)  
+- [Generating dashboard](/user-manual/generating-dashboard/)  
+- [CI/CD load testing](/topics/ci-cd-load-testing/)  
+- [APDEX / SLOs / percentiles](/topics/apdex-slo-percentiles/)  
+
+## Frequently asked questions
+
+### What is JMeter Backend Listener?
+
+A listener that sends metrics to external backends through a BackendListenerClient implementation instead of only showing GUI graphs.
+
+### Which Influx client should I use?
+
+For live dashboards during large tests, start with InfluxdbBackendListenerClient (since 3.2). Use InfluxDBRawBackendListenerClient (since 5.4) when you need raw sample writes and can afford the volume.
+
+### Does Backend Listener replace the HTML report?
+
+No. Keep `-l` results and `-e -o` HTML dashboards for offline analysis and artifacts. Backend Listener is for live monitoring.
+
+### Can I use Graphite instead of InfluxDB?
+
+Yes. GraphiteBackendListenerClient ships with JMeter. Grafana can also query Graphite datasources.
+
+### Why are my Grafana series empty for some samplers?
+
+Check `samplersRegex`, whether those labels actually ran, and whether Transaction Controller parent/child settings change what is emitted.
+
+### How do annotations work?
+
+InfluxdbBackendListenerClient can write events used as Grafana annotations; `eventTags` and title-related fields help tag runs. See the component reference and Grafana Influx annotation docs linked from the manual.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Add InfluxdbBackendListenerClient with a lab Influx URL, run a two-minute CLI test, and build one Grafana panel on active threads.
+</Fragment>
+<Fragment slot="related">
+- [Real-time results](/user-manual/realtime-results/)
+- [Dashboard report](/user-manual/generating-dashboard/)
+- [Best Practices](/user-manual/best-practices/)
+</Fragment>
+<Fragment slot="mistakes">
+Unique sampler labels per request; raw Influx client at huge RPS without capacity planning; relying only on live graphs with no JTL artifact.
+</Fragment>
+</RelatedContent>

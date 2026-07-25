@@ -1,15 +1,17 @@
 ---
 title: "JMeter for API Load Testing"
-description: "Complete guide to API load testing with Apache JMeter - configure HTTP samplers, parameterize requests, analyze results, and integrate with CI/CD pipelines."
+seoTitle: "JMeter API Load Testing Guide"
+description: "Complete JMeter API load testing guide: HTTP Request setup, headers and auth, CSV parameterization, correlation, assertions, CLI runs, and dashboards."
 keywords:
- - JMeter API testing
- - API load testing
- - REST API performance testing
- - JMeter HTTP sampler
+  - JMeter API testing
+  - API load testing
+  - REST API performance testing
+  - JMeter HTTP sampler
+  - JMeter JSON
 difficulty: intermediate
 guideType: how-to
-estimatedReadTime: 12 min read
-lastVerified: JMeter 5.6
+estimatedReadTime: "14 min read"
+lastVerified: "JMeter 5.6"
 canonicalTopic: api-load-testing
 ---
 
@@ -82,7 +84,7 @@ The [HTTP Request](/user-manual/component-reference/) sampler is the core elemen
 |------|-----------------|
 | **Protocol / Server / Port** | Prefer HTTP Request Defaults so every sampler inherits host and TLS settings |
 | **Method** | GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS as needed |
-| **Path** | Endpoint path, often with variables: `/v1/orders/${orderId}` |
+| **Path** | Endpoint path, often with variables: `/v1/orders/\${orderId}` |
 | **Parameters** | Query or form parameters (depending on method and encoding) |
 | **Body Data** | Raw JSON, XML, or other payload for POST/PUT/PATCH |
 | **Content encoding** | Character encoding for the request body when relevant |
@@ -95,9 +97,9 @@ Example body with variables:
 
 ```json
 {
-  "email": "${email}",
-  "quantity": ${quantity},
-  "requestId": "${__UUID}"
+  "email": "\${email}",
+  "quantity": \${quantity},
+  "requestId": "\${__UUID}"
 }
 ```
 
@@ -120,7 +122,7 @@ Use an [HTTP Header Manager](/user-manual/component-reference/) for:
 
 - `Content-Type: application/json`  
 - `Accept: application/json`  
-- `Authorization: Bearer ${accessToken}` after login  
+- `Authorization: Bearer \${accessToken}` after login  
 - Custom headers (`X-Request-Id`, API keys, tenant IDs)
 
 Scope matters:
@@ -140,11 +142,11 @@ If the API uses session cookies (or a BFF that sets cookies), add an [HTTP Cooki
 
 1. POST credentials to `/oauth/token` or `/login`.  
 2. Extract `access_token` (JSON Extractor or Regular Expression Extractor).  
-3. On later samplers, set `Authorization` to `Bearer ${accessToken}`.
+3. On later samplers, set `Authorization` to `Bearer \${accessToken}`.
 
 **API key header**
 
-- Store the key in a Test Plan variable or property (`${__P(apiKey,)}`) and inject it as a header. Prefer properties for secrets passed on the CLI so they are not hard-coded in the `.jmx`.
+- Store the key in a Test Plan variable or property (`\${__P(apiKey,)}`) and inject it as a header. Prefer properties for secrets passed on the CLI so they are not hard-coded in the `.jmx`.
 
 **Basic auth**
 
@@ -168,7 +170,7 @@ From [best practices](/user-manual/best-practices/):
 
 1. Create a text file of usernames and passwords (comma-separated) next to the plan.  
 2. Add **CSV Data Set Config**; name variables (for example `USER`, `PASS`).  
-3. Reference `${USER}` and `${PASS}` on samplers.  
+3. Reference `\${USER}` and `\${PASS}` on samplers.  
 4. The element reads a new line for each thread (per documented CSV Data Set behaviour for multi-user login).
 
 Use CSV for product IDs, search terms, and tenant names the same way. Pre-generate large data files instead of inventing random data in expensive scripts during the run when possible.
@@ -179,20 +181,20 @@ See the dedicated [Functions and Variables topic](/topics/functions-and-variable
 
 | Need | Example |
 |------|---------|
-| Unique id | `${__UUID}` |
-| Random int | `${__Random(1,1000)}` |
-| Timestamp | `${__time(yyyy-MM-dd'T'HH:mm:ss)}` (escape commas in formats when needed) |
-| Thread number | `${__threadNum}` |
-| Property override | `${__P(threads,10)}` |
+| Unique id | `\${__UUID}` |
+| Random int | `\${__Random(1,1000)}` |
+| Timestamp | `\${__time(yyyy-MM-dd'T'HH:mm:ss)}` (escape commas in formats when needed) |
+| Thread number | `\${__threadNum}` |
+| Property override | `\${__P(threads,10)}` |
 
 ### Properties for environments and CI
 
 Define Thread Group or host settings from properties so CLI and CI can override without editing XML:
 
 ```text
-threads = ${__P(threads,10)}
-rampup  = ${__P(rampup,30)}
-host    = ${__P(host,api.example.com)}
+threads = \${__P(threads,10)}
+rampup  = \${__P(rampup,30)}
+host    = \${__P(host,api.example.com)}
 ```
 
 Run:
@@ -215,8 +217,8 @@ Typical flow:
 
 1. Login sampler returns `{"access_token":"...","expires_in":3600}`.  
 2. JSON Extractor sets `accessToken`.  
-3. Header Manager or sampler header uses `Bearer ${accessToken}`.  
-4. Create-order response yields `orderId`; next GET uses `/orders/${orderId}`.
+3. Header Manager or sampler header uses `Bearer \${accessToken}`.  
+4. Create-order response yields `orderId`; next GET uses `/orders/\${orderId}`.
 
 ### Defaults and failure visibility
 
@@ -243,7 +245,7 @@ API load is rarely a single GET in a loop. Useful logic controllers (see [test p
 
 - **Once Only Controller** - login once per thread, then loop business calls.  
 - **Transaction Controller** - group login+search+checkout samples into one reported transaction for the dashboard.  
-- **If Controller** - branch on `${accessToken}` / response variables.  
+- **If Controller** - branch on `\${accessToken}` / response variables.  
 - **Loop Controller / While Controller** - pagination or poll-until-ready patterns (guard with timeouts).  
 - **Throughput Controller** - mix traffic (for example 70% read / 30% write).
 
@@ -287,7 +289,7 @@ jmeter -n -t api-plan.jmx -l results.jtl -e -o report/
 | `-l` | Sample results file (prefer CSV saveservice defaults) |
 | `-e` | Generate HTML dashboard after the run |
 | `-o` | Output folder for the dashboard (must be empty/new) |
-| `-Jname=value` | Set JMeter property for `${__P(name)}` |
+| `-Jname=value` | Set JMeter property for `\${__P(name)}` |
 
 Further [best practices](/user-manual/best-practices/) for lean runs:
 
@@ -296,7 +298,7 @@ Further [best practices](/user-manual/best-practices/) for lean runs:
 - Do not use View Results Tree / Table during load.  
 - Prefer CSV result output over XML.  
 - Only save fields you need.  
-- Prefer JSR223 + Groovy with “Cache compiled script” and `vars.get("x")` instead of `${x}` inside cached scripts.
+- Prefer JSR223 + Groovy with “Cache compiled script” and `vars.get("x")` instead of `\${x}` inside cached scripts.
 
 ## Analyzing API results
 
@@ -328,7 +330,7 @@ API plans belong in the pipeline:
 3. Archive `results.jtl` and the `report/` folder.  
 4. Fail the build when error rate or key percentiles regress.
 
-Details and examples: [CI/CD Load Testing](/topics/ci-cd-load-testing/). Parameterize hosts and thread counts with `-J` / `${__P(...)}` so the same plan hits staging nightly and a smaller gate on every PR.
+Details and examples: [CI/CD Load Testing](/topics/ci-cd-load-testing/). Parameterize hosts and thread counts with `-J` / `\${__P(...)}` so the same plan hits staging nightly and a smaller gate on every PR.
 
 ## Protocol notes beyond simple REST
 
@@ -354,14 +356,14 @@ JMeter’s strength is **protocol breadth** (HTTP plus JDBC, JMS, LDAP, FTP, and
 | Functional mode / saving full bodies | Huge files, slow I/O | CSV, minimal saveservice fields |
 | BeanShell/JavaScript for hot paths | High CPU, poor scalability | JSR223 Groovy, compiled cache |
 | Undersized threads for target RPS | Coordinated omission | Thread calculator + pilot |
-| Secrets committed in `.jmx` | Credential leaks | `${__P(secret,)}` / CI secrets |
+| Secrets committed in `.jmx` | Credential leaks | `\${__P(secret,)}` / CI secrets |
 
 ## End-to-end checklist
 
 1. Install current JMeter; avoid very old releases ([best practices](/user-manual/best-practices/)).  
 2. Create Thread Group + HTTP Defaults + Header Manager.  
 3. Add login and business HTTP samplers; import from [cURL](/user-manual/curl/) if useful.  
-4. Parameterize with CSV and `${__P(...)}`.  
+4. Parameterize with CSV and `\${__P(...)}`.  
 5. Correlate tokens/IDs; assert success.  
 6. Debug with 1-5 threads and View Results Tree.  
 7. Disable heavy listeners; size threads and heap.  
@@ -393,7 +395,7 @@ You can record browser or proxy traffic, then delete static assets and parameter
 
 ### How do I pass an Authorization bearer token?
 
-Extract the token from the login response into a variable, then set header `Authorization` to `Bearer ${token}` via Header Manager. Keep the token thread-local unless you intentionally share via properties.
+Extract the token from the login response into a variable, then set header `Authorization` to `Bearer \${token}` via Header Manager. Keep the token thread-local unless you intentionally share via properties.
 
 ### How many threads do I need for an API test?
 
@@ -409,7 +411,7 @@ Non-GUI. Official best practices recommend CLI mode for load and GUI for buildin
 
 <RelatedContent>
 <Fragment slot="next-step">
-Build your first HTTP flow with [Building a Web Test Plan](/user-manual/build-web-test-plan/), then parameterize hosts and threads with `${__P(...)}` for CLI runs.
+Build your first HTTP flow with [Building a Web Test Plan](/user-manual/build-web-test-plan/), then parameterize hosts and threads with `\${__P(...)}` for CLI runs.
 </Fragment>
 <Fragment slot="related">
 - [cURL Import](/user-manual/curl/) - create samplers from existing curl commands

@@ -1,0 +1,197 @@
+---
+title: "JMeter gRPC, Kafka, and MQTT"
+seoTitle: "JMeter gRPC Kafka MQTT Testing"
+description: "Test gRPC, Kafka, and MQTT with JMeter via plugins: what core includes, install discipline, plan patterns, observability, and when other tools fit better."
+keywords:
+  - JMeter gRPC
+  - JMeter Kafka
+  - JMeter MQTT
+  - JMeter protocol plugins
+difficulty: advanced
+guideType: how-to
+estimatedReadTime: "11 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: grpc-kafka-mqtt
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# gRPC / Kafka / MQTT with JMeter (Plugin Ecosystem)
+
+Modern systems often speak **gRPC**, **Kafka**, or **MQTT** alongside HTTP. Stock Apache JMeter includes a **wide** set of protocols (HTTP, JDBC, JMS, LDAP, FTP, mail, and more in the [component reference](/user-manual/component-reference/)), but **gRPC, Kafka, and MQTT clients are not the classic core HTTP-centric story**. Teams typically add **community plugins** or custom samplers. This guide sets honest expectations, install rules, and test-design patterns grounded in JMeter’s extension model and operational best practices.
+
+:::note[Plugin-aware]
+There is no single Apache-maintained “official” sampler set for every gRPC/Kafka/MQTT feature. Validate plugin compatibility with your JMeter version, pin JARs, and read that plugin’s own docs for field-level detail.
+:::
+
+## What core JMeter already covers
+
+Useful adjacent core capabilities:
+
+| Need | Core approach |
+|------|----------------|
+| HTTP/JSON APIs | HTTP Request ([API guide](/topics/api-load-testing/)) |
+| JMS queues/topics | JMS samplers ([JMS plans](/user-manual/build-jms-point-to-point-test-plan/)) |
+| JDBC backends | JDBC Request |
+| Custom TCP | Java Request / custom sampler ([extending](/extending/extending-jmeter/)) |
+| Live metrics | Backend Listener ([guide](/topics/grafana-influx-backend-listener/)) |
+
+If your “Kafka test” is really “HTTP service that writes to Kafka,” load the **HTTP API** with core JMeter and monitor Kafka lag separately.
+
+## Plugin ecosystem overview
+
+| Protocol | Typical JMeter approach |
+|----------|-------------------------|
+| **gRPC** | Plugin sampler using `.proto` / reflection; or gateway HTTP/JSON if available |
+| **Kafka** | Plugin producer/consumer samplers; or JMS if you use a JMS bridge (different semantics) |
+| **MQTT** | Plugin publisher/subscriber samplers |
+| **WebSocket** | Plugins ([WebSocket guide](/topics/websocket-load-testing/)) |
+
+Install via [Plugins Manager / lib/ext](/topics/plugins-essentials/). Identical plugins on all [distributed](/topics/distributed-testing/) workers.
+
+## Shared design principles (all three)
+
+1. **Bootstrap auth** often still uses HTTP (OIDC token) → core HTTP + [JWT](/topics/jwt-oauth-sso/) + [correlation](/topics/correlation-dynamic-values/).  
+2. **Stable sampler labels** for dashboard/Grafana cardinality.  
+3. **CLI load**: `jmeter -n -t ... -l ...` ([best practices](/user-manual/best-practices/)).  
+4. **Size threads** for concurrent streams/producers ([Thread Calculator](/tools/thread-calculator/)).  
+5. **Assert** business success (not only “socket connected”).  
+6. **Observe the broker/service** (consumer lag, gRPC server metrics), not only JMeter RPS.  
+
+## gRPC load testing patterns
+
+### When plugins fit
+
+- Direct unary or streaming calls to gRPC services.  
+- Teams already invested in JMeter for mixed protocols.  
+
+### Plan sketch
+
+```text
+Thread Group
+├── HTTP get token (optional)
+├── gRPC sampler (plugin): method, metadata, message
+├── Assertion / extractor on response payload
+└── Timer
+```
+
+### Pitfalls
+
+- Protobuf version skew between plugin and server.  
+- TLS and metadata (`authorization`) misconfiguration.  
+- Streaming RPCs hold threads longer than unary calls.  
+- Reflection vs descriptor files in CI images.  
+
+### Alternative
+
+Many orgs use dedicated gRPC load tools or k6/ghz for pure gRPC and keep JMeter for HTTP/JMS. That can be the right split ([vs alternatives](/topics/jmeter-vs-alternatives/)).
+
+## Kafka load testing patterns
+
+### Producer-focused
+
+- Plugin Kafka Producer sampler: topic, key, payload, acks.  
+- CSV or functions for keys (`\${__UUID}`).  
+- Measure produce latency and error %.  
+
+### Consumer-focused
+
+- Harder in load tools: consumer lag is a **platform** metric.  
+- Plugin consumers may poll messages; define success clearly (message received vs processing time).  
+- Avoid unbounded consume loops without stop conditions.  
+
+### Semantics
+
+Kafka is not HTTP: throughput depends on batching, compression, partition count, and broker disks. Align test topics with non-prod clusters and retention policies so you do not flood shared brokers.
+
+### JMS note
+
+Core **JMS** samplers talk to JMS providers. That is not a drop-in Kafka client even if some stacks bridge protocols. Use the right tool for the wire protocol you mean to stress.
+
+## MQTT load testing patterns
+
+### Publisher / subscriber
+
+- Fan-in: many publishers, few topics.  
+- Fan-out: few publishers, many subscribers (threads as subscribers).  
+- QoS levels change latency and reliability trade-offs; document which QoS you test.  
+
+### Session and auth
+
+- Username/password or certs via plugin fields.  
+- Unique `clientId` per thread (`client-\${__threadNum}`) to avoid broker kicks.  
+
+### IoT scale
+
+Millions of devices usually need specialized generators; prove plugin limits with pilots before promising scale.
+
+## Containers and CI
+
+Bake protocol plugins into images ([Docker](/topics/docker-kubernetes/)). CI must:
+
+- Contain protos/schemas if required  
+- Provide broker endpoints via `\${__P}`  
+- Network-reach Kafka/MQTT/gRPC from the runner  
+
+## Observability
+
+| System | Watch |
+|--------|-------|
+| gRPC server | RED metrics, status codes |
+| Kafka | produce error rate, lag, ISR |
+| MQTT broker | connections, drop rates |
+| JMeter | JTL dashboard + optional Backend Listener |
+
+## Decision table: JMeter plugins vs other tools
+
+| Situation | Lean toward |
+|-----------|-------------|
+| Mixed HTTP + one plugin protocol, existing jmx skills | JMeter + plugins |
+| Pure gRPC at huge scale, code-first | Specialized gRPC load tool / k6 ecosystem |
+| Kafka correctness/perf of brokers | Kafka-native benchmarks + app-level HTTP tests |
+| Need GUI correlation for HTTP then message | JMeter hybrid plans |
+
+## Related reading
+
+- [Plugins essentials](/topics/plugins-essentials/)  
+- [WebSocket](/topics/websocket-load-testing/)  
+- [Extending JMeter](/extending/extending-jmeter/)  
+- [API load testing](/topics/api-load-testing/)  
+- [Best practices](/user-manual/best-practices/)  
+
+## Frequently asked questions
+
+### Does Apache JMeter core include Kafka or gRPC samplers?
+
+Not as the primary built-in story like HTTP Request. Use plugins, custom samplers, or test adjacent HTTP APIs.
+
+### Can I use JMS samplers for Kafka?
+
+Only if you intentionally use a JMS layer. Wire-level Kafka clients are different; prefer a Kafka plugin or other tools for Kafka protocol load.
+
+### How do I install protocol plugins?
+
+Plugins Manager or manual JARs into `lib/ext`, restart, pin versions, mirror into CI/worker images.
+
+### What is the biggest distributed-testing risk with plugins?
+
+Workers missing plugin JARs or version skew causing ClassNotFound or serialization errors.
+
+### Should every message protocol test be done in JMeter?
+
+No. Choose JMeter when it fits team skills and hybrid protocols. Use specialized tools when they are clearly better for a single technology.
+
+### How do I assert success for async messaging?
+
+Define explicit signals: produce ack, message visible to a consumer group, or downstream HTTP status. Pure fire-and-forget without observability is a weak test.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Confirm whether you must hit the wire protocol or only an HTTP facade; install the matching plugin only if wire-level load is required.
+</Fragment>
+<Fragment slot="related">
+- [Plugins Essentials](/topics/plugins-essentials/)
+- [Extending JMeter](/extending/extending-jmeter/)
+- [Distributed Testing](/topics/distributed-testing/)
+</Fragment>
+</RelatedContent>

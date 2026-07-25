@@ -1,0 +1,260 @@
+---
+title: "JMeter JWT, OAuth, and SSO Load Testing"
+seoTitle: "JMeter JWT OAuth SSO Load Testing"
+description: "Load test JWT, OAuth2, and SSO APIs in JMeter: token endpoints, Bearer headers, refresh flows, Cookie Manager, CSV users, and fixing 401 failures."
+keywords:
+  - JMeter JWT
+  - JMeter OAuth
+  - JMeter SSO
+  - Bearer token load testing
+  - JMeter authentication
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jwt-oauth-sso
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter JWT, OAuth, and SSO Load Testing
+
+Most modern APIs and portals require authentication. Under load you must obtain credentials **per virtual user**, keep tokens fresh, and attach them on every protected call without hard-coding secrets. This guide covers JWT bearer flows, OAuth-style token endpoints, cookie-based SSO patterns, and failure modes using core JMeter HTTP elements documented in the [component reference](/user-manual/component-reference/), [functions](/user-manual/functions/), and [best practices](/user-manual/best-practices/).
+
+JMeter does not ship a dedicated "OAuth sampler." You model auth as ordinary [HTTP Request](/user-manual/component-reference/) steps plus headers, cookies, and extractors. That matches how production clients call token and resource servers.
+
+:::tip[CLI for real load]
+Debug token extractors in the GUI with one thread, then run `jmeter -n -t plan.jmx -l results.jtl -e -o report/`. Leave View Results Tree off during load.
+:::
+
+:::caution[Secrets in the plan]
+Do not commit client secrets or passwords in the `.jmx`. Pass them with `\${__P(clientSecret,)}` and CI secrets (`-JclientSecret=...`), as described under [parameterising tests](/user-manual/best-practices/).
+:::
+
+## What you are simulating
+
+| Pattern | What JMeter must do |
+|---------|---------------------|
+| **API key** | Static or property-driven header on every call |
+| **Bearer JWT** | Login/token call, extract access token, set `Authorization` |
+| **OAuth2 client credentials** | POST to token URL with client id/secret, extract token |
+| **OAuth2 password / ROPC** (if your IdP still allows it) | POST username/password, extract token |
+| **Authorization code + browser SSO** | Often needs recording, cookies, and correlation of state/CSRF (see [recorder](/topics/http-recorder/)) |
+| **Session cookie SSO** | Cookie Manager + login form POST; optional CSRF extract |
+
+For pure HTTP APIs, start from the [API load testing](/topics/api-load-testing/) plan shape, then add an auth step in front of business calls.
+
+## Baseline plan shape
+
+```text
+Test Plan
+├── User Defined Variables / properties for host, client_id
+├── HTTP Request Defaults (protocol, server, port)
+├── HTTP Header Manager (Content-Type, Accept)
+├── HTTP Cookie Manager (if browser/SSO cookies matter)
+└── Thread Group
+    ├── Once Only Controller (or first sampler)
+    │   ├── Token / Login HTTP Request
+    │   ├── JSON or Regex Extractor → accessToken
+    │   └── Response Assertion (2xx)
+    ├── HTTP Header Manager (Authorization: Bearer \${accessToken})
+    │   or header on each protected sampler
+    └── Business HTTP Requests + assertions
+```
+
+Use a [Once Only Controller](/user-manual/component-reference/) so each thread logs in once, then loops API work. That models long-lived sessions better than re-authenticating every iteration (unless your scenario requires re-login).
+
+## Bearer JWT after a token endpoint
+
+### 1. Token request
+
+Typical OAuth2 token endpoint (fields vary by IdP):
+
+- Method: **POST**
+- Path: `/oauth/token` or `/realms/.../protocol/openid-connect/token`
+- Body (x-www-form-urlencoded) or JSON, depending on the provider
+- Common fields: `grant_type`, `client_id`, `client_secret`, optional `scope`, `username`, `password`
+
+Example form-style body (illustrative):
+
+```text
+grant_type=client_credentials&client_id=\${__P(clientId,)}&client_secret=\${__P(clientSecret,)}&scope=api.read
+```
+
+Set `Content-Type: application/x-www-form-urlencoded` on a Header Manager scoped to this sampler when using form encoding. For JSON token APIs, use Body Data and `application/json`.
+
+### 2. Extract the access token
+
+Prefer a **JSON Extractor** (or JMESPath-style extraction when available) when the body is:
+
+```json
+{
+  "access_token": "eyJhbGciOi...",
+  "expires_in": 3600,
+  "token_type": "Bearer"
+}
+```
+
+- Names of created variables: `accessToken`
+- JSON Path examples commonly used: `$.access_token` (confirm against your response)
+- Default value: `TOKEN_NOT_FOUND` so failures are visible
+
+If the token is only available as free text, use a [Regular Expression Extractor](/user-manual/regular-expressions/) with a capture group and template `$1$`. The site [Regex Extractor Builder](/tools/regex-tester/) helps draft fields from a sample body (browser-local).
+
+### 3. Attach the header
+
+Add an [HTTP Header Manager](/user-manual/component-reference/):
+
+| Name | Value |
+|------|--------|
+| Authorization | `Bearer \${accessToken}` |
+
+Scope:
+
+- Under the Thread Group after login for all subsequent calls, or  
+- On each protected sampler if some calls are public  
+
+Header Manager children of a sampler override or supplement higher-level managers depending on how you structure the tree; keep the model simple: one post-login Header Manager for the protected section.
+
+### 4. Assert login success
+
+Without assertions, failed logins produce hours of `401` noise. Add a [Response Assertion](/user-manual/component-reference/) on the token sampler for response code `200` (or whatever your IdP returns) and optionally a substring check that `access_token` appears.
+
+## Per-user credentials with CSV
+
+Official [best practices](/user-manual/best-practices/) show multi-user login via **CSV Data Set Config**:
+
+1. File with `user,pass` (or `client_id,client_secret` per tenant).  
+2. Variable names matching columns.  
+3. Reference `\${user}` / `\${pass}` on the token or login sampler.  
+4. Each thread receives rows according to CSV config (sharing mode matters for uniqueness).  
+
+Never use one shared password for thousands of threads if the system under test enforces concurrent session limits or rate-limits that user.
+
+## Token refresh and expiry
+
+JWTs expire (`expires_in`). Options under load:
+
+1. **Long enough tokens** for the test duration (lab-only convenience).  
+2. **Re-login each loop** (simple; higher auth traffic).  
+3. **Conditional refresh**: If Controller when remaining lifetime is low (requires storing issue time and comparing with `\${__time}` / script logic).  
+4. **Refresh token grant** if the IdP returns `refresh_token`: second HTTP Request + extractor updating `accessToken`.  
+
+Keep refresh logic thread-local via **variables**. Do not put per-user access tokens in **properties** unless you intentionally share one token across threads (usually unrealistic and unsafe).
+
+Variables are thread-local; properties are JVM-global ([functions guide](/topics/functions-and-variables/)).
+
+## Cookie-based SSO and portals
+
+Browser SSO often sets session cookies after SAML/OIDC redirects.
+
+1. Add an [HTTP Cookie Manager](/user-manual/component-reference/) at Test Plan or Thread Group level so each thread has its own jar ([web test plan](/user-manual/build-web-test-plan/)).  
+2. Record the login journey with the [HTTP(S) Test Script Recorder](/topics/http-recorder/), or build the POST sequence manually.  
+3. Correlate CSRF, `state`, `nonce`, and form fields ([correlation guide](/topics/correlation-dynamic-values/)).  
+4. Replay with one thread until green, then scale.  
+
+JMeter does **not** execute browser JavaScript. If login requires heavy client-side crypto or WebAuthn-only paths, you may need a different approach (pre-minted tokens, test IdP, or a real browser tool for that step only).
+
+## Authorization Manager and Basic auth
+
+For HTTP Basic, the [HTTP Authorization Manager](/user-manual/component-reference/) can supply credentials for a base URL. For Bearer JWT, Header Manager is the usual path. See also [advanced web test plan](/user-manual/build-adv-web-test-plan/) notes on where to place managers.
+
+## Parameterizing environments
+
+| Property | Example use |
+|----------|-------------|
+| `tokenUrl` / `host` | Staging vs prod IdP |
+| `clientId` / `clientSecret` | CI secrets |
+| `threads` / `rampup` | Load profile |
+
+```bash
+jmeter -n -t auth-api.jmx \
+  -Jhost=api.staging.example.com \
+  -JclientId="$CLIENT_ID" \
+  -JclientSecret="$CLIENT_SECRET" \
+  -Jthreads=50 \
+  -l results.jtl -e -o report/
+```
+
+Plan fields use `\${__P(host,)}` and similar ([best practices](/user-manual/best-practices/)).
+
+## Assertions and SLOs for auth traffic
+
+Measure:
+
+- Token endpoint **error %** and latency separately from business APIs (use clear sampler labels).  
+- Business API **401/403** rate (auth regression).  
+- Overall APDEX/percentiles on the [dashboard](/user-manual/generating-dashboard/).  
+
+If the IdP is shared, include it in capacity discussions: load tests can DDoS your own auth tier.
+
+## Common failure modes
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| All 401 after first success in recording | Token/cookie not correlated | Extractor + Cookie Manager |
+| `\${accessToken}` literal in header | Extractor failed | Default value, Tree view, JSON path |
+| Works for 1 user, fails at scale | IdP rate limit, same user CSV | Unique users; throttle auth |
+| Intermittent 401 mid-test | Expiry | Refresh or re-login |
+| SSL errors to IdP | Trust store / SNI | JVM trust; HTTP Request TLS settings |
+| Secrets leaked in jmx/jtl | Body saved | Minimize saveservice; property secrets |
+
+## Security checklist
+
+1. Property-driven secrets only.  
+2. Restrict who can download CI artifacts that may contain tokens in request bodies (prefer not saving full bodies).  
+3. Use synthetic users in non-prod IdPs.  
+4. Do not disable TLS verification outside isolated labs.  
+5. Align test scopes with least privilege.
+
+## Related reading
+
+- [API Load Testing](/topics/api-load-testing/)  
+- [Correlation / dynamic values](/topics/correlation-dynamic-values/)  
+- [Functions and Variables](/topics/functions-and-variables/)  
+- [HTTP Recorder](/topics/http-recorder/)  
+- [Best Practices](/user-manual/best-practices/)  
+- [CI/CD](/topics/ci-cd-load-testing/)  
+
+## Frequently asked questions
+
+### Does JMeter have a built-in OAuth sampler?
+
+No. Model token and resource calls with HTTP Request, Header Manager, Cookie Manager, and extractors.
+
+### How do I send a JWT bearer token?
+
+Extract `access_token` into a variable, then set header `Authorization` to `Bearer \${accessToken}`.
+
+### Should every thread share one token?
+
+Usually no. Shared tokens hide per-user cache and session behaviour and can hit concurrent-use limits. Prefer CSV users or client-credentials per tenant as your scenario requires.
+
+### Why do I get 401 only under load?
+
+Token expiry, IdP throttling, wrong cookie scope, or extractors failing when error bodies replace JSON tokens. Assert on the login sampler and watch error % by label on the dashboard.
+
+### Can I load test SAML browser SSO?
+
+You can record HTTP redirects and posts, but complex browser-only steps may not replay. Many teams inject API tokens for the load phase and test full SSO separately.
+
+### Where do I store client secrets?
+
+In CI secrets or local env, passed via `-J` into `\${__P(...)}`, not hard-coded in the plan file.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Build a token sampler with JSON extraction and a single protected GET; validate with one thread before scaling.
+</Fragment>
+<Fragment slot="related">
+- [Correlation](/topics/correlation-dynamic-values/) - extractors end-to-end
+- [API Load Testing](/topics/api-load-testing/) - HTTP plan structure
+- [Functions and Variables](/topics/functions-and-variables/) - __P and CSV
+</Fragment>
+<Fragment slot="mistakes">
+Hard-coded bearer tokens in the jmx; no assertion on login; one shared user for all threads; saving full Authorization headers in verbose XML results.
+</Fragment>
+<Fragment slot="troubleshooting">
+Literal `\${accessToken}` means the extractor did not run or the path is wrong. Open View Results Tree on the token response and fix the JSON path or regex before increasing threads.
+</Fragment>
+</RelatedContent>

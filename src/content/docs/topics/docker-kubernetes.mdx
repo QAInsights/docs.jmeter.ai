@@ -1,0 +1,252 @@
+---
+title: "JMeter Docker and Kubernetes"
+seoTitle: "JMeter Docker and Kubernetes Guide"
+description: "Run JMeter in Docker and Kubernetes: non-GUI CLI, heap limits, volume mounts for reports, qainsights/jmeter image, Jobs, and distributed worker patterns."
+keywords:
+  - JMeter Docker
+  - JMeter Kubernetes
+  - JMeter container
+  - JMeter K8s
+  - qainsights/jmeter
+difficulty: advanced
+guideType: how-to
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: docker-kubernetes
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Docker and Kubernetes
+
+Teams run JMeter in containers for CI, ephemeral injectors, and scaled workers. Apache JMeter itself is a Java application started with documented CLI flags (`jmeter -n -t ...`); containers wrap that binary, JVM heap, plugins, and filesystem mounts. This guide stays grounded in official CLI, properties, distributed testing, and best practices, plus practical container patterns (including the community image `qainsights/jmeter` used on this site’s CI examples).
+
+:::caution[Not an official Apache image]
+Container images on Docker Hub are **community or vendor** builds unless Apache publishes one you explicitly trust. Pin digests, scan images, and verify the JMeter version inside matches your plans and plugins.
+:::
+
+## Why containers help
+
+- Reproducible JMeter + Java + plugin set  
+- Easy CI ([CI/CD guide](/topics/ci-cd-load-testing/))  
+- Scale injectors as Jobs/Deployments  
+- Isolate heap and CPU with cgroup limits  
+
+Containers do not remove the need for correct thread sizing, lean listeners, or honest test data ([best practices](/user-manual/best-practices/)).
+
+## Non-GUI is mandatory
+
+Inside containers there is typically no display. Always:
+
+```bash
+jmeter -n -t /plans/test.jmx -l /out/results.jtl -e -o /out/report -j /out/jmeter.log
+```
+
+| Flag | Container note |
+|------|----------------|
+| `-n` | Required headless |
+| `-t` | Path **inside** the container |
+| `-l` / `-e` / `-o` | Write to a **mounted** volume so the host/CI keeps artifacts |
+| `-J` / `-q` | Inject environment-specific properties |
+| `-r` / `-R` | Distributed workers ([remote testing](/topics/distributed-testing/)) |
+
+Official lean form also appears in best practices: `jmeter -n -t test.jmx -l test.jtl`.
+
+## Docker: minimal pattern
+
+### Mount plan and output
+
+```bash
+docker run --rm \
+  -v "\${PWD}/tests:/plans" \
+  -v "\${PWD}/jmeter-out:/out" \
+  qainsights/jmeter:5.6 \
+  -n -t /plans/api.jmx \
+  -Jthreads=20 -Jrampup=40 -Jhost=staging.example.com \
+  -l /out/results.jtl \
+  -e -o /out/report \
+  -j /out/jmeter.log
+```
+
+Ensure `/out/report` does not already contain a previous dashboard (generator expects a suitable empty/new output dir).
+
+### Heap and JVM
+
+JMeter scripts honor heap-related environment variables (`HEAP`, `JVM_ARGS` depending on packaging). Size for threads, response size, and listeners ([Heap Estimator](/tools/heap-estimator/)). Align container memory limits **above** `-Xmx` or the JVM will be OOM-killed by cgroups.
+
+### Plugins in images
+
+Bake Plugins Manager installs into a derived Dockerfile, or copy `lib/ext` JARs. Distributed workers need the **same** plugins ([distributed testing](/topics/distributed-testing/)).
+
+### User and filesystem
+
+Run as non-root when your image supports it; ensure mounted volumes are writable for JTL/report/log.
+
+## CI example (GitHub Actions)
+
+From the [CI/CD topic](/topics/ci-cd-load-testing/) pattern:
+
+```yaml
+- name: Run JMeter
+  run: |
+    mkdir -p jmeter-out
+    docker run --rm \
+      -v "\${{ github.workspace }}:/work" \
+      -w /work \
+      qainsights/jmeter:5.6 \
+      -n -t tests/load/api.jmx \
+      -Jthreads=15 -Jhost=\${{ vars.STAGING_HOST }} \
+      -l jmeter-out/results.jtl \
+      -e -o jmeter-out/report \
+      -j jmeter-out/jmeter.log
+```
+
+Archive `jmeter-out/` always; gate on dashboard statistics when ready.
+
+## Kubernetes patterns
+
+### Job for a one-shot test
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: jmeter-smoke
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: jmeter
+          image: qainsights/jmeter:5.6
+          args:
+            - -n
+            - -t
+            - /plans/api.jmx
+            - -Jthreads=10
+            - -l
+            - /out/results.jtl
+            - -e
+            - -o
+            - /out/report
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: plans
+              mountPath: /plans
+            - name: out
+              mountPath: /out
+      volumes:
+        - name: plans
+          configMap:
+            name: jmeter-plans
+        - name: out
+          emptyDir: {}
+```
+
+Copy results out with a sidecar, `kubectl cp`, or ship to object storage in an exit script. For durable artifacts, use PVC or upload steps.
+
+### ConfigMaps and secrets
+
+- Plans without secrets: ConfigMap or git-synced volume  
+- Hosts and client secrets: Kubernetes Secrets → env → `-J` or templated properties file  
+- Prefer `\${__P}` in the plan ([functions](/topics/functions-and-variables/))  
+
+### Resource isolation
+
+JMeter is CPU- and memory-sensitive under many threads. Set requests/limits deliberately. Noisy-neighbor shared nodes distort load generation; use dedicated node pools for serious tests.
+
+### Network
+
+Pods must reach the system under test. NetworkPolicies, private DNS, and egress rules often break first-time K8s load tests. Smoke with `curl` from an ephemeral pod before blaming JMeter.
+
+## Distributed JMeter on K8s
+
+Official remote mode: workers run `jmeter-server`, controller uses `-R` ([remote testing](/user-manual/remote-test/)).
+
+Container caveats:
+
+1. **Same JMeter + Java + plugins** on all pods.  
+2. **RMI/SSL** since JMeter 4.0 defaults to SSL; distribute keystores or lab-only disable carefully.  
+3. **Ports**: registry (often 1099), `server.rmi.localport`, reverse `client.rmi.localport` range must be allowed between pods.  
+4. **CSV data files are not auto-copied** to workers; mount shared volume or identical images with data.  
+5. Headless controller: `jmeter -n -t plan.jmx -R worker1,worker2 -l ...`.  
+
+Alternative: **N independent Jobs** each running full CLI load with split CSV slices, then merge JTLs offline (also mentioned as a multi-instance approach in best practices). Simpler networking than RMI.
+
+## Backend Listener from containers
+
+If you stream to Influx ([Grafana topic](/topics/grafana-influx-backend-listener/)), ensure pods can reach Influx/Grafana URLs and that cardinality stays low. Do not point production Influx at unbounded unique sampler labels.
+
+## Image hygiene checklist
+
+1. Pin tag **and** digest for release gates.  
+2. Record JMeter version in the report title or CI log.  
+3. Include only needed plugins.  
+4. Scan for CVEs.  
+5. Fail CI if `jmeter -v` mismatches expected version.  
+
+## Common failures
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Report missing on host | Forgot volume mount | Mount `/out` |
+| Permission denied | Non-writable mount | Fix ownership/fsGroup |
+| OOMKilled | Limit < heap or too many threads | Raise limit or lower threads |
+| Connection refused to SUT | K8s network | DNS/NetworkPolicy |
+| Plugin class missing | Image without plugin | Bake JARs |
+| RMI failures | Ports/SSL | Align with remote testing guide |
+
+## Related reading
+
+- [CI/CD load testing](/topics/ci-cd-load-testing/)  
+- [Distributed testing](/topics/distributed-testing/)  
+- [Best practices](/user-manual/best-practices/)  
+- [Heap estimator](/tools/heap-estimator/)  
+- [Properties cheat sheet](/tools/properties-cheatsheet/)  
+
+## Frequently asked questions
+
+### Is there an official Apache JMeter Docker image?
+
+Treat public images as community/vendor unless you verify Apache provenance. Prefer pinned, scanned images your team controls.
+
+### What is the essential CLI inside a container?
+
+`jmeter -n -t plan.jmx -l results.jtl` plus `-e -o report/` when you need the HTML dashboard artifact.
+
+### How do I pass threads and host into a containerized plan?
+
+Use `\${__P(threads,10)}` in the plan and docker/K8s args `-Jthreads=50 -Jhost=...`.
+
+### Can I run the JMeter GUI in Docker?
+
+Possible with X11/VNC images, but load tests should be non-GUI. Use GUI locally for authoring.
+
+### How do I get reports out of Kubernetes?
+
+Mount a PVC, upload to object storage at job end, or `kubectl cp` from the pod before it is deleted.
+
+### Do distributed workers work on Kubernetes?
+
+Yes if RMI ports, SSL keystores, identical software, and data mounts are correct. Many teams prefer multiple independent CLI jobs to avoid RMI complexity.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Run one dockerized smoke against staging with mounted report output, then add the same command to CI.
+</Fragment>
+<Fragment slot="related">
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+- [Distributed Testing](/topics/distributed-testing/)
+- [Remote Testing manual](/user-manual/remote-test/)
+</Fragment>
+<Fragment slot="mistakes">
+GUI mode in containers; no volume for reports; memory limit below -Xmx; different plugins on different workers.
+</Fragment>
+</RelatedContent>

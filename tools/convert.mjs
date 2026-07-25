@@ -718,6 +718,10 @@ const PRESERVED_FM_FIELDS = [
   'guideType',
   'estimatedReadTime',
   'lastVerified',
+  // SEO fields (custom; survive upstream sync when present)
+  'seoTitle',
+  'keywords',
+  'canonicalTopic',
 ];
 
 function escapeRegex(s) {
@@ -738,37 +742,70 @@ function splitFrontmatter(content) {
 
 /**
  * Parse a raw frontmatter block (without --- delimiters) into an ordered list
- * of { key, value } entries. Order is preserved so serialization is stable.
- * Only simple `key: "value"` and `key: value` lines are supported (no
- * multiline YAML) - sufficient for the fields used in this project.
+ * of { key, value, kind? } entries. Order is preserved so serialization is stable.
+ * Supports simple scalars and YAML lists used for `keywords:`.
  */
 function parseFrontmatterFields(fmRaw) {
   const entries = [];
   if (!fmRaw) return entries;
-  for (const line of fmRaw.split(/\r?\n/)) {
+  const lines = fmRaw.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/);
     if (!m) continue;
+    const key = m[1];
     let value = m[2];
+    // YAML list (e.g. keywords:)
+    if (value === '' || value === '|' || value === '>') {
+      const items = [];
+      let j = i + 1;
+      while (j < lines.length) {
+        const lm = lines[j].match(/^\s+-\s+(.*)$/);
+        if (!lm) break;
+        let item = lm[1];
+        if (
+          (item.startsWith('"') && item.endsWith('"')) ||
+          (item.startsWith("'") && item.endsWith("'"))
+        ) {
+          item = item.slice(1, -1);
+        }
+        items.push(item);
+        j++;
+      }
+      if (items.length > 0 || value === '') {
+        entries.push({ key, value: items, kind: 'list' });
+        i = j - 1;
+        continue;
+      }
+    }
     // Strip surrounding double quotes
     if (value.startsWith('"') && value.endsWith('"')) {
       value = value.slice(1, -1).replace(/\\"/g, '"');
+    } else if (value.startsWith("'") && value.endsWith("'")) {
+      value = value.slice(1, -1).replace(/''/g, "'");
     }
-    entries.push({ key: m[1], value });
+    entries.push({ key, value });
   }
   return entries;
 }
 
 /**
  * Serialize frontmatter entries back to a `---\n...\n---\n\n` block.
- * String values are double-quoted with inner quotes escaped.
+ * Scalars are double-quoted; lists emit YAML `- item` lines.
  */
 function serializeFrontmatter(entries) {
-  const lines = entries.map(({ key, value }) => {
-    // Always double-quote string values (matches the original generateFrontmatter
-    // behavior and keeps frontmatter parsing consistent).
+  const lines = [];
+  for (const { key, value, kind } of entries) {
+    if (kind === 'list' || Array.isArray(value)) {
+      lines.push(`${key}:`);
+      for (const item of value || []) {
+        lines.push(`  - ${String(item)}`);
+      }
+      continue;
+    }
     const str = String(value ?? '').replace(/"/g, "'");
-    return `${key}: "${str}"`;
-  });
+    lines.push(`${key}: "${str}"`);
+  }
   return `---\n${lines.join('\n')}\n---\n\n`;
 }
 

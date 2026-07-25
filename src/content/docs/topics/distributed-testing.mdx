@@ -1,15 +1,17 @@
 ---
 title: "JMeter Distributed Testing Guide"
-description: "Set up JMeter distributed testing to scale load across multiple machines. Configure controller and worker nodes, manage RMI connections, and aggregate results."
+seoTitle: "JMeter Distributed Testing Guide"
+description: "Scale JMeter with distributed testing: controller and workers, RMI SSL, ports, -R CLI, data files on each engine, and result aggregation pitfalls."
 keywords:
- - JMeter distributed testing
- - JMeter remote testing
- - JMeter master slave
- - JMeter multi-machine load testing
+  - JMeter distributed testing
+  - JMeter remote testing
+  - JMeter master slave
+  - jmeter-server
+  - JMeter RMI
 difficulty: advanced
 guideType: how-to
-estimatedReadTime: 12 min read
-lastVerified: JMeter 5.6
+estimatedReadTime: "13 min read"
+lastVerified: "JMeter 5.6"
 canonicalTopic: distributed-testing
 ---
 
@@ -146,7 +148,7 @@ Useful flags from the manual:
 |------|---------|
 | `-Gproperty=value` | Define a property on **all** servers (repeatable) |
 | `-X` | Exit remote servers at the end of the test |
-| `-Jproperty=value` | Property on the **client** (and as usual for plan `${__P}`) |
+| `-Jproperty=value` | Property on the **client** (and as usual for plan `\${__P}`) |
 
 The command-line client exits when remote servers have stopped.
 
@@ -315,7 +317,7 @@ cd $JMETER_HOME/bin
   -X
 ```
 
-If the plan uses `${__P(threads,)}` for the Thread Group, remember: **each worker** applies that property independently. `-Jthreads=50` sets the client property; workers need the same value via `-Gthreads=50` if they evaluate `__P` for thread count when the engine starts the plan. Match where the property is read - when in doubt, bake conservative defaults into the plan and override consistently with `-G` for remote engines.
+If the plan uses `\${__P(threads,)}` for the Thread Group, remember: **each worker** applies that property independently. `-Jthreads=50` sets the client property; workers need the same value via `-Gthreads=50` if they evaluate `__P` for thread count when the engine starts the plan. Match where the property is read - when in doubt, bake conservative defaults into the plan and override consistently with `-G` for remote engines.
 
 ## Checklist before first production-scale distributed run
 

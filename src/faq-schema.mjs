@@ -393,6 +393,322 @@ export const faqSchema = {
       a: 'Choose JMeter when you need GUI or recorder-based authoring, multiple in-box protocols beyond HTTP, native remote engines, Apache 2.0 licensing, or you already maintain jmx plans and JMeter skills.',
     },
   ],
+
+  '/topics/jwt-oauth-sso': [
+    {
+      q: 'Does JMeter have a built-in OAuth sampler?',
+      a: 'No. Model token and resource calls with HTTP Request, Header Manager, Cookie Manager, and extractors.',
+    },
+    {
+      q: 'How do I send a JWT bearer token in JMeter?',
+      a: 'Extract access_token into a variable, then set the Authorization header to Bearer plus that variable using an HTTP Header Manager.',
+    },
+    {
+      q: 'Should every JMeter thread share one access token?',
+      a: 'Usually no. Shared tokens hide per-user behaviour and can hit concurrent-use limits. Prefer CSV users or per-thread logins unless the scenario intentionally uses client credentials.',
+    },
+    {
+      q: 'Why do I get 401 only under load with JWT tests?',
+      a: 'Common causes are token expiry, identity provider rate limits, cookie scope issues, or extractors failing when error bodies replace JSON tokens. Assert on the login sampler and review error percentage by label.',
+    },
+    {
+      q: 'Can JMeter load test SAML browser SSO?',
+      a: 'You can record HTTP redirects and form posts, but complex browser-only steps may not replay. Many teams inject API tokens for load and test full browser SSO separately.',
+    },
+    {
+      q: 'Where should I store OAuth client secrets for JMeter?',
+      a: 'In CI secrets or local environment variables, passed with -J into __P property references, not hard-coded in the jmx file.',
+    },
+  ],
+
+  '/topics/correlation-dynamic-values': [
+    {
+      q: 'What is correlation in JMeter?',
+      a: 'Capturing dynamic values from responses such as tokens and IDs into variables, then sending them on later requests so multi-step scenarios work for every thread.',
+    },
+    {
+      q: 'Should I use JSON Extractor or Regular Expression Extractor?',
+      a: 'For JSON responses, prefer JSON-oriented extractors. Use regular expressions for HTML fragments, headers, or unstructured text.',
+    },
+    {
+      q: 'Why is my JMeter variable still showing as ${csrf}?',
+      a: 'The variable was never set. JMeter leaves undefined references unchanged. Fix the extractor and set a default value to detect misses.',
+    },
+    {
+      q: 'Do I need extractors if I use a Cookie Manager?',
+      a: 'Cookies often work automatically with Cookie Manager. Body and header tokens still need extractors.',
+    },
+    {
+      q: 'Can one thread read another thread extracted orderId?',
+      a: 'Not with ordinary variables. Variables are thread-local by design. Use properties only for intentional global data, not per-user IDs.',
+    },
+    {
+      q: 'How do I correlate values after recording a script?',
+      a: 'Replay with one thread, find the first failure, extract from the previous response, replace hard-coded values, and repeat until the journey is green.',
+    },
+  ],
+
+  '/topics/websocket-load-testing': [
+    {
+      q: 'Does stock Apache JMeter include a WebSocket sampler?',
+      a: 'WebSocket support is provided through the plugin ecosystem, not as a primary core sampler like HTTP Request. Install a maintained WebSocket plugin via Plugins Manager or manual JARs.',
+    },
+    {
+      q: 'Can I use the HTTP(S) Test Script Recorder for WebSockets?',
+      a: 'The recorder is built for HTTP and HTTPS request capture. Do not expect full WebSocket frame recording the way you record REST calls. Build socket steps with a plugin after HTTP login when needed.',
+    },
+    {
+      q: 'How many threads do I need for WebSocket tests?',
+      a: 'Often one thread per concurrent connection for classic Thread Groups. Size from concurrent sessions and message pacing, then validate injector CPU, RAM, and file descriptors.',
+    },
+    {
+      q: 'Do WebSocket plugins need to be on every distributed worker?',
+      a: 'Yes. Workers must match the controller JMeter version and plugin set, the same as other third-party libraries in remote testing.',
+    },
+    {
+      q: 'Should I generate an HTML dashboard for WebSocket tests?',
+      a: 'Yes if the plugin writes standard sample results. Label connect, write, read, and close clearly so statistics remain readable.',
+    },
+  ],
+
+  '/topics/grafana-influx-backend-listener': [
+    {
+      q: 'What is JMeter Backend Listener?',
+      a: 'A listener that sends metrics to external backends through a BackendListenerClient implementation instead of only showing GUI graphs.',
+    },
+    {
+      q: 'Which InfluxDB Backend Listener client should I use?',
+      a: 'For live dashboards during large tests, start with InfluxdbBackendListenerClient introduced in JMeter 3.2. Use InfluxDBRawBackendListenerClient from JMeter 5.4 when you need raw sample writes and can afford the volume.',
+    },
+    {
+      q: 'Does Backend Listener replace the HTML report?',
+      a: 'No. Keep results with -l and generate HTML dashboards with -e -o for offline analysis. Backend Listener is for live monitoring.',
+    },
+    {
+      q: 'Can I use Graphite instead of InfluxDB with JMeter?',
+      a: 'Yes. GraphiteBackendListenerClient ships with JMeter. Grafana can also query Graphite datasources.',
+    },
+    {
+      q: 'Why are some Grafana series empty for my samplers?',
+      a: 'Check samplersRegex filters, whether those labels actually ran, and Transaction Controller parent or child settings that change what is emitted.',
+    },
+    {
+      q: 'How do JMeter Grafana annotations work?',
+      a: 'InfluxdbBackendListenerClient can write events used as Grafana annotations. Event tags and title-related fields help tag runs. See the component reference and real-time results chapter.',
+    },
+  ],
+
+  '/topics/docker-kubernetes': [
+    {
+      q: 'Is there an official Apache JMeter Docker image?',
+      a: 'Treat public images as community or vendor builds unless you verify Apache provenance. Prefer pinned, scanned images your team controls.',
+    },
+    {
+      q: 'What is the essential JMeter CLI inside a container?',
+      a: 'jmeter -n -t plan.jmx -l results.jtl, plus -e -o report/ when you need the HTML dashboard artifact.',
+    },
+    {
+      q: 'How do I pass threads and host into a containerized JMeter plan?',
+      a: 'Use __P property defaults in the plan and pass -Jthreads and -Jhost in the docker or Kubernetes container args.',
+    },
+    {
+      q: 'Can I run the JMeter GUI in Docker?',
+      a: 'It is possible with remote display setups, but load tests should be non-GUI. Use the GUI locally for authoring.',
+    },
+    {
+      q: 'How do I get JMeter reports out of Kubernetes?',
+      a: 'Mount a persistent volume, upload to object storage when the job ends, or copy files from the pod before it is deleted.',
+    },
+    {
+      q: 'Do distributed JMeter workers work on Kubernetes?',
+      a: 'Yes if RMI ports, SSL keystores, identical software, and data mounts are correct. Many teams prefer multiple independent CLI jobs to avoid RMI complexity.',
+    },
+  ],
+
+  '/topics/plugins-essentials': [
+    {
+      q: 'Are JMeter plugins part of Apache core?',
+      a: 'Popular plugins are community extensions installed into lib/ext. Core JMeter ships many protocols, but not every modern stack client.',
+    },
+    {
+      q: 'What is JMeter Plugins Manager?',
+      a: 'A community tool that installs plugin sets into your JMeter installation from a catalog. Restart JMeter after installs when required.',
+    },
+    {
+      q: 'Do I need plugins for HTTP API tests?',
+      a: 'Often no. HTTP Request, Header Manager, CSV Data Set, extractors, and the HTML dashboard are core. Add plugins for missing protocols or advanced thread schedules.',
+    },
+    {
+      q: 'Why does my jmx fail on another machine?',
+      a: 'That machine lacks the plugins or JMeter version used when the plan was saved. Align installations or remove plugin-only elements.',
+    },
+    {
+      q: 'Can plugins be used in non-GUI mode?',
+      a: 'Yes. CLI loads the same lib/ext classes. Ensure the CI or container image contains them.',
+    },
+    {
+      q: 'Where do I learn to write my own JMeter plugin?',
+      a: 'See the Extending JMeter developer guide for custom samplers, listeners, and related extension points.',
+    },
+  ],
+
+  '/topics/troubleshooting': [
+    {
+      q: 'Why do I get connection reset only under load in JMeter?',
+      a: 'Often server or load balancer limits, injector port exhaustion, or timeouts. Compare server metrics and run from the same network as the injector.',
+    },
+    {
+      q: 'Why do I get 401 after a successful JMeter recording?',
+      a: 'Dynamic tokens or cookies were not correlated. Add Cookie Manager and extractors, and do not reuse recorded bearer tokens.',
+    },
+    {
+      q: 'How do I fix OutOfMemoryError in JMeter?',
+      a: 'Increase heap, reduce threads per JVM, disable View Results Tree, save fewer result fields, and prefer JSR223 Groovy over heavy scripts on hot paths.',
+    },
+    {
+      q: 'Why is JMeter throughput lower than the thread calculator?',
+      a: 'Calculators assume stable response times and little think time. Under load, response times rise and listeners or server limits reduce throughput.',
+    },
+    {
+      q: 'What is the first log to read when JMeter fails?',
+      a: 'jmeter.log or the file set with -j, plus the first failing sampler message in View Results Tree or the results file.',
+    },
+    {
+      q: 'Why does JMeter work in GUI but fail in CI?',
+      a: 'Different working directory, missing CSV files, missing plugins, wrong -J properties, or network policy from the CI runner are common causes.',
+    },
+  ],
+
+  '/topics/interview-questions': [
+    {
+      q: 'Are these JMeter interview answers enough to pass any interview?',
+      a: 'They cover common JMeter topics with correct mental models. Deep system design and company-specific tools still need broader performance engineering study.',
+    },
+    {
+      q: 'Should I memorize every JMeter component field for interviews?',
+      a: 'No. Know core concepts and where to look up fields in the component reference.',
+    },
+    {
+      q: 'Is GUI mode acceptable for load tests in interviews?',
+      a: 'Say no for real load. Explain non-GUI mode and why heavy listeners distort injector performance.',
+    },
+    {
+      q: 'What JMeter version should I mention in interviews?',
+      a: 'Speak to current stable lines and features you have used, such as dashboard reporting and 5.6 programmatic helpers, and verify details against release notes.',
+    },
+    {
+      q: 'How can I practice JMeter quickly before an interview?',
+      a: 'Build a small API plan, correlate a token, run non-GUI with an HTML report, and deliberately break then fix one failure using a troubleshooting checklist.',
+    },
+  ],
+
+  '/topics/jmeter-for-beginners': [
+    {
+      q: 'Do I need to know Java to use JMeter?',
+      a: 'Not for basic HTTP plans. A Java runtime is required to run JMeter. Groovy helps later for advanced scripting.',
+    },
+    {
+      q: 'Which JMeter version should beginners install?',
+      a: 'A current stable release. Avoid versions older than several releases behind the latest, as recommended in best practices.',
+    },
+    {
+      q: 'Is the HTTP(S) Test Script Recorder required for beginners?',
+      a: 'No. For APIs, manual HTTP Request or curl import is often cleaner. The recorder helps more for browser-style web journeys.',
+    },
+    {
+      q: 'How many threads should I use for a first JMeter test?',
+      a: 'Start with one thread to validate, then a small number such as five to ten. Size larger tests with pilots and a thread calculator.',
+    },
+    {
+      q: 'Where is the JMeter HTML report after a CLI run?',
+      a: 'In the folder you pass to -o after successful -e generation. Open index.html in that folder.',
+    },
+    {
+      q: 'What should beginners learn after the first HTML report?',
+      a: 'Correlation of dynamic values, CSV and property parameterization, and automating the same non-GUI command in CI.',
+    },
+  ],
+
+  '/topics/apdex-slo-percentiles': [
+    {
+      q: 'What is APDEX in JMeter?',
+      a: 'A satisfaction score derived from response times versus configured satisfied and tolerated thresholds, shown in the HTML dashboard APDEX table.',
+    },
+    {
+      q: 'What are the default JMeter APDEX thresholds?',
+      a: '500 milliseconds for satisfied and 1500 milliseconds for tolerated unless you override reportgenerator properties.',
+    },
+    {
+      q: 'Why not use only average response time for SLOs?',
+      a: 'Averages hide long tails. Users feel high percentiles. SLOs should specify percentiles and error rates.',
+    },
+    {
+      q: 'How do I change percentiles on the JMeter dashboard?',
+      a: 'Set aggregate_rpt_pct1, aggregate_rpt_pct2, and aggregate_rpt_pct3. Defaults are 90, 95, and 99.',
+    },
+    {
+      q: 'Can APDEX thresholds differ per API in JMeter?',
+      a: 'Yes. Use jmeter.reportgenerator.apdex_per_transaction with sample names or regular expressions as documented in the dashboard chapter.',
+    },
+    {
+      q: 'Does a green APDEX mean production is safe?',
+      a: 'No. It means samples in that test met thresholds under that load model and environment. Combine with capacity planning and production monitoring.',
+    },
+  ],
+
+  '/topics/programmatic-dsl-plans': [
+    {
+      q: 'Is the JMeter DSL production-ready?',
+      a: 'JMeter 5.6 documents programmatic helpers as experimental. Teams can use them but should pin versions and watch release notes.',
+    },
+    {
+      q: 'Can I keep using jmx files if I adopt code-first JMeter?',
+      a: 'Yes. Programmatic APIs are optional. Versioned jmx files plus non-GUI CLI remain fully supported.',
+    },
+    {
+      q: 'Should I use the Kotlin or Java DSL for JMeter?',
+      a: 'Choose based on team language. Both are documented. The Copy Code action often illustrates Kotlin DSL output in the manual.',
+    },
+    {
+      q: 'Does code-first authoring remove the need for non-GUI mode?',
+      a: 'No. Real load should still run non-GUI with minimal listeners regardless of how the plan was authored.',
+    },
+    {
+      q: 'Where is Copy Code in JMeter?',
+      a: 'In the GUI context menu on a test plan tree element. It generates code for the element and its children as documented in the programmatic chapter.',
+    },
+    {
+      q: 'Why use ListedHashTree instead of HashTree?',
+      a: 'HashTree does not honour element order, so children may shuffle. ListedHashTree preserves order for programmatic plans.',
+    },
+  ],
+
+  '/topics/grpc-kafka-mqtt': [
+    {
+      q: 'Does Apache JMeter core include Kafka or gRPC samplers?',
+      a: 'Not as the primary built-in story like HTTP Request. Use plugins, custom samplers, or load adjacent HTTP APIs that front those systems.',
+    },
+    {
+      q: 'Can I use JMeter JMS samplers for Kafka?',
+      a: 'Only if you intentionally use a JMS layer. Wire-level Kafka clients are different. Prefer a Kafka plugin or other tools for Kafka protocol load.',
+    },
+    {
+      q: 'How do I install gRPC Kafka or MQTT plugins for JMeter?',
+      a: 'Use Plugins Manager or place JARs in lib/ext, restart JMeter, pin versions, and mirror the same set into CI and worker images.',
+    },
+    {
+      q: 'What is the biggest distributed testing risk with protocol plugins?',
+      a: 'Workers missing plugin JARs or version skew causing ClassNotFoundException or serialization errors.',
+    },
+    {
+      q: 'Should every message protocol test be done in JMeter?',
+      a: 'No. Choose JMeter when it fits team skills and hybrid protocols. Use specialized tools when they are clearly better for a single technology.',
+    },
+    {
+      q: 'How do I assert success for async messaging in JMeter?',
+      a: 'Define explicit signals such as produce acknowledgement, message visibility to a consumer, or a downstream HTTP status. Fire-and-forget without observability is a weak test.',
+    },
+  ],
 };
 
 /**

@@ -1,16 +1,17 @@
 ---
 title: "JMeter CI/CD Load Testing"
-description: "Integrate JMeter into CI/CD pipelines. Run tests in non-GUI mode, generate reports automatically, and fail builds on performance regressions."
+seoTitle: "JMeter CI/CD Load Testing Guide"
+description: "Integrate JMeter into CI/CD: non-GUI flags, property overrides, HTML reports, performance gates, GitHub Actions, Jenkins, and containerized runs."
 keywords:
- - JMeter CI/CD
- - JMeter Jenkins
- - JMeter GitHub Actions
- - automated load testing
- - JMeter non-GUI mode
+  - JMeter CI/CD
+  - JMeter Jenkins
+  - JMeter GitHub Actions
+  - automated load testing
+  - JMeter non-GUI
 difficulty: advanced
 guideType: how-to
-estimatedReadTime: 12 min read
-lastVerified: JMeter 5.6
+estimatedReadTime: "13 min read"
+lastVerified: "JMeter 5.6"
 canonicalTopic: ci-cd-load-testing
 ---
 
@@ -92,7 +93,7 @@ By default, JMeter finishing the test plan is not the same as “all samples suc
 
 Hard-coding hostnames and thread counts in XML forces a commit for every environment. Official parameterization guidance ([best practices](/user-manual/best-practices/)):
 
-1. Define Test Plan variables from properties, for example `LOOPS=${__P(loops,10)}`.  
+1. Define Test Plan variables from properties, for example `LOOPS=\${__P(loops,10)}`.  
 2. Override on the CLI: `jmeter … -Jloops=12`.  
 3. For many related settings, use property files and `-q`.
 
@@ -109,9 +110,9 @@ Hard-coding hostnames and thread counts in XML forces a commit for every environ
 In the plan:
 
 ```text
-${__P(threads,5)}
-${__P(rampup,30)}
-${__P(host,localhost)}
+\${__P(threads,5)}
+\${__P(rampup,30)}
+\${__P(host,localhost)}
 ```
 
 Pipeline example:
@@ -204,7 +205,7 @@ If `jq` paths differ in your version, gate on CSV aggregates or a small script t
 | Nightly | Medium load, longer | Error % + p95 |
 | Pre-release | Closer to prod target | Full SLO set + report review |
 
-Use `${__P(...)}` so one plan serves all tiers.
+Use `\${__P(...)}` so one plan serves all tiers.
 
 ## GitHub Actions pattern
 
@@ -222,12 +223,12 @@ jobs:
         run: |
           mkdir -p jmeter-out
           docker run --rm \
-            -v "${{ github.workspace }}:/work" \
+            -v "\${{ github.workspace }}:/work" \
             -w /work \
             qainsights/jmeter:5.6 \
             -n -t tests/load/api.jmx \
             -Jthreads=15 -Jrampup=30 \
-            -Jhost=${{ vars.STAGING_HOST }} \
+            -Jhost=\${{ vars.STAGING_HOST }} \
             -l jmeter-out/results.jtl \
             -e -o jmeter-out/report \
             -j jmeter-out/jmeter.log
@@ -269,7 +270,7 @@ stage('JMeter') {
     sh '''
       rm -rf jmeter-out && mkdir jmeter-out
       jmeter -n -t tests/load/api.jmx \
-        -Jthreads=${THREADS} -Jhost=${TARGET_HOST} \
+        -Jthreads=\${THREADS} -Jhost=\${TARGET_HOST} \
         -l jmeter-out/results.jtl \
         -e -o jmeter-out/report \
         -j jmeter-out/jmeter.log
@@ -314,7 +315,7 @@ Remote testing docs state **data files are not automatically sent** to workers. 
 ### Secrets
 
 - Pass tokens with `-J` from CI secret stores: `-JapiKey=$API_KEY`.  
-- Reference `${__P(apiKey,)}` in Header Managers.  
+- Reference `\${__P(apiKey,)}` in Header Managers.  
 - Never log full command lines that echo secrets; prefer env-specific property files with restricted filesystem permissions.
 
 ## Plan design rules that make CI stable
@@ -350,7 +351,7 @@ For long nightly jobs, consider the [Backend Listener / real-time results](/user
 |---------|--------------|---------------|
 | Job hangs | No timeout; server wait; infinite loop | Job timeout; connect/response timeouts on HTTP Request |
 | Empty report / generator error | Bad saveservice config; non-empty `-o` dir | Clean output dir; required CSV columns |
-| Connection errors only in CI | Firewall DNS; wrong `${__P(host)}` | Print non-secret effective host; curl from agent |
+| Connection errors only in CI | Firewall DNS; wrong `\${__P(host)}` | Print non-secret effective host; curl from agent |
 | OOM on agent | Threads too high for runner size | Lower `-Jthreads`; raise heap; bigger runner |
 | Flaky p95 | Shared noisy staging | Dedicated env; longer ramp; median of multiple runs |
 | Passes CLI locally, fails CI | Path/CSV/cwd differences | Working directory; relative file paths |
@@ -360,7 +361,7 @@ For long nightly jobs, consider the [Backend Listener / real-time results](/user
 
 1. Plan runs under `jmeter -n` locally with the same properties CI will use.  
 2. Listeners disabled; results via `-l`.  
-3. Hosts, threads, duration from `${__P}` / `-J`.  
+3. Hosts, threads, duration from `\${__P}` / `-J`.  
 4. Secrets from CI secret store.  
 5. Clean `-o` report directory per run.  
 6. Archive report + JTL + log always.  
@@ -374,7 +375,7 @@ For long nightly jobs, consider the [Backend Listener / real-time results](/user
 - [API Load Testing](/topics/api-load-testing/) - plan design for HTTP APIs  
 - [Dashboard Report](/user-manual/generating-dashboard/) - APDEX and graphs  
 - [Best Practices](/user-manual/best-practices/) - CLI and lean plans  
-- [Functions and Variables](/topics/functions-and-variables/) - `${__P}` and CSV  
+- [Functions and Variables](/topics/functions-and-variables/) - `\${__P}` and CSV  
 - [Distributed Testing](/topics/distributed-testing/) - multi-engine scale  
 - [Thread Calculator](/tools/thread-calculator/) - sizing before you burn CI minutes  
 
@@ -390,7 +391,7 @@ You should not. Official guidance is to use non-GUI mode for load tests. GUI mod
 
 ### How do I change thread count without editing the JMX?
 
-Define threads as `${__P(threads,10)}` in the Thread Group and pass `-Jthreads=50` on the CI command line (documented parameterization pattern).
+Define threads as `\${__P(threads,10)}` in the Thread Group and pass `-Jthreads=50` on the CI command line (documented parameterization pattern).
 
 ### How do I fail the build on performance regressions?
 

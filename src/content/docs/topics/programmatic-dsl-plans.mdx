@@ -1,0 +1,188 @@
+---
+title: "JMeter Programmatic and DSL Test Plans"
+seoTitle: "JMeter Programmatic DSL Test Plans"
+description: "Build JMeter plans as code with the 5.6 Java and Kotlin DSL: ListedHashTree, Copy Code from GUI, CI-friendly workflows, and code-first vs k6 trade-offs."
+keywords:
+  - JMeter DSL
+  - JMeter programmatic test plan
+  - JMeter Kotlin DSL
+  - JMeter as code
+  - ListedHashTree
+difficulty: advanced
+guideType: how-to
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: programmatic-dsl-plans
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter DSL / Programmatic Plans (Code-First)
+
+Teams leaving GUI-centric workflows for tools like k6 often still need JMeter’s protocol breadth or existing JVM skills. **JMeter 5.6** introduced experimental APIs and Kotlin/Java DSL helpers to build plans programmatically. This guide summarizes the official [Building a Test Plan Programmatically](/user-manual/build-programmatic-test-plan/) chapter and how to combine it with CLI execution, git, and CI.
+
+:::note[Experimental in 5.6]
+The manual states JMeter 5.6 brings **experimental** classes and methods for programmatic plans and invites feedback. APIs may evolve; pin JMeter versions and read release notes when upgrading.
+:::
+
+## Why code-first JMeter?
+
+| Driver | How programmatic plans help |
+|--------|----------------------------|
+| PR review | Diff Java/Kotlin instead of huge XML |
+| Reuse | Share builders for headers, auth, HTTP defaults |
+| Generate many variants | Loops in code create samplers/data |
+| Hybrid teams | GUI for discovery, code for steady-state suites |
+
+You can still save/run `.jmx`; code is another authoring front-end to the same engine.
+
+## Core concept: ListedHashTree
+
+Official model:
+
+- Test elements **do not** form a tree by themselves.  
+- Parent/child relationships live in a **`ListedHashTree`**.  
+- Use **`ListedHashTree`**, not plain `HashTree`, because `HashTree` does **not** honour element order and children may shuffle unexpectedly.  
+
+### Low-level API sketch
+
+From the manual’s Debug Sampler example pattern:
+
+```java
+ListedHashTree root = new ListedHashTree();
+TestPlan testPlan = new TestPlan();
+ListedHashTree testPlanSubtree = root.add(testPlan);
+ThreadGroup threadGroup = new ThreadGroup();
+threadGroup.setName("Search Order Thread Group");
+ListedHashTree threadGroupSubtree = testPlanSubtree.add(threadGroup);
+DebugSampler debugSampler = new DebugSampler();
+threadGroupSubtree.add(debugSampler);
+```
+
+1. Create root tree.  
+2. Add `TestPlan`, keep returned subtree.  
+3. Add `ThreadGroup` under plan.  
+4. Add samplers under the thread group subtree.  
+
+(Your imports and exact setters match the JMeter version JARs on the classpath.)
+
+## Generating code from the GUI
+
+The manual documents a **Copy Code** context action on plan elements. It generates code for the element and its children (example shows Kotlin DSL output for an HTTP sampler). Workflow:
+
+1. Build or record a fragment in GUI.  
+2. Right-click → Copy Code.  
+3. Paste into your Kotlin/Java project.  
+4. Refactor into functions/modules.  
+5. Run via code that produces a tree and invokes the engine, or export/save as jmx if your tooling supports it.  
+
+This is the fastest bridge for GUI users moving toward code.
+
+## Kotlin DSL
+
+The programmatic chapter covers creating a plan with **Kotlin DSL** (`testTree` builder style, class references such as `TestPlan::class`, unary plus for childless elements). Extension functions on `TreeBuilder` factor common patterns (e.g. a `threadGroup` helper with default threads/ramp-up).
+
+See the manual sections:
+
+- Creating a plan with Kotlin DSL  
+- Extending the Kotlin DSL  
+
+for syntax details and screenshots of generated code.
+
+## Java DSL
+
+Similarly, a **Java DSL** uses `testTree` with builder lambdas: `b.add(Class, consumer)` to configure properties and nest children. Prefer this when the team standardizes on Java without Kotlin.
+
+## How this compares to k6-style DX
+
+| Concern | k6 | JMeter programmatic |
+|---------|----|---------------------|
+| Language | JS/TS | Java/Kotlin (+ jmx) |
+| Engine | Go binary | JVM JMeter engine |
+| Protocols | HTTP-centric strengths | Broad JMeter sampler set |
+| Maturity of DSL | Central product focus | Experimental helpers in 5.6 |
+| Execution | `k6 run` | Still `jmeter -n` or embedded engine |
+
+You do not have to abandon JMeter to get **reviewable code**; you may adopt DSL authoring while keeping CLI reports and distributed mode.
+
+Deep dive comparisons: [JMeter vs alternatives](/topics/jmeter-vs-alternatives/).
+
+## Recommended team workflow
+
+1. **Discover** journeys with recorder/GUI ([recorder](/topics/http-recorder/)).  
+2. **Copy Code** for HTTP fragments.  
+3. **Parameterize** with the same property names you use in jmx (`threads`, `host`) for CLI parity.  
+4. **Store** sources in git; build a small jar or use jbang/maven exec as you prefer.  
+5. **Execute** load with non-GUI JMeter and HTML dashboard ([best practices](/user-manual/best-practices/)).  
+6. **Gate** CI on report metrics ([CI/CD](/topics/ci-cd-load-testing/)).  
+
+If you only need versioned XML, committing cleaned `.jmx` with `\${__P}` is still valid code-adjacent practice.
+
+## Classpath and dependencies
+
+Programmatic authoring requires JMeter libraries on the module classpath (`ApacheJMeter_core`, protocol modules you use, etc.). Match versions to the JMeter you run for load. Plugin classes used in code must exist on workers too ([plugins](/topics/plugins-essentials/)).
+
+## Execution options
+
+| Mode | Notes |
+|------|-------|
+| Generate jmx, run CLI | Familiar ops path `-n -t -l -e -o` |
+| Embedded engine in JVM | Advanced; ensure shutdown and result collection |
+| Distributed | Same remote testing rules; plan serialization must include all classes |
+
+## Testing the builder
+
+Unit-test that the tree contains expected labels/counts. Smoke-run with 1 thread before performance environments. Experimental APIs deserve characterization tests when you upgrade JMeter.
+
+## Pitfalls
+
+1. Using `HashTree` instead of `ListedHashTree` → order bugs.  
+2. Mixing GUI-only plugins not on CI classpath.  
+3. Assuming DSL stability across majors without reading changes.  
+4. Forgetting lean-run rules (listeners, CLI) because “it’s code now.”  
+5. Duplicating secrets in source; still use env/`__P` patterns for runtime.  
+
+## Related reading
+
+- [Build programmatic test plan (manual)](/user-manual/build-programmatic-test-plan/)  
+- [Building a test plan](/user-manual/build-test-plan/)  
+- [Best practices](/user-manual/best-practices/)  
+- [Functions and variables](/topics/functions-and-variables/)  
+- [JMeter vs alternatives](/topics/jmeter-vs-alternatives/)  
+
+## Frequently asked questions
+
+### Is the JMeter DSL production-ready?
+
+JMeter 5.6 documents it as experimental. Many teams use it successfully but should pin versions and watch release notes.
+
+### Can I keep using .jmx files?
+
+Yes. Programmatic APIs are optional. Versioned jmx plus CLI remains fully supported.
+
+### Kotlin or Java DSL?
+
+Choose based on team language. Both are documented. Copy Code often emits Kotlin DSL examples in the manual screenshots.
+
+### Does code-first remove the need for non-GUI mode?
+
+No. Real load still should run non-GUI with minimal listeners regardless of how the plan was authored.
+
+### How do I migrate from k6 back to JMeter?
+
+Rebuild scenarios with HTTP samplers or Copy Code from a recorded flow; map checks to assertions; run CLI reports. Protocol-only k6 scripts map cleanly; browser-level k6 features do not.
+
+### Where is Copy Code?
+
+In the JMeter GUI context menu on a tree element (documented with screenshot in the programmatic chapter).
+
+<RelatedContent>
+<Fragment slot="next-step">
+Open a small plan in GUI, use Copy Code on an HTTP sampler, and compile that fragment against JMeter 5.6+ libraries.
+</Fragment>
+<Fragment slot="related">
+- [Programmatic manual chapter](/user-manual/build-programmatic-test-plan/)
+- [CI/CD](/topics/ci-cd-load-testing/)
+- [Best Practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

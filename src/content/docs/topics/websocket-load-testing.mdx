@@ -1,0 +1,199 @@
+---
+title: "JMeter WebSocket Load Testing"
+seoTitle: "JMeter WebSocket Load Testing"
+description: "Load test WebSocket APIs with JMeter plugins: install options, open/message/close flows, auth tickets, CLI runs, and injector sizing for long-lived sockets."
+keywords:
+  - JMeter WebSocket
+  - WebSocket load testing
+  - JMeter WebSocket plugin
+  - wss performance test
+difficulty: advanced
+guideType: how-to
+estimatedReadTime: "11 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: websocket-load-testing
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter WebSocket Load Testing
+
+Apache JMeter’s **core** distribution focuses on protocols such as HTTP, JDBC, JMS, LDAP, and FTP (see the [component reference](/user-manual/component-reference/) sampler list). **WebSocket is not a built-in core sampler** in the same way HTTP Request is. Production WebSocket load tests with JMeter almost always depend on the **plugin ecosystem** (JMeter Plugins / Plugins Manager and community WebSocket plugins). This guide explains a grounded, plugin-aware workflow: install plugins, design sessions, correlate, size threads, and operate CLI load without overstating what core JMeter alone can do.
+
+:::note[Plugin-aware]
+Plugin class names, sampler labels, and versions change over time. Treat UI field names below as **patterns**. Confirm against the plugin docs for the exact version you install, and pin plugin versions in CI for reproducibility.
+:::
+
+:::tip[HTTP first]
+Many “WebSocket apps” still authenticate and bootstrap over **HTTPS**. Model login with core [HTTP Request](/topics/api-load-testing/) + [correlation](/topics/correlation-dynamic-values/), then open the socket with the plugin sampler.
+:::
+
+## What WebSocket load means
+
+A WebSocket client:
+
+1. Completes an HTTP Upgrade handshake.  
+2. Keeps a **long-lived** bidirectional connection.  
+3. Sends and receives messages (text/binary) with app-level framing.  
+4. Closes or drops under errors.  
+
+Load dimensions differ from REST:
+
+| Dimension | REST-style HTTP | WebSocket |
+|-----------|-----------------|-----------|
+| Connection | Often short (keep-alive pool) | Long-lived per VU |
+| Metric focus | Request latency, RPS | Connect time, message latency, msg/s, errors, connection drops |
+| Thread usage | Sample ≈ request | Thread may block on read/write for the session lifetime |
+| Memory | Per-sample buffers | Per-open connection state |
+
+JMeter’s thread model ([best practices](/user-manual/best-practices/) on sizing threads) still applies: each concurrent session typically needs a thread (or plugin-specific async mode if offered). Undersizing threads relative to message rates invites [coordinated omission](/tools/coordinated-omission/) style bias.
+
+## Install plugins (Plugins Manager)
+
+Core JMeter does not install third-party plugins by itself. Community practice:
+
+1. Install **JMeter Plugins Manager** (see [plugins essentials](/topics/plugins-essentials/) and the JMeter wiki plugins page linked from project docs such as [Boss](/user-manual/boss/)).  
+2. Search for a maintained **WebSocket** plugin compatible with your JMeter major version.  
+3. Install, **restart** JMeter, confirm new samplers appear under Sampler.  
+4. For CI/Docker, bake the same plugin set into the image or install in the job before `jmeter -n`.  
+
+[Distributed testing](/topics/distributed-testing/) requires **identical plugins on every worker**. Missing plugin JARs cause serialization or class-not-found failures remotely.
+
+## Reference architecture for a plan
+
+```text
+Test Plan
+├── HTTP Request Defaults / Header Manager (auth bootstrap)
+├── CSV Data Set (users)
+└── Thread Group
+    ├── HTTP Login (core) + extract token
+    ├── WebSocket Open (plugin)  // pass token via query/header if supported
+    ├── Loop Controller
+    │   ├── WebSocket Write/Ping (plugin)
+    │   ├── WebSocket Read (plugin) + assertions/extractors if available
+    │   └── Timer (pace messages)
+    └── WebSocket Close (plugin)
+```
+
+Exact sampler names depend on the plugin (Open, Single Read, Single Write, request-response, ping/pong, etc.).
+
+## Authentication patterns
+
+| Pattern | Approach |
+|---------|----------|
+| Ticket in query string | Extract from HTTP, use `\${ticket}` in open URL |
+| Bearer on upgrade | Plugin header fields if supported; else query ticket |
+| Cookie session | Cookie Manager + open to same host |
+| Subprotocol | Plugin field for `Sec-WebSocket-Protocol` when required |
+
+Use [JWT/OAuth](/topics/jwt-oauth-sso/) guidance for the HTTP side. Never hard-code long-lived tokens in the plan.
+
+## Designing message load
+
+1. Define **message rate per session** (e.g. 1 msg/s) and **session count** (threads).  
+2. Aggregate throughput ≈ sessions × msg/s if the server keeps up.  
+3. Use timers for pacing; avoid unbounded tight write loops unless stress-testing.  
+4. Separate samplers for **connect**, **write**, **read**, **close** so the [dashboard](/user-manual/generating-dashboard/) shows which phase fails.  
+5. Assert on payload fragments or status where the plugin exposes response data.  
+
+Payloads: prefer variables and CSV over huge embedded binaries. Functions such as `\${__UUID}` and `\${__time}` help unique message ids ([functions](/topics/functions-and-variables/)).
+
+## Correlation over the socket
+
+If the server pushes an id you must echo:
+
+1. Read sampler captures response.  
+2. Regex/JSON extractor (if response is available as sample data) sets `\${msgId}`.  
+3. Next write uses `\${msgId}`.  
+
+If the plugin does not expose body to standard post-processors, check plugin-specific “read to variable” options in its documentation.
+
+## Running load (CLI)
+
+Same lean rules as HTTP ([best practices](/user-manual/best-practices/)):
+
+```bash
+jmeter -n -t websocket-plan.jmx -l results.jtl -e -o report/ \
+  -Jthreads=200 -Jrampup=120 -Jhost=ws.example.com
+```
+
+- Disable View Results Tree for load.  
+- Size heap for concurrent connections ([Heap Estimator](/tools/heap-estimator/)).  
+- Watch injector file descriptors and ephemeral ports; long-lived sockets stress OS limits.  
+- Prefer dedicated injectors; do not co-locate with the system under test.
+
+## Metrics that matter
+
+From JMeter results (labels you control) plus optional [Backend Listener](/topics/grafana-influx-backend-listener/):
+
+- Connect success rate and connect time  
+- Write/read error %  
+- Response time for request-response message pairs  
+- Active threads / open sessions  
+- Server-side connection count and message lag (not only JMeter)  
+
+HTML dashboard still works on the JTL if samples are recorded as standard SampleResults.
+
+## Limitations and honesty checklist
+
+1. Core JMeter alone is **not** a full WebSocket IDE.  
+2. Plugin quality and maintenance vary; pin versions.  
+3. Browser WebSocket traffic recorded via HTTP proxy may **not** capture socket frames the way HTTP is recorded.  
+4. Extremely high fan-in may need specialized tools; prove scale with pilots.  
+5. TLS (`wss://`) needs correct JVM trust stores, same as HTTPS.
+
+## Troubleshooting
+
+| Symptom | Checks |
+|---------|--------|
+| Sampler missing in GUI | Plugin not installed / wrong JMeter version |
+| Works in GUI, fails in CI | Plugin absent in CI image |
+| 401 on open | Token query/header not correlated |
+| Handshake fail | Proxy, TLS, wrong scheme `ws` vs `wss` |
+| Threads stuck | Blocking read without timeout; plugin timeout settings |
+| OOM | Too many open sessions per JVM; raise heap or split engines |
+
+## Related reading
+
+- [Plugins essentials](/topics/plugins-essentials/)  
+- [API load testing](/topics/api-load-testing/)  
+- [Correlation](/topics/correlation-dynamic-values/)  
+- [Grafana / Influx / Backend Listener](/topics/grafana-influx-backend-listener/)  
+- [Distributed testing](/topics/distributed-testing/)  
+- [gRPC Kafka MQTT](/topics/grpc-kafka-mqtt/)  
+
+## Frequently asked questions
+
+### Does stock Apache JMeter include a WebSocket sampler?
+
+WebSocket support is provided through the plugin ecosystem, not as a primary core sampler like HTTP Request. Install a maintained WebSocket plugin via Plugins Manager or manual JARs.
+
+### Can I use the HTTP(S) Test Script Recorder for WebSockets?
+
+The recorder is built for HTTP(S) request/response capture. Do not expect full WebSocket frame recording the way you record REST calls. Build socket steps with the plugin after HTTP login.
+
+### How many threads do I need for WebSocket tests?
+
+Often one thread per concurrent connection for classic Thread Groups. Size from concurrent sessions and message pacing, then validate injector CPU, RAM, and file descriptors.
+
+### Do plugins need to be on every distributed worker?
+
+Yes. Workers must match the controller’s JMeter version and plugin set, same as other third-party engines in remote testing.
+
+### Should I still generate an HTML dashboard?
+
+Yes. If the plugin writes standard sample results, `-e -o report/` works. Label connect/write/read/close clearly for readable statistics.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Install Plugins Manager, add a WebSocket plugin matching your JMeter version, and prove open-write-close with one thread before load.
+</Fragment>
+<Fragment slot="related">
+- [Plugins Essentials](/topics/plugins-essentials/)
+- [JWT OAuth SSO](/topics/jwt-oauth-sso/)
+- [Best Practices](/user-manual/best-practices/)
+</Fragment>
+<Fragment slot="mistakes">
+Assuming core JMeter has WebSocket; forgetting plugins in CI; no timeouts on reads; mixing wss hosts with wrong trust stores.
+</Fragment>
+</RelatedContent>

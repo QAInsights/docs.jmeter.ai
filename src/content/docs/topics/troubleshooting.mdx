@@ -1,0 +1,220 @@
+---
+title: "JMeter Troubleshooting Guide"
+seoTitle: "JMeter Troubleshooting Common Errors"
+description: "Fix common JMeter failures: connection reset, 401 after recording, low throughput, OutOfMemoryError, SSL handshake errors, and GUI vs CLI differences."
+keywords:
+  - JMeter troubleshooting
+  - JMeter connection reset
+  - JMeter OutOfMemoryError
+  - JMeter SSL handshake
+  - JMeter 401
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Troubleshooting Guide
+
+When tests fail, isolate **injector**, **plan**, and **system under test**. This playbook covers frequent symptoms with fixes grounded in [best practices](/user-manual/best-practices/), [remote testing](/user-manual/remote-test/), [functions](/user-manual/functions/), [recorder](/topics/http-recorder/), and [glossary](/user-manual/glossary/) metrics.
+
+:::tip[Reproduce small]
+Cut to **1 thread**, 1 loop, View Results Tree on, then grow. Load multiplies misconfiguration.
+:::
+
+## Quick triage tree
+
+1. **Does GUI one-thread pass?** If no, fix functional/correlation first.  
+2. **Does CLI one-thread pass?** If no, path/CSV/property differences.  
+3. **Does small load pass?** If no, server or auth limits.  
+4. **Does large load fail?** Injector sizing, coordinated omission, SUT capacity.  
+
+Check `jmeter.log` and the first error sample label/message every time.
+
+## Connection reset / Non HTTP response code
+
+**Symptoms:** `Connection reset`, `Non HTTP response code: java.net.ConnectException`, broken pipe.
+
+| Check | Action |
+|-------|--------|
+| Host/port/protocol | HTTP Request Defaults and `\${__P(host)}` |
+| Server up / firewall | curl from **same** injector host |
+| TLS vs plain | `https` vs `http` mismatch |
+| Connection limits | Server max connections; JMeter HTTP client settings |
+| Short timeouts | Connect/response timeouts on HTTP Request |
+| Under load only | Server backlog, LB idle timeouts, injector ephemeral ports |
+
+Distributed: workers may lack network path the controller has ([distributed](/topics/distributed-testing/)).
+
+## 401 / 403 after recording
+
+**Symptoms:** Recording works while browsing; replay fails auth.
+
+| Cause | Fix |
+|-------|-----|
+| Missing Cookie Manager | Add [HTTP Cookie Manager](/user-manual/component-reference/) |
+| CSRF/token hard-coded | [Correlate](/topics/correlation-dynamic-values/) dynamic fields |
+| Expired bearer token | Re-login or refresh ([JWT/OAuth](/topics/jwt-oauth-sso/)) |
+| Wrong Header Manager scope | Authorization not applied to failing sampler |
+| Different user/CSV | Row empty or wrong sharing mode |
+
+Best practices also note `unknown_ca` during HTTPS **recording** when the JMeter CA is not trusted ([recorder](/topics/http-recorder/)).
+
+## SSL handshake failures
+
+**Symptoms:** `SSLHandshakeException`, PKIX path building failed, handshake_failure.
+
+| Cause | Fix |
+|-------|------|
+| Untrusted server cert | Import CA into JVM truststore used by JMeter |
+| SNI / wrong host | Correct server name; virtual host headers |
+| Protocol mismatch | TLS version disabled on one side |
+| Client cert required | Configure keystore in HTTP Request / system properties |
+| Recording MITM | Install `ApacheJMeterTemporaryRootCA.crt` |
+
+For **RMI SSL** between controller and workers (JMeter 4.0+), use `create-rmi-keystore` and distribute `rmi_keystore.jks` ([remote testing](/user-manual/remote-test/)).
+
+## Low throughput / cannot reach target RPS
+
+Official guidance: wrong thread counts contribute to **coordinated omission** ([best practices](/user-manual/best-practices/)).
+
+Checklist:
+
+1. Response time rose under load → need more threads or less target ([Thread Calculator](/tools/thread-calculator/), [CO tool](/tools/coordinated-omission/)).  
+2. View Results Tree or many listeners still enabled → disable for load.  
+3. Timers / think time lower throughput (expected).  
+4. Assertions too heavy.  
+5. Injector CPU at 100%.  
+6. Single NIC saturated.  
+7. Server throttling (check server metrics, not only JMeter).  
+8. Functional mode or saving full bodies → slow I/O.  
+
+Prefer CLI: `jmeter -n -t plan.jmx -l results.jtl`.
+
+## OutOfMemoryError / GC thrashing
+
+**Symptoms:** `java.lang.OutOfMemoryError: Java heap space`, long GC pauses, agents killed.
+
+| Cause | Fix |
+|-------|-----|
+| Heap too small | Raise `HEAP`/`-Xmx`; size with [Heap Estimator](/tools/heap-estimator/) |
+| View Results Tree in load | Disable |
+| Too many threads per JVM | Split engines ([distributed](/topics/distributed-testing/)) |
+| Huge responses kept | Save fewer fields; avoid XML results |
+| Leaky script engines | Prefer JSR223 Groovy with cache; avoid BeanShell hot paths ([best practices](/user-manual/best-practices/)) |
+| Container limit < Xmx | Align cgroup limit ([Docker](/topics/docker-kubernetes/)) |
+
+## High error % but “green” samples earlier
+
+Add **assertions**. Without them, HTTP 500 pages can still be “successful” samples if the transport succeeded. Use Response Assertion on codes and critical body content ([API guide](/topics/api-load-testing/)).
+
+## CLI differs from GUI
+
+| Issue | Note |
+|-------|------|
+| Relative CSV paths | Working directory differs; use stable paths |
+| Properties | GUI might have different `user.properties` |
+| Headless fonts/plugins | Missing plugins in CI image ([plugins](/topics/plugins-essentials/)) |
+| Mode | Never use GUI for real load |
+
+Parameterize with `\${__P}` and pass `-J` in both environments.
+
+## Distributed-only failures
+
+| Symptom | Check |
+|---------|-------|
+| Connection refused to worker | `jmeter-server` up; port 1099 / `server.rmi.localport` |
+| SSL handshake RMI | Keystore on all nodes |
+| Serialization / ClassNotFound | JMeter/plugin version skew |
+| Missing CSV on worker | Data files not copied automatically |
+| Incomplete results | Reverse ports / client overload |
+
+See [distributed testing](/topics/distributed-testing/) and [remote testing](/user-manual/remote-test/).
+
+## Dashboard / report generation errors
+
+From [generating dashboard](/user-manual/generating-dashboard/):
+
+- Required saveservice columns must remain enabled.  
+- `-o` output folder issues (non-empty/prior report).  
+- Filter regex excluding everything.  
+
+Regenerate offline from JTL after fixing properties.
+
+## Backend Listener / Influx empty
+
+([Grafana topic](/topics/grafana-influx-backend-listener/)): URL/token, network, `samplersRegex`, summaryOnly, firewall from injector.
+
+## Variable shows as `\${name}`
+
+Undefined variables are returned unchanged ([functions](/user-manual/functions/)). Fix extractors; set defaults; assert.
+
+## Logging and debug tools
+
+- `jmeter.log` / `-j` log path  
+- Log Viewer in GUI (hints & tips)  
+- Debug Sampler + Tree (scripting only)  
+- Reduce log level noise under load  
+
+## Metrics sanity (glossary)
+
+If numbers look “too good,” re-read [glossary](/user-manual/glossary/) definitions for latency vs elapsed, throughput calculation, and percentiles. Confirm you are not reading connect time alone or parent transaction samples incorrectly.
+
+## Escalation checklist before blaming the server
+
+1. One-thread functional pass with assertions.  
+2. CLI pass same properties.  
+3. Injector CPU/RAM/network headroom.  
+4. No heavy listeners.  
+5. Thread and heap sized.  
+6. Server-side metrics simultaneous.  
+7. Reproducible plan version in git.  
+
+## Related reading
+
+- [Best practices](/user-manual/best-practices/)  
+- [Correlation](/topics/correlation-dynamic-values/)  
+- [HTTP recorder](/topics/http-recorder/)  
+- [Distributed testing](/topics/distributed-testing/)  
+- [Hints and tips](/user-manual/hints-and-tips/)  
+
+## Frequently asked questions
+
+### Why do I get connection reset only under load?
+
+Often server or load balancer limits, injector port exhaustion, or timeouts. Compare server metrics and run from the same network as the injector.
+
+### Why 401 after a successful recording?
+
+Dynamic tokens or cookies were not correlated. Add Cookie Manager and extractors; do not reuse recorded bearer tokens.
+
+### How do I fix OutOfMemoryError in JMeter?
+
+Increase heap, reduce threads per JVM, disable View Results Tree, save fewer result fields, and prefer Groovy JSR223 over heavy scripts.
+
+### Why is throughput lower than the thread calculator?
+
+Calculators assume stable response times and little think time. Under load, response times rise and listeners or server limits cut throughput.
+
+### What is the first log to read?
+
+`jmeter.log` (or the file set with `-j`) plus the first failing sampler in View Results Tree or the JTL error message.
+
+### GUI works but CI fails. Why?
+
+Different working directory, missing CSV, missing plugins, wrong `-J` properties, or network policy from the CI runner.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Pick your top failing sampler label, reproduce with one thread and Tree view, and apply the matching section above before scaling again.
+</Fragment>
+<Fragment slot="related">
+- [Best Practices](/user-manual/best-practices/)
+- [Correlation](/topics/correlation-dynamic-values/)
+- [Heap Estimator](/tools/heap-estimator/)
+- [Coordinated Omission](/tools/coordinated-omission/)
+</Fragment>
+</RelatedContent>

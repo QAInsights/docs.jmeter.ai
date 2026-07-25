@@ -1,0 +1,206 @@
+---
+title: "JMeter APDEX, SLOs, and Percentiles"
+seoTitle: "JMeter APDEX Percentiles and SLOs"
+description: "Map performance SLOs to JMeter dashboards: APDEX thresholds, p90/p95/p99 percentiles, error rates, reportgenerator properties, and CI performance gates."
+keywords:
+  - JMeter APDEX
+  - JMeter percentiles
+  - performance SLO
+  - JMeter dashboard metrics
+  - p95 latency
+difficulty: intermediate
+guideType: concept
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: apdex-slo-percentiles
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# Performance SLOs, APDEX, and Percentiles with JMeter
+
+Load tests only help if you define **what good looks like**. This guide connects service-level objectives (SLOs) to JMeter’s [HTML dashboard](/user-manual/generating-dashboard/) metrics: APDEX, percentiles, averages, error rate, and throughput, with definitions aligned to the [glossary](/user-manual/glossary/) and report generator properties.
+
+## Core metrics (grounded definitions)
+
+### Elapsed time (response time)
+
+From the [glossary](/user-manual/glossary/): elapsed time is from just before sending the request to just after the last response byte is received. It does not include client-side rendering or browser JavaScript execution.
+
+### Latency
+
+Time to the **first** response byte (glossary). Useful alongside elapsed for distinguishing slow servers from large payloads.
+
+### Connect time
+
+Time to establish the connection including SSL handshake where measured (glossary; available for certain samplers).
+
+### Throughput
+
+Requests per unit time over the full test window (glossary). High throughput with high errors is not success.
+
+### Median and percentiles
+
+- **Median**: 50th percentile (glossary).  
+- **Percentile (e.g. 90th)**: value below which that percentage of samples fall (glossary).  
+
+Averages hide long tails. SLOs usually use **percentiles** (p95/p99), not only mean.
+
+### Error percentage
+
+Failed samples / samples. Failures include assertion failures and transport errors depending on how the sample is marked. Without assertions, HTTP 500 HTML pages may still count as successful samples.
+
+## What is APDEX?
+
+[APDEX](https://en.wikipedia.org/wiki/Apdex) (Application Performance Index) scores user satisfaction from response times against two thresholds:
+
+- **Satisfied** if response time ≤ T  
+- **Tolerating** if T < time ≤ 4T (classic definition uses F = 4T; JMeter configures satisfied and tolerated thresholds explicitly)  
+- **Frustrated** if above the tolerated threshold or failed (see how your report classifies errors)
+
+JMeter’s dashboard includes an APDEX table “based on configurable values for tolerated and satisfied thresholds” ([generating dashboard](/user-manual/generating-dashboard/)).
+
+### Default JMeter report thresholds
+
+From report generator properties (also in [properties reference](/user-manual/properties-reference/)):
+
+| Property | Default |
+|----------|---------|
+| `jmeter.reportgenerator.apdex_satisfied_threshold` | **500** ms |
+| `jmeter.reportgenerator.apdex_tolerated_threshold` | **1500** ms |
+
+Override in `user.properties` (do not rely only on editing stock files long-term; copy overrides per best practices style).
+
+### Per-transaction APDEX
+
+`jmeter.reportgenerator.apdex_per_transaction` sets per-sample thresholds:
+
+```text
+sample_name:satisfaction|tolerance;
+```
+
+Values in milliseconds; regex sample names supported as documented in the dashboard chapter.
+
+## Percentiles in the JMeter dashboard
+
+The statistics table includes configurable percentiles. Related properties:
+
+| Property | Default percentile |
+|----------|--------------------|
+| `aggregate_rpt_pct1` | 90 |
+| `aggregate_rpt_pct2` | 95 |
+| `aggregate_rpt_pct3` | 99 |
+
+`statistic_window` controls sliding window size for percentile evaluation (default 20000); higher is more accurate but uses more memory ([dashboard](/user-manual/generating-dashboard/)).
+
+## Mapping SLOs to JMeter
+
+Example product SLO language:
+
+> 99% of checkout requests succeed in under 750 ms over a rolling 30 days.
+
+Load-test translation for a pre-prod experiment:
+
+| SLO piece | JMeter expression |
+|-----------|-------------------|
+| Success | Error % for label `Checkout` ≤ 1% (or stricter) |
+| Latency | p99 (or pct3) for `Checkout` ≤ 750 ms |
+| Load shape | Threads/RPS that represent peak hour (document assumptions) |
+| Duration | Soak long enough for steady state (not only ramp) |
+
+Use **Transaction Controllers** with stable names so dashboard series match SLO names.
+
+## Good vs bad targets
+
+| Weak target | Stronger target |
+|-------------|-----------------|
+| "Average under 1s" | "p95 under 1s and errors under 0.1%" |
+| One global threshold | Per-transaction thresholds (login vs report download) |
+| Spike only | Spike + soak |
+| Open GUI eyeballing | CLI report + CI gate |
+
+## Configuring thresholds for a suite
+
+1. Agree SLOs with product/SRE.  
+2. Set `apdex_satisfied_threshold` / `tolerated` to match T and frustrated boundary you chose.  
+3. Optionally set `apdex_per_transaction` for critical labels.  
+4. Set `aggregate_rpt_pct*` to the percentiles in your SLO (e.g. 95/99).  
+5. Filter noise with `series_filter` / sample filters so static assets do not dilute scores.  
+6. Generate report: `-e -o report/`.  
+
+## CI gates from report metrics
+
+After the dashboard is generated, parse statistics (e.g. `statistics.json` paths for your version) for:
+
+- `errorPct`  
+- Mean or percentile fields for critical transactions  
+
+See [CI/CD load testing](/topics/ci-cd-load-testing/). Gates should fail the build when SLOs are violated in the test environment, with clear caveats that pre-prod ≠ prod.
+
+## Live metrics vs offline report
+
+| Path | Use |
+|------|-----|
+| HTML dashboard | Auditable artifact, APDEX table, error tables |
+| Backend Listener → Grafana | Live during long tests ([guide](/topics/grafana-influx-backend-listener/)) |
+
+Define SLOs once; both paths should use the same sampler labels.
+
+## Coordinated omission and honest SLOs
+
+If the injector cannot keep up, latency percentiles look better than users experience. [Best practices](/user-manual/best-practices/) warn about coordinated omission when thread counts are wrong. Validate achieved throughput vs target ([CO tool](/tools/coordinated-omission/), [Thread Calculator](/tools/thread-calculator/)) before claiming SLO compliance from a test.
+
+## Worked example
+
+1. SLO: Search API p95 ≤ 300 ms, errors ≤ 0.5%, at 50 RPS.  
+2. Size threads from response time pilot ([calculator](/tools/thread-calculator/)).  
+3. Label sampler `Search`.  
+4. Assert HTTP 200 + JSON field present.  
+5. Run CLI 15+ minutes steady.  
+6. Report: check `Search` p95 and error %.  
+7. APDEX satisfied threshold set near 300 ms if you want APDEX aligned to that SLO.  
+
+## Related reading
+
+- [Generating dashboard](/user-manual/generating-dashboard/)  
+- [Glossary](/user-manual/glossary/)  
+- [CI/CD](/topics/ci-cd-load-testing/)  
+- [Best practices](/user-manual/best-practices/)  
+- [API load testing](/topics/api-load-testing/)  
+
+## Frequently asked questions
+
+### What is APDEX in JMeter?
+
+A satisfaction score derived from response times versus configured satisfied and tolerated thresholds, shown in the HTML dashboard APDEX table.
+
+### What are the default APDEX thresholds?
+
+500 ms satisfied and 1500 ms tolerated unless you override reportgenerator properties.
+
+### Why not use only average response time?
+
+Averages hide long tails. Users feel p95/p99. SLOs should specify percentiles and error rates.
+
+### How do I change dashboard percentiles?
+
+Set `aggregate_rpt_pct1`, `pct2`, and `pct3` (defaults 90, 95, 99) in report configuration properties.
+
+### Can APDEX thresholds differ per API?
+
+Yes, via `jmeter.reportgenerator.apdex_per_transaction` with sample names or regex, as documented in the dashboard chapter.
+
+### Does a green APDEX mean production is safe?
+
+No. It means samples in **that test** met thresholds under **that** load model and environment. Combine with capacity planning and production monitoring.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Write one SLO in percentile + error form, map it to a sampler label, and configure matching APDEX or percentile properties before your next CLI run.
+</Fragment>
+<Fragment slot="related">
+- [Dashboard report](/user-manual/generating-dashboard/)
+- [Glossary](/user-manual/glossary/)
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+</Fragment>
+</RelatedContent>

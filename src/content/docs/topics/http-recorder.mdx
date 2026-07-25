@@ -1,15 +1,16 @@
 ---
 title: "JMeter HTTP(S) Test Script Recorder Guide"
-description: "Master the JMeter HTTP(S) Test Script Recorder to capture real browser traffic into test plans. Configure proxy settings, SSL certificates, and filtering rules."
+seoTitle: "JMeter HTTP(S) Test Script Recorder"
+description: "Record browser traffic with the JMeter HTTP(S) Test Script Recorder: proxy port 8888, SSL root CA, include/exclude filters, and post-record cleanup."
 keywords:
- - JMeter proxy recorder
- - JMeter script recording
- - HTTP test script recorder
- - JMeter browser proxy
+  - JMeter proxy recorder
+  - HTTP Test Script Recorder
+  - JMeter script recording
+  - JMeter HTTPS recording
 difficulty: beginner
 guideType: tutorial
-estimatedReadTime: 12 min read
-lastVerified: JMeter 5.6
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
 canonicalTopic: http-recorder
 ---
 
@@ -126,14 +127,14 @@ Recorder settings can group samples (for example by first URL path segment or se
 
 ## Abstracting common values while recording
 
-One of the most useful documented features: define **User Defined Variables** (or Test Plan variables) such as `server=xxx.example.com` **before/during** recording so JMeter can **replace** matching values in recorded samples with `${server}`.
+One of the most useful documented features: define **User Defined Variables** (or Test Plan variables) such as `server=xxx.example.com` **before/during** recording so JMeter can **replace** matching values in recorded samples with `\${server}`.
 
 Notes:
 
 - Replacement matching is **case-sensitive**.  
 - This reduces later cleanup when promoting plans across environments.
 
-Combine with `${__P(host,)}` after recording if CI must override hosts ([functions guide](/topics/functions-and-variables/)).
+Combine with `\${__P(host,)}` after recording if CI must override hosts ([functions guide](/topics/functions-and-variables/)).
 
 ## After recording: mandatory cleanup checklist
 
@@ -148,7 +149,7 @@ A raw recording is a **draft**, not a finished load test.
 7. Add **assertions** (status, key text/JSON) so errors surface.  
 8. Insert **timers** for think time if modelling users.  
 9. Disable **View Results Tree** before load; run CLI for real volume.  
-10. Parameterize threads/host with `${__P(...)}` for automation.
+10. Parameterize threads/host with `\${__P(...)}` for automation.
 
 ### Correlation is the hard part
 
@@ -157,7 +158,7 @@ Recorded scripts often fail on replay because tokens changed. Workflow:
 1. Replay with **one thread**.  
 2. Find the first red sampler in View Results Tree.  
 3. Inspect the **previous** response for the dynamic value.  
-4. Add an extractor; replace hard-coded recorded value with `${var}`.  
+4. Add an extractor; replace hard-coded recorded value with `\${var}`.  
 5. Repeat until the journey passes.  
 
 Use the [Regex Extractor Builder](/tools/regex-tester/) to draft regex fields from a pasted response body (browser-local).
@@ -251,7 +252,7 @@ Stable names make CI gates and trend charts possible; recorded URL labels churn 
 
 1. Engineer records in a sandbox with synthetic users.  
 2. Correlation and CSV parameterization land in a feature branch.  
-3. Peer review checks: no secrets, listeners off, `${__P}` for host/threads.  
+3. Peer review checks: no secrets, listeners off, `\${__P}` for host/threads.  
 4. CI smoke runs the plan non-GUI against staging ([CI/CD](/topics/ci-cd-load-testing/)).  
 5. Nightly job increases threads only after smoke is green.  
 

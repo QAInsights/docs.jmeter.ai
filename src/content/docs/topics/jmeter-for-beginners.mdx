@@ -1,0 +1,202 @@
+---
+title: "JMeter for Beginners (2026 Path)"
+seoTitle: "JMeter for Beginners Tutorial (2026)"
+description: "Learn JMeter from scratch in 2026: install, build your first API test plan, run non-GUI CLI load, generate an HTML dashboard, and plan next steps."
+keywords:
+  - JMeter for beginners
+  - JMeter tutorial
+  - learn JMeter
+  - JMeter first test
+  - JMeter getting started
+difficulty: beginner
+guideType: tutorial
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jmeter-for-beginners
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter for Beginners (2026 Path)
+
+This is a practical path from zero to a **CLI load run with an HTML report**. It uses current JMeter habits (non-GUI for load, property parameterization, dashboard reports) and links into deeper docs when you are ready. Official entry points: [Getting Started](/getting-started/get-started/), [Build a web test plan](/user-manual/build-web-test-plan/), [Best practices](/user-manual/best-practices/).
+
+## What you will build
+
+1. Install Java + JMeter  
+2. Create a Thread Group and HTTP Request  
+3. Add defaults, header, assertion  
+4. Optional: second request with a variable  
+5. Run non-GUI and open the HTML dashboard  
+6. Know what to learn next  
+
+Time: about 60–90 minutes for a first success.
+
+## Step 1: Install
+
+1. Install a supported **Java** runtime for your JMeter version (see release notes / Getting Started).  
+2. Download Apache JMeter from the official distribution (this site’s [download reference](/reference/download-jmeter/) points at project download info).  
+3. Unzip; start GUI with `bin/jmeter` or `jmeter.bat`.  
+
+You do not need a separate application server to learn: any public HTTPS test API or your local app works.
+
+## Step 2: Mental model (5 minutes)
+
+| Piece | Role |
+|-------|------|
+| **Test Plan** | Root of the tree (`.jmx` file) |
+| **Thread Group** | Virtual users, ramp-up, loops |
+| **Sampler** | Sends a request (HTTP Request) |
+| **Config** | Defaults, headers, CSV |
+| **Assertion** | Pass/fail rules |
+| **Listener** | Shows results (debug only under load) |
+
+JMeter is **not** a browser. It measures protocol requests, not React render time.
+
+Deep dive: [Elements of a Test Plan](/user-manual/test-plan/).
+
+## Step 3: First HTTP GET
+
+1. Add **Thread Group**: 1 thread, ramp-up 1, loop 1.  
+2. Add **HTTP Request Defaults**: protocol `https`, server name (e.g. your API host).  
+3. Add **HTTP Request**: method GET, path `/` or a simple health path.  
+4. Add **View Results Tree** under the Thread Group.  
+5. Run (green start). Click the sampler in Tree; confirm response code.  
+
+Follow the same structure as [Building a Web Test Plan](/user-manual/build-web-test-plan/) (Thread Group → defaults → requests → listener).
+
+## Step 4: Make it an API-style call
+
+1. Add **HTTP Header Manager**: `Accept: application/json` (and `Content-Type` for POST).  
+2. Change path to a JSON endpoint.  
+3. Add **Response Assertion**: response code `200` (or expected code).  
+4. Run again; Tree should show success.  
+
+More detail: [API load testing](/topics/api-load-testing/).
+
+## Step 5: POST with a body (optional)
+
+1. New HTTP Request, method POST, path `/items`.  
+2. Body Data:
+
+```json
+{"name":"demo","requestId":"\${__UUID}"}
+```
+
+3. Header `Content-Type: application/json`.  
+4. Assert 200/201.  
+
+`\${__UUID}` is a built-in function ([functions guide](/topics/functions-and-variables/)).
+
+## Step 6: Tiny correlation (optional but important)
+
+If the POST returns `{"id":"123"}`:
+
+1. Add **JSON Extractor** (or Regex Extractor) under POST → variable `itemId`.  
+2. GET `/items/\${itemId}`.  
+3. Default value `NOT_FOUND` on the extractor.  
+
+Deep dive: [Correlation](/topics/correlation-dynamic-values/).
+
+## Step 7: Parameterize for real runs
+
+On the Thread Group:
+
+- Number of threads: `\${__P(threads,1)}`  
+- Ramp-up: `\${__P(rampup,1)}`  
+
+HTTP Defaults server: `\${__P(host,httpbin.org)}` (use your host).
+
+This is the official parameterization pattern from [best practices](/user-manual/best-practices/).
+
+## Step 8: Non-GUI load (the 2026 default)
+
+1. **Disable** View Results Tree.  
+2. Save plan as `first-api.jmx`.  
+3. Open a terminal in a directory you can write to:
+
+```bash
+jmeter -n -t first-api.jmx -l results.jtl -e -o report/ \
+  -Jthreads=5 -Jrampup=5 -Jhost=your.api.host
+```
+
+4. Open `report/index.html` in a browser.  
+
+You should see APDEX, statistics, and error tables ([dashboard manual](/user-manual/generating-dashboard/)).
+
+:::caution[Never load-test in GUI]
+GUI + View Results Tree skews injector performance. Interviewers and production teams expect CLI for load.
+:::
+
+## Step 9: Read the report like a beginner
+
+| Widget | Question it answers |
+|--------|---------------------|
+| Error % | Did calls fail? |
+| Average / percentiles | How slow? |
+| Throughput | How many requests/sec? |
+| APDEX | How many samples met thresholds? |
+
+Threshold defaults (satisfied 500 ms, tolerated 1500 ms) are configurable ([APDEX topic](/topics/apdex-slo-percentiles/)).
+
+## Step 10: Next skills (ordered)
+
+1. [HTTP Recorder](/topics/http-recorder/) for browser apps  
+2. [CSV users](/user-manual/best-practices/) for multi-user  
+3. [JWT/OAuth](/topics/jwt-oauth-sso/) for protected APIs  
+4. [Thread sizing](/tools/thread-calculator/) before big numbers  
+5. [CI/CD](/topics/ci-cd-load-testing/) to automate the CLI  
+6. [Distributed](/topics/distributed-testing/) when one machine is not enough  
+7. [Troubleshooting](/topics/troubleshooting/) when things break  
+
+## Common beginner mistakes
+
+| Mistake | Fix |
+|---------|-----|
+| Load test in GUI | Use `-n` |
+| No assertions | Assert status codes |
+| Thousands of threads day one | Start with 5–20; size properly |
+| Hard-coded tokens | Correlate or properties |
+| Ignoring errors in Tree | Fix red samples before scaling |
+
+## Optional: containers
+
+When comfortable with CLI, run the same command in Docker ([Docker/Kubernetes](/topics/docker-kubernetes/)) with `qainsights/jmeter` or your pinned image.
+
+## Frequently asked questions
+
+### Do I need to know Java to use JMeter?
+
+No for basic HTTP plans. Java is required to **run** JMeter. Groovy helps for advanced scripting later.
+
+### Which JMeter version should beginners install?
+
+A current stable release (this site last-verified notes reference the 5.6 line). Avoid very old versions per best practices.
+
+### Is the HTTP recorder required?
+
+No. For APIs, manual HTTP Request or [cURL import](/user-manual/curl/) is often cleaner. Recorder helps for web UIs.
+
+### How many threads for a first test?
+
+Start with 1 to validate, then 5–10 for a tiny load. Use the Thread Calculator before large tests.
+
+### Where is the HTML report?
+
+The folder you pass to `-o` after a successful `-e` generation (open `index.html`).
+
+### What should I learn after the first report?
+
+Correlation, parameterization with CSV/`__P`, and CI automation of the same CLI command.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Complete Step 8 with your own host and open the HTML dashboard; then add one assertion you care about.
+</Fragment>
+<Fragment slot="related">
+- [Getting Started](/getting-started/get-started/)
+- [API Load Testing](/topics/api-load-testing/)
+- [Best Practices](/user-manual/best-practices/)
+- [Interview Questions](/topics/interview-questions/)
+</Fragment>
+</RelatedContent>

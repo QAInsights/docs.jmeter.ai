@@ -1,15 +1,17 @@
 ---
 title: "JMeter Functions and Variables Guide"
-description: "Master JMeter functions and variables for dynamic test data. Learn ${__function()} syntax, common functions, variable scoping, and parameterization."
+seoTitle: "JMeter Functions and Variables Guide"
+description: "Master JMeter functions and variables: syntax rules, thread-local vars vs properties, CSV Data Set, __P for CLI, and common parameterization patterns."
 keywords:
- - JMeter functions
- - JMeter variables
- - JMeter parameterization
- - JMeter dynamic data
+  - JMeter functions
+  - JMeter variables
+  - JMeter parameterization
+  - JMeter __P
+  - CSV Data Set Config
 difficulty: intermediate
 guideType: reference
-estimatedReadTime: 12 min read
-lastVerified: JMeter 5.6
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
 canonicalTopic: functions-and-variables
 ---
 
@@ -28,15 +30,15 @@ For the exhaustive function table and per-function parameters, always use the [f
 A function call looks like:
 
 ```text
-${__functionName(var1,var2,var3)}
+\${__functionName(var1,var2,var3)}
 ```
 
 Rules from the manual:
 
-- Parentheses surround parameters, for example `${__time(YMD)}`.  
-- Functions that need **no parameters** may omit parentheses: `${__threadNum}` is equivalent to `${__threadNum()}`.  
+- Parentheses surround parameters, for example `\${__time(YMD)}`.  
+- Functions that need **no parameters** may omit parentheses: `\${__threadNum}` is equivalent to `\${__threadNum()}`.  
 - If a parameter contains a **comma**, escape it with `\`, otherwise JMeter treats the comma as a parameter delimiter.  
-  Example: `${__time(EEE\, d MMM yyyy)}`  
+  Example: `\${__time(EEE\, d MMM yyyy)}`  
 - Unescaped commas produce confusing errors (the docs show JavaScript `Math.max(2,5)` splitting into two parameters).  
 - Functions can appear in sampler fields, config elements, and many other test element fields.  
 - **Case sensitivity** applies to functions, variables, and properties.  
@@ -47,12 +49,12 @@ Rules from the manual:
 Reference a variable as:
 
 ```text
-${VARIABLE}
+\${VARIABLE}
 ```
 
 Important documented behaviour:
 
-> If an undefined function or variable is referenced, JMeter does **not** report/log an error - the reference is returned **unchanged**. If `UNDEF` is not defined, `${UNDEF}` stays `${UNDEF}`.
+> If an undefined function or variable is referenced, JMeter does **not** report/log an error - the reference is returned **unchanged**. If `UNDEF` is not defined, `\${UNDEF}` stays `\${UNDEF}`.
 
 That makes missing extractors easy to miss unless you assert on values or use extractor default values like `NOT_FOUND`.
 
@@ -66,13 +68,13 @@ From the official note:
 
 - **Variables** are **local to a thread**.  
 - **Properties** are **common to all threads**.  
-- Properties are referenced with `__P` or `__property`, not `${PROP}` alone (unless you also mirror them into variables).
+- Properties are referenced with `__P` or `__property`, not `\${PROP}` alone (unless you also mirror them into variables).
 
 | | Variables | Properties |
 |--|-----------|------------|
 | Scope | Per thread | Whole JMeter JVM (all threads) |
 | Typical set by | Extractors, CSV Data Set, `vars.put` in scripts, UDVs | `-J` CLI, `user.properties`, `__setProperty`, GUI props |
-| Typical read | `${name}` | `${__P(name,)}` or `${__P(name,default)}` |
+| Typical read | `\${name}` | `\${__P(name,)}` or `\${__P(name,default)}` |
 | Use for | Tokens, CSV columns, per-user state | Host, threads, env flags, cross-thread signals |
 
 ### Sharing across threads or thread groups
@@ -94,11 +96,11 @@ Grouped loosely like the official reference (Information, Input, Calculation, Sc
 
 | Function | Role | Example |
 |----------|------|---------|
-| `__threadNum` | Current thread number | `${__threadNum}` |
-| `__threadGroupName` | Thread group name (newer JMeter) | `${__threadGroupName}` |
-| `__samplerName` | Current sampler label | `${__samplerName}` |
-| `__machineIP` / `__machineName` | Injector identity (useful in distributed logs) | `${__machineName}` |
-| `__time` | Current time with format | `${__time(yyyy-MM-dd)}` |
+| `__threadNum` | Current thread number | `\${__threadNum}` |
+| `__threadGroupName` | Thread group name (newer JMeter) | `\${__threadGroupName}` |
+| `__samplerName` | Current sampler label | `\${__samplerName}` |
+| `__machineIP` / `__machineName` | Injector identity (useful in distributed logs) | `\${__machineName}` |
+| `__time` | Current time with format | `\${__time(yyyy-MM-dd)}` |
 | `__timeShift` | Time plus offset | see reference for args |
 | `__log` / `__logn` | Log while evaluating | debug carefully under load |
 
@@ -106,10 +108,10 @@ Grouped loosely like the official reference (Information, Input, Calculation, Sc
 
 | Function | Role | Example |
 |----------|------|---------|
-| `__Random` | Random integer in range | `${__Random(1,1000,myRand)}` |
-| `__RandomString` | Random string | `${__RandomString(10,abcdef)}` |
-| `__UUID` | Type-4 UUID | `${__UUID}` |
-| `__counter` | Incrementing counter | `${__counter(TRUE,)}` |
+| `__Random` | Random integer in range | `\${__Random(1,1000,myRand)}` |
+| `__RandomString` | Random string | `\${__RandomString(10,abcdef)}` |
+| `__UUID` | Type-4 UUID | `\${__UUID}` |
+| `__counter` | Incrementing counter | `\${__counter(TRUE,)}` |
 | `__RandomDate` | Random date in range | see reference |
 | `__digest` | Hash digests (SHA, MD5, …) | see reference |
 
@@ -119,15 +121,15 @@ Many calculation functions accept an optional variable name argument to **store*
 
 | Function | Role | Example |
 |----------|------|---------|
-| `__P` | Property with optional default | `${__P(threads,10)}` |
+| `__P` | Property with optional default | `\${__P(threads,10)}` |
 | `__property` | Longer form property access | see reference |
 | `__setProperty` | Set a property during the test | use sparingly; concurrency-aware |
-| `__V` | Evaluate nested variable names | `${__V(user_${n})}` |
+| `__V` | Evaluate nested variable names | `\${__V(user_\${n})}` |
 
 `__P` is the backbone of CLI/CI parameterization ([best practices § parameterising tests](/user-manual/best-practices/)):
 
 ```text
-LOOPS=${__P(loops,10)}
+LOOPS=\${__P(loops,10)}
 ```
 
 ```bash
@@ -166,7 +168,7 @@ For multi-user login data, official best practices prefer the **CSV Data Set Con
 
 Best practices: for intensive load, use languages whose engine implements `Compilable` - **Groovy** does; BeanShell/JavaScript were called out as poor choices for hot paths as of the JMeter 3.1-era guidance still published in the manual.
 
-Prefer **JSR223 elements** with **Cache compiled script** and `vars.get("name")` inside scripts instead of embedding `${name}` in cached script text (caching would freeze the first interpolated value).
+Prefer **JSR223 elements** with **Cache compiled script** and `vars.get("name")` inside scripts instead of embedding `\${name}` in cached script text (caching would freeze the first interpolated value).
 
 ## CSV Data Set Config (primary parameterization tool)
 
@@ -174,7 +176,7 @@ From [best practices - User variables](/user-manual/best-practices/):
 
 1. Create a text file of usernames/passwords separated by commas (same directory as the plan is a common pattern).  
 2. Add **CSV Data Set Config**; set variable names (for example `USER`, `PASS`).  
-3. Replace login fields with `${USER}` and `${PASS}`.  
+3. Replace login fields with `\${USER}` and `\${PASS}`.  
 4. The CSV Data Set reads a **new line for each thread** (for that documented multi-user login pattern).
 
 Configure recycle/stop-thread behaviour according to whether you want data to loop or threads to stop when the file ends - see the [component reference](/user-manual/component-reference/) for CSV Data Set fields.
@@ -184,7 +186,7 @@ Configure recycle/stop-thread behaviour according to whether you want data to lo
 ## User Defined Variables and Test Plan variables
 
 - **User Defined Variables** config elements and Test Plan-level variables define name/value pairs available to the plan.  
-- Matching with the HTTP(S) recorder’s replacement feature is **case-sensitive** when abstracting server names into `${server}` ([best practices - recorder](/user-manual/best-practices/)).  
+- Matching with the HTTP(S) recorder’s replacement feature is **case-sensitive** when abstracting server names into `\${server}` ([best practices - recorder](/user-manual/best-practices/)).  
 - For CLI overrides, bind those values to `__P` as shown above.  
 - Multiple property files: pass with `-q` when many properties change together.
 
@@ -192,9 +194,9 @@ Configure recycle/stop-thread behaviour according to whether you want data to lo
 
 Functions and variables are evaluated when JMeter needs the field value for a sample or config - not “once at plan load” for every case. Implications:
 
-- `${__UUID}` on a sampler produces a **new** id each time that field is evaluated for a sample.  
-- Putting `${__Random}` in HTTP Defaults may not do what you expect if the default is resolved differently than a per-sampler field - prefer placing dynamic calls on the sampler that should change.  
-- Extractors run as post-processors **after** a sampler; downstream samplers see new `${token}` values.  
+- `\${__UUID}` on a sampler produces a **new** id each time that field is evaluated for a sample.  
+- Putting `\${__Random}` in HTTP Defaults may not do what you expect if the default is resolved differently than a per-sampler field - prefer placing dynamic calls on the sampler that should change.  
+- Extractors run as post-processors **after** a sampler; downstream samplers see new `\${token}` values.  
 
 When debugging, use **View Results Tree** (scripting phase only) and Debug Sampler / Debug PostProcessor patterns to print variables. Disable them for load.
 
@@ -203,9 +205,9 @@ When debugging, use **View Results Tree** (scripting phase only) and Debug Sampl
 ### Environment-specific host
 
 ```text
-${__P(host,localhost)}
-${__P(port,443)}
-${__P(protocol,https)}
+\${__P(host,localhost)}
+\${__P(port,443)}
+\${__P(protocol,https)}
 ```
 
 Wire HTTP Request Defaults to these values; CI passes `-Jhost=staging.example.com`.
@@ -213,13 +215,13 @@ Wire HTTP Request Defaults to these values; CI passes `-Jhost=staging.example.co
 ### Authorization header after login
 
 1. Login sampler → JSON/Regex extractor → `accessToken`  
-2. Header Manager: `Authorization` = `Bearer ${accessToken}`  
+2. Header Manager: `Authorization` = `Bearer \${accessToken}`  
 3. Keep `accessToken` as a **variable** (per thread). Only promote to a property if you intentionally share one token across threads.
 
 ### Unique email per thread
 
 ```text
-user_${__threadNum}_${__time(HHmmss)}@example.com
+user_\${__threadNum}_\${__time(HHmmss)}@example.com
 ```
 
 Or precompute in CSV for repeatability.
@@ -229,12 +231,12 @@ Or precompute in CSV for repeatability.
 If you create `user_1`, `user_2`, …:
 
 ```text
-${__V(user_${__threadNum})}
+\${__V(user_\${__threadNum})}
 ```
 
 ### Counter for order ids
 
-`${__counter(TRUE,)}` (see reference for TRUE/FALSE per-thread vs global counter behaviour).
+`\${__counter(TRUE,)}` (see reference for TRUE/FALSE per-thread vs global counter behaviour).
 
 ## Distributed testing interactions
 
@@ -243,7 +245,7 @@ In [distributed mode](/topics/distributed-testing/):
 - Each worker is a separate JVM → **properties and variables do not sync across workers**.  
 - `__machineName` / IP help label which injector produced a sample when analyzing combined logs.  
 - CSV files must exist **on each worker**; they are not shipped with the plan.  
-- `-Gprop=value` sets a property on **remote servers**; `-J` is for the client side - know which side reads `${__P(...)}` for your plan design.
+- `-Gprop=value` sets a property on **remote servers**; `-J` is for the client side - know which side reads `\${__P(...)}` for your plan design.
 
 ## Performance and correctness tips
 
@@ -251,9 +253,9 @@ In [distributed mode](/topics/distributed-testing/):
 2. Prefer **JSR223 Groovy** with compile cache over BeanShell function calls in hot paths.  
 3. Do not log (`__log`) on every sample at scale.  
 4. Escape commas in function parameters.  
-5. Assert critical `${vars}` so literal `${token}` strings cannot look like success.  
+5. Assert critical `\${vars}` so literal `\${token}` strings cannot look like success.  
 6. Remember undefined → unchanged string.  
-7. For intensive scripts, use `vars.get` / `props.get` inside JSR223, not `${}` inside cached scripts.  
+7. For intensive scripts, use `vars.get` / `props.get` inside JSR223, not `\${}` inside cached scripts.  
 8. Keep property names stable for CI; document them in the plan README.
 
 ## Quick reference: CLI property flags
@@ -268,8 +270,8 @@ In [distributed mode](/topics/distributed-testing/):
 Thread Group example:
 
 ```text
-Number of Threads = ${__P(threads,1)}
-Ramp-up = ${__P(rampup,1)}
+Number of Threads = \${__P(threads,1)}
+Ramp-up = \${__P(rampup,1)}
 ```
 
 Safe defaults for local runs; CI raises threads.
@@ -282,7 +284,7 @@ When a value is wrong, isolate evaluation without creating a load-test anti-patt
 2. **Debug Sampler** + Tree - dump variables for the thread at that point in the tree.  
 3. Extractor **default values** - `NOT_FOUND` is easier to spot than a silent empty string.  
 4. **Response Assertion** on login - fail fast before thousands of dependent calls.  
-5. Temporary `${__log(message)}` - remove before load; logging every sample is expensive.  
+5. Temporary `\${__log(message)}` - remove before load; logging every sample is expensive.  
 
 Never leave Debug Sampler or View Results Tree enabled for the CLI performance run you archive in CI.
 
@@ -291,7 +293,7 @@ Never leave Debug Sampler or View Results Tree enabled for the CLI performance r
 Some fields are evaluated later than others (for example, certain controller conditions or script elements). If a function appears to run “too often” or “too early”:
 
 - Move the dynamic expression onto the sampler field that should change per sample.  
-- Prefer post-processors to set a variable once per response, then reference `${var}` downstream.  
+- Prefer post-processors to set a variable once per response, then reference `\${var}` downstream.  
 - For Once Only login, ensure extractors sit under the login sampler, not under a later random controller path that might skip login.  
 
 When using **If Controller** or similar, condition strings that embed functions should be tested with one thread and Tree view so you see the evaluated branch.
@@ -309,9 +311,9 @@ Document keys in the repository (`threads`, `rampup`, `host`, `usersFile`). Offi
 ## Learning path
 
 1. Read syntax + variables vs properties on this page.  
-2. Practice `${__Random}` and `${__UUID}` on a single HTTP sampler; confirm in View Results Tree.  
+2. Practice `\${__Random}` and `\${__UUID}` on a single HTTP sampler; confirm in View Results Tree.  
 3. Add CSV Data Set for two users.  
-4. Replace host/threads with `${__P}`.  
+4. Replace host/threads with `\${__P}`.  
 5. Extract a token and pass it to the next sampler.  
 6. Skim the [complete function list](/user-manual/functions/) for niche helpers (`__digest`, `__timeShift`, …).  
 7. When scripting grows past a one-liner, move to JSR223 Groovy elements per best practices.  
@@ -327,13 +329,13 @@ Document keys in the repository (`threads`, `rampup`, `host`, `usersFile`). Offi
 
 ### What is the difference between a JMeter variable and a property?
 
-Variables are thread-local; properties are shared across all threads in the JVM. Read properties with `${__P(name,default)}`. Read variables with `${name}`.
+Variables are thread-local; properties are shared across all threads in the JVM. Read properties with `\${__P(name,default)}`. Read variables with `\${name}`.
 
 ### Why does my function argument break at a comma?
 
 Commas separate parameters. Escape literal commas as `\,` inside the parameter, as shown in the functions manual for `__time` formats.
 
-### Why do I still see `${token}` in the request?
+### Why do I still see `\${token}` in the request?
 
 The variable was never set (extractor failed or wrong name). JMeter leaves undefined references unchanged and does not always error.
 
@@ -351,11 +353,11 @@ For intensive load, the manual advises JSR223 with Groovy (Compilable) and movin
 
 ### How do I set threads from Jenkins or GitHub Actions?
 
-Use `${__P(threads,10)}` in the Thread Group and pass `-Jthreads=50` on the `jmeter -n` command in CI ([CI/CD guide](/topics/ci-cd-load-testing/)).
+Use `\${__P(threads,10)}` in the Thread Group and pass `-Jthreads=50` on the `jmeter -n` command in CI ([CI/CD guide](/topics/ci-cd-load-testing/)).
 
 <RelatedContent>
 <Fragment slot="next-step">
-Add `${__P(host,localhost)}` to HTTP Request Defaults and run once with `-Jhost=…` to prove CLI parameterization end-to-end.
+Add `\${__P(host,localhost)}` to HTTP Request Defaults and run once with `-Jhost=…` to prove CLI parameterization end-to-end.
 </Fragment>
 <Fragment slot="related">
 - [Functions reference](/user-manual/functions/) - every function and parameter
@@ -364,9 +366,9 @@ Add `${__P(host,localhost)}` to HTTP Request Defaults and run once with `-Jhost=
 - [Properties Reference](/user-manual/properties-reference/) - property names for configuration
 </Fragment>
 <Fragment slot="mistakes">
-Forgetting to escape commas; using variables when you need cross-thread properties; `${var}` inside cached JSR223 scripts; assuming undefined variables error loudly.
+Forgetting to escape commas; using variables when you need cross-thread properties; `\${var}` inside cached JSR223 scripts; assuming undefined variables error loudly.
 </Fragment>
 <Fragment slot="troubleshooting">
-If values look like literal `${…}`, check extractor scope, variable name spelling (case-sensitive), and that the sampler order places extractors before dependent requests.
+If values look like literal `\${…}`, check extractor scope, variable name spelling (case-sensitive), and that the sampler order places extractors before dependent requests.
 </Fragment>
 </RelatedContent>

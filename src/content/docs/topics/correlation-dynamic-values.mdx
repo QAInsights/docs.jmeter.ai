@@ -1,0 +1,231 @@
+---
+title: "JMeter Correlation and Dynamic Values"
+seoTitle: "JMeter Correlation and Dynamic Values"
+description: "End-to-end JMeter correlation: extract CSRF tokens, session IDs, and JSON fields with Regex and JSON extractors, chain requests, and debug replays."
+keywords:
+  - JMeter correlation
+  - JMeter extractor
+  - dynamic values JMeter
+  - CSRF token JMeter
+  - JSON Extractor
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: correlation-dynamic-values
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Correlation and Dynamic Values
+
+**Correlation** means capturing a value from one response and reusing it in later requests so a multi-step flow works under many threads. Without it, recorded scripts fail on replay: session IDs, CSRF tokens, order IDs, and JWTs change every run. This guide walks through extractors, variable scope, chaining patterns, debugging, and load-safe practice, grounded in JMeter [regular expressions](/user-manual/regular-expressions/), [functions and variables](/user-manual/functions/), [best practices](/user-manual/best-practices/), and the [component reference](/user-manual/component-reference/).
+
+:::tip[One thread first]
+Fix correlation with **one thread** and View Results Tree. Only then increase load. Extractor bugs multiply into thousands of errors under concurrency.
+:::
+
+## Why recordings break on replay
+
+The [HTTP(S) Test Script Recorder](/topics/http-recorder/) captures **literal** values from your session. On the next run the server issues new secrets. Typical dynamic fields:
+
+- Session cookies (often handled by [HTTP Cookie Manager](/user-manual/component-reference/))  
+- CSRF / anti-forgery tokens in HTML or JSON  
+- OAuth `state`, `nonce`, `code`  
+- JWT `access_token`  
+- Resource IDs (`orderId`, `cartId`)  
+- Pagination cursors  
+
+Cookies are correlated automatically if the Cookie Manager is present. Everything else needs **post-processors** (extractors) or explicit functions.
+
+## End-to-end workflow
+
+1. Run the journey once with Tree view; note the first red sampler.  
+2. Inspect the **previous** response body/headers for the missing value.  
+3. Add an extractor under that previous sampler.  
+4. Replace hard-coded text in later samplers with `\${varName}`.  
+5. Set a **Default Value** (`NOT_FOUND`) on the extractor.  
+6. Re-run one thread until green.  
+7. Parameterize users with CSV; re-validate.  
+8. Disable heavy listeners; run CLI load.
+
+## Extractor types (when to use which)
+
+| Tool | Best for |
+|------|----------|
+| **JSON Extractor** | REST JSON bodies (`access_token`, nested ids) |
+| **Regular Expression Extractor** | HTML snippets, headers, mixed text |
+| **CSS Selector Extractor** | HTML elements when CSS queries fit |
+| **XPath Extractor** | XML / some HTML (costlier; use carefully under load) |
+| **Boundary Extractor** | Fixed left/right text boundaries |
+| **Cookie Manager** | `Set-Cookie` / Cookie headers |
+
+For JSON APIs, prefer structured JSON extraction over fragile full-body regex when possible. For free text, regex remains standard; see the [regular expressions](/user-manual/regular-expressions/) chapter.
+
+## Regular Expression Extractor fields
+
+Documented concepts you will set on every regex extractor:
+
+| Field | Role |
+|-------|------|
+| **Name of created variable** | e.g. `csrfToken` → `\${csrfToken}` |
+| **Regular Expression** | Pattern with **capture groups** `(...)` |
+| **Template** | `$1$` for first group, `$0$` full match |
+| **Match No.** | `1` first match; `0` random; negative for all + `_matchNr` |
+| **Default Value** | Used when no match (debug signal) |
+
+Example HTML:
+
+```html
+<input type="hidden" name="_csrf" value="a1b2c3d4" />
+```
+
+Pattern (illustrative):
+
+```text
+name="_csrf"\s+value="([^"]+)"
+```
+
+Template: `$1$` → variable holds `a1b2c3d4`.
+
+Build candidates faster with the [Regex Extractor Builder](/tools/regex-tester/) (paste response locally in the browser; nothing is uploaded).
+
+## JSON correlation example
+
+Login response:
+
+```json
+{"access_token":"eyJ...","order":{"id":"ORD-9"}}
+```
+
+1. JSON Extractor on login sampler: variable `accessToken`, path to token.  
+2. Second extractor or multi-path config for `orderId` if supported by your element setup.  
+3. Header Manager: `Authorization: Bearer \${accessToken}`.  
+4. Next path: `/orders/\${orderId}`.
+
+Always assert login success so empty tokens do not flood the next step.
+
+## Variable scope and timing
+
+From the [functions manual](/user-manual/functions/):
+
+- Variables are **thread-local**. Thread 5 cannot read thread 4's `\${orderId}` by default.  
+- Properties are **global** to the JVM (`\${__P}` / `__setProperty`). Use for environment config, not per-user secrets under load.  
+- Undefined `\${name}` is returned **unchanged** (no hard error). That is why defaults and assertions matter.  
+
+Extractors run as **post-processors** after their parent sampler (and according to scope rules in the tree). Put the extractor **under** the sampler that returns the value, not under a later sibling that never sees the response.
+
+## Chaining multi-step business flows
+
+```text
+Login → extract token
+Create cart → extract cartId
+Add item → use cartId
+Checkout → extract orderId
+Get order → use orderId
+```
+
+Use **Transaction Controllers** to group steps for dashboard reporting ([dashboard](/user-manual/generating-dashboard/)). Keep sampler **labels stable** (`Login`, `CreateCart`) so series and filters stay readable.
+
+### Controllers that interact with correlation
+
+- **Once Only Controller**: login/extract once per thread.  
+- **If Controller**: branch when `\${accessToken}` equals default failure value.  
+- **While Controller**: poll until status is ready (guard with max iterations to avoid infinite loops).  
+
+## Cookies vs body tokens
+
+| Mechanism | Element |
+|-----------|---------|
+| Session cookie | HTTP Cookie Manager |
+| CSRF in HTML form | Regex / CSS / Boundary extractor → form parameter |
+| Bearer token | Header Manager + variable |
+| Query parameter id | Path or parameters field `\${id}` |
+
+Missing Cookie Manager is a top cause of "works in browser during record, fails in JMeter."
+
+## Debugging checklist
+
+1. View Results Tree → Response data of the **source** sampler.  
+2. Confirm the pattern matches in a single-thread run.  
+3. Check variable with Debug Sampler or by seeing request values on the next sampler.  
+4. Verify extractor **scope** (main sample vs sub-samples; redirects).  
+5. Check character encoding and multiline flags for regex.  
+6. Escape commas inside function parameters if you also use functions ([functions guide](/topics/functions-and-variables/)).  
+
+## Load-test hygiene for extractors
+
+[Best practices](/user-manual/best-practices/): use as few assertions as needed under load; avoid heavy listeners. Same idea for extractors:
+
+- Prefer cheap JSON path over huge regex on multi-megabyte HTML.  
+- Do not extract unused fields.  
+- Do not log every variable on every sample.  
+- Precompute CSV data when values are not server-dynamic.  
+
+## Correlation and distributed testing
+
+In [distributed mode](/topics/distributed-testing/), each worker is a separate JVM. Per-thread variables stay on that worker. CSV files used for users must exist **on each worker** (not auto-copied). Do not assume a property set on one engine is visible on another.
+
+## Common mistakes
+
+| Mistake | Result |
+|---------|--------|
+| Hard-coded recorded token | Immediate or mid-test auth failures |
+| Extractor on wrong sampler | Empty variable |
+| No default value | Silent empty strings |
+| Regex without group but template `$1$` | Wrong or empty |
+| Match No. wrong | Picks stale or random match |
+| Sharing tokens via properties | Cross-talk between users |
+| Skipping Cookie Manager | Session lost |
+
+## Practice path
+
+1. [Record or build](/topics/http-recorder/) a two-step flow.  
+2. Correlate one token with regex or JSON.  
+3. Add CSV users ([best practices](/user-manual/best-practices/)).  
+4. Add [JWT/OAuth](/topics/jwt-oauth-sso/) header pattern if API-based.  
+5. Run CLI + dashboard; confirm zero `\${...}` literals in failures.
+
+## Frequently asked questions
+
+### What is correlation in JMeter?
+
+Capturing dynamic values from responses (tokens, IDs) into variables and sending them on later requests so multi-step scenarios work for every thread.
+
+### JSON Extractor or Regular Expression Extractor?
+
+For JSON responses, prefer JSON-oriented extractors. Use regular expressions for HTML fragments, headers, or unstructured text.
+
+### Why is my variable still showing as `\${csrf}`?
+
+The variable was never set. JMeter leaves undefined references unchanged. Fix the extractor and use a default value to detect misses.
+
+### Do I need extractors if I use a Cookie Manager?
+
+Cookies often work automatically with Cookie Manager. Body and header tokens still need extractors.
+
+### Can one thread read another thread's extracted orderId?
+
+Not with ordinary variables. Variables are thread-local by design. Use properties only for intentional global data, not per-user IDs.
+
+### How do I correlate after recording?
+
+Replay with one thread, find the first failure, extract from the previous response, replace hard-coded values, and repeat until green.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Take any red sampler from a recorded plan and replace one hard-coded ID with a Regex or JSON extractor end-to-end.
+</Fragment>
+<Fragment slot="related">
+- [Regular Expressions](/user-manual/regular-expressions/) - extractor theory
+- [Regex Extractor Builder](/tools/regex-tester/) - draft patterns
+- [HTTP Recorder](/topics/http-recorder/) - where dynamic values come from
+- [JWT OAuth SSO](/topics/jwt-oauth-sso/) - token chaining
+</Fragment>
+<Fragment slot="mistakes">
+Extractor under the wrong sampler; no default value; correlating cookies manually while Cookie Manager is missing; using properties for per-user tokens.
+</Fragment>
+<Fragment slot="troubleshooting">
+If Match No. and Template look right but the value is wrong, check redirect sub-samples and whether the data is in a header instead of the body.
+</Fragment>
+</RelatedContent>
