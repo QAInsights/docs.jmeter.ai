@@ -492,7 +492,15 @@ function buildFrontmatter(title, seo, keepExtra = {}) {
   assertDesc(seo.seoTitle, desc);
   lines.push(`description: ${yamlDesc(desc)}`);
   lines.push('keywords:');
-  for (const k of seo.keywords) lines.push(`  - ${k}`);
+  for (const k of seo.keywords) {
+    // Quote items that YAML would otherwise parse as maps/bools (colons, etc.)
+    const needsQ =
+      /[:#{}[\],&*!|>@`]/.test(k) ||
+      /^(true|false|null)$/i.test(k) ||
+      k.includes("'") ||
+      k.includes('"');
+    lines.push(needsQ ? `  - ${yamlQuote(k)}` : `  - ${k}`);
+  }
   lines.push(`difficulty: ${seo.difficulty}`);
   lines.push(`guideType: ${seo.guideType}`);
   lines.push(`estimatedReadTime: ${yamlQuote(seo.estimatedReadTime)}`);

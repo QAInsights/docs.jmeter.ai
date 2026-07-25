@@ -799,7 +799,10 @@ function serializeFrontmatter(entries) {
     if (kind === 'list' || Array.isArray(value)) {
       lines.push(`${key}:`);
       for (const item of value || []) {
-        lines.push(`  - ${String(item)}`);
+        const s = String(item);
+        // Quote values YAML would parse as maps/bools (e.g. "Guide: Foo")
+        const needsQ = /[:#{}[\],&*!|>@`]/.test(s) || /^(true|false|null)$/i.test(s) || /['"]/.test(s);
+        lines.push(needsQ ? `  - "${s.replace(/"/g, "'")}"` : `  - ${s}`);
       }
       continue;
     }
