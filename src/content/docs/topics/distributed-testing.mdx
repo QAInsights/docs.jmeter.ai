@@ -2,13 +2,13 @@
 title: "JMeter Distributed Testing Guide"
 description: "Set up JMeter distributed testing to scale load across multiple machines. Configure controller and worker nodes, manage RMI connections, and aggregate results."
 keywords:
-  - JMeter distributed testing
-  - JMeter remote testing
-  - JMeter master slave
-  - JMeter multi-machine load testing
+ - JMeter distributed testing
+ - JMeter remote testing
+ - JMeter master slave
+ - JMeter multi-machine load testing
 difficulty: advanced
 guideType: how-to
-estimatedReadTime: 8 min read
+estimatedReadTime: 12 min read
 lastVerified: JMeter 5.6
 canonicalTopic: distributed-testing
 ---
@@ -17,68 +17,371 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 # JMeter Distributed Testing Guide
 
-When a single machine can't generate enough load, JMeter's distributed testing feature lets you control multiple remote JMeter engines from a single client. This guide covers everything you need to set up, run, and troubleshoot multi-machine load tests.
+When a single injector cannot generate enough load - or is limited by network or CPU - JMeter can drive **multiple remote engines** from one client. This guide explains the controller-worker model, setup steps, CLI usage, SSL/RMI, data files, result collection, limits, and troubleshooting, grounded in the official [Remote Testing](/user-manual/remote-test/) manual and the [step-by-step tutorial](/user-manual/jmeter-distributed-testing-step-by-step/).
 
 :::caution[Security-sensitive setting]
 Distributed testing uses RMI between the controller and workers. Only run it on trusted networks with explicit firewall rules, matching JMeter versions, and a deliberate SSL/RMI configuration.
 :::
 
 :::note[Version-specific behavior]
-Remote startup, RMI defaults, and SSL behavior can change between JMeter releases. Keep controller and workers on the same JMeter and Java versions.
+Remote startup, RMI defaults, and SSL behaviour can change between JMeter releases. Keep controller and workers on the same JMeter and Java versions. Since JMeter 4.0, RMI transport defaults to SSL and you must provision keys (or consciously disable SSL in non-production lab setups only).
 :::
 
-## How Distributed Testing Works
+## How distributed testing works
 
-JMeter uses a **controller-worker** architecture (historically called master/slave):
+JMeter uses a **controller (client) + workers (servers)** architecture (historically called master/slave):
 
-- **Controller (client)**  -  sends the test plan to workers, starts/stops tests, and collects results
-- **Workers (servers)**  -  execute the test plan and stream results back to the controller
+| Role | Responsibility |
+|------|----------------|
+| **Controller / client** | Holds the test plan start command, sends the plan to workers, starts/stops the test, **collects sample results**, writes the combined result file locally |
+| **Worker / server** | Runs `jmeter-server`, executes the **full** test plan, streams results back |
 
-Important: JMeter does **not** distribute load between workers. Each worker runs the complete test plan. If your test plan uses 100 threads and you have 4 workers, you'll generate 400 total threads.
+Documented features of remote mode:
 
-## Setup Requirements
+- Saving of test samples to the **local** (controller) machine  
+- Management of multiple JMeter engines from one machine  
+- **No need to copy the test plan** to each server - the client sends it  
 
-Before starting, verify:
+### Critical load math
 
-- All machines are on the **same subnet**
-- **Firewalls are disabled** or ports are open (default RMI ports: 1099, 4000-4099)
-- **Same version** of JMeter and Java on all machines
-- SSL for RMI is either configured or explicitly disabled
+From the official remote testing chapter:
 
-## Step-by-Step Setup
+> The same test plan is run by all the servers. **JMeter does not distribute the load between servers**; each runs the full test plan. So if you set 1000 Threads and have 6 JMeter servers, you end up injecting **6000 Threads**.
 
-Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-testing-step-by-step/) tutorial for a guided walkthrough, or refer to the [Remote Testing](/user-manual/remote-test/) page for the full reference.
+Plan thread counts **per worker**, not as a global pool that JMeter will shard for you.
 
-### Quick Start
+### When not to use remote mode
 
-1. On each worker: `jmeter-server` (or `jmeter-server.bat` on Windows)
-2. On the controller: `jmeter -R worker1,worker2,worker3 -t test.jmx -n`
-3. Results are aggregated automatically on the controller
+The manual notes that remote mode uses **more resources** than running the same number of independent CLI tests. With many servers, the **client** and its network can become overloaded even though workers still run. Always verify the controller is healthy.
 
-## Monitoring Distributed Tests
+Also: do **not** run the JMeter engine on the application server under test if you can avoid it - the engine steals CPU and taints results. Prefer injectors on the **same Ethernet segment** as the app tier without sharing the app hosts.
 
-- [Real-time Results](/user-manual/realtime-results/)  -  use the Backend Listener to stream metrics from workers to InfluxDB/Grafana
-- [Dashboard Report](/user-manual/generating-dashboard/)  -  generate consolidated HTML reports from the aggregated CSV results
+## Prerequisites (all nodes)
+
+Official checklist - every client and server must:
+
+1. Run **exactly the same version of JMeter**.  
+2. Use the **same Java version** on all systems (mixed versions may work but are discouraged).  
+3. Have a **valid keystore for RMI over SSL**, or SSL explicitly disabled in a controlled lab.  
+4. Be reachable on the RMI ports you configure (firewalls allowing client→server and reverse result channels).  
+
+### Data files are not auto-copied
+
+If the plan uses CSV files, plugins JARs, or other external resources:
+
+> these are **not sent across by the client** - make sure they are available in the **appropriate directory on each server**.
+
+You may use different `user.properties` / `system.properties` per server (for example unique data partitions or different backend targets). Properties are picked up when the server starts.
+
+## Network and ports
+
+| Direction | Purpose | Notes from docs |
+|-----------|---------|-----------------|
+| Client → server | Control / RMI | Default registry port **1099** (typical) |
+| Server → client | Sample results | High-numbered ports; control with `client.rmi.localport` base |
+| Server local engine port | RMI engine | Dynamic by default; set `server.rmi.localport` for firewall-friendly fixed ports |
+
+If firewalls exist between client and servers, allow the chosen ports both ways as required for RMI. The manual suggests monitoring traffic if connections fail.
+
+There can be **only one JMeter server per node** unless you use different RMI ports.
+
+## Step-by-step setup
+
+Follow the [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-testing-step-by-step/) tutorial for screenshots, or the full [Remote Testing](/user-manual/remote-test/) reference.
+
+### Step 0 - Configure nodes
+
+- Identical JMeter + Java  
+- SSL keystore distributed **or** intentional SSL disable for lab only  
+- CSV/plugin files present on workers  
+- Optional: set `server.rmi.localport` on servers for fixed ports  
+
+### Step 1 - Start workers
+
+On each worker machine:
+
+```bash
+# Unix
+jmeter-server
+
+# Windows
+jmeter-server.bat
+```
+
+The server application **starts the RMI registry itself**; you normally do not start `rmiregistry` separately. (Older manual mode with `server.rmi.create=false` exists for special cases - see remote testing “Doing it Manually”.)
+
+Optional: `server.exitaftertest=true` so the server exits after one test. The client `-X` flag also requests remote servers to exit at end of test.
+
+### Step 2 - Point the client at workers
+
+**Option A - properties file** on the controller: set `remote_hosts` in `jmeter.properties` / overrides to a comma-separated list of worker hosts.
+
+**Option B - CLI** (preferred for automation):
+
+```bash
+jmeter -n -t script.jmx -R host1,host2,host3 -l results.jtl
+```
+
+Documented equivalence: `-R` has the same effect as using `-r` with `-Jremote_hosts={serverlist}`.
+
+```bash
+jmeter -n -t script.jmx -r
+```
+
+uses whatever is already in `remote_hosts`.
+
+### Step 3a - GUI check (debug only)
+
+Start the controller GUI; **Run** menu includes **Remote Start** / **Remote Stop** for configured hosts. Use this only to validate connectivity - not for real load.
+
+### Step 3b - CLI client (recommended)
+
+```bash
+jmeter -n -t script.jmx -R server1,server2 -l results.jtl -e -o report/
+```
+
+Useful flags from the manual:
+
+| Flag | Meaning |
+|------|---------|
+| `-Gproperty=value` | Define a property on **all** servers (repeatable) |
+| `-X` | Exit remote servers at the end of the test |
+| `-Jproperty=value` | Property on the **client** (and as usual for plan `${__P}`) |
+
+The command-line client exits when remote servers have stopped.
+
+## SSL for RMI (default since JMeter 4.0)
+
+Since JMeter 4.0 the default RMI transport uses **SSL**. You must create keys/certificates.
+
+JMeter ships:
+
+- `bin/create-rmi-keystore.sh`  
+- `bin/create-rmi-keystore.bat`  
+
+Run from `bin`; the script generates a keystore with a key named `rmi` (default alias), **valid seven days** in the documented sample flow, default passphrase `changeit`. Answer the keytool prompts (CN should align with alias expectations; docs show using `rmi` as the name).
+
+Then:
+
+1. Ensure `rmi_keystore.jks` is in `jmeter/bin` or referenced by `server.rmi.ssl.keystore.file`.  
+2. **Copy the same keystore to every server and client** in the farm.  
+
+Default RMI SSL-related properties are described under the [properties reference](/user-manual/properties-reference/) remote section.
+
+### Lab-only SSL disable
+
+Some teams temporarily set `server.rmi.ssl.disable=true` in `user.properties` on all nodes for isolated labs. Treat that as **non-production only**; prefer proper keystores for any shared or long-lived environment.
+
+## What the controller aggregates
+
+Workers execute samples; results stream back so the controller can:
+
+- Write a **combined** result file (`-l`)  
+- Drive listeners in GUI (not recommended under load)  
+- Produce one [HTML dashboard](/user-manual/generating-dashboard/) from the combined log  
+
+The dashboard docs note a limitation on the “times vs threads” graph in distributed mode (axis reflects threads for one server - see generating-dashboard notes).
+
+### Stripped modes
+
+The remote testing manual mentions improvements via **Stripped** sample sending modes to reduce client overload. Prefer current defaults for your version, and still watch controller CPU, disk, and network when many workers send high-rate results.
+
+## Sizing workers and threads
+
+1. Decide **total** target concurrency or RPS.  
+2. Decide how many injectors you have.  
+3. Set Thread Group threads ≈ **total / workers** (plus headroom), remembering each worker runs the full group.  
+4. Size **heap per worker** for its local thread count ([Heap Estimator](/tools/heap-estimator/)).  
+5. Size the **controller** for result aggregation, not only for zero local threads.  
+6. Use the [Thread Calculator](/tools/thread-calculator/) for per-engine starting points; validate with pilots.
+
+[Best practices](/user-manual/best-practices/) also allow multiple **autonomous** CLI instances without remote mode: run N independent `jmeter -n` processes and **merge sample result files** later for analysis. That avoids RMI complexity when you do not need centralized start/stop.
+
+## Properties that commonly matter
+
+Configure overrides in `user.properties` (recommended pattern: copy from `jmeter.properties`, do not edit only the stock file long-term):
+
+| Area | Examples (see properties reference for exact names) |
+|------|-----------------------------------------------------|
+| Host list | `remote_hosts` |
+| Server RMI port | `server.rmi.localport` |
+| Client reverse ports | `client.rmi.localport` |
+| SSL keystore | `server.rmi.ssl.keystore.file`, alias, password props |
+| SSL disable | `server.rmi.ssl.disable` (lab) |
+| Exit after test | `server.exitaftertest` |
+
+Unsure which knobs matter? Use the [Properties Cheat Sheet](/tools/properties-cheatsheet/) and the full [Properties Reference](/user-manual/properties-reference/).
+
+## Operational runbook
+
+### Healthy start order
+
+1. Deploy identical JMeter/Java to all nodes.  
+2. Deploy keystore + data files to workers.  
+3. Start `jmeter-server` on each worker; confirm logs show RMI up.  
+4. From controller, start CLI with `-R` and a **small** thread count.  
+5. Confirm samples arrive in the result file.  
+6. Scale threads/workers gradually.  
+
+### During the test
+
+- Watch worker CPU, network, GC.  
+- Watch controller disk I/O for the JTL.  
+- Prefer [Backend Listener](/user-manual/realtime-results/) for live metrics if you need dashboards mid-test.  
+- Avoid View Results Tree on the controller under load.  
+
+### After the test
+
+- Generate dashboard from the controller’s result file.  
+- Use `-X` or `server.exitaftertest` if you want workers to shut down.  
+- Collect `jmeter-server` logs from workers if anything failed.  
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| Connection refused | Check firewall rules and that `jmeter-server` is running on the worker |
-| Serialization errors | Ensure identical JMeter versions on all machines |
-| Workers not found | Verify all machines are on the same subnet and can ping each other |
-| SSL handshake failure | Set `server.rmi.ssl.disable=true` in `user.properties` on all machines (non-production only) |
+| Problem | What to check |
+|---------|----------------|
+| Connection refused | `jmeter-server` running? host/IP correct? firewall on 1099 / `server.rmi.localport`? |
+| Workers not listed / not starting | `remote_hosts` / `-R` list; DNS resolution; ping/route |
+| Serialization / class errors | Identical JMeter versions; same plugins on all nodes |
+| SSL handshake failures | Keystore present on all nodes; alias/password; clocks; or lab SSL disable consistently |
+| No samples / incomplete results | Reverse ports blocked (`client.rmi.localport` range); client overloaded |
+| Different behaviour per worker | Missing CSV on some nodes; different `user.properties` |
+| Controller overloaded | Too many workers/high sample rate; use stripped modes; fewer result fields; autonomous CLI merge strategy |
+| “Unknown host” / wrong interface | Bind addresses, multi-homed hosts, VPN interfaces |
+
+Debugging tips from the manual include RMI-related system properties for verbose RMI logs when diagnosing refused connections.
+
+## Distributed testing vs alternatives
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Remote mode (`-R`)** | One start/stop; combined results; plan pushed to workers | RMI/SSL complexity; client bottleneck |
+| **Independent CLI engines** | Simple; no RMI | Manual start; merge JTLs yourself |
+| **Single powerful injector** | Simplest | Hardware/network ceiling |
+| **CI single container** | Easy automation | Limited scale ([CI guide](/topics/ci-cd-load-testing/)) |
+
+Choose remote mode when you need **central coordination** and many injectors; choose autonomous CLIs when you want operational simplicity.
+
+## Security checklist
+
+1. Trusted network or strict firewall allowlists only.  
+2. SSL keystores with controlled distribution; rotate when using short-lived certs (documented sample validity is short - regenerate for real use).  
+3. No `jmeter-server` exposed to the public internet.  
+4. Test plans treated as code - remote start executes what the client sends.  
+5. Disable experimental SSL-off settings outside labs.  
+
+## Result file and sample sending behaviour
+
+Under load, workers generate samples quickly. The controller must:
+
+1. Receive sample events over RMI.  
+2. Write them to the local result file if `-l` is set.  
+3. Optionally feed listeners or Backend Listener exporters.  
+
+That is why the remote testing chapter warns that the **client** can become the bottleneck. Mitigations aligned with official guidance and lean-run practice:
+
+- Prefer **CLI** controller with listeners disabled.  
+- Save only required fields (`jmeter.save.saveservice.*`) so each sample is smaller.  
+- Prefer **CSV** over XML results.  
+- Avoid functional mode and full response data on every sample.  
+- Use current stripped sample sending modes when available for your version.  
+- Cap how many workers report to one controller; split farms if needed.  
+- Consider autonomous CLI engines plus offline merge when coordination is not required.  
+
+If you need live charts without overloading the controller GUI, use the [Backend Listener](/user-manual/realtime-results/) path so metrics stream to InfluxDB/Grafana from the engines or controller according to your plan design - still validate that the extra exporter CPU is acceptable.
+
+## Example lab topology
+
+A minimal two-worker lab that matches the docs:
+
+| Host | Role | Software |
+|------|------|----------|
+| `controller.lab` | Client | Same JMeter + Java; has `.jmx`; runs CLI |
+| `worker1.lab` | Server | Same JMeter + Java; `jmeter-server`; CSV data present |
+| `worker2.lab` | Server | Same as worker1 |
+
+```bash
+# on each worker
+cd $JMETER_HOME/bin
+./jmeter-server
+
+# on controller
+./jmeter -n -t /plans/api.jmx \
+  -R worker1.lab,worker2.lab \
+  -Jthreads=50 \
+  -Ghost=app.lab \
+  -l /tmp/results.jtl \
+  -e -o /tmp/report \
+  -X
+```
+
+If the plan uses `${__P(threads,)}` for the Thread Group, remember: **each worker** applies that property independently. `-Jthreads=50` sets the client property; workers need the same value via `-Gthreads=50` if they evaluate `__P` for thread count when the engine starts the plan. Match where the property is read - when in doubt, bake conservative defaults into the plan and override consistently with `-G` for remote engines.
+
+## Checklist before first production-scale distributed run
+
+1. Versions identical (JMeter + Java) on all nodes.  
+2. Keystore distributed; SSL smoke-tested.  
+3. Firewall rules include control and reverse ports.  
+4. CSV, keystores for the **app** under test, and plugin JARs on every worker.  
+5. Small pilot with 1-2 threads per worker succeeds end-to-end.  
+6. Controller disk has space for the full combined JTL.  
+7. Heap sized per worker for planned local threads.  
+8. Runbook includes who starts workers, who starts the client, and how to stop (`shutdown`/`stop` scripts or remote stop).  
+9. Success criteria defined (error %, latency) before you stare at six worker CPU graphs.  
+10. Rollback: how to halt generation if the app tier melts down.  
+
+## Related documentation
+
+- [Remote Testing (full reference)](/user-manual/remote-test/)  
+- [Distributed Testing Step-by-Step](/user-manual/jmeter-distributed-testing-step-by-step/)  
+- [Properties Reference](/user-manual/properties-reference/)  
+- [Best Practices](/user-manual/best-practices/) - multi-machine CLI  
+- [Dashboard Report](/user-manual/generating-dashboard/)  
+- [Real-time Results](/user-manual/realtime-results/)  
+
+## Frequently asked questions
+
+### Does JMeter split 1000 threads across 4 workers?
+
+No. Each worker runs the full test plan. Four workers with 1000 threads configured means about 4000 threads total.
+
+### Do I need to copy the JMX to every worker?
+
+No. The client sends the test plan to the servers. You **do** need to copy external data files and ensure plugins match.
+
+### GUI or CLI for distributed load?
+
+CLI. The manual recommends starting remote tests from a non-GUI client for real load; GUI is for checking configuration.
+
+### What is the default RMI port?
+
+JMeter/RMI commonly uses **1099** for the server registry connection; result channels use additional ports. Fix ports with `server.rmi.localport` and `client.rmi.localport` when firewalls require it.
+
+### Why did SSL start matter after JMeter 4.0?
+
+Since JMeter 4.0, default RMI transport uses SSL and needs a keystore. Use `create-rmi-keystore` scripts and distribute `rmi_keystore.jks`.
+
+### Can workers run different Java versions?
+
+It may work but is **discouraged**. Use the same Java and JMeter versions everywhere.
+
+### Is distributed mode always better than one machine?
+
+No. Remote mode adds overhead and can overload the client. Sometimes one large injector or several independent CLI runs is simpler and more reliable.
 
 <RelatedContent>
 <Fragment slot="next-step">
-Follow the [Step-by-Step Tutorial](/user-manual/jmeter-distributed-testing-step-by-step/) for a hands-on distributed testing setup.
+Follow the [Step-by-Step Tutorial](/user-manual/jmeter-distributed-testing-step-by-step/) with two VMs and a tiny thread count before scaling out.
 </Fragment>
 <Fragment slot="related">
-- [Remote Testing Reference](/user-manual/remote-test/)  -  complete configuration reference
-- [Properties Reference](/user-manual/properties-reference/)  -  RMI and networking properties
+- [Remote Testing Reference](/user-manual/remote-test/) - SSL, ports, CLI flags
+- [Properties Reference](/user-manual/properties-reference/) - RMI and networking properties
+- [Heap Estimator](/tools/heap-estimator/) - size each worker
+</Fragment>
+<Fragment slot="mistakes">
+Assuming threads are sharded automatically; forgetting CSV on workers; mixing JMeter versions; load-testing with the controller GUI and View Results Tree enabled.
 </Fragment>
 <Fragment slot="troubleshooting">
-- Workers must be started before the controller initiates the test
-- Check `jmeter-server.log` on each worker for startup errors
+Start workers before the client; read `jmeter-server` logs on each worker; verify reverse ports if samples never appear on the controller.
 </Fragment>
 </RelatedContent>

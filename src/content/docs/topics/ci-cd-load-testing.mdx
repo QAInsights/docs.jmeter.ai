@@ -2,14 +2,14 @@
 title: "JMeter CI/CD Load Testing"
 description: "Integrate JMeter into CI/CD pipelines. Run tests in non-GUI mode, generate reports automatically, and fail builds on performance regressions."
 keywords:
-  - JMeter CI/CD
-  - JMeter Jenkins
-  - JMeter GitHub Actions
-  - automated load testing
-  - JMeter non-GUI mode
+ - JMeter CI/CD
+ - JMeter Jenkins
+ - JMeter GitHub Actions
+ - automated load testing
+ - JMeter non-GUI mode
 difficulty: advanced
 guideType: how-to
-estimatedReadTime: 6 min read
+estimatedReadTime: 12 min read
 lastVerified: JMeter 5.6
 canonicalTopic: ci-cd-load-testing
 ---
@@ -18,115 +18,409 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 # JMeter CI/CD Load Testing
 
-Integrating JMeter into your CI/CD pipeline ensures that performance regressions are caught before they reach production. This guide covers running JMeter in non-GUI mode, automating report generation, and setting up performance gates in popular CI systems.
+Integrating Apache JMeter into CI/CD means every relevant change can run a **non-GUI** performance check, publish an HTML report, and optionally **fail the build** when error rate or latency regresses. This guide covers CLI fundamentals, parameterization, dashboard artifacts, performance gates, pipeline patterns (GitHub Actions, Jenkins, generic Docker), data and secrets, and operational pitfalls - aligned with JMeter’s documented CLI flags, properties, best practices, and [dashboard generator](/user-manual/generating-dashboard/).
 
 :::tip[Use CLI mode for real load]
 CI jobs should run JMeter in non-GUI mode and archive the `.jtl` plus generated dashboard report. Keep the GUI out of automated load stages.
 :::
 
-## Running JMeter in Non-GUI Mode
+:::caution[Timeout the process]
+Always set a job-level timeout around JMeter. A stuck thread group or unreachable host can block an agent indefinitely if the pipeline never cancels the step.
+:::
 
-The foundation of CI/CD integration is JMeter's command-line mode:
+## Why put JMeter in the pipeline?
+
+Manual GUI runs do not scale across branches and pull requests. CI integration gives you:
+
+- **Repeatability** - same `.jmx`, same CLI flags, same report shape  
+- **Regression detection** - compare error % and percentiles to thresholds  
+- **Artifacts** - HTML dashboard and raw CSV/JTL for later analysis  
+- **Shift-left performance** - catch obvious degradations before production  
+
+CI is not a replacement for full-scale capacity tests in a dedicated environment. Most pipelines run a **smaller, time-boxed** scenario (smoke or nightly load) because shared runners have limited CPU, memory, and network, and test environments may not match production scale.
+
+## Prerequisites
+
+1. A stable test plan that already works under CLI on a developer machine.  
+2. JMeter available on the agent (installed package, versioned tarball, or container image).  
+3. Plan and data files in version control (or fetched as build inputs).  
+4. Agreement on **what “fail” means** (error %, p95, APDEX thresholds in the report config, etc.).
+
+Read [Best Practices](/user-manual/best-practices/) before automating: CLI mode, minimal listeners, CSV results, and property-based parameterization are the foundation of reliable CI runs.
+
+## Non-GUI mode: the only mode for CI
+
+### Core command
 
 ```bash
 jmeter -n -t test-plan.jmx -l results.jtl -e -o report/
 ```
 
-Flags:
-- `-n`  -  non-GUI mode
-- `-t`  -  test plan file
-- `-l`  -  results log file (CSV format)
-- `-e`  -  generate dashboard report after test
-- `-o`  -  output folder for HTML report
+| Flag | Role in CI |
+|------|------------|
+| `-n` | Non-GUI (required for automation) |
+| `-t` | Path to the `.jmx` test plan |
+| `-l` | Sample log path (results file) |
+| `-e` | Generate HTML dashboard after the test |
+| `-o` | Dashboard output directory (**must not already exist** as a non-empty report dir - use a clean path per run) |
+| `-j` | JMeter log file path (optional but useful on agents) |
+| `-q` | Extra property file(s) |
+| `-Jname=value` | Define JMeter property `name` |
+| `-Gname=value` | Define property on remote servers when using distributed mode |
+| `-r` / `-R` | Remote/distributed engines ([distributed testing](/topics/distributed-testing/)) |
 
-### Passing Parameters
-
-Override JMeter properties from the command line:
+Official [best practices](/user-manual/best-practices/) show the lean form:
 
 ```bash
-jmeter -n -t test.jmx -Jthreads=50 -Jrampup=60 -Jduration=300
+jmeter -n -t test.jmx -l test.jtl
 ```
 
-In the test plan, reference these with `${__P(threads,10)}` (with a default value of 10).
+Adding `-e -o report/` is the standard way to attach human-readable results to a build.
 
-## Performance Gates
+### Exit codes and sample failures
 
-To fail a build when performance degrades, check the APDEX score or error rate from the dashboard report:
+By default, JMeter finishing the test plan is not the same as “all samples succeeded.” Failed assertions and HTTP errors are recorded in the result file and dashboard **error** metrics. Your gate script (or a plugin) must inspect those metrics if you want the pipeline to go red. Do not assume a zero process exit code always means zero business errors without verifying behaviour for your JMeter version and wrappers.
 
-### Using the Dashboard Report
+### Headless agent requirements
 
-The [Dashboard Report](/user-manual/generating-dashboard/) generates a `statistics.json` file alongside the HTML report. Parse it to extract:
+- A compatible **Java** runtime for your JMeter release.  
+- Enough **heap** for the thread count (`HEAP` / `JVM_ARGS` as used by JMeter startup scripts). See the [Heap Estimator](/tools/heap-estimator/).  
+- No reliance on GUI-only features.  
+- Writable workspace for `-l`, `-o`, and logs.
 
-- **Overall APDEX score**  -  threshold for build pass/fail
-- **Error percentage**  -  must be below a target (e.g., 1%)
-- **95th percentile response time**  -  must not exceed a target
+## Parameterizing plans for every environment
 
-### Example: Bash Script Gate
+Hard-coding hostnames and thread counts in XML forces a commit for every environment. Official parameterization guidance ([best practices](/user-manual/best-practices/)):
+
+1. Define Test Plan variables from properties, for example `LOOPS=${__P(loops,10)}`.  
+2. Override on the CLI: `jmeter … -Jloops=12`.  
+3. For many related settings, use property files and `-q`.
+
+### Recommended property surface for CI
+
+| Property | Typical use |
+|----------|-------------|
+| `host` / `port` / `protocol` | Environment under test |
+| `threads` | Concurrent users for this pipeline tier |
+| `rampup` | Seconds to start all threads |
+| `duration` or loop count | How long the stage runs |
+| `usersFile` | Path to CSV data on the agent |
+
+In the plan:
+
+```text
+${__P(threads,5)}
+${__P(rampup,30)}
+${__P(host,localhost)}
+```
+
+Pipeline example:
 
 ```bash
-# Extract error rate from statistics.json
-ERROR_RATE=$(jq '.Total.errorPct' report/statistics.json)
-APDEX=$(jq '.Total.apdexSummary.apdex' report/statistics.json)
+jmeter -n -t tests/load/api.jmx \
+  -Jthreads=20 \
+  -Jrampup=40 \
+  -Jhost=staging.example.com \
+  -l target/jmeter/results.jtl \
+  -e -o target/jmeter/report \
+  -j target/jmeter/jmeter.log
+```
 
-if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then
-  echo "FAIL: Error rate $ERROR_RATE exceeds 1%"
+Use **small** defaults in the `.jmx` so a developer double-click or accidental run is safe; let CI inject larger values only on dedicated jobs.
+
+## Dashboard reports as build artifacts
+
+The [dashboard generator](/user-manual/generating-dashboard/) processes CSV sample results into HTML graphs and tables:
+
+- APDEX (satisfied/tolerated thresholds configurable)  
+- Statistics table with configurable percentiles  
+- Error summary and top errors by sampler  
+- Time-series charts (response times, active threads, throughput, and more)  
+
+### Configuration that CI should pin
+
+Documented defaults for saveservice fields must remain intact so the generator has the columns it needs (label, latency, response code, success, thread counts, bytes, etc.). If someone customized `jmeter.save.saveservice.*` in `user.properties`, restore the required fields or the report may be incomplete.
+
+Customize report behaviour via **copies of properties in `user.properties`** (not by editing packaged defaults alone). Examples from the dashboard docs:
+
+- `jmeter.reportgenerator.apdex_satisfied_threshold` (default 500 ms)  
+- `jmeter.reportgenerator.apdex_tolerated_threshold` (default 1500 ms)  
+- `jmeter.reportgenerator.exporter.html.series_filter` to keep only chosen transactions  
+
+### What to archive
+
+| Artifact | Why |
+|----------|-----|
+| `report/` (HTML) | Primary human review in CI UI |
+| `results.jtl` / CSV | Re-generate report offline; long-term compare |
+| `jmeter.log` | Diagnose agent/plan failures |
+| Property file used (`-q`) | Reproducibility |
+
+Upload these with your CI “artifacts” feature and retain them on failed runs especially.
+
+## Performance gates (fail the build)
+
+A useful gate is **simple, stable, and aligned with SLOs**.
+
+### Metrics people gate on
+
+From dashboard statistics and result files:
+
+- **Error percentage** (failed samples / samples)  
+- **Mean or percentile response time** (p90/p95/p99 as exported in the statistics table)  
+- **APDEX** (if you configure thresholds deliberately for the environment)  
+- **Minimum throughput** (catch “test did not actually apply load”)
+
+### Example: parse dashboard `statistics.json`
+
+The HTML report generation also writes machine-readable statistics (commonly `statistics.json` next to the HTML). Field names can vary slightly by JMeter version - **inspect the file your version produces** and adjust paths. A typical pattern:
+
+```bash
+# Example gate - verify JSON paths against your JMeter version's statistics.json
+ERROR_PCT=$(jq -r '.Total.errorPct' report/statistics.json)
+MEAN_RT=$(jq -r '.Total.meanResTime' report/statistics.json)
+
+# errorPct is a percentage value in the statistics file (confirm scale in your file)
+if awk "BEGIN {exit !($ERROR_PCT > 1)}"; then
+  echo "FAIL: error percentage $ERROR_PCT exceeds 1"
   exit 1
 fi
 
-if (( $(echo "$APDEX < 0.85" | bc -l) )); then
-  echo "FAIL: APDEX $APDEX below 0.85"
+if awk "BEGIN {exit !($MEAN_RT > 500)}"; then
+  echo "FAIL: mean response time $MEAN_RT ms exceeds 500"
   exit 1
 fi
 
-echo "PASS: Error rate=$ERROR_RATE, APDEX=$APDEX"
+echo "PASS: errorPct=$ERROR_PCT meanResTime=$MEAN_RT"
 ```
 
-## CI System Integration
+If `jq` paths differ in your version, gate on CSV aggregates or a small script that reads the JTL instead - but keep the gate deterministic.
 
-### GitHub Actions
+### Tiered quality bars
+
+| Pipeline tier | Threads / duration | Gate strictness |
+|---------------|--------------------|-----------------|
+| PR smoke | Low threads, 1-2 minutes | Fail on high error % only |
+| Nightly | Medium load, longer | Error % + p95 |
+| Pre-release | Closer to prod target | Full SLO set + report review |
+
+Use `${__P(...)}` so one plan serves all tiers.
+
+## GitHub Actions pattern
+
+Illustrative workflow step using the [qainsights/jmeter](https://hub.docker.com/r/qainsights/jmeter) image (pin the tag your team standardizes on; this is a community image, not an official Apache release):
 
 ```yaml
-- name: Run JMeter Load Test
-  run: |
-    docker run --rm -v ${{ github.workspace }}:/test justb4/jmeter:5.6 \
-      -n -t /test/test-plan.jmx -l /test/results.jtl -e -o /test/report
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+ - uses: actions/checkout@v4
 
-- name: Check Performance Gate
-  run: |
-    ERROR_RATE=$(jq '.Total.errorPct' report/statistics.json)
-    if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then exit 1; fi
+ - name: Run JMeter
+        run: |
+          mkdir -p jmeter-out
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            qainsights/jmeter:5.6 \
+            -n -t tests/load/api.jmx \
+            -Jthreads=15 -Jrampup=30 \
+            -Jhost=${{ vars.STAGING_HOST }} \
+            -l jmeter-out/results.jtl \
+            -e -o jmeter-out/report \
+            -j jmeter-out/jmeter.log
 
-- name: Upload Report
-  uses: actions/upload-artifact@v4
-  with:
-    name: jmeter-report
-    path: report/
+ - name: Performance gate
+        run: |
+          # Adjust jq paths after inspecting jmeter-out/report/statistics.json
+          ERROR_PCT=$(jq -r '.Total.errorPct' jmeter-out/report/statistics.json)
+          awk "BEGIN {exit !($ERROR_PCT > 1)}" && { echo "errorPct $ERROR_PCT"; exit 1; } || true
+
+ - name: Upload JMeter report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-report
+          path: jmeter-out/
 ```
 
-### Jenkins
+Notes:
 
-Use the JMeter plugin or a simple shell build step. Archive the `report/` directory as a build artifact and use the Performance Plugin to track trends across builds.
+- `if: always()` on upload preserves reports for failed gates.  
+- Prefer **repository variables/secrets** for hosts and credentials, not commits.  
+- Pin image digests in production pipelines for reproducibility.
 
-## Best Practices for CI/CD
+## Jenkins pattern
 
-Follow the [Best Practices](/user-manual/best-practices/) guide:
+Common approaches:
 
-- Always use non-GUI mode in pipelines
-- Keep test plans under version control alongside application code
-- Use CSV Data Set Config for test data  -  don't hardcode values
-- Generate the [Dashboard Report](/user-manual/generating-dashboard/) for every run
-- Store historical results for trend analysis
+1. **Shell/batch build step** invoking `jmeter -n -t … -l … -e -o …` after installing JMeter on the agent or using a Docker agent.  
+2. **Pipeline `sh` step** with the same command inside `dir()` / workspace paths.  
+3. **Archive artifacts** (`report/**`, `*.jtl`, `jmeter.log`).  
+4. Optional community **Performance** plugins to plot historical trends - treat plugin config as team-specific; the CLI + HTML report path stays portable.
+
+Example declarative fragment:
+
+```groovy
+stage('JMeter') {
+  steps {
+    sh '''
+      rm -rf jmeter-out && mkdir jmeter-out
+      jmeter -n -t tests/load/api.jmx \
+        -Jthreads=${THREADS} -Jhost=${TARGET_HOST} \
+        -l jmeter-out/results.jtl \
+        -e -o jmeter-out/report \
+        -j jmeter-out/jmeter.log
+    '''
+    // gate script here
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'jmeter-out/**', fingerprint: true
+    }
+  }
+}
+```
+
+## Generic Docker / Kubernetes runners
+
+Patterns that stay close to official CLI behaviour:
+
+- Mount the workspace; run the `jmeter` entrypoint with `-n -t …`.  
+- Set `HEAP` or `JVM_ARGS` in the container environment for larger jobs.  
+- Use a **dedicated** runner pool for load so you do not starve compile/test jobs.  
+- For multi-engine load, prefer a controlled lab or [distributed mode](/topics/distributed-testing/) over uncontrolled shared CI workers.
+
+Distributed mode in CI is advanced: workers need network access, matching JMeter/Java versions, RMI/SSL setup, and data files present on each worker. Many teams instead run **one solid CLI engine** per job or several independent jobs that merge JTLs later.
+
+## Test data, CSV files, and secrets
+
+### CSV Data Set
+
+[Best practices](/user-manual/best-practices/) recommend CSV files for per-user credentials and large datasets. In CI:
+
+- Commit **non-sensitive** synthetic data, or  
+- Generate CSV in a pre-step, or  
+- Fetch from a secrets manager into the workspace at runtime  
+
+Ensure paths in CSV Data Set Config work on the agent (relative paths from the working directory you set).
+
+### Distributed caveat
+
+Remote testing docs state **data files are not automatically sent** to workers. For CI distributed runs, copy CSV/payloads to each engine or use a shared mount.
+
+### Secrets
+
+- Pass tokens with `-J` from CI secret stores: `-JapiKey=$API_KEY`.  
+- Reference `${__P(apiKey,)}` in Header Managers.  
+- Never log full command lines that echo secrets; prefer env-specific property files with restricted filesystem permissions.
+
+## Plan design rules that make CI stable
+
+Aligned with official lean-test advice:
+
+1. **No View Results Tree** (or any heavy listener) enabled in the committed plan for load jobs.  
+2. **CLI-first** - developers verify with `-n` before merging plan changes.  
+3. **Deterministic naming** - sampler labels stable so dashboard series and filters work.  
+4. **Transaction Controllers** for multi-step APIs so gates can target business transactions.  
+5. **Assertions** that define failure (status codes, key JSON fields) - without them error % stays near zero while responses are wrong.  
+6. **Timers** only when the scenario needs think time; document whether the CI tier is stress or paced load.  
+7. **Version pin** - same JMeter major/minor in CI as local; avoid “latest” floating tags for release gates.
+
+## Scheduling strategies
+
+| Job | Purpose |
+|-----|---------|
+| On PR (optional path filter) | Smoke: tiny threads, short duration, fail on errors |
+| Nightly on main | Heavier load against staging |
+| Pre-deploy | Explicit approval + report link |
+| Post-deploy canary | Synthetic check (often smaller) |
+
+Separate **functional** API tests (correctness) from **load** stages so a performance environment outage does not block unit tests.
+
+## Observability during CI runs
+
+For long nightly jobs, consider the [Backend Listener / real-time results](/user-manual/realtime-results/) path into InfluxDB/Grafana. Keep it optional: CI should still produce the static HTML dashboard as the auditable artifact.
+
+## Troubleshooting CI-specific failures
+
+| Symptom | Likely cause | What to check |
+|---------|--------------|---------------|
+| Job hangs | No timeout; server wait; infinite loop | Job timeout; connect/response timeouts on HTTP Request |
+| Empty report / generator error | Bad saveservice config; non-empty `-o` dir | Clean output dir; required CSV columns |
+| Connection errors only in CI | Firewall DNS; wrong `${__P(host)}` | Print non-secret effective host; curl from agent |
+| OOM on agent | Threads too high for runner size | Lower `-Jthreads`; raise heap; bigger runner |
+| Flaky p95 | Shared noisy staging | Dedicated env; longer ramp; median of multiple runs |
+| Passes CLI locally, fails CI | Path/CSV/cwd differences | Working directory; relative file paths |
+| “Green” build, broken API | No assertions / no gate | Add Response Assertion; parse statistics |
+
+## Checklist: production-ready JMeter stage
+
+1. Plan runs under `jmeter -n` locally with the same properties CI will use.  
+2. Listeners disabled; results via `-l`.  
+3. Hosts, threads, duration from `${__P}` / `-J`.  
+4. Secrets from CI secret store.  
+5. Clean `-o` report directory per run.  
+6. Archive report + JTL + log always.  
+7. Gate on documented metrics with version-verified JSON/CSV paths.  
+8. Job timeout set.  
+9. JMeter and Java versions pinned.  
+10. README in `tests/load/` explains how to run the stage locally.
+
+## Related reading on this site
+
+- [API Load Testing](/topics/api-load-testing/) - plan design for HTTP APIs  
+- [Dashboard Report](/user-manual/generating-dashboard/) - APDEX and graphs  
+- [Best Practices](/user-manual/best-practices/) - CLI and lean plans  
+- [Functions and Variables](/topics/functions-and-variables/) - `${__P}` and CSV  
+- [Distributed Testing](/topics/distributed-testing/) - multi-engine scale  
+- [Thread Calculator](/tools/thread-calculator/) - sizing before you burn CI minutes  
+
+## Frequently asked questions
+
+### Can I run the JMeter GUI in CI?
+
+You should not. Official guidance is to use non-GUI mode for load tests. GUI mode wastes resources, is fragile on headless agents, and can hang without a display.
+
+### What is the minimum CLI command for pipelines?
+
+`jmeter -n -t plan.jmx -l results.jtl` runs the test and writes results. Add `-e -o report/` to generate the HTML dashboard as a build artifact.
+
+### How do I change thread count without editing the JMX?
+
+Define threads as `${__P(threads,10)}` in the Thread Group and pass `-Jthreads=50` on the CI command line (documented parameterization pattern).
+
+### How do I fail the build on performance regressions?
+
+Generate the dashboard, then script a check on error percentage and/or response-time statistics from the report output or JTL. JMeter recording errors alone does not always fail the process - your gate must enforce policy.
+
+### Should load tests run on every commit?
+
+Usually no. Use a short smoke on PR when needed, and heavier jobs on a schedule or pre-release pipeline. Full-scale tests belong in environments sized for them.
+
+### Where should I store the HTML report?
+
+As a CI artifact attached to the build (and optionally published to an internal static site). Keep the raw `.jtl` when you may need offline regeneration.
+
+### Can Jenkins and GitHub Actions share the same plan?
+
+Yes if both invoke the same CLI contract: same JMeter version, properties, and paths. The portable core is the `.jmx` + `jmeter -n …` command, not a vendor-specific plugin.
 
 <RelatedContent>
 <Fragment slot="next-step">
-Add a performance gate to your existing pipeline using the statistics.json approach described above.
+Add a non-GUI step and archive `report/` on your next pipeline change; then add a single error-percentage gate once `statistics.json` paths are verified for your JMeter version.
 </Fragment>
 <Fragment slot="related">
-- [Dashboard Report](/user-manual/generating-dashboard/)  -  configure custom APDEX thresholds
-- [Building JMeter from Source](/reference/building/)  -  build a custom JMeter for your CI environment
+- [Dashboard Report](/user-manual/generating-dashboard/) - configure APDEX thresholds in user.properties
+- [Best Practices](/user-manual/best-practices/) - CLI mode, listeners, parameterization
+- [API Load Testing](/topics/api-load-testing/) - assertions and correlation for meaningful gates
 </Fragment>
 <Fragment slot="mistakes">
-- Running GUI mode in CI causes resource waste and potential hangs
-- Not setting timeouts on the JMeter process can block the pipeline indefinitely
+Running GUI mode in CI; no job timeout; committing secrets in JMX; gating on flaky shared environments without error-rate floors; floating “latest” JMeter images for release gates.
+</Fragment>
+<Fragment slot="troubleshooting">
+Report generation failures: ensure CSV saveservice fields required by the dashboard are enabled and `-o` points to a fresh directory. Connection failures: verify `-Jhost` and agent egress to the system under test.
 </Fragment>
 </RelatedContent>

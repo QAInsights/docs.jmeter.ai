@@ -2,13 +2,13 @@
 title: "JMeter for API Load Testing"
 description: "Complete guide to API load testing with Apache JMeter - configure HTTP samplers, parameterize requests, analyze results, and integrate with CI/CD pipelines."
 keywords:
-  - JMeter API testing
-  - API load testing
-  - REST API performance testing
-  - JMeter HTTP sampler
+ - JMeter API testing
+ - API load testing
+ - REST API performance testing
+ - JMeter HTTP sampler
 difficulty: intermediate
 guideType: how-to
-estimatedReadTime: 7 min read
+estimatedReadTime: 12 min read
 lastVerified: JMeter 5.6
 canonicalTopic: api-load-testing
 ---
@@ -17,7 +17,9 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 # JMeter for API Load Testing
 
-Apache JMeter is one of the most widely used open-source tools for API load testing. Whether you're testing REST APIs, SOAP services, or GraphQL endpoints, JMeter provides the samplers, assertions, and reporting tools you need to validate performance under load.
+Apache JMeter is widely used for API load testing because the same [HTTP Request sampler](/user-manual/component-reference/) that drives browser-style web tests also drives REST, SOAP, and many JSON/XML backends. This guide walks through building an API-focused plan: install and first run, sampler configuration, headers and auth, parameterization, correlation, assertions, load sizing, CLI execution, reporting, and common failure modes.
+
+It is grounded in JMeter’s documented behaviour for HTTP sampling, variables, best practices, and dashboard reporting. For full field lists, use the [Component Reference](/user-manual/component-reference/) and [Functions and Variables](/user-manual/functions/) pages.
 
 :::tip[Use CLI mode for real load]
 Build and debug API plans in the GUI, then run load tests with `jmeter -n -t plan.jmx -l results.jtl -e -o report/` so the GUI does not consume injector resources.
@@ -27,63 +29,398 @@ Build and debug API plans in the GUI, then run load tests with `jmeter -n -t pla
 Use View Results Tree only while debugging individual requests. Disable it before real API load runs because it stores response details in memory.
 :::
 
-## Why JMeter for API Testing?
+## What “API load testing” means in JMeter
 
-- **Free and open-source**  -  no licensing costs, full control over test plans
-- **Protocol support**  -  HTTP/HTTPS, WebSocket, gRPC (via plugins), SOAP, and GraphQL
-- **Parameterization**  -  use functions, CSV datasets, and variables to simulate realistic traffic
-- **CI/CD integration**  -  run tests in non-GUI mode from any build pipeline
-- **Rich reporting**  -  HTML dashboard reports with APDEX scores, throughput graphs, and error tables
+In JMeter, an API test is still a **test plan**: one or more [Thread Groups](/user-manual/test-plan/), samplers that issue protocol requests, config elements (defaults, headers, cookies), post-processors that extract data, assertions that mark samples as pass/fail, and listeners or CLI result files for analysis.
 
-## Getting Started
+For HTTP APIs you typically:
 
-If you're new to JMeter, start with these pages:
+1. Create a Thread Group (virtual users, ramp-up, loops or duration).
+2. Add [HTTP Request Defaults](/user-manual/component-reference/) for host, port, and protocol.
+3. Add an [HTTP Header Manager](/user-manual/component-reference/) for `Content-Type`, `Accept`, and auth headers.
+4. Add one HTTP Request sampler per endpoint or transaction step.
+5. Parameterize bodies and paths with [variables and functions](/topics/functions-and-variables/).
+6. Extract tokens or IDs from responses for the next request.
+7. Assert status codes and key body fields.
+8. Run non-GUI load and open the [HTML dashboard](/user-manual/generating-dashboard/).
 
-1. [Getting Started](/getting-started/get-started/)  -  install JMeter and understand the workflow
-2. [Building a Test Plan](/user-manual/build-test-plan/)  -  learn the core concepts
-3. [Building a Web Test Plan](/user-manual/build-web-test-plan/)  -  your first HTTP test plan
+JMeter does **not** execute client-side JavaScript in a real browser. It measures the server-facing protocol exchange (requests and responses). That is usually what you want for API performance, but it is different from browser UX timing.
 
-## Configuring HTTP Requests
+## Prerequisites and first plan
 
-The [HTTP Request sampler](/user-manual/component-reference/) is the core element for API testing. Key configuration options:
+If you are new to JMeter:
 
-- **Server Name or IP**  -  target hostname (e.g., `api.example.com`)
-- **Method**  -  GET, POST, PUT, DELETE, PATCH
-- **Path**  -  API endpoint path (e.g., `/v1/users`)
-- **Body Data**  -  request payload for POST/PUT
-- **Headers**  -  use HTTP Header Manager for Content-Type, Authorization, etc.
+1. [Getting Started](/getting-started/get-started/) - install Java and JMeter, understand GUI vs CLI.
+2. [Building a Test Plan](/user-manual/build-test-plan/) - add/remove elements, save, run, stop.
+3. [Building a Web Test Plan](/user-manual/build-web-test-plan/) - Thread Group, HTTP defaults, cookie manager, first HTTP samples.
 
-## Parameterizing Requests
+### Minimal API plan shape
 
-Real-world API tests need dynamic data. Use these techniques:
+A maintainable API plan often looks like this tree:
 
-- [Functions and Variables](/user-manual/functions/)  -  `${__Random()}`, `${__UUID()}`, `${__time()}` for generating test data
-- [Regular Expressions](/user-manual/regular-expressions/)  -  extract tokens from responses for subsequent requests
-- CSV Data Set Config  -  read test data from files
+```text
+Test Plan
+├── User Defined Variables (optional)
+├── HTTP Request Defaults
+├── HTTP Header Manager
+├── HTTP Cookie Manager (if cookie-based sessions)
+└── Thread Group
+    ├── Login (HTTP Request) + extractors + assertions
+    ├── Business APIs (HTTP Requests) + extractors + assertions
+    └── (optional) CSV Data Set Config for user/data rows
+```
 
-## Analyzing Results
+Prefer **one sampler reused in a loop with variables** over dozens of nearly identical samplers. Official [best practices](/user-manual/best-practices/) call this out as a way to cut resource use and keep plans maintainable.
 
-After running a load test, analyze the results:
+## Configuring the HTTP Request sampler
 
-- [Dashboard Report](/user-manual/generating-dashboard/)  -  generate HTML reports with APDEX, response time distributions, and error tables
-- [Listeners](/user-manual/listeners/)  -  View Results Tree for debugging, Summary Report for quick stats
-- [Real-time Results](/user-manual/realtime-results/)  -  stream metrics to InfluxDB/Grafana during the test
+The [HTTP Request](/user-manual/component-reference/) sampler is the core element for REST and most HTTP APIs.
 
-## Best Practices
+### Fields you will use constantly
 
-Follow the [Best Practices](/user-manual/best-practices/) guide for reliable results:
+| Area | Typical API use |
+|------|-----------------|
+| **Protocol / Server / Port** | Prefer HTTP Request Defaults so every sampler inherits host and TLS settings |
+| **Method** | GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS as needed |
+| **Path** | Endpoint path, often with variables: `/v1/orders/${orderId}` |
+| **Parameters** | Query or form parameters (depending on method and encoding) |
+| **Body Data** | Raw JSON, XML, or other payload for POST/PUT/PATCH |
+| **Content encoding** | Character encoding for the request body when relevant |
 
-- Run tests in non-GUI mode (`jmeter -n -t test.jmx`)
-- Remove all Listeners except CSV output during load tests
-- Use the correct number of threads for your target load
-- Always include ramp-up and ramp-down periods
+### Body Data vs Parameters
+
+For JSON APIs, put the payload in **Body Data** and set `Content-Type: application/json` on the Header Manager (or a child Header Manager scoped to that sampler). Using form parameters when the API expects a JSON body is a common source of `400` responses.
+
+Example body with variables:
+
+```json
+{
+  "email": "${email}",
+  "quantity": ${quantity},
+  "requestId": "${__UUID}"
+}
+```
+
+### HTTP Request Defaults
+
+Add **HTTP Request Defaults** under the Test Plan or Thread Group and set:
+
+- Server name or IP  
+- Port  
+- Protocol (`https` for most public APIs)  
+- Optional common path prefix  
+
+Samplers then only override path, method, and body. That matches the pattern used in the [web test plan tutorial](/user-manual/build-web-test-plan/).
+
+## Headers, cookies, and authentication
+
+### Header Manager
+
+Use an [HTTP Header Manager](/user-manual/component-reference/) for:
+
+- `Content-Type: application/json`  
+- `Accept: application/json`  
+- `Authorization: Bearer ${accessToken}` after login  
+- Custom headers (`X-Request-Id`, API keys, tenant IDs)
+
+Scope matters:
+
+- **Thread Group level** - shared headers for all requests in that group.  
+- **Sampler level** - overrides for one call (for example a different `Content-Type`).
+
+For advanced web scenarios that customize User-Agent or similar headers, see [Building an Advanced Web Test Plan](/user-manual/build-adv-web-test-plan/).
+
+### Cookie Manager
+
+If the API uses session cookies (or a BFF that sets cookies), add an [HTTP Cookie Manager](/user-manual/component-reference/). Place it where the web tutorial recommends so each thread keeps its own cookie jar. Without it, multi-step flows that rely on `Set-Cookie` will fail after the first request.
+
+### Common auth patterns
+
+**Bearer / JWT after login**
+
+1. POST credentials to `/oauth/token` or `/login`.  
+2. Extract `access_token` (JSON Extractor or Regular Expression Extractor).  
+3. On later samplers, set `Authorization` to `Bearer ${accessToken}`.
+
+**API key header**
+
+- Store the key in a Test Plan variable or property (`${__P(apiKey,)}`) and inject it as a header. Prefer properties for secrets passed on the CLI so they are not hard-coded in the `.jmx`.
+
+**Basic auth**
+
+- Use the [HTTP Authorization Manager](/user-manual/component-reference/) when appropriate, or set a Base64 `Authorization` header deliberately. See also the advanced web plan notes on where to put the Authorization Manager.
+
+**SOAP**
+
+- The [webservice test plan](/user-manual/build-ws-test-plan/) shows building SOAP/REST-style tests with HTTP Request, Body Data, and Header Manager (`SOAPAction`, `Content-Type`). The same pattern applies to modern REST JSON APIs.
+
+### Importing from cURL
+
+If you already have working `curl` commands from developers or Postman exports, use JMeter’s [cURL import](/user-manual/curl/) to create HTTP samplers quickly, then clean up defaults, variables, and assertions.
+
+## Parameterization: users, data, and environments
+
+Hard-coded credentials and IDs do not scale. Grounded options from the manual:
+
+### CSV Data Set Config
+
+From [best practices](/user-manual/best-practices/):
+
+1. Create a text file of usernames and passwords (comma-separated) next to the plan.  
+2. Add **CSV Data Set Config**; name variables (for example `USER`, `PASS`).  
+3. Reference `${USER}` and `${PASS}` on samplers.  
+4. The element reads a new line for each thread (per documented CSV Data Set behaviour for multi-user login).
+
+Use CSV for product IDs, search terms, and tenant names the same way. Pre-generate large data files instead of inventing random data in expensive scripts during the run when possible.
+
+### Functions for dynamic values
+
+See the dedicated [Functions and Variables topic](/topics/functions-and-variables/) and the [full functions reference](/user-manual/functions/). Frequently used in API tests:
+
+| Need | Example |
+|------|---------|
+| Unique id | `${__UUID}` |
+| Random int | `${__Random(1,1000)}` |
+| Timestamp | `${__time(yyyy-MM-dd'T'HH:mm:ss)}` (escape commas in formats when needed) |
+| Thread number | `${__threadNum}` |
+| Property override | `${__P(threads,10)}` |
+
+### Properties for environments and CI
+
+Define Thread Group or host settings from properties so CLI and CI can override without editing XML:
+
+```text
+threads = ${__P(threads,10)}
+rampup  = ${__P(rampup,30)}
+host    = ${__P(host,api.example.com)}
+```
+
+Run:
+
+```bash
+jmeter -n -t api-plan.jmx -Jthreads=50 -Jrampup=60 -Jhost=staging.example.com -l results.jtl -e -o report/
+```
+
+Official guidance: use `__P` (or `__property`) for values that must be global or overridden from the command line; use [variables](/user-manual/functions/) for thread-local state. For many properties together, pass a property file with `-q`.
+
+## Correlation: chaining API calls
+
+Most real APIs require values from response A in request B (login token, cart id, ETag, CSRF).
+
+### Prefer structured extractors for JSON
+
+For JSON bodies, prefer **JSON Extractor** or JMESPath-style extraction when available on your JMeter version/plugins stack over brittle full-body regular expressions. Use [Regular Expression Extractor](/user-manual/regular-expressions/) for free-text tokens, HTML fragments, or headers when needed.
+
+Typical flow:
+
+1. Login sampler returns `{"access_token":"...","expires_in":3600}`.  
+2. JSON Extractor sets `accessToken`.  
+3. Header Manager or sampler header uses `Bearer ${accessToken}`.  
+4. Create-order response yields `orderId`; next GET uses `/orders/${orderId}`.
+
+### Defaults and failure visibility
+
+Always set a **Default Value** on extractors (for example `NOT_FOUND`) so missing tokens are obvious in View Results Tree while debugging. Pair extractors with assertions so a failed login does not silently produce thousands of `401`s.
+
+### Regex Extractor Builder
+
+For crafting regex correlation fields quickly, use the site’s [Regex Extractor Builder](/tools/regex-tester/) (browser-only paste analysis), then paste Name, Regular Expression, Template (`$1$`), Match No., and Default into the extractor under the sampler.
+
+## Assertions: define success before you scale
+
+Without assertions, JMeter may report “green” throughput while every response is an error page or empty body. Common choices:
+
+- **Response Assertion** - response code `200`, or substring/contains checks on body.  
+- **JSON Assertion** / JSON Path checks - required fields present.  
+- **Duration Assertion** - fail samples slower than a threshold (use carefully; it affects error rate).  
+- **Size Assertion** - non-empty body.
+
+Official [best practices](/user-manual/best-practices/) advise using **as few assertions as possible** under load because each assertion costs CPU. Debug with richer checks; keep a minimal set for the load run (status code + one critical field is a common compromise).
+
+## Controllers and realistic API scenarios
+
+API load is rarely a single GET in a loop. Useful logic controllers (see [test plan elements](/user-manual/test-plan/) and component reference):
+
+- **Once Only Controller** - login once per thread, then loop business calls.  
+- **Transaction Controller** - group login+search+checkout samples into one reported transaction for the dashboard.  
+- **If Controller** - branch on `${accessToken}` / response variables.  
+- **Loop Controller / While Controller** - pagination or poll-until-ready patterns (guard with timeouts).  
+- **Throughput Controller** - mix traffic (for example 70% read / 30% write).
+
+Timers (constant, uniform random, precise throughput) model think time and pacing. Without think time, threads hammer the API as fast as responses return - which is valid for stress tests but not for “N concurrent users browsing.”
+
+## Sizing threads, ramp-up, and avoiding bad metrics
+
+From [best practices](/user-manual/best-practices/): thread count depends on injector hardware, plan design, and how fast the server responds. Undersizing threads relative to target rate contributes to **coordinated omission** (inflated performance picture when the client cannot keep issuing requests on schedule).
+
+Practical workflow:
+
+1. Measure average response time with a small pilot.  
+2. Estimate concurrency with the [Thread Group Calculator](/tools/thread-calculator/) (Little’s Law style: threads ≈ RPS × response time in seconds when busy and no think time).  
+3. Ramp gradually; very short ramp-ups create a thundering herd.  
+4. Re-measure under load - response times rise, so thread needs change.  
+5. If one injector is saturated, scale out with [distributed testing](/topics/distributed-testing/) or multiple independent CLI engines.
+
+Also use the [Heap Estimator](/tools/heap-estimator/) and [Coordinated Omission](/tools/coordinated-omission/) tools when results look “too good” or injectors struggle.
+
+## Running the test: GUI vs CLI
+
+### Debug in GUI
+
+- Small thread count (1-5).  
+- View Results Tree enabled.  
+- Confirm extractors, headers, and assertions.  
+- Disable or remove heavy listeners before load.
+
+### Load in non-GUI mode
+
+Documented resource advice:
+
+```bash
+jmeter -n -t api-plan.jmx -l results.jtl -e -o report/
+```
+
+| Flag | Meaning |
+|------|---------|
+| `-n` | Non-GUI mode |
+| `-t` | Test plan path |
+| `-l` | Sample results file (prefer CSV saveservice defaults) |
+| `-e` | Generate HTML dashboard after the run |
+| `-o` | Output folder for the dashboard (must be empty/new) |
+| `-Jname=value` | Set JMeter property for `${__P(name)}` |
+
+Further [best practices](/user-manual/best-practices/) for lean runs:
+
+- Use CLI mode.  
+- As few listeners as possible; with `-l` you can disable them all.  
+- Do not use View Results Tree / Table during load.  
+- Prefer CSV result output over XML.  
+- Only save fields you need.  
+- Prefer JSR223 + Groovy with “Cache compiled script” and `vars.get("x")` instead of `${x}` inside cached scripts.
+
+## Analyzing API results
+
+### HTML dashboard
+
+The [dashboard generator](/user-manual/generating-dashboard/) reads CSV results and produces:
+
+- APDEX table (thresholds configurable via reportgenerator properties in `user.properties`)  
+- Statistics table (including configurable percentiles)  
+- Error tables and top errors by sampler  
+- Charts: response times over time, active threads, bytes, latencies, hits/s, transactions/s, and more  
+
+Generate at end of test with `-e -o`, or offline from an existing `.jtl`.
+
+### Listeners during scripting only
+
+[Listeners](/user-manual/listeners/) such as View Results Tree and Summary Report help while building the plan. They are not a substitute for the dashboard under load.
+
+### Real-time monitoring
+
+For live graphs during long API tests, use the [Backend Listener](/user-manual/realtime-results/) to stream metrics to InfluxDB/Grafana (or other backends supported by your setup). That complements, not replaces, the post-run dashboard.
+
+## CI/CD and API performance gates
+
+API plans belong in the pipeline:
+
+1. Store `.jmx` and CSV data next to application code.  
+2. Run non-GUI JMeter in the job.  
+3. Archive `results.jtl` and the `report/` folder.  
+4. Fail the build when error rate or key percentiles regress.
+
+Details and examples: [CI/CD Load Testing](/topics/ci-cd-load-testing/). Parameterize hosts and thread counts with `-J` / `${__P(...)}` so the same plan hits staging nightly and a smaller gate on every PR.
+
+## Protocol notes beyond simple REST
+
+| Style | JMeter approach |
+|-------|-----------------|
+| **REST JSON** | HTTP Request + Header Manager + JSON extractors/assertions |
+| **SOAP/XML** | HTTP Request + XML body + SOAP-related headers ([WS plan](/user-manual/build-ws-test-plan/)) |
+| **GraphQL** | HTTP POST to `/graphql` with JSON body (`query` / `variables`); treat like REST |
+| **Multipart upload** | HTTP Request file upload fields (see component reference) |
+| **WebSocket / gRPC** | Not core HTTP; requires plugins or other tools - plan protocol support explicitly |
+
+JMeter’s strength is **protocol breadth** (HTTP plus JDBC, JMS, LDAP, FTP, and more in-box). Stay on HTTP Request when the system under test is an HTTP API unless you have a clear need for another sampler.
+
+## Common API load-testing mistakes
+
+| Mistake | What goes wrong | Fix |
+|---------|-----------------|-----|
+| Load test in GUI with View Results Tree | Injector CPU/memory distort results | CLI + `-l`; listeners off |
+| No assertions | Errors counted as successful samples | Assert status + critical fields |
+| Hard-coded tokens | Fail after expiry; not multi-user | Extract per thread; CSV users |
+| All threads same user | Unrealistic cache/locking behaviour | CSV Data Set unique logins |
+| Zero ramp-up to high threads | Spike, not soak; noisy errors | Ramp over minutes |
+| Functional mode / saving full bodies | Huge files, slow I/O | CSV, minimal saveservice fields |
+| BeanShell/JavaScript for hot paths | High CPU, poor scalability | JSR223 Groovy, compiled cache |
+| Undersized threads for target RPS | Coordinated omission | Thread calculator + pilot |
+| Secrets committed in `.jmx` | Credential leaks | `${__P(secret,)}` / CI secrets |
+
+## End-to-end checklist
+
+1. Install current JMeter; avoid very old releases ([best practices](/user-manual/best-practices/)).  
+2. Create Thread Group + HTTP Defaults + Header Manager.  
+3. Add login and business HTTP samplers; import from [cURL](/user-manual/curl/) if useful.  
+4. Parameterize with CSV and `${__P(...)}`.  
+5. Correlate tokens/IDs; assert success.  
+6. Debug with 1-5 threads and View Results Tree.  
+7. Disable heavy listeners; size threads and heap.  
+8. Run `jmeter -n -t … -l … -e -o …`.  
+9. Read APDEX, error %, and percentiles on the dashboard.  
+10. Wire the same command into CI with gates.
+
+## Related tools on this site
+
+- [Thread Calculator](/tools/thread-calculator/) - RPS and response time → threads  
+- [Heap Estimator](/tools/heap-estimator/) - starting `-Xmx` guidance  
+- [Properties Cheat Sheet](/tools/properties-cheatsheet/) - high-impact properties  
+- [Regex Extractor Builder](/tools/regex-tester/) - correlation helpers  
+- [Coordinated Omission](/tools/coordinated-omission/) - when achieved RPS is below target
+
+## Frequently asked questions
+
+### Can JMeter load test REST APIs?
+
+Yes. Use the HTTP Request sampler with the appropriate method, path, headers, and body. REST is not a separate sampler type; it is HTTP with JSON/XML payloads and status conventions.
+
+### Does JMeter run JavaScript in API responses?
+
+No. JMeter does not render pages or run browser JavaScript. It records protocol-level timings for the requests it sends. Client-side rendering cost is out of scope unless you use a real-browser tool alongside JMeter.
+
+### Should I record APIs with the HTTP(S) Test Script Recorder?
+
+You can record browser or proxy traffic, then delete static assets and parameterize. Many API teams prefer building HTTP samplers directly or importing [cURL](/user-manual/curl/). If you record, follow the [recorder guide](/topics/http-recorder/) and [best practices](/user-manual/best-practices/) on include/exclude patterns.
+
+### How do I pass an Authorization bearer token?
+
+Extract the token from the login response into a variable, then set header `Authorization` to `Bearer ${token}` via Header Manager. Keep the token thread-local unless you intentionally share via properties.
+
+### How many threads do I need for an API test?
+
+It depends on target throughput, response time, think time, and injector capacity. Start from RPS × service time, validate with a pilot, and use the [Thread Calculator](/tools/thread-calculator/). Official docs stress correct sizing to avoid coordinated omission.
+
+### Why is throughput lower than I expect?
+
+Common causes: server saturation (response time rose), injector limits, listeners left on, think time/timers, assertion cost, connection limits, or too few threads. Compare achieved hits/s on the dashboard with active threads and error rate.
+
+### GUI or non-GUI for the real API load run?
+
+Non-GUI. Official best practices recommend CLI mode for load and GUI for building/debugging.
 
 <RelatedContent>
 <Fragment slot="next-step">
-Start with [Building a Web Test Plan](/user-manual/build-web-test-plan/) to create your first API load test.
+Build your first HTTP flow with [Building a Web Test Plan](/user-manual/build-web-test-plan/), then parameterize hosts and threads with `${__P(...)}` for CLI runs.
 </Fragment>
 <Fragment slot="related">
-- [cURL Import](/user-manual/curl/)  -  quickly create HTTP samplers from existing curl commands
-- [Component Reference](/user-manual/component-reference/)  -  full HTTP Request configuration
+- [cURL Import](/user-manual/curl/) - create samplers from existing curl commands
+- [Component Reference](/user-manual/component-reference/) - full HTTP Request and Header Manager fields
+- [Functions and Variables](/topics/functions-and-variables/) - dynamic data and properties
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/) - automate API gates
+</Fragment>
+<Fragment slot="mistakes">
+Leaving View Results Tree enabled during load; asserting nothing; hard-coding tokens; zero ramp-up to thousands of threads.
+</Fragment>
+<Fragment slot="troubleshooting">
+401/403 after the first call usually means missing Cookie Manager, expired token extraction, or Header Manager scope. Empty extractors: check response in View Results Tree and extractor default values.
 </Fragment>
 </RelatedContent>

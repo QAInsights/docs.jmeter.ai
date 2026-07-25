@@ -2,13 +2,13 @@
 title: "JMeter Functions and Variables Guide"
 description: "Master JMeter functions and variables for dynamic test data. Learn ${__function()} syntax, common functions, variable scoping, and parameterization."
 keywords:
-  - JMeter functions
-  - JMeter variables
-  - JMeter parameterization
-  - JMeter dynamic data
+ - JMeter functions
+ - JMeter variables
+ - JMeter parameterization
+ - JMeter dynamic data
 difficulty: intermediate
 guideType: reference
-estimatedReadTime: 5 min read
+estimatedReadTime: 12 min read
 lastVerified: JMeter 5.6
 canonicalTopic: functions-and-variables
 ---
@@ -17,80 +17,356 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 # JMeter Functions and Variables Guide
 
-JMeter functions and variables are the primary mechanism for making test plans dynamic. Instead of hardcoding values, you can generate random data, read from files, manipulate strings, and pass values between samplers  -  all using JMeter's built-in function syntax.
+Functions and variables are how Apache JMeter turns a static tree of samplers into data-driven load. This guide explains syntax rules, the difference between **variables** and **properties**, the functions you will use most, CSV and file input, scripting functions, parameterization for CLI/CI, sharing data across threads, and common mistakes - grounded in the official [Functions and Variables](/user-manual/functions/) chapter and [Best Practices](/user-manual/best-practices/).
 
-## Function Syntax
+For the exhaustive function table and per-function parameters, always use the [full reference](/user-manual/functions/).
 
-All JMeter functions follow the pattern `${__functionName(param1, param2, ...)}`. Functions can be used in any sampler field, assertion, or configuration element.
+## Function and variable syntax
 
-Key rules:
-- Functions with no parameters can omit parentheses: `${__threadNum}` works the same as `${__threadNum()}`
-- Commas in parameters must be escaped with backslash: `${__Random(1\,100)}`
-- Functions can be nested: `${__substring(${__time()}, 0, 10)}`
+### Functions
 
-## Most-Used Functions
+A function call looks like:
 
-### Data Generation
+```text
+${__functionName(var1,var2,var3)}
+```
 
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `__Random` | Random integer in range | `${__Random(1,1000,varName)}` |
-| `__RandomString` | Random string of given length | `${__RandomString(10,abcdefg)}` |
-| `__UUID` | Generate a UUID | `${__UUID()}` |
-| `__time` | Current timestamp | `${__time(yyyy-MM-dd,)}` |
-| `__counter` | Auto-incrementing counter | `${__counter(TRUE,)}` |
+Rules from the manual:
 
-### Variable Access
+- Parentheses surround parameters, for example `${__time(YMD)}`.  
+- Functions that need **no parameters** may omit parentheses: `${__threadNum}` is equivalent to `${__threadNum()}`.  
+- If a parameter contains a **comma**, escape it with `\`, otherwise JMeter treats the comma as a parameter delimiter.  
+  Example: `${__time(EEE\, d MMM yyyy)}`  
+- Unescaped commas produce confusing errors (the docs show JavaScript `Math.max(2,5)` splitting into two parameters).  
+- Functions can appear in sampler fields, config elements, and many other test element fields.  
+- **Case sensitivity** applies to functions, variables, and properties.  
+- JMeter **trims spaces** from variable names used when storing function results (for example a trailing space in a third argument name is trimmed).
 
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `__V` | Resolve nested variable | `${__V(user_${counter})}` |
-| `__P` | Read a property | `${__P(threads,10)}` |
-| `__setProperty` | Set a JMeter property | `${__setProperty(key, value)}` |
-| `__BeanShell` | Execute BeanShell code | `${__BeanShell(vars.get("x"))}` |
+### Variables
 
-### String Manipulation
+Reference a variable as:
 
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `__substring` | Extract substring | `${__substring(hello world, 0, 5)}` |
-| `__urlencode` | URL-encode a string | `${__urlencode(my value)}` |
-| `__split` | Split string into variables | `${__split(a\,b\,c, arr, \,)}` |
+```text
+${VARIABLE}
+```
 
-## Variables vs Properties
+Important documented behaviour:
 
-Understanding the difference is critical:
+> If an undefined function or variable is referenced, JMeter does **not** report/log an error - the reference is returned **unchanged**. If `UNDEF` is not defined, `${UNDEF}` stays `${UNDEF}`.
 
-- **Variables** (`vars`)  -  thread-local, each thread has its own copy. Set with `${__V()}` or extractors.
-- **Properties** (`props`)  -  global, shared across all threads. Set with `${__setProperty()}` or `-J` command-line flag.
+That makes missing extractors easy to miss unless you assert on values or use extractor default values like `NOT_FOUND`.
 
-Use properties to pass data between threads; use variables for within-thread parameterization.
+### Windows paths and backslashes
 
-## CSV Data Set Config
+When a `\` precedes a variable in a Windows path, escape carefully or JMeter may not interpolate the variable. The manual recommends using `/` as the separator (JVMs on Windows accept it), or proper escaping of backslashes.
 
-For large datasets, the CSV Data Set Config element reads values from a file and assigns them to variables:
+## Variables vs properties (must-know)
 
-1. Add CSV Data Set Config to your Thread Group
-2. Set **Filename** to your CSV file path
-3. Set **Variable Names** (comma-separated, matching CSV columns)
-4. Use `${variableName}` in samplers
+From the official note:
 
-This is the most common approach for parameterizing usernames, passwords, and test data.
+- **Variables** are **local to a thread**.  
+- **Properties** are **common to all threads**.  
+- Properties are referenced with `__P` or `__property`, not `${PROP}` alone (unless you also mirror them into variables).
 
-## Complete Reference
+| | Variables | Properties |
+|--|-----------|------------|
+| Scope | Per thread | Whole JMeter JVM (all threads) |
+| Typical set by | Extractors, CSV Data Set, `vars.put` in scripts, UDVs | `-J` CLI, `user.properties`, `__setProperty`, GUI props |
+| Typical read | `${name}` | `${__P(name,)}` or `${__P(name,default)}` |
+| Use for | Tokens, CSV columns, per-user state | Host, threads, env flags, cross-thread signals |
 
-See the [Functions and Variables](/user-manual/functions/) page for the full list of all available functions with detailed parameter descriptions.
+### Sharing across threads or thread groups
+
+Because variables do not cross threads by design, the [best practices](/user-manual/best-practices/) chapter lists options when a value is only known at runtime:
+
+- Store it as a **property** (global to the instance)  
+- Write to a **file** and re-read  
+- Use `bsh.shared` (legacy BeanShell patterns)  
+- Write custom Java classes  
+
+For values known **before** the test starts, prefer parameterization with properties (`-J` / `-q`) rather than cross-thread writes.
+
+## Most-used functions by job
+
+Grouped loosely like the official reference (Information, Input, Calculation, Scripting, Formatting, …).
+
+### Information and identity
+
+| Function | Role | Example |
+|----------|------|---------|
+| `__threadNum` | Current thread number | `${__threadNum}` |
+| `__threadGroupName` | Thread group name (newer JMeter) | `${__threadGroupName}` |
+| `__samplerName` | Current sampler label | `${__samplerName}` |
+| `__machineIP` / `__machineName` | Injector identity (useful in distributed logs) | `${__machineName}` |
+| `__time` | Current time with format | `${__time(yyyy-MM-dd)}` |
+| `__timeShift` | Time plus offset | see reference for args |
+| `__log` / `__logn` | Log while evaluating | debug carefully under load |
+
+### Generating data
+
+| Function | Role | Example |
+|----------|------|---------|
+| `__Random` | Random integer in range | `${__Random(1,1000,myRand)}` |
+| `__RandomString` | Random string | `${__RandomString(10,abcdef)}` |
+| `__UUID` | Type-4 UUID | `${__UUID}` |
+| `__counter` | Incrementing counter | `${__counter(TRUE,)}` |
+| `__RandomDate` | Random date in range | see reference |
+| `__digest` | Hash digests (SHA, MD5, …) | see reference |
+
+Many calculation functions accept an optional variable name argument to **store** the result as well as return it - check each function’s parameter list in the reference.
+
+### Reading properties and nested names
+
+| Function | Role | Example |
+|----------|------|---------|
+| `__P` | Property with optional default | `${__P(threads,10)}` |
+| `__property` | Longer form property access | see reference |
+| `__setProperty` | Set a property during the test | use sparingly; concurrency-aware |
+| `__V` | Evaluate nested variable names | `${__V(user_${n})}` |
+
+`__P` is the backbone of CLI/CI parameterization ([best practices § parameterising tests](/user-manual/best-practices/)):
+
+```text
+LOOPS=${__P(loops,10)}
+```
+
+```bash
+jmeter -n -t plan.jmx -Jloops=12
+```
+
+### String helpers
+
+| Function | Role |
+|----------|------|
+| `__substring` | Slice a string |
+| `__urlencode` / decode helpers | Encode query parts |
+| `__split` | Split into variables (escape commas in args) |
+| `__dateTimeConvert` | Convert date formats |
+| `__intSum` / `__longSum` | Arithmetic |
+
+### File and CSV input functions
+
+| Function | Role |
+|----------|------|
+| `__StringFromFile` | Read a line from a file |
+| `__FileToString` | Read entire file (payloads, certs - watch size) |
+| `__CSVRead` | Older CSV read helper |
+| `__XPath` | XPath against a file |
+| `__StringToFile` | Write a string to a file (side effects!) |
+
+For multi-user login data, official best practices prefer the **CSV Data Set Config** element over ad-hoc scripting (see next section).
+
+### Scripting functions
+
+| Function | Notes |
+|----------|------|
+| `__groovy` | Run Groovy (preferred modern scripting) |
+| `__BeanShell` | Legacy; best practices advise moving to JSR223 |
+| `__javaScript` | Legacy Nashorn-era; not ideal for intensive load |
+
+Best practices: for intensive load, use languages whose engine implements `Compilable` - **Groovy** does; BeanShell/JavaScript were called out as poor choices for hot paths as of the JMeter 3.1-era guidance still published in the manual.
+
+Prefer **JSR223 elements** with **Cache compiled script** and `vars.get("name")` inside scripts instead of embedding `${name}` in cached script text (caching would freeze the first interpolated value).
+
+## CSV Data Set Config (primary parameterization tool)
+
+From [best practices - User variables](/user-manual/best-practices/):
+
+1. Create a text file of usernames/passwords separated by commas (same directory as the plan is a common pattern).  
+2. Add **CSV Data Set Config**; set variable names (for example `USER`, `PASS`).  
+3. Replace login fields with `${USER}` and `${PASS}`.  
+4. The CSV Data Set reads a **new line for each thread** (for that documented multi-user login pattern).
+
+Configure recycle/stop-thread behaviour according to whether you want data to loop or threads to stop when the file ends - see the [component reference](/user-manual/component-reference/) for CSV Data Set fields.
+
+**Large random datasets:** create files ahead of time and read with CSV Dataset rather than generating expensive random data on the fly for every sample.
+
+## User Defined Variables and Test Plan variables
+
+- **User Defined Variables** config elements and Test Plan-level variables define name/value pairs available to the plan.  
+- Matching with the HTTP(S) recorder’s replacement feature is **case-sensitive** when abstracting server names into `${server}` ([best practices - recorder](/user-manual/best-practices/)).  
+- For CLI overrides, bind those values to `__P` as shown above.  
+- Multiple property files: pass with `-q` when many properties change together.
+
+## Where evaluation happens (practical implications)
+
+Functions and variables are evaluated when JMeter needs the field value for a sample or config - not “once at plan load” for every case. Implications:
+
+- `${__UUID}` on a sampler produces a **new** id each time that field is evaluated for a sample.  
+- Putting `${__Random}` in HTTP Defaults may not do what you expect if the default is resolved differently than a per-sampler field - prefer placing dynamic calls on the sampler that should change.  
+- Extractors run as post-processors **after** a sampler; downstream samplers see new `${token}` values.  
+
+When debugging, use **View Results Tree** (scripting phase only) and Debug Sampler / Debug PostProcessor patterns to print variables. Disable them for load.
+
+## Patterns that show up in real plans
+
+### Environment-specific host
+
+```text
+${__P(host,localhost)}
+${__P(port,443)}
+${__P(protocol,https)}
+```
+
+Wire HTTP Request Defaults to these values; CI passes `-Jhost=staging.example.com`.
+
+### Authorization header after login
+
+1. Login sampler → JSON/Regex extractor → `accessToken`  
+2. Header Manager: `Authorization` = `Bearer ${accessToken}`  
+3. Keep `accessToken` as a **variable** (per thread). Only promote to a property if you intentionally share one token across threads.
+
+### Unique email per thread
+
+```text
+user_${__threadNum}_${__time(HHmmss)}@example.com
+```
+
+Or precompute in CSV for repeatability.
+
+### Nested dynamic names
+
+If you create `user_1`, `user_2`, …:
+
+```text
+${__V(user_${__threadNum})}
+```
+
+### Counter for order ids
+
+`${__counter(TRUE,)}` (see reference for TRUE/FALSE per-thread vs global counter behaviour).
+
+## Distributed testing interactions
+
+In [distributed mode](/topics/distributed-testing/):
+
+- Each worker is a separate JVM → **properties and variables do not sync across workers**.  
+- `__machineName` / IP help label which injector produced a sample when analyzing combined logs.  
+- CSV files must exist **on each worker**; they are not shipped with the plan.  
+- `-Gprop=value` sets a property on **remote servers**; `-J` is for the client side - know which side reads `${__P(...)}` for your plan design.
+
+## Performance and correctness tips
+
+1. Prefer **CSV** over heavy `__groovy` on every sample when data can be precomputed.  
+2. Prefer **JSR223 Groovy** with compile cache over BeanShell function calls in hot paths.  
+3. Do not log (`__log`) on every sample at scale.  
+4. Escape commas in function parameters.  
+5. Assert critical `${vars}` so literal `${token}` strings cannot look like success.  
+6. Remember undefined → unchanged string.  
+7. For intensive scripts, use `vars.get` / `props.get` inside JSR223, not `${}` inside cached scripts.  
+8. Keep property names stable for CI; document them in the plan README.
+
+## Quick reference: CLI property flags
+
+| Flag | Effect |
+|------|--------|
+| `-Jname=value` | Set JMeter property on client |
+| `-Gname=value` | Set property on remote servers (distributed) |
+| `-q file` | Additional property file |
+| `-S` / system props | See Getting Started override docs for full CLI list |
+
+Thread Group example:
+
+```text
+Number of Threads = ${__P(threads,1)}
+Ramp-up = ${__P(rampup,1)}
+```
+
+Safe defaults for local runs; CI raises threads.
+
+## Debugging variables safely
+
+When a value is wrong, isolate evaluation without creating a load-test anti-pattern:
+
+1. **View Results Tree** (scripting only) - inspect request after variable substitution.  
+2. **Debug Sampler** + Tree - dump variables for the thread at that point in the tree.  
+3. Extractor **default values** - `NOT_FOUND` is easier to spot than a silent empty string.  
+4. **Response Assertion** on login - fail fast before thousands of dependent calls.  
+5. Temporary `${__log(message)}` - remove before load; logging every sample is expensive.  
+
+Never leave Debug Sampler or View Results Tree enabled for the CLI performance run you archive in CI.
+
+## Functions inside controllers and deferred evaluation
+
+Some fields are evaluated later than others (for example, certain controller conditions or script elements). If a function appears to run “too often” or “too early”:
+
+- Move the dynamic expression onto the sampler field that should change per sample.  
+- Prefer post-processors to set a variable once per response, then reference `${var}` downstream.  
+- For Once Only login, ensure extractors sit under the login sampler, not under a later random controller path that might skip login.  
+
+When using **If Controller** or similar, condition strings that embed functions should be tested with one thread and Tree view so you see the evaluated branch.
+
+## Property files for teams
+
+For shared environments, maintain property files rather than long `-J` lists:
+
+```bash
+jmeter -n -t plan.jmx -q env/staging.properties -l out.jtl -e -o report/
+```
+
+Document keys in the repository (`threads`, `rampup`, `host`, `usersFile`). Official best practices encourage `user.properties` overrides instead of editing stock `jmeter.properties` for durable configuration - the same idea scales to environment-specific `-q` files in CI ([CI/CD guide](/topics/ci-cd-load-testing/)).
+
+## Learning path
+
+1. Read syntax + variables vs properties on this page.  
+2. Practice `${__Random}` and `${__UUID}` on a single HTTP sampler; confirm in View Results Tree.  
+3. Add CSV Data Set for two users.  
+4. Replace host/threads with `${__P}`.  
+5. Extract a token and pass it to the next sampler.  
+6. Skim the [complete function list](/user-manual/functions/) for niche helpers (`__digest`, `__timeShift`, …).  
+7. When scripting grows past a one-liner, move to JSR223 Groovy elements per best practices.  
+8. Wire the same plan into a CLI command with `-J` overrides and confirm defaults still work offline.
+
+## Related tools
+
+- [Regex Extractor Builder](/tools/regex-tester/) - build correlation that *sets* variables  
+- [Properties Cheat Sheet](/tools/properties-cheatsheet/) - which properties teams change most  
+- [Thread Calculator](/tools/thread-calculator/) - once data is dynamic, size load correctly  
+
+## Frequently asked questions
+
+### What is the difference between a JMeter variable and a property?
+
+Variables are thread-local; properties are shared across all threads in the JVM. Read properties with `${__P(name,default)}`. Read variables with `${name}`.
+
+### Why does my function argument break at a comma?
+
+Commas separate parameters. Escape literal commas as `\,` inside the parameter, as shown in the functions manual for `__time` formats.
+
+### Why do I still see `${token}` in the request?
+
+The variable was never set (extractor failed or wrong name). JMeter leaves undefined references unchanged and does not always error.
+
+### How do I pass values between thread groups?
+
+Not with ordinary variables. Use properties, files, or other documented sharing approaches in best practices. Prefer design that avoids cross-group chatty sharing.
+
+### Should I use __CSVRead or CSV Data Set Config?
+
+For multi-user data rows, official best practices demonstrate **CSV Data Set Config**. `__CSVRead` remains a function for specific cases; see the reference.
+
+### Is BeanShell still recommended?
+
+For intensive load, the manual advises JSR223 with Groovy (Compilable) and moving off BeanShell. Existing BeanShell may still run; new work should prefer Groovy.
+
+### How do I set threads from Jenkins or GitHub Actions?
+
+Use `${__P(threads,10)}` in the Thread Group and pass `-Jthreads=50` on the `jmeter -n` command in CI ([CI/CD guide](/topics/ci-cd-load-testing/)).
 
 <RelatedContent>
 <Fragment slot="next-step">
-Practice by adding `${__Random(1,100)}` to an HTTP Request sampler and verifying the value in View Results Tree.
+Add `${__P(host,localhost)}` to HTTP Request Defaults and run once with `-Jhost=…` to prove CLI parameterization end-to-end.
 </Fragment>
 <Fragment slot="related">
-- [Regular Expressions](/user-manual/regular-expressions/)  -  extract dynamic values from responses to use in subsequent requests
-- [Properties Reference](/user-manual/properties-reference/)  -  JMeter properties that interact with the `__P()` function
+- [Functions reference](/user-manual/functions/) - every function and parameter
+- [Regular Expressions](/user-manual/regular-expressions/) - extract values into variables
+- [Best Practices](/user-manual/best-practices/) - CSV users, __P, JSR223
+- [Properties Reference](/user-manual/properties-reference/) - property names for configuration
 </Fragment>
 <Fragment slot="mistakes">
-- Forgetting to escape commas in function parameters causes unexpected behavior
-- Using variables instead of properties when you need to share data across Thread Groups
+Forgetting to escape commas; using variables when you need cross-thread properties; `${var}` inside cached JSR223 scripts; assuming undefined variables error loudly.
+</Fragment>
+<Fragment slot="troubleshooting">
+If values look like literal `${…}`, check extractor scope, variable name spelling (case-sensitive), and that the sampler order places extractors before dependent requests.
 </Fragment>
 </RelatedContent>
