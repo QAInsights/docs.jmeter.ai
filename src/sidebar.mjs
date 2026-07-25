@@ -25,6 +25,7 @@ export const sidebar = [
       { label: 'Tools Hub', link: '/tools' },
       { label: 'Thread Calculator', link: '/tools/thread-calculator' },
       { label: 'Heap Estimator', link: '/tools/heap-estimator' },
+      { label: 'Coordinated Omission', link: '/tools/coordinated-omission' },
       { label: 'Properties Cheat Sheet', link: '/tools/properties-cheatsheet' },
       { label: 'Regex Extractor Builder', link: '/tools/regex-tester' },
     ],

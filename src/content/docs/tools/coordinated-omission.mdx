@@ -1,0 +1,111 @@
+---
+title: "JMeter Coordinated Omission Calculator"
+description: "Correct for coordinated omission in JMeter. Compute correction factor, lost requests, corrected response times, and needed threads. Free client-side tool."
+seoTitle: "Coordinated Omission Calculator for JMeter"
+keywords:
+  - JMeter coordinated omission
+  - coordinated omission calculator
+  - JMeter throughput correction
+  - JMeter response time correction
+  - Gil Tene coordinated omission
+difficulty: advanced
+guideType: how-to
+estimatedReadTime: 4 min read
+lastVerified: JMeter 5.6
+---
+
+import CoordinatedOmission from '../../../components/tools/CoordinatedOmission.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Coordinated Omission Calculator
+
+When the server can't keep up with your target throughput, JMeter's Thread Group
+silently drops requests instead of queuing them. This produces **artificially low**
+response times and **inflated** percentiles. Enter your target RPS, actual RPS,
+average response time, and test duration to compute the correction factor, lost
+requests, corrected response time, and the thread count you should have used.
+
+<CoordinatedOmission />
+
+## What is coordinated omission?
+
+**Coordinated Omission** is a measurement bias that occurs when a load generator
+schedules the next request at a fixed interval (e.g., every 20 ms for 50 RPS) but
+fails to account for the time already spent waiting on the previous request.
+
+When the server degrades:
+
+1. Threads get "stuck" waiting for slow responses.
+2. Fewer requests are sent than the target rate.
+3. The "missing" requests are silently dropped - never queued.
+4. Measured throughput drops, but response times look artificially low.
+
+**Example:** You target 50 RPS with 100 threads. Server degrades to 5-second
+response time. Instead of 50 RPS, you get ~20 RPS (100 threads / 5s). Your
+throughput drops by 60%, and your average response time doesn't reflect what
+real users would experience.
+
+## How the correction works
+
+The calculator uses the **queue-depth model** from Gil Tene's talk
+*[How NOT to Measure Latency](https://www.youtube.com/watch?v=ljQPQL1J0UU)*:
+
+```text
+correction_factor = target_RPS / actual_RPS
+lost_requests     = (target_RPS - actual_RPS) × duration_seconds
+queue_depth       = (target_RPS - actual_RPS) × (avg_RT_ms / 1000)
+corrected_RT      = avg_RT_ms + (queue_depth × avg_RT_ms)
+needed_threads    = target_RPS × (avg_RT_ms / 1000)
+```
+
+When `target_RPS > actual_RPS`, the correction factor tells you how much your
+measured metrics are skewed. A factor of 2.5x means your real response time is
+roughly 2.5× what JMeter reported.
+
+## Example
+
+| Target RPS | Actual RPS | Avg RT | Duration | Correction | Lost reqs | Corrected RT |
+|------------|------------|--------|----------|------------|-----------|--------------|
+| 50         | 20         | 5,000ms| 60s      | 2.5x       | 1,800     | ~12,500ms    |
+| 100        | 80         | 3,000ms| 120s     | 1.25x      | 2,400     | ~3,750ms     |
+| 200        | 200        | 500ms  | 60s      | 1.0x       | 0         | 500ms        |
+
+## What this does not include
+
+- **Percentile correction** - the queue-depth model corrects averages; for
+  percentile correction, use a proper histogram (HdrHistogram) in your test.
+- **Think time / pacing** - real users pause between actions; this calculator
+  assumes continuous load.
+- **Server-side queuing** - if the server itself queues requests, the corrected
+  RT is a lower bound on what users experience.
+- **Distributed test aggregation** - run this per engine and combine results.
+
+## Recommended workflow
+
+1. Run your test and record target RPS, actual RPS, avg response time, and duration.
+2. Use this calculator to compute the correction factor and lost requests.
+3. If the factor is > 1.25, your results are significantly skewed.
+4. Re-run with more threads (use the **Thread Calculator**) or lower the target RPS.
+5. For accurate percentiles, instrument with HdrHistogram in your JMeter test.
+
+## Related reading
+
+- [Best Practices](/user-manual/best-practices/)
+- [Thread Calculator](/tools/thread-calculator/)
+- [Heap Estimator](/tools/heap-estimator/)
+- [Generating Dashboard](/user-manual/generating-dashboard/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    Size your Thread Group correctly with the [Thread Calculator](/tools/thread-calculator/) to avoid coordinated omission in the first place.
+  </Fragment>
+  <Fragment slot="related">
+    [Best Practices](/user-manual/best-practices/) · [Remote testing](/user-manual/remote-test/) · [Dashboard report](/user-manual/generating-dashboard/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Setting a high target RPS with too few threads, causing throughput to drop below target while response times look artificially low.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    Correction factor > 2? You need significantly more threads or a lower target RPS. Use the Thread Calculator to size correctly.
+  </Fragment>
+</RelatedContent>

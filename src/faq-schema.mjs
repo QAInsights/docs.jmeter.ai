@@ -130,7 +130,30 @@ export const faqSchema = {
     },
   ],
 
-  '/tools/heap-estimator': [
+   '/tools/coordinated-omission': [
+     {
+       q: 'What is coordinated omission in JMeter?',
+       a: 'Coordinated omission is a measurement bias that occurs when a load generator schedules the next request at a fixed interval but fails to account for the time already spent waiting on the previous request. When the server degrades, threads get stuck, fewer requests are sent than the target rate, and the missing requests are silently dropped instead of queued. This produces artificially low response times and inflated percentiles.',
+     },
+     {
+       q: 'How do I calculate the coordinated omission correction factor?',
+       a: 'The correction factor is target RPS divided by actual RPS. For example, if you targeted 50 RPS but only achieved 20 RPS, the correction factor is 2.5x, meaning your real response time is roughly 2.5 times what JMeter reported. A factor above 1.25 indicates significant skew.',
+     },
+     {
+       q: 'How many requests are lost to coordinated omission?',
+       a: 'Lost requests equal target RPS minus actual RPS, multiplied by the test duration in seconds. For example, targeting 50 RPS but achieving 20 RPS over 60 seconds means 1,800 requests were silently dropped.',
+     },
+     {
+       q: 'How do I fix coordinated omission in JMeter?',
+       a: 'Use more threads so throughput stays at or above the target rate. The Thread Calculator can help you size threads correctly: threads approximately equals target RPS multiplied by average response time in seconds. Alternatively, lower your target RPS or use a proper load generation tool that handles queuing.',
+     },
+     {
+       q: 'Does JMeter have a built-in coordinated omission fix?',
+       a: 'JMeter does not automatically correct for coordinated omission in its standard Thread Group. The constant throughput timer helps maintain a target rate but does not queue or correct dropped requests. For accurate latency measurement, use HdrHistogram-based plugins or the Throughput Shaping Timer.',
+     },
+   ],
+
+   '/tools/heap-estimator': [
     {
       q: 'How much heap memory does JMeter need?',
       a: 'It depends on threads, samplers, scripting, listeners, and response size. A rough starting point is several hundred megabytes of base overhead plus about one megabyte per concurrent thread on the injector, then validate with GC logs. Prefer CLI mode and disable View Results Tree during load.',

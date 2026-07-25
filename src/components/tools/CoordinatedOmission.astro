@@ -1,0 +1,279 @@
+---
+/**
+ * Interactive Coordinated Omission calculator (client-side).
+ * Corrects for the load-generator scheduling bias that drops requests
+ * when the server can't keep up with the target throughput.
+ */
+import { EMPTY_VALUE, COORDINATED_OMISSION } from '../../lib/tools-config.mjs';
+
+const { limits, defaults } = COORDINATED_OMISSION;
+---
+
+<div class="tool tool--coordinated-omission" data-coordinated-omission>
+  <div class="tool-form__grid">
+    <div class="tool-field">
+      <label class="tool-label" for="co-target">Target RPS</label>
+      <div class="tool-input-wrap">
+        <input
+          id="co-target"
+          type="number"
+          name="target"
+          min={limits.targetRps.min}
+          max={limits.targetRps.max}
+          step="1"
+          value={defaults.targetRps}
+          inputmode="decimal"
+        />
+        <span class="tool-suffix" aria-hidden="true">rps</span>
+      </div>
+      <span class="tool-hint">Intended throughput (what you configured)</span>
+    </div>
+
+    <div class="tool-field">
+      <label class="tool-label" for="co-actual">Actual RPS</label>
+      <div class="tool-input-wrap">
+        <input
+          id="co-actual"
+          type="number"
+          name="actual"
+          min={limits.actualRps.min}
+          max={limits.actualRps.max}
+          step="1"
+          value={defaults.actualRps}
+          inputmode="decimal"
+        />
+        <span class="tool-suffix" aria-hidden="true">rps</span>
+      </div>
+      <span class="tool-hint">Measured throughput from the test run</span>
+    </div>
+
+    <div class="tool-field">
+      <label class="tool-label" for="co-rt">Avg response time</label>
+      <div class="tool-input-wrap">
+        <input
+          id="co-rt"
+          type="number"
+          name="rt"
+          min={limits.avgResponseTimeMs.min}
+          max={limits.avgResponseTimeMs.max}
+          step="1"
+          value={defaults.avgResponseTimeMs}
+          inputmode="numeric"
+        />
+        <span class="tool-suffix" aria-hidden="true">ms</span>
+      </div>
+      <span class="tool-hint">Average response time from the test</span>
+    </div>
+
+    <div class="tool-field">
+      <label class="tool-label" for="co-dur">Test duration</label>
+      <div class="tool-input-wrap">
+        <input
+          id="co-dur"
+          type="number"
+          name="dur"
+          min={limits.durationSeconds.min}
+          max={limits.durationSeconds.max}
+          step="1"
+          value={defaults.durationSeconds}
+          inputmode="numeric"
+        />
+        <span class="tool-suffix" aria-hidden="true">s</span>
+      </div>
+      <span class="tool-hint">Total test duration in seconds</span>
+    </div>
+  </div>
+
+  <div class="tool-results" aria-live="polite">
+    <div class="tool-card tool-card-primary">
+      <span class="tool-card-label">Correction factor</span>
+      <span class="tool-card-value" data-correction-factor>{EMPTY_VALUE}</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Lost requests</span>
+      <span class="tool-card-value" data-lost-requests>{EMPTY_VALUE}</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Corrected avg RT</span>
+      <span class="tool-card-value" data-corrected-rt>{EMPTY_VALUE}</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Needed threads</span>
+      <span class="tool-card-value" data-needed-threads>{EMPTY_VALUE}</span>
+    </div>
+  </div>
+
+  <div class="tool-card tool-card--full" data-severity-card>
+    <span class="tool-card-label">Overload severity</span>
+    <span class="tool-card-value" data-severity>{EMPTY_VALUE}</span>
+  </div>
+
+  <div class="tool-formula" data-formula></div>
+
+  <div class="tool-actions">
+    <button type="button" class="tool-btn" data-copy-link>Copy shareable link</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
+    <span class="tool-status" data-copy-status aria-live="polite" hidden></span>
+  </div>
+
+  <p class="tool-disclaimer">
+    Heuristic correction based on Gil Tene's queue-depth model. Validate with
+    {' '}<a href="https://www.youtube.com/watch?v=ljQPQL1J0UU">How NOT to Measure Latency</a>.
+    {' '}See <a href="/user-manual/best-practices/">Best Practices</a>
+    {' '}and{' '}
+    <a href="/tools/thread-calculator/">Thread Calculator</a>.
+  </p>
+</div>
+
+<script>
+  import { EMPTY_VALUE, COORDINATED_OMISSION } from '../../lib/tools-config.mjs';
+  import { clampToRange, copyText } from '../../lib/tools-utils.mjs';
+  import {
+    analyzeCoordinatedOmission,
+    parseCoordinatedOmissionParams,
+    serializeCoordinatedOmissionParams,
+  } from '../../lib/coordinated-omission.mjs';
+
+  const { limits, defaults } = COORDINATED_OMISSION;
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const targetInput = root.querySelector('input[name="target"]');
+    const actualInput = root.querySelector('input[name="actual"]');
+    const rtInput = root.querySelector('input[name="rt"]');
+    const durInput = root.querySelector('input[name="dur"]');
+    const correctionEl = root.querySelector('[data-correction-factor]');
+    const lostEl = root.querySelector('[data-lost-requests]');
+    const correctedEl = root.querySelector('[data-corrected-rt]');
+    const threadsEl = root.querySelector('[data-needed-threads]');
+    const severityEl = root.querySelector('[data-severity]');
+    const severityCard = root.querySelector('[data-severity-card]');
+    const formulaEl = root.querySelector('[data-formula]');
+    const statusEl = root.querySelector('[data-copy-status]');
+
+    let state = {
+      targetRps: defaults.targetRps,
+      actualRps: defaults.actualRps,
+      avgResponseTimeMs: defaults.avgResponseTimeMs,
+      durationSeconds: defaults.durationSeconds,
+    };
+
+    function readInputs() {
+      state.targetRps = clampToRange(Number(targetInput.value), limits.targetRps, defaults.targetRps);
+      state.actualRps = clampToRange(Number(actualInput.value), limits.actualRps, defaults.actualRps);
+      state.avgResponseTimeMs = clampToRange(Number(rtInput.value), limits.avgResponseTimeMs, defaults.avgResponseTimeMs);
+      state.durationSeconds = clampToRange(Number(durInput.value), limits.durationSeconds, defaults.durationSeconds);
+    }
+
+    function showStatus(msg) {
+      if (!statusEl) return;
+      statusEl.hidden = !msg;
+      statusEl.textContent = msg || '';
+      if (msg) setTimeout(() => showStatus(''), 1600);
+    }
+
+    function recompute() {
+      readInputs();
+      const result = analyzeCoordinatedOmission(state);
+
+      if (correctionEl) {
+        correctionEl.textContent = result.correctionFactor > 0
+          ? result.correctionFactor.toFixed(2) + 'x'
+          : EMPTY_VALUE;
+      }
+      if (lostEl) {
+        lostEl.textContent = result.lostRequests > 0
+          ? result.lostRequests.toLocaleString('en-US')
+          : '0';
+      }
+      if (correctedEl) {
+        correctedEl.textContent = result.correctedResponseTimeMs > 0
+          ? result.correctedResponseTimeMs + ' ms'
+          : EMPTY_VALUE;
+      }
+      if (threadsEl) {
+        threadsEl.textContent = result.neededThreads > 0
+          ? String(result.neededThreads)
+          : EMPTY_VALUE;
+      }
+      if (severityEl) {
+        severityEl.textContent = result.severity.charAt(0).toUpperCase() + result.severity.slice(1);
+        severityCard?.classList.remove('severity-none', 'severity-low', 'severity-moderate', 'severity-severe');
+        severityCard?.classList.add(`severity-${result.severity}`);
+      }
+
+      if (formulaEl) {
+        const { targetThroughput, actualThroughput, avgResponseTimeMs } = result;
+        if (targetThroughput > actualThroughput) {
+          formulaEl.textContent =
+            `correction = ${targetThroughput} / ${actualThroughput} = ${result.correctionFactor.toFixed(2)}x | ` +
+            `lost = (${targetThroughput} - ${actualThroughput}) * ${result.durationSeconds}s = ${result.lostRequests} requests | ` +
+            `corrected RT ~ ${avgResponseTimeMs}ms + queue_wait = ${result.correctedResponseTimeMs}ms`;
+        } else {
+          formulaEl.textContent =
+            `No coordinated omission detected: target ${targetThroughput} RPS <= actual ${actualThroughput} RPS.`;
+        }
+      }
+
+      root.dataset.shareQuery = serializeCoordinatedOmissionParams(state);
+    }
+
+    [targetInput, actualInput, rtInput, durInput].forEach((el) => {
+      el.addEventListener('input', recompute);
+      el.addEventListener('change', () => {
+        const range = el.name === 'target' ? limits.targetRps
+                  : el.name === 'actual' ? limits.actualRps
+                  : el.name === 'rt' ? limits.avgResponseTimeMs
+                  : limits.durationSeconds;
+        const val = Number(el.value);
+        if (!Number.isFinite(val) || val <= 0) {
+          el.value = String(range.min);
+        } else {
+          el.value = String(clampToRange(val, range, range.min));
+        }
+        recompute();
+      });
+    });
+
+    root.querySelector('[data-copy-link]')?.addEventListener('click', async () => {
+      const url = `${window.location.origin}${window.location.pathname}?${root.dataset.shareQuery || ''}`;
+      try {
+        await copyText(url);
+        showStatus('Link copied');
+        history.replaceState(null, '', `?${root.dataset.shareQuery || ''}`);
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector('[data-reset]')?.addEventListener('click', () => {
+      state = {
+        targetRps: defaults.targetRps,
+        actualRps: defaults.actualRps,
+        avgResponseTimeMs: defaults.avgResponseTimeMs,
+        durationSeconds: defaults.durationSeconds,
+      };
+      targetInput.value = String(defaults.targetRps);
+      actualInput.value = String(defaults.actualRps);
+      rtInput.value = String(defaults.avgResponseTimeMs);
+      durInput.value = String(defaults.durationSeconds);
+      recompute();
+      history.replaceState(null, '', window.location.pathname);
+    });
+
+    const params = parseCoordinatedOmissionParams(new URLSearchParams(window.location.search));
+    state = params;
+    targetInput.value = String(params.targetRps);
+    actualInput.value = String(params.actualRps);
+    rtInput.value = String(params.avgResponseTimeMs);
+    durInput.value = String(params.durationSeconds);
+    recompute();
+  }
+
+  document.querySelectorAll('[data-coordinated-omission]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll('[data-coordinated-omission]').forEach(init);
+  });
+</script>

@@ -106,6 +106,24 @@ export const REGEX_EXTRACTOR = {
 };
 
 /**
+ * Coordinated Omission calculator bounds and defaults.
+ */
+export const COORDINATED_OMISSION = {
+  limits: {
+    targetRps: { min: 1, max: 100_000 },
+    actualRps: { min: 1, max: 100_000 },
+    avgResponseTimeMs: { min: 1, max: 120_000 },
+    durationSeconds: { min: 1, max: 86_400 },
+  },
+  defaults: {
+    targetRps: 50,
+    actualRps: 20,
+    avgResponseTimeMs: 5000,
+    durationSeconds: 60,
+  },
+};
+
+/**
  * Build a case-insensitive exact-name regex from configurable key names.
  * @param {string[]} [names]
  * @returns {RegExp}

@@ -553,6 +553,69 @@
   max-width: none;
 }
 
+.tool-card--full {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+}
+
+[data-severity-card] .tool-card-label {
+  height: auto;
+  min-height: auto;
+  max-height: auto;
+  margin: 0;
+  align-items: center;
+}
+
+[data-severity-card] .tool-card-value {
+  height: auto;
+  min-height: auto;
+  max-height: auto;
+  font-size: 1.125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.severity-none {
+  border-color: color-mix(in oklab, #22c55e 40%, var(--sl-color-gray-5));
+}
+
+.severity-low {
+  border-color: color-mix(in oklab, var(--sl-color-accent) 40%, var(--sl-color-gray-5));
+}
+
+.severity-moderate {
+  border-color: color-mix(in oklab, #f59e0b 50%, var(--sl-color-gray-5));
+}
+
+.severity-severe {
+  border-color: color-mix(in oklab, #ef4444 50%, var(--sl-color-gray-5));
+  background: color-mix(in oklab, #ef4444 15%, var(--tool-surface));
+}
+
+.severity-none .tool-card-label,
+.severity-none .tool-card-value {
+  color: #86efac;
+}
+
+.severity-low .tool-card-label,
+.severity-low .tool-card-value {
+  color: var(--sl-color-accent-high, var(--sl-color-accent));
+}
+
+.severity-moderate .tool-card-label,
+.severity-moderate .tool-card-value {
+  color: #fcd34d;
+}
+
+.severity-severe .tool-card-label,
+.severity-severe .tool-card-value {
+  color: #fca5a5;
+}
+
 .tool-disclaimer {
   margin: 0;
   font-size: 0.8125rem;
@@ -561,6 +624,7 @@
 }
 
 .tool-disclaimer a {
+  font-size: inherit;
   color: var(--sl-color-accent);
 }
 
