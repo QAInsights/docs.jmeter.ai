@@ -1,0 +1,138 @@
+---
+title: "JMeter vs k6"
+seoTitle: "JMeter vs k6: Load Testing Tool Comparison"
+description: "Compare Apache JMeter with k6: architecture, scripting, protocols, distributed load, licensing, reporting, and when to choose each for HTTP API testing."
+keywords:
+  - JMeter vs k6
+  - JMeter vs k6 comparison
+  - k6 load testing
+  - k6 vs JMeter
+  - load testing tool comparison
+difficulty: beginner
+guideType: concept
+estimatedReadTime: "8 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jmeter-vs-alternatives
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter vs k6
+
+This page compares **Apache JMeter** with **k6**, a developer-first load testing tool whose scripts are written in JavaScript/TypeScript and executed by an efficient Go runtime. It is a decision aid for teams weighing JMeter’s GUI and protocol breadth against k6’s code-as-test and HTTP-centric efficiency. Always validate with a proof-of-concept on *your* APIs and infrastructure.
+
+For the broader comparison including Locust and Gatling, see [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/).
+
+## Quick comparison
+
+| Dimension | JMeter | k6 |
+|-----------|--------|-----|
+| **Primary runtime** | JVM | Go binary; scripts in JS/TS |
+| **Scenario authoring** | GUI + XML `.jmx` (+ DSL options in modern JMeter) | Code (JS/TS) |
+| **Virtual users model** | Thread-oriented (1 VU ≈ thread in classic Thread Group) | Lightweight VUs (goroutine-style) |
+| **Protocols (typical OSS)** | Broad: HTTP(S), JDBC, JMS, LDAP, FTP, mail, etc. | Strong HTTP; WebSocket; gRPC ecosystem focus |
+| **GUI for design** | Full test-plan GUI | No design GUI (CLI/cloud UX) |
+| **Recording** | [HTTP(S) Test Script Recorder](/topics/http-recorder/) | Browser recorder / conversions in ecosystem |
+| **Distributed load** | Native controller-worker ([remote testing](/topics/distributed-testing/)) | Local + cloud/operator patterns (product-dependent) |
+| **Reporting** | HTML [dashboard](/user-manual/generating-dashboard/), CSV/JTL, listeners | CLI summary, cloud dashboards, integrations |
+| **License (core)** | Apache License 2.0 | Open-source core under AGPL-style licensing + commercial cloud |
+
+Licensing and product packaging change over time - **verify current terms** on each project’s site before enterprise adoption.
+
+## k6 positioning
+
+k6 targets developers who want **performance tests as code** in JavaScript/TypeScript, executed by an efficient Go runtime. It is popular in API-centric and SRE-oriented teams, especially where Grafana observability is already standard.
+
+## Strengths of k6 relative to JMeter
+
+- **Scripts are ordinary code**: modules, packages, PR review, and version control work the same way as application code.
+- **Efficient VU implementation** for high-churn HTTP scenarios, often achieving higher concurrent-user density per CPU than thread-per-VU models on raw HTTP.
+- **First-class CLI UX** and thresholds-as-code patterns in the k6 ecosystem, which map naturally to CI gates.
+- **Cloud and Kubernetes operator options** for teams that want managed scale (product choice, not open-source requirement).
+- **Developer ownership**: performance tests live alongside the services they test, reviewed in the same workflow.
+
+## Trade-offs of k6 relative to JMeter
+
+- **No full JMeter-like protocol GUI** for JDBC, LDAP, JMS, or other enterprise protocols. k6 is HTTP-centric with ecosystem extensions.
+- **Teams without JS/TS comfort** face a learning curve, and the code-first model assumes developer authors.
+- **AGPL/commercial packaging** may matter to legal review - check current terms on the k6 site.
+- **Migrating large libraries of `.jmx` assets** is non-trivial; there is no 1:1 converter.
+- **No native JMeter-grade remote testing** experience out of the box; distributed execution patterns are product-dependent.
+
+## When teams choose k6 over JMeter
+
+- **HTTP/gRPC-focused platforms** where protocol breadth beyond HTTP is not needed.
+- **Developers already writing JS/TS in CI** who want performance tests as code.
+- **Preference for code-only workflows** with threshold objects in source control.
+- **Grafana-native observability** stacks where k6 metrics fit naturally.
+- **Teams that reject GUI authoring** and want everything in Git.
+
+## Decision criteria
+
+| Need | Lean toward |
+|------|-------------|
+| HTTP at huge VU density per CPU | k6 (goroutine-style VUs) |
+| Scripts in JS/TS with PR review | k6 |
+| Thresholds as code in CI | k6 |
+| Non-HTTP protocols (JDBC, LDAP, JMS) | **JMeter** |
+| GUI recording for mixed-skill teams | **JMeter** |
+| Apache 2.0 licensing | **JMeter** |
+
+## Architecture implications
+
+k6’s Go runtime uses lightweight VUs that are goroutine-style, not Java threads. This means:
+
+- **Higher VU density per CPU** on HTTP workloads compared to JMeter’s thread-per-VU model.
+- **Lower per-VU memory overhead**, but the trade-off is less built-in protocol breadth.
+- **No JVM heap sizing** concerns - you size the Go binary like any other process.
+- **Distributed execution** is product-dependent; the open-source core does not have the same documented controller-worker RMI model as JMeter’s [remote testing](/topics/distributed-testing/).
+
+## CI/CD and reporting
+
+All tools run headlessly. k6 embeds thresholds in source; JMeter gates often parse dashboard statistics or JTL. Both are valid.
+
+k6 reporting is CLI summary, cloud dashboards, or Prometheus/Grafana integrations. If your compliance process requires an **offline HTML artifact** from an air-gapped runner, confirm the tool can emit a full report without a SaaS account. JMeter’s dashboard generator is designed for that offline path; k6 teams often add Grafana or cloud UIs.
+
+## Migrating from JMeter to k6
+
+- **Re-implement scenarios**; do not expect 1:1 `.jmx` conversion perfection.
+- **Rebuild correlation and data feeds** (CSV → k6 feeders).
+- **Re-validate think time and workload models** - defaults differ.
+- **Map JMeter listeners to k6 thresholds** and external dashboards.
+
+## Migrating from k6 to JMeter
+
+- **Use the [HTTP(S) recorder](/topics/http-recorder/) or cURL import** for HTTP scenarios.
+- **Map k6 feeders to CSV Data Set** + [functions](/topics/functions-and-variables/).
+- **Train the team on CLI-only load runs** per [best practices](/user-manual/best-practices/).
+- **Use programmatic plans** if you want code review workflows in JMeter.
+
+## Fair bake-off checklist
+
+When you trial k6 and JMeter on the same API:
+
+1. Same **workload model** (arrival rate vs closed-loop users).
+2. Same **think time** and data cardinality.
+3. Same **environment** and monitoring on the server side.
+4. Measure **injector CPU/RAM**, not only server latency.
+5. Include **failure modes** (timeouts, 500s) and assertion strictness.
+6. Include **team time** to author and maintain the script.
+7. Check **license** and support explicitly.
+
+A tool that looks fastest in a blog chart can lose if your team cannot maintain scenarios.
+
+<RelatedContent>
+<Fragment slot="next-step">
+If JMeter fits, start with [Getting Started](/getting-started/get-started/) and a small [web test plan](/user-manual/build-web-test-plan/), then enforce CLI runs via [best practices](/user-manual/best-practices/).
+</Fragment>
+<Fragment slot="related">
+- [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/) - hub page with all tool comparisons
+- [API Load Testing](/topics/api-load-testing/) - HTTP/gRPC load testing with JMeter
+- [Distributed Testing](/topics/distributed-testing/) - how JMeter scales injectors
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/) - automation parity with code-first tools
+- [Thread Calculator](/tools/thread-calculator/) - size threads for your target RPS
+</Fragment>
+<Fragment slot="mistakes">
+Comparing open-loop vs closed-loop workloads unfairly; ignoring license review; assuming k6 replaces JMeter for non-HTTP protocols; expecting 1:1 .jmx conversion.
+</Fragment>
+</RelatedContent>

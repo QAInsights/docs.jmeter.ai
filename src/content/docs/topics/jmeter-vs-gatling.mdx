@@ -1,0 +1,137 @@
+---
+title: "JMeter vs Gatling"
+seoTitle: "JMeter vs Gatling: Load Testing Tool Comparison"
+description: "Compare Apache JMeter with Gatling: architecture, Scala/Java/Kotlin DSL, async VUs, protocols, distributed load, reporting, and when to choose each tool."
+keywords:
+  - JMeter vs Gatling
+  - JMeter vs Gatling comparison
+  - Gatling load testing
+  - Gatling vs JMeter
+  - Scala load testing
+difficulty: beginner
+guideType: concept
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jmeter-vs-alternatives
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter vs Gatling
+
+This page compares **Apache JMeter** with **Gatling**, a JVM-based load testing tool focused on high-performance HTTP load generation with a typed DSL (Scala historically; Java/Kotlin DSLs widely used) and polished HTML reports. It is a decision aid for teams weighing JMeter’s GUI and protocol breadth against Gatling’s async efficiency and report quality. Always validate with a proof-of-concept on *your* APIs and infrastructure.
+
+For the broader comparison including k6 and Locust, see [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/).
+
+## Quick comparison
+
+| Dimension | JMeter | Gatling |
+|-----------|--------|---------|
+| **Primary runtime** | JVM | JVM |
+| **Scenario authoring** | GUI + XML `.jmx` (+ DSL options in modern JMeter) | Code (Scala/Java/Kotlin DSL) |
+| **Virtual users model** | Thread-oriented (1 VU ≈ thread in classic Thread Group) | Async event-driven |
+| **Protocols (typical OSS)** | Broad: HTTP(S), JDBC, JMS, LDAP, FTP, mail, etc. | HTTP-focused; WebSocket/JMS in ecosystem |
+| **GUI for design** | Full test-plan GUI | No classic record-and-click design GUI |
+| **Recording** | [HTTP(S) Test Script Recorder](/topics/http-recorder/) | Recorder offerings vary by edition/ecosystem |
+| **Distributed load** | Native controller-worker ([remote testing](/topics/distributed-testing/)) | OSS local; enterprise features for large grid |
+| **Reporting** | HTML [dashboard](/user-manual/generating-dashboard/), CSV/JTL, listeners | Rich HTML reports |
+| **License (core)** | Apache License 2.0 | Apache License 2.0 (Gatling OSS) |
+
+## Gatling positioning
+
+Gatling focuses on **high-performance HTTP load generation** with a **typed DSL** and polished HTML reports. Enterprise editions add collaboration and distributed features. It is popular in JVM teams that want code-centric simulations with compile-time checks.
+
+## Strengths of Gatling relative to JMeter
+
+- **Async engine efficient** for many concurrent HTTP users per injector, often achieving higher VU density per CPU than thread-per-VU models.
+- **Scenario-as-code with compile-time checks** in typed DSLs (Scala, Java, Kotlin), which improves maintainability and review.
+- **Report quality** is a frequent reason teams adopt Gatling - rich HTML reports with clear metrics.
+- **Apache 2.0 for Gatling OSS** aligns with many compliance needs.
+- **JVM ecosystem** means teams can leverage existing build tools (Maven, Gradle, sbt) and dependency management.
+
+## Trade-offs of Gatling relative to JMeter
+
+- **Steeper ramp for non-developers** than JMeter GUI; the typed DSL assumes developer authors.
+- **Protocol breadth of JMeter’s sampler catalog is wider** in classic enterprise packs (LDAP, JMS, FTP, etc.).
+- **Large distributed grids may push teams toward commercial offerings** - evaluate current OSS limits honestly.
+- **Recording/onboarding path differs** from JMeter’s long-standing proxy tutorial tradition.
+- **Scala learning curve** for teams unfamiliar with functional programming, though Java/Kotlin DSLs are more accessible.
+
+## When teams choose Gatling over JMeter
+
+- **JVM + typed DSL preference** where the team is comfortable with Scala, Java, or Kotlin.
+- **HTTP-heavy systems at large concurrency per box** where async VUs matter.
+- **Report aesthetics and code-centric review culture** drive the decision.
+- **Teams that want compile-time validation** of test scenarios.
+- **Existing JVM build pipelines** (Maven, Gradle) that can integrate Gatling tasks.
+
+## Decision criteria
+
+| Need | Lean toward |
+|------|-------------|
+| HTTP at huge VU density per CPU | Gatling (async VUs) |
+| Typed DSL with compile-time checks | Gatling |
+| Rich HTML reports | Gatling |
+| Non-HTTP protocols (JDBC, LDAP, JMS) | **JMeter** |
+| GUI recording for mixed-skill teams | **JMeter** |
+| Apache 2.0 licensing | Both (verify current terms) |
+
+## Architecture implications
+
+Gatling’s async event-driven model differs from JMeter’s thread-per-VU model:
+
+- **Higher VU density per CPU** on HTTP workloads, since async VUs are not tied to OS threads.
+- **No JVM heap sizing concerns per VU** in the same way as JMeter threads, though the JVM still needs proper sizing.
+- **No native JMeter-grade remote testing** experience in the OSS edition; distributed grids may require commercial features.
+- **JVM ecosystem** means teams can leverage existing build tools (Maven, Gradle, sbt) and dependency management.
+
+## CI/CD and reporting
+
+All tools run headlessly. Gatling scenarios are code, so they integrate with existing JVM CI pipelines and can use the same build tools as the application under test.
+
+Gatling reporting is strong HTML reports. JMeter reporting is offline HTML dashboard from CLI (`-e -o`) with APDEX and percentile tables. If your compliance process requires an **offline HTML artifact** from an air-gapped runner, both tools can emit full reports without a SaaS account, but verify the specific edition and configuration.
+
+## Migrating from JMeter to Gatling
+
+- **Re-implement scenarios** in the Gatling DSL; do not expect 1:1 `.jmx` conversion.
+- **Rebuild correlation and data feeds** (CSV → Gatling feeders).
+- **Re-validate think time and workload models** - defaults differ.
+- **Map JMeter listeners to Gatling assertions** and checks.
+- **Train the team on the Gatling DSL** if they are not already JVM-fluent.
+
+## Migrating from Gatling to JMeter
+
+- **Use the [HTTP(S) recorder](/topics/http-recorder/) or cURL import** for HTTP scenarios.
+- **Map Gatling feeders to CSV Data Set** + [functions](/topics/functions-and-variables/).
+- **Train the team on CLI-only load runs** per [best practices](/user-manual/best-practices/).
+- **Use programmatic plans** if you want code review workflows in JMeter.
+
+## Fair bake-off checklist
+
+When you trial Gatling and JMeter on the same API:
+
+1. Same **workload model** (arrival rate vs closed-loop users).
+2. Same **think time** and data cardinality.
+3. Same **environment** and monitoring on the server side.
+4. Measure **injector CPU/RAM**, not only server latency.
+5. Include **failure modes** (timeouts, 500s) and assertion strictness.
+6. Include **team time** to author and maintain the script.
+7. Check **license** and support explicitly.
+
+A tool that looks fastest in a blog chart can lose if your team cannot maintain scenarios.
+
+<RelatedContent>
+<Fragment slot="next-step">
+If JMeter fits, start with [Getting Started](/getting-started/get-started/) and a small [web test plan](/user-manual/build-web-test-plan/), then enforce CLI runs via [best practices](/user-manual/best-practices/).
+</Fragment>
+<Fragment slot="related">
+- [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/) - hub page with all tool comparisons
+- [Generating Dashboard](/user-manual/generating-dashboard/) - JMeter HTML reports and APDEX
+- [Distributed Testing](/topics/distributed-testing/) - how JMeter scales injectors
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/) - automation parity with code-first tools
+- [Thread Calculator](/tools/thread-calculator/) - size threads for your target RPS
+</Fragment>
+<Fragment slot="mistakes">
+Comparing open-loop vs closed-loop workloads unfairly; ignoring license review; assuming Gatling OSS covers large distributed grids without commercial features; expecting 1:1 .jmx conversion; overlooking Scala learning curve.
+</Fragment>
+</RelatedContent>

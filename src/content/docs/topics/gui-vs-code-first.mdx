@@ -1,0 +1,161 @@
+---
+title: "GUI vs Code-First Load Testing"
+seoTitle: "GUI vs Code-First Load Testing: Authoring Paradigms Compared"
+description: "Compare GUI-based load testing (JMeter recorder) with code-first approaches (k6, Locust, Gatling, JMeter DSL). Learn when to use each authoring paradigm."
+keywords:
+  - GUI load testing
+  - code-first load testing
+  - JMeter GUI vs code
+  - load testing authoring
+  - JMeter recorder
+  - test as code
+difficulty: beginner
+guideType: concept
+estimatedReadTime: "8 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jmeter-vs-alternatives
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# GUI vs Code-First Load Testing
+
+Load testing tools fall into two broad **authoring paradigms**: **GUI-based** tools where you build scenarios by clicking through a graphical interface, and **code-first** tools where you write scenarios as code in a programming language. This page compares the two paradigms, their trade-offs, and when to use each. It is not specific to any single tool - JMeter supports both paradigms, while k6, Locust, and Gatling are code-first by design.
+
+For tool-specific comparisons, see [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/).
+
+## The two paradigms
+
+| Aspect | GUI-based | Code-first |
+|--------|-----------|------------|
+| **Authoring** | Click through a test-plan tree, configure elements visually | Write scripts in JS, Python, Scala, or DSL |
+| **Review** | Export/share `.jmx` or screenshots; diffs are hard | Git diffs, PR review, CI checks |
+| **Reuse** | Copy/paste elements, templates, recorded snippets | Functions, modules, packages, libraries |
+| **Debugging** | Visual tree, View Results Tree, listeners | IDE debugger, logs, breakpoints |
+| **Learning curve** | Gentle for non-programmers | Requires programming comfort |
+| **Version control** | XML files (verbose diffs) | Source code (clean diffs) |
+| **Protocol support** | In-box samplers for many protocols | Depends on library ecosystem |
+| **Recording** | Built-in HTTP(S) proxy recorder | External recorders or converters |
+
+## GUI-based load testing
+
+GUI-based tools let you build load test scenarios by interacting with a graphical interface. You add elements (samplers, controllers, timers, assertions) to a test-plan tree, configure their properties in forms, and run the test from the same interface.
+
+### Strengths of GUI-based authoring
+
+- **Gentle learning curve for non-programmers** - business analysts and QA engineers can build scenarios without writing code.
+- **Visual test design** - you see the structure of your test plan as a tree, with clear parent-child relationships.
+- **Built-in recording** - the [HTTP(S) Test Script Recorder](/topics/http-recorder/) captures browser journeys and turns them into test elements.
+- **Immediate feedback** - listeners like View Results Tree show request/response details in real time.
+- **Rapid prototyping** - drag elements, change a few fields, and run immediately.
+
+### Trade-offs of GUI-based authoring
+
+- **Verbose version control** - `.jmx` XML files produce noisy diffs that are hard to review in Git.
+- **No compile-time checks** - typos in variable names or property values are caught at runtime, not at authoring time.
+- **Merge conflicts** - XML merge conflicts are painful to resolve manually.
+- **Limited reuse** - sharing logic across test plans often means copy/paste, not functions or modules.
+- **GUI overuse during load** - running load from the GUI distorts results; discipline is required to switch to CLI for real tests.
+
+### When GUI-based authoring fits
+
+- **Mixed-skill teams** where business analysts or QA engineers build scenarios.
+- **Recording browser journeys** for web application testing.
+- **Rapid prototyping** and debugging of test logic.
+- **Teams with large libraries of `.jmx` plans** and trained staff.
+- **Non-developer authors** who are not comfortable writing code.
+
+## Code-first load testing
+
+Code-first tools let you write load test scenarios as code in a programming language. Scripts are plain text files that can be version-controlled, reviewed, and tested like application code.
+
+### Strengths of code-first authoring
+
+- **Clean version control** - Git diffs are readable; PR review works naturally.
+- **Compile-time checks** - typed DSLs (Gatling, JMeter DSL) catch errors before runtime.
+- **Reuse and abstraction** - functions, modules, packages, and libraries reduce duplication.
+- **IDE integration** - syntax highlighting, autocomplete, refactoring, and debugging.
+- **CI/CD integration** - tests run as part of the build pipeline with the same tooling as the application.
+- **Thresholds as code** - performance gates live in source control alongside the application.
+
+### Trade-offs of code-first authoring
+
+- **Requires programming comfort** - non-developers face a learning curve.
+- **No built-in recorder** - scenarios must be written from scratch or converted from recorded traffic.
+- **Debugging is log-based** - no visual tree or real-time request/response inspector.
+- **Setup overhead** - dependency management, build tools, and environment configuration.
+- **Less approachable for mixed-skill teams** - the barrier to entry is higher.
+
+### When code-first authoring fits
+
+- **Developer-owned performance tests** where engineers write and maintain scenarios.
+- **CI/CD pipelines** where tests must run headlessly and integrate with build tools.
+- **Teams that want PR review** of test changes and clean Git history.
+- **Python, JS, or JVM teams** that want performance tests in the same language as the application.
+- **Code-centric review culture** where scenarios are treated as application code.
+
+## JMeter supports both paradigms
+
+JMeter is not locked into one paradigm. It supports:
+
+| Style | Paradigm | Notes |
+|-------|----------|-------|
+| GUI `.jmx` | GUI-based | Default; great for recording and visual debug ([View Results Tree](/user-manual/listeners/) while scripting) |
+| Programmatic | Code-first | [Programmatic test plans](/user-manual/build-programmatic-test-plan/) / DSL approaches in modern JMeter for code review workflows |
+| Recording | GUI-based | [HTTP(S) recorder](/topics/http-recorder/) for browser journeys |
+| cURL import | Both | [cURL](/user-manual/curl/) for API snippets |
+
+This means teams can start with the GUI for prototyping and recording, then migrate to programmatic plans for version control and CI. The [programmatic test plan](/user-manual/build-programmatic-test-plan/) chapter documents how to author JMeter tests as code using the Kotlin DSL, Java DSL, and low-level APIs.
+
+## Decision criteria
+
+| Need | Lean toward |
+|------|-------------|
+| Non-programmer authors | GUI-based |
+| Recording browser journeys | GUI-based (JMeter recorder) |
+| Rapid prototyping | GUI-based |
+| Clean Git diffs and PR review | Code-first |
+| Compile-time checks | Code-first (typed DSL) |
+| CI/CD integration | Code-first |
+| Reuse across test plans | Code-first (functions/modules) |
+| Mixed-skill teams | GUI-based (JMeter) |
+| Developer-owned tests | Code-first |
+
+## Hybrid approaches
+
+Many organisations use **both paradigms**:
+
+- **JMeter for recording and prototyping**, then programmatic plans for CI.
+- **GUI for initial debugging**, code-first for committed load tests.
+- **Different tools per team**: JMeter GUI for QA engineers, k6/Gatling for developer CI.
+- **JMeter DSL** as a bridge - code-first authoring that still runs on the JMeter engine.
+
+## Fair bake-off checklist
+
+When choosing an authoring paradigm:
+
+1. **Who writes the tests?** Developers, QA engineers, or business analysts?
+2. **What protocols are needed?** GUI tools often have broader in-box protocol support.
+3. **How are tests reviewed?** Do you need Git diffs and PR review, or are screenshots acceptable?
+4. **Where do tests run?** Local GUI, CI/CD, or both?
+5. **What is the team’s programming comfort?** Can authors write JS/Python/Scala?
+6. **What is the reuse strategy?** Copy/paste or shared libraries?
+7. **What is the debugging workflow?** Visual tree or IDE debugger?
+
+The cost of rewriting fifty scenarios usually dwarfs injector license or RAM differences. Choose the paradigm that matches your team’s skills and workflow.
+
+<RelatedContent>
+<Fragment slot="next-step">
+If JMeter fits, start with [Getting Started](/getting-started/get-started/) and a small [web test plan](/user-manual/build-web-test-plan/), then try [programmatic test plans](/user-manual/build-programmatic-test-plan/) for code review workflows.
+</Fragment>
+<Fragment slot="related">
+- [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/) - hub page with all tool comparisons
+- [Programmatic Test Plan](/user-manual/build-programmatic-test-plan/) - code-first JMeter with Kotlin/Java DSL
+- [HTTP Recorder](/topics/http-recorder/) - GUI-based recording for browser journeys
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/) - automation parity with code-first tools
+- [Functions and Variables](/topics/functions-and-variables/) - parameterization in JMeter
+</Fragment>
+<Fragment slot="mistakes">
+Assuming GUI tools can’t do code review; assuming code-first tools are always better for mixed-skill teams; ignoring the team’s programming comfort; expecting 1:1 conversion between paradigms; overlooking the value of visual debugging.
+</Fragment>
+</RelatedContent>

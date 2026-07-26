@@ -29,6 +29,18 @@ export const crossLinks = [
   ['/tools', '/tools/thread-calculator'],
   ['/tools/thread-calculator', '/tools/heap-estimator'],
   ['/tools/heap-estimator', '/tools/thread-calculator'],
+  ['/topics/jmeter-vs-alternatives', '/topics/jmeter-vs-k6'],
+  ['/topics/jmeter-vs-alternatives', '/topics/jmeter-vs-locust'],
+  ['/topics/jmeter-vs-alternatives', '/topics/jmeter-vs-gatling'],
+  ['/topics/jmeter-vs-alternatives', '/topics/jmeter-vs-enterprise'],
+  ['/topics/jmeter-vs-alternatives', '/topics/gui-vs-code-first'],
+  ['/topics/jmeter-vs-k6', '/topics/api-load-testing'],
+  ['/topics/jmeter-vs-locust', '/topics/functions-and-variables'],
+  ['/topics/jmeter-vs-gatling', '/user-manual/generating-dashboard'],
+  ['/topics/jmeter-vs-enterprise', '/topics/distributed-testing'],
+  ['/topics/jmeter-vs-enterprise', '/tools/heap-estimator'],
+  ['/topics/gui-vs-code-first', '/user-manual/build-programmatic-test-plan'],
+  ['/topics/gui-vs-code-first', '/topics/http-recorder'],
   ['/reference/download-jmeter', '/getting-started/get-started'],
 ];
 

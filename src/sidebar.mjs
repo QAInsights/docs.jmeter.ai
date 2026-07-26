@@ -66,7 +66,17 @@ export const sidebar = [
         ],
       },
       { label: 'Interview Questions', link: '/topics/interview-questions' },
-      { label: 'JMeter vs Alternatives', link: '/topics/jmeter-vs-alternatives' },
+      {
+        label: 'JMeter vs Alternatives',
+        items: [
+          { label: 'Tool Comparison Hub', link: '/topics/jmeter-vs-alternatives' },
+          { label: 'JMeter vs k6', link: '/topics/jmeter-vs-k6' },
+          { label: 'JMeter vs Locust', link: '/topics/jmeter-vs-locust' },
+          { label: 'JMeter vs Gatling', link: '/topics/jmeter-vs-gatling' },
+          { label: 'JMeter vs LoadRunner / NeoLoad', link: '/topics/jmeter-vs-enterprise' },
+          { label: 'GUI vs Code-First', link: '/topics/gui-vs-code-first' },
+        ],
+      },
     ],
   },
   {

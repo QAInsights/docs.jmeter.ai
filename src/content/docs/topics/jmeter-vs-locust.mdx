@@ -1,0 +1,137 @@
+---
+title: "JMeter vs Locust"
+seoTitle: "JMeter vs Locust: Load Testing Tool Comparison"
+description: "Compare Apache JMeter with Locust: architecture, Python scripting, distributed load, protocols, reporting, and when to choose each for code-first testing."
+keywords:
+  - JMeter vs Locust
+  - JMeter vs Locust comparison
+  - Locust load testing
+  - Locust vs JMeter
+  - Python load testing
+difficulty: beginner
+guideType: concept
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jmeter-vs-alternatives
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter vs Locust
+
+This page compares **Apache JMeter** with **Locust**, a Python-based load testing tool that expresses user behaviour in Python classes and tasks. It is a decision aid for teams weighing JMeter’s GUI and protocol breadth against Locust’s Python-first, code-as-test approach. Always validate with a proof-of-concept on *your* APIs and infrastructure.
+
+For the broader comparison including k6 and Gatling, see [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/).
+
+## Quick comparison
+
+| Dimension | JMeter | Locust |
+|-----------|--------|--------|
+| **Primary runtime** | JVM | Python (gevent greenlets) |
+| **Scenario authoring** | GUI + XML `.jmx` (+ DSL options in modern JMeter) | Code (Python classes) |
+| **Virtual users model** | Thread-oriented (1 VU ≈ thread in classic Thread Group) | Gevent greenlets / async style |
+| **Protocols (typical OSS)** | Broad: HTTP(S), JDBC, JMS, LDAP, FTP, mail, etc. | Primarily HTTP(S) (extend in Python) |
+| **GUI for design** | Full test-plan GUI | Web UI mainly for **running/monitoring** |
+| **Recording** | [HTTP(S) Test Script Recorder](/topics/http-recorder/) | Limited vs JMeter proxy tradition |
+| **Distributed load** | Native controller-worker ([remote testing](/topics/distributed-testing/)) | Built-in master-worker style |
+| **Reporting** | HTML [dashboard](/user-manual/generating-dashboard/), CSV/JTL, listeners | Web UI + CSV/exports |
+| **License (core)** | Apache License 2.0 | MIT (Locust) |
+
+## Locust positioning
+
+Locust expresses user behaviour in **Python** classes and tasks. A web UI is commonly used to **start tests and watch charts**, while scenarios remain code. It is popular in Python-first organisations where data, backend, and ML teams share the language.
+
+## Strengths of Locust relative to JMeter
+
+- **Extremely approachable** if the organisation is Python-first (data, backend, ML).
+- **Flexible custom clients** in Python for unusual protocols or bespoke request logic.
+- **Distributed execution** is a known Locust strength (master/worker style), with a straightforward CLI model.
+- **MIT license** is simple for many organisations and avoids copyleft concerns.
+- **Scenarios as Python code** integrate naturally with pytest-era engineering culture and existing Python test utilities.
+
+## Trade-offs of Locust relative to JMeter
+
+- **You build more yourself** for non-HTTP systems (vs JMeter’s in-box samplers for JDBC, LDAP, JMS, FTP, mail).
+- **No JMeter-grade [HTTP(S) proxy recorder](/topics/http-recorder/) experience** out of the box.
+- **Reporting and HTML ecosystems differ**; teams often export metrics to external stacks (Grafana, Prometheus).
+- **GUI test design for non-coders is not Locust’s center of gravity** - the web UI is for running and monitoring, not designing.
+- **Python GIL considerations** at extreme concurrency per worker, though gevent greenlets mitigate this for I/O-bound HTTP.
+
+## When teams choose Locust over JMeter
+
+- **Python is the shared language** across the testing and development teams.
+- **Custom protocol logic is easier as Python code** than as JMeter plugins or samplers.
+- **Load tests live next to pytest-era engineering culture** and share CI patterns.
+- **Teams want master/worker distribution** without JVM heap sizing concerns.
+- **MIT licensing** is preferred over copyleft or commercial packaging.
+
+## Decision criteria
+
+| Need | Lean toward |
+|------|-------------|
+| Python-first team | Locust |
+| Custom protocol logic in Python | Locust |
+| Non-HTTP protocols (JDBC, LDAP, JMS) | **JMeter** |
+| GUI recording for mixed-skill teams | **JMeter** |
+| Apache 2.0 licensing | **JMeter** |
+| Master/worker distribution without JVM | Locust |
+
+## Architecture implications
+
+Locust uses gevent greenlets for concurrency, which are lightweight and async-style. This means:
+
+- **No JVM heap sizing** concerns - Locust runs as a Python process.
+- **Lower per-VU memory overhead** than JMeter’s thread-per-VU model for I/O-bound HTTP.
+- **Python GIL** can limit CPU-bound work per worker, though gevent mitigates this for network I/O.
+- **Distributed execution** uses a master/worker model that is simpler to configure than JMeter’s RMI-based remote testing, but does not have the same breadth of documented controller-worker patterns.
+
+## CI/CD and reporting
+
+All tools run headlessly. Locust scenarios are Python code, so they integrate with existing Python CI pipelines and can use the same dependency management (pip, virtualenv) as the application under test.
+
+Locust reporting is web UI + CSV/exports. Teams often add Grafana or Prometheus for long-term dashboards. If your compliance process requires an **offline HTML artifact** from an air-gapped runner, confirm the tool can emit a full report without a SaaS account. JMeter’s dashboard generator is designed for that offline path; Locust teams often build custom reporting or export to external stacks.
+
+## Migrating from JMeter to Locust
+
+- **Re-implement scenarios** in Python classes; do not expect 1:1 `.jmx` conversion.
+- **Rebuild correlation and data feeds** (CSV → Python data structures or custom feeders).
+- **Re-validate think time and workload models** - defaults differ.
+- **Map JMeter listeners to Locust events and hooks** for custom metrics.
+- **Train the team on Python test authoring** if they are not already Python-fluent.
+
+## Migrating from Locust to JMeter
+
+- **Use the [HTTP(S) recorder](/topics/http-recorder/) or cURL import** for HTTP scenarios.
+- **Map Python feeders to CSV Data Set** + [functions](/topics/functions-and-variables/).
+- **Train the team on CLI-only load runs** per [best practices](/user-manual/best-practices/).
+- **Use programmatic plans** if you want code review workflows in JMeter.
+
+## Fair bake-off checklist
+
+When you trial Locust and JMeter on the same API:
+
+1. Same **workload model** (arrival rate vs closed-loop users).
+2. Same **think time** and data cardinality.
+3. Same **environment** and monitoring on the server side.
+4. Measure **injector CPU/RAM**, not only server latency.
+5. Include **failure modes** (timeouts, 500s) and assertion strictness.
+6. Include **team time** to author and maintain the script.
+7. Check **license** and support explicitly.
+
+A tool that looks fastest in a blog chart can lose if your team cannot maintain scenarios.
+
+<RelatedContent>
+<Fragment slot="next-step">
+If JMeter fits, start with [Getting Started](/getting-started/get-started/) and a small [web test plan](/user-manual/build-web-test-plan/), then enforce CLI runs via [best practices](/user-manual/best-practices/).
+</Fragment>
+<Fragment slot="related">
+- [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/) - hub page with all tool comparisons
+- [Functions and Variables](/topics/functions-and-variables/) - parameterization depth in JMeter
+- [Distributed Testing](/topics/distributed-testing/) - how JMeter scales injectors
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/) - automation parity with code-first tools
+- [Thread Calculator](/tools/thread-calculator/) - size threads for your target RPS
+</Fragment>
+<Fragment slot="mistakes">
+Comparing open-loop vs closed-loop workloads unfairly; ignoring license review; assuming Locust replaces JMeter for non-HTTP protocols; expecting 1:1 .jmx conversion; overlooking Python GIL at extreme concurrency.
+</Fragment>
+</RelatedContent>

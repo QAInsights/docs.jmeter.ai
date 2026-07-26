@@ -1,0 +1,175 @@
+---
+title: "JMeter vs LoadRunner and NeoLoad"
+seoTitle: "JMeter vs LoadRunner NeoLoad: Enterprise Switch Guide"
+description: "Compare Apache JMeter with LoadRunner and NeoLoad: licensing, protocols, distributed load, reporting, migration, and TCO for enterprise teams."
+keywords:
+  - JMeter vs LoadRunner
+  - JMeter vs NeoLoad
+  - LoadRunner vs JMeter
+  - NeoLoad vs JMeter
+  - enterprise load testing
+  - open source load testing
+  - LoadRunner migration
+  - NeoLoad migration
+difficulty: intermediate
+guideType: concept
+estimatedReadTime: "9 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jmeter-vs-alternatives
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter vs LoadRunner and NeoLoad
+
+This page compares **Apache JMeter** with enterprise load testing tools **LoadRunner** (Micro Focus) and **NeoLoad** (formerly Neotys, now part of Micro Focus). It is a decision aid for enterprise teams weighing paid, full-stack tools against open-source JMeter for protocol breadth, distributed load, reporting, and total cost of ownership. Always validate with a proof-of-concept on *your* APIs and infrastructure.
+
+For the broader open-source comparison including k6, Locust, and Gatling, see [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/).
+
+## Quick comparison
+
+| Dimension | JMeter | LoadRunner | NeoLoad |
+|-----------|--------|------------|---------|
+| **Primary runtime** | JVM | Proprietary engine + VuGen IDE | JVM-based controller + recorders |
+| **Scenario authoring** | GUI + XML `.jmx` (+ DSL options) | GUI recorder + VuGen IDE (C-based Vuser scripts) | GUI recorder + JavaScript-based scripts |
+| **Virtual users model** | Thread-oriented (1 VU ≈ thread) | Proprietary Vuser model (compiled C) | Proprietary Vuser model |
+| **Protocols (typical)** | Broad: HTTP(S), JDBC, JMS, LDAP, FTP, mail, etc. | Very broad: enterprise apps, Citrix, SAP, TruClient, etc. | Broad: HTTP(S), SAP, Citrix, JMS, etc. |
+| **GUI for design** | Full test-plan GUI | Full IDE with recorder | Full GUI with recorder |
+| **Distributed load** | Native controller-worker ([remote testing](/topics/distributed-testing/)) | Controller + load generators (licensed) | Controller + load generators (licensed) |
+| **Reporting** | HTML [dashboard](/user-manual/generating-dashboard/), CSV/JTL, listeners | Built-in enterprise dashboards, analytics | Built-in dashboards, trend analysis |
+| **License (core)** | Apache License 2.0 | Commercial (paid per Vuser/concurrent) | Commercial (paid per Vuser/concurrent) |
+| **SaaS option** | No (self-hosted) | LoadRunner Cloud (SaaS) | NeoLoad Cloud (SaaS) |
+
+## Enterprise positioning
+
+Enterprise load testing tools like LoadRunner and NeoLoad offer full-stack protocol support (Citrix, SAP, TruClient, etc.), integrated recorders, and commercial support. They are common in large organisations with dedicated performance engineering teams and budget for licensed tools.
+
+JMeter is Apache 2.0 licensed and familiar to many enterprises. Its protocol breadth covers JDBC, LDAP, JMS, FTP, and mail in-box - wider than most open-source alternatives for classic enterprise protocols. Native remote engines work without a mandatory SaaS or grid product on day one.
+
+## Strengths of JMeter relative to enterprise tools
+
+- **Apache 2.0 licensing** is familiar to enterprises and avoids per-Vuser licensing costs.
+- **Protocol breadth** covers JDBC, LDAP, JMS, FTP, and mail in-box - wider than most open-source alternatives.
+- **Native remote testing** documented upstream without buying a grid product on day one.
+- **Offline HTML dashboards** from CLI (`-e -o`) with APDEX and percentile tables, designed for air-gapped runners.
+- **No per-VUser licensing** - scale injectors without incremental license costs.
+- **Large community knowledge base** and plugin ecosystem (Plugins Manager lives outside core docs).
+- **Strong CI fit** via CLI ([CI/CD topic](/topics/ci-cd-load-testing/)).
+
+## Trade-offs of JMeter relative to enterprise tools
+
+- **No built-in recorder for Citrix, SAP, TruClient, or other proprietary enterprise protocols** - these often require commercial tools.
+- **No commercial support** from a vendor - community support only (though consulting is available).
+- **No integrated trend analysis** across runs - teams build this with external dashboards.
+- **No per-VUser licensing model** means you provision and manage your own infrastructure.
+- **Protocol support for some enterprise apps** (Citrix, SAP GUI) is limited or requires plugins.
+- **Less polished out-of-box dashboards** compared to commercial enterprise tools.
+
+## When teams switch from LoadRunner / NeoLoad to JMeter
+
+- **Cost reduction** is the primary driver - per-VUser licensing can be expensive at scale.
+- **HTTP/HTTPS is the dominant protocol** and does not require Citrix/SAP/Citrix-specific recorders.
+- **Teams want open-source flexibility** without vendor lock-in or license audits.
+- **CI/CD integration** is simpler with CLI-driven open-source tools.
+- **Existing Java/JVM expertise** in the organisation.
+- **Protocol needs fit JMeter’s catalog** (HTTP, JDBC, JMS, LDAP, FTP, mail).
+
+## When teams stay with LoadRunner / NeoLoad
+
+- **Citrix, SAP, TruClient, or other proprietary protocol testing** is required.
+- **Commercial support SLAs** are non-negotiable for production-critical tests.
+- **Integrated trend analysis and executive dashboards** are required out-of-box.
+- **Per-VUser licensing budget** is already allocated and approved.
+- **Existing investment in Vuser scripts** and trained staff.
+
+## Decision criteria
+
+| Need | Lean toward |
+|------|-------------|
+| Apache 2.0, no per-VUser cost | JMeter |
+| HTTP + JDBC + JMS + LDAP in one tool | JMeter |
+| Native remote testing without a grid product | JMeter |
+| Offline HTML dashboards from air-gapped runners | JMeter |
+| Citrix / SAP / TruClient protocols | LoadRunner / NeoLoad |
+| Commercial support SLAs | LoadRunner / NeoLoad |
+| Integrated trend analysis | LoadRunner / NeoLoad |
+| Per-VUser licensing budget approved | LoadRunner / NeoLoad |
+
+## Total cost of ownership
+
+Enterprise tools charge per VUser or concurrent license, which can become expensive at scale. JMeter has no per-VUser cost - you provision and manage your own infrastructure. Consider:
+
+- **License costs**: LoadRunner/NeoLoad per-VUser fees vs. JMeter’s Apache 2.0.
+- **Infrastructure costs**: Both require self-hosted generators; JMeter’s are commodity VMs.
+- **Training costs**: JMeter GUI is gentler for mixed-skill teams; enterprise tools require certified training.
+- **Migration costs**: Re-implementing Vuser scripts is non-trivial and time-consuming.
+- **Support costs**: Commercial tools include support; JMeter relies on community or consulting.
+
+## Architecture implications
+
+JMeter’s thread-per-VU model means:
+
+- **High concurrency needs careful [heap and CPU sizing](/tools/heap-estimator/) on injectors.**
+- **Undersized thread counts relative to target rate contribute to [coordinated omission](/tools/coordinated-omission/) risks.**
+- **Large scales often use [distributed testing](/topics/distributed-testing/) or multiple autonomous CLI instances.**
+- **Each worker runs the full thread plan** (threads multiply by worker count) - a documented JMeter rule.
+
+## CI/CD and reporting
+
+All tools run headlessly. JMeter’s portable core is:
+
+```bash
+jmeter -n -t plan.jmx -l results.jtl -e -o report/
+```
+
+See [CI/CD load testing](/topics/ci-cd-load-testing/). Code-first tools embed thresholds in source; JMeter gates often parse dashboard statistics or JTL - both valid.
+
+If your compliance process requires an **artifact produced on an air-gapped runner**, JMeter’s dashboard generator is designed for that offline path. Commercial tools may require online activation or SaaS connectivity for full reporting - verify before committing.
+
+## Migrating from LoadRunner / NeoLoad to JMeter
+
+- **Re-implement scenarios** in JMeter; do not expect 1:1 Vuser script conversion.
+- **Rebuild correlation and data feeds** (CSV → [CSV Data Set](/topics/functions-and-variables/)).
+- **Re-validate think time and workload models** - defaults differ.
+- **Map enterprise protocol needs** to JMeter samplers; identify gaps (Citrix, SAP) early.
+- **Train the team on CLI-only load runs** per [best practices](/user-manual/best-practices/).
+- **Use the [HTTP(S) recorder](/topics/http-recorder/) or cURL import** for HTTP scenarios.
+- **Use programmatic plans** if you want code review workflows in JMeter.
+
+## Migrating from JMeter to LoadRunner / NeoLoad
+
+- **Use the commercial tool’s recorder** for HTTP and enterprise protocols.
+- **Map CSV Data Set to the tool’s data feeders.**
+- **Train the team on the commercial IDE and Vuser scripting.**
+- **Budget for per-VUser licensing** at your target scale.
+
+## Fair bake-off checklist
+
+When you trial JMeter and an enterprise tool on the same API:
+
+1. Same **workload model** (arrival rate vs closed-loop users).
+2. Same **think time** and data cardinality.
+3. Same **environment** and monitoring on the server side.
+4. Measure **injector CPU/RAM**, not only server latency.
+5. Include **failure modes** (timeouts, 500s) and assertion strictness.
+6. Include **team time** to author and maintain the script.
+7. Check **license** and support explicitly.
+8. Include **total cost at target VUser scale** - not just per-VUser rates.
+
+A tool that looks cheapest per-VUser can lose if your team cannot maintain scenarios or if protocol gaps require a second tool.
+
+<RelatedContent>
+<Fragment slot="next-step">
+If JMeter fits, start with [Getting Started](/getting-started/get-started/) and a small [web test plan](/user-manual/build-web-test-plan/), then enforce CLI runs via [best practices](/user-manual/best-practices/).
+</Fragment>
+<Fragment slot="related">
+- [JMeter vs Alternatives](/topics/jmeter-vs-alternatives/) - hub page with all tool comparisons
+- [Distributed Testing](/topics/distributed-testing/) - how JMeter scales injectors
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/) - automation parity with enterprise tools
+- [Heap Estimator](/tools/heap-estimator/) - JVM heap sizing for JMeter injectors
+- [Coordinated Omission](/tools/coordinated-omission/) - why thread sizing matters at scale
+</Fragment>
+<Fragment slot="mistakes">
+Assuming JMeter covers all enterprise protocols (Citrix, SAP); ignoring total cost of ownership including training and migration; expecting 1:1 Vuser script conversion; comparing open-loop vs closed-loop workloads unfairly; overlooking air-gapped reporting requirements.
+</Fragment>
+</RelatedContent>

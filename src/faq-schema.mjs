@@ -390,7 +390,102 @@ export const faqSchema = {
     },
     {
       q: 'When should I choose JMeter over k6, Locust, or Gatling?',
-      a: 'Choose JMeter when you need GUI or recorder-based authoring, multiple in-box protocols beyond HTTP, native remote engines, Apache 2.0 licensing, or you already maintain jmx plans and JMeter skills.',
+      a: 'Choose JMeter when you need GUI or recorder-based authoring, multiple in-box protocols beyond HTTP, native remote engines, Apache 2.0 licensing, or you already maintain jmx plans and JMeter skills. See the detailed comparison pages for k6, Locust, and Gatling.',
+    },
+  ],
+
+  '/topics/jmeter-vs-k6': [
+    {
+      q: 'Is k6 better than JMeter for HTTP load testing?',
+      a: 'k6 is often more efficient for pure HTTP at high virtual-user density per CPU, since it uses a Go runtime with goroutine-style VUs. JMeter may win on total cost of ownership when you need broader protocols, existing jmx assets, or GUI authoring. Benchmark your own APIs.',
+    },
+    {
+      q: 'Can I migrate my JMeter jmx plans to k6?',
+      a: 'There is no automated 1:1 converter. Re-implement scenarios in JavaScript, rebuild correlation and data feeds, and re-validate think time and workload models since defaults differ.',
+    },
+    {
+      q: 'Does k6 support protocols beyond HTTP?',
+      a: 'k6 focuses on HTTP with WebSocket and gRPC ecosystem support. For JDBC, LDAP, JMS, FTP, or mail, JMeter has broader in-box protocol support.',
+    },
+    {
+      q: 'Is k6 open source and free?',
+      a: 'k6 has an open-source core but uses AGPL-style licensing with a commercial cloud offering. Verify current terms on the k6 site before enterprise adoption.',
+    },
+  ],
+
+  '/topics/jmeter-vs-locust': [
+    {
+      q: 'Is Locust better than JMeter for Python teams?',
+      a: 'Locust is a strong fit when Python is the shared language and scenarios are code-first. JMeter is better when you need GUI recording, non-HTTP protocols, or mixed-skill authors who are not comfortable writing Python.',
+    },
+    {
+      q: 'Can I migrate my JMeter jmx plans to Locust?',
+      a: 'No automated converter exists. Re-implement scenarios as Python classes, rebuild correlation and data feeds, and re-validate workload models since Locust uses gevent greenlets, not Java threads.',
+    },
+    {
+      q: 'Does Locust support protocols beyond HTTP?',
+      a: 'Locust is primarily HTTP-focused. You can build custom clients in Python for unusual protocols, but JMeter has broader in-box samplers for JDBC, LDAP, JMS, FTP, and mail.',
+    },
+    {
+      q: 'Is Locust free to use?',
+      a: 'Locust is released under the MIT license, which is simple for most organisations and avoids copyleft concerns.',
+    },
+  ],
+
+  '/topics/jmeter-vs-gatling': [
+    {
+      q: 'Is Gatling better than JMeter for HTTP load testing?',
+      a: 'Gatling often achieves higher HTTP virtual-user density per CPU due to its async event-driven engine. JMeter may win on protocol breadth, GUI authoring, or when you already maintain jmx plans and JMeter skills.',
+    },
+    {
+      q: 'Do I need to know Scala to use Gatling?',
+      a: 'Gatling was historically Scala-centric, but Java and Kotlin DSLs are commonly used today. Check current Gatling documentation for first-class language support in your version.',
+    },
+    {
+      q: 'Can I migrate my JMeter jmx plans to Gatling?',
+      a: 'No automated converter exists. Re-implement scenarios in the Gatling DSL, rebuild correlation and data feeds, and re-validate workload models since Gatling uses async VUs, not Java threads.',
+    },
+    {
+      q: 'Is Gatling open source?',
+      a: 'Gatling OSS is under the Apache License 2.0, which aligns with many compliance needs. Enterprise editions add collaboration and distributed features.',
+    },
+  ],
+
+  '/topics/jmeter-vs-enterprise': [
+    {
+      q: 'Should I switch from LoadRunner to JMeter?',
+      a: 'Consider it if HTTP is your dominant protocol, you want to reduce per-VUser licensing costs, and you do not need Citrix, SAP, or TruClient recorders. JMeter covers HTTP, JDBC, LDAP, JMS, FTP, and mail in-box with Apache 2.0 licensing.',
+    },
+    {
+      q: 'Can JMeter replace NeoLoad?',
+      a: 'JMeter can replace NeoLoad for HTTP, JDBC, JMS, LDAP, FTP, and mail protocols. If you rely on NeoLoad for Citrix, SAP, or other proprietary protocol recorders, verify JMeter coverage or plan to keep a second tool for those protocols.',
+    },
+    {
+      q: 'Does JMeter have commercial support?',
+      a: 'Apache JMeter itself has no vendor support; it relies on community support. Consulting services are available from third parties. If you need SLA-backed support, evaluate commercial tools or support contracts.',
+    },
+    {
+      q: 'How do I migrate from LoadRunner Vuser scripts to JMeter?',
+      a: 'Re-implement scenarios in JMeter; there is no 1:1 Vuser script converter. Rebuild correlation and data feeds, re-validate think time and workload models, and map enterprise protocol needs to JMeter samplers early.',
+    },
+  ],
+
+  '/topics/gui-vs-code-first': [
+    {
+      q: 'Is GUI-based load testing better than code-first?',
+      a: 'Neither is universally better. GUI-based tools are gentler for non-programmers and support recording. Code-first tools offer clean version control, PR review, and CI/CD integration. Choose based on your team skills and workflow.',
+    },
+    {
+      q: 'Can JMeter do both GUI and code-first?',
+      a: 'Yes. JMeter supports GUI authoring with jmx files, programmatic test plans via the Kotlin and Java DSL, HTTP(S) recording, and cURL import. Teams can start with the GUI and migrate to code-first for CI.',
+    },
+    {
+      q: 'Should non-developers use code-first tools?',
+      a: 'No. Code-first tools like k6, Locust, and Gatling assume programming comfort. JMeter GUI and HTTP(S) Test Script Recorder are usually gentler for non-developer authors.',
+    },
+    {
+      q: 'Do code-first tools support recording?',
+      a: 'Most code-first tools do not have a built-in recorder like JMeter. Teams often convert recorded traffic from Postman or curl, or write scenarios from scratch. JMeter bridges this gap with both GUI recording and programmatic plans.',
     },
   ],
 
