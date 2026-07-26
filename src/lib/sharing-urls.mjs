@@ -22,3 +22,18 @@ export function buildShareUrls(url, title) {
     perplexity: `https://www.perplexity.ai/search?q=${encodedUrl}`,
   };
 }
+
+/**
+ * Build formatted social snippet for copy/paste to X, Slack, LinkedIn, or Discord.
+ * @param {Object} opts
+ * @param {string} opts.title
+ * @param {string} opts.url
+ * @param {string} [opts.description]
+ * @param {string} [opts.category]
+ * @returns {string} Formatted snippet
+ */
+export function buildShareSnippet({ title, url, description, category }) {
+  const badge = category ? `[${category}] ` : '';
+  const desc = description ? `\n${description}` : '';
+  return `⚡ ${badge}${title}${desc}\n\n🔗 ${url}`;
+}

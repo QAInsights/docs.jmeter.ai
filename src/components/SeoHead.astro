@@ -189,18 +189,24 @@ gtag('config', 'G-MVZN6CMXYQ');`,
     route.head.push({ tag: 'link', attrs: { rel: 'manifest', href: '/manifest.json' } });
   }
 
+  // Compute per-page dynamic Open Graph Image URL
+  const rawSlug = Astro.url.pathname.replace(/^\/|\/$/g, '');
+  const ogSlug = rawSlug ? rawSlug : 'home';
+  const customOgImage = entryData?.ogImage;
+  const ogImageUrl = customOgImage ? customOgImage : `https://docs.jmeter.ai/og/${ogSlug}.png`;
+
   // Inject Open Graph Image tags
   if (!hasTag('meta', 'property', 'og:image')) {
-    route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: 'https://docs.jmeter.ai/images/og_preview.png' } });
+    route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImageUrl } });
     route.head.push({ tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } });
-    route.head.push({ tag: 'meta', attrs: { property: 'og:image:height', content: '628' } });
+    route.head.push({ tag: 'meta', attrs: { property: 'og:image:height', content: '630' } });
     route.head.push({ tag: 'meta', attrs: { property: 'og:image:type', content: 'image/png' } });
     route.head.push({ tag: 'meta', attrs: { property: 'og:image:alt', content: seoTitle } });
   }
 
   // Inject Twitter Image tags
   if (!hasTag('meta', 'name', 'twitter:image')) {
-    route.head.push({ tag: 'meta', attrs: { name: 'twitter:image', content: 'https://docs.jmeter.ai/images/og_preview.png' } });
+    route.head.push({ tag: 'meta', attrs: { name: 'twitter:image', content: ogImageUrl } });
     route.head.push({ tag: 'meta', attrs: { name: 'twitter:image:alt', content: seoTitle } });
   }
 
