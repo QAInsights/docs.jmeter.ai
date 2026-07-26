@@ -5,11 +5,13 @@ import Pagination from 'virtual:starlight/components/Pagination';
 import GoToTop from './GoToTop.astro';
 import DocActions from './DocActions.astro';
 import ImageLightbox from './ImageLightbox.astro';
+import PeopleAlsoAsk from './PeopleAlsoAsk.astro';
 
 const isLandingPage = Astro.url.pathname === '/';
 ---
 
 <div class="doc-footer-wrapper">
+  {!isLandingPage && <PeopleAlsoAsk />}
   <DocActions variant="footer" {...Astro.props} />
   <footer class="sl-flex doc-footer">
     <div class="meta sl-flex">

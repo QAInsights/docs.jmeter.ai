@@ -1,0 +1,153 @@
+---
+import { faqSchema } from '../faq-schema.mjs';
+
+interface Props {
+  pathname?: string;
+  title?: string;
+}
+
+const { pathname = Astro.url.pathname, title = "People Also Ask" } = Astro.props;
+const cleanPath = pathname.replace(/\/$/, '') || '/';
+const faqs = faqSchema[cleanPath] || [];
+---
+
+{faqs.length > 0 && (
+  <div class="paa-wrapper">
+    <h2 class="paa-heading">{title}</h2>
+    <div class="paa-list">
+      {faqs.map((faq) => (
+        <details class="paa-item">
+          <summary class="paa-summary">
+            <span class="paa-question">{faq.q}</span>
+            <span class="paa-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+          </summary>
+          <div class="paa-body">
+            <p>{faq.a}</p>
+          </div>
+        </details>
+      ))}
+    </div>
+  </div>
+)}
+
+<style>
+  .paa-wrapper {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--sl-color-gray-5);
+  }
+
+  .paa-heading {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 1.25rem 0;
+    color: var(--sl-color-white);
+    letter-spacing: -0.01em;
+  }
+
+  .paa-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .paa-item {
+    background: var(--sl-color-gray-6);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: border-color 150ms var(--mx-ease, ease), background-color 150ms var(--mx-ease, ease);
+  }
+
+  .paa-item:hover,
+  .paa-item[open] {
+    border-color: var(--sl-color-gray-4);
+  }
+
+  .paa-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--sl-color-white);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+  }
+
+  .paa-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .paa-question {
+    flex: 1;
+    padding-right: 1.25rem;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .paa-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sl-color-gray-3);
+    flex-shrink: 0;
+    transition: transform 200ms var(--mx-ease, ease), color 150ms var(--mx-ease, ease);
+  }
+
+  .paa-item[open] .paa-icon {
+    transform: rotate(180deg);
+    color: var(--sl-color-accent-high);
+  }
+
+  .paa-body {
+    padding: 1.25rem 1.5rem 1.35rem 1.5rem;
+    border-top: 1px solid var(--sl-color-gray-5);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--sl-color-gray-2);
+    background: rgba(0, 0, 0, 0.15);
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .paa-body p {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Light theme overrides */
+  :root[data-theme='light'] .paa-body {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 640px) {
+    .paa-wrapper {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+    }
+    .paa-heading {
+      font-size: 1.125rem;
+      margin-bottom: 1rem;
+    }
+    .paa-summary {
+      padding: 0.9rem 1rem;
+      font-size: 0.9rem;
+    }
+    .paa-question {
+      padding-right: 0.75rem;
+    }
+    .paa-body {
+      padding: 1rem 1rem 1.15rem 1rem;
+      font-size: 0.875rem;
+    }
+  }
+</style>

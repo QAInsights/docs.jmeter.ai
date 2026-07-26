@@ -1,6 +1,22 @@
 import { XMLParser } from 'fast-xml-parser';
 import fs from 'fs';
 import path from 'path';
+import { SYNCED_MANUAL_MAPPINGS } from '../src/lib/internal-linking.mjs';
+
+function buildDefaultCustomFooter(destRel) {
+  const cleanRoute = '/' + destRel.replace(/\\/g, '/').replace(/\.mdx$/, '');
+  const mapping = SYNCED_MANUAL_MAPPINGS[cleanRoute];
+  if (!mapping) return '';
+  const { practicalGuide, relatedTool } = mapping;
+  return `<RelatedContent>
+  <span slot="next-step">
+    [${practicalGuide.title}](${practicalGuide.href}) - Step-by-step practical guide for real-world scenarios.
+  </span>
+  <span slot="related">
+    [${relatedTool.title}](${relatedTool.href}) - Interactive browser tool for calculation and validation.
+  </span>
+</RelatedContent>`;
+}
 
 const JMETER_XDOCS = process.env.JMETER_XDOCS || path.resolve('../jmeter/xdocs');
 const OUTPUT_DIR = path.resolve('src/content/docs');
@@ -1106,8 +1122,15 @@ function convertFile(srcPath, destPath) {
 
   parts.push(`${MARKER_BODY_START}\n${syncedBody}\n${MARKER_BODY_END}`);
 
-  if (custom.customFooter) {
-    parts.push(`\n\n${MARKER_FOOTER_START}\n${custom.customFooter}\n${MARKER_FOOTER_END}`);
+  let footer = custom.customFooter || buildDefaultCustomFooter(path.relative(OUTPUT_DIR, destAbs));
+  if (footer) {
+    parts.push(`\n\n${MARKER_FOOTER_START}\n${footer}\n${MARKER_FOOTER_END}`);
+    const hasImport = parts.some(p => typeof p === 'string' && p.includes('RelatedContent'));
+    if (!hasImport) {
+      const relImportPath = path.relative(path.dirname(destAbs), path.resolve('src/components/RelatedContent.astro')).replace(/\\/g, '/');
+      const importLine = `import RelatedContent from '${relImportPath.startsWith('.') ? relImportPath : './' + relImportPath}';\n\n`;
+      parts.splice(1, 0, importLine);
+    }
   }
 
   // Always end with a trailing newline.
