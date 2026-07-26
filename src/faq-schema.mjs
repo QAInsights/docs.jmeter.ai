@@ -709,6 +709,114 @@ export const faqSchema = {
       a: 'Define explicit signals such as produce acknowledgement, message visibility to a consumer, or a downstream HTTP status. Fire-and-forget without observability is a weak test.',
     },
   ],
+
+  // --- Error playbooks ---
+  '/topics/errors': [
+    {
+      q: 'What are JMeter error playbooks?',
+      a: 'Short symptom-based guides for common JMeter failures such as ConnectException, SSL handshake errors, OutOfMemoryError, stuck throughput, GUI versus CLI failures, and 401 after recording. Each page covers symptom, causes, fix order, and related tools.',
+    },
+    {
+      q: 'Should I use the error playbooks or the full troubleshooting guide?',
+      a: 'Use an error playbook when you already know the exception or symptom. Use the full troubleshooting guide for the end-to-end triage tree from one thread to full load.',
+    },
+  ],
+
+  '/topics/errors/connect-exception': [
+    {
+      q: 'What does java.net.ConnectException mean in JMeter?',
+      a: 'JMeter could not establish a TCP connection to the configured host and port. Typical messages are connection refused or connection timed out, often shown as a Non HTTP response code.',
+    },
+    {
+      q: 'How do I fix ConnectException in JMeter?',
+      a: 'Verify host, port, and protocol on HTTP Request Defaults, confirm the service is listening, test connectivity from the same machine that runs JMeter, and ensure CLI properties such as -Jhost match the plan.',
+    },
+    {
+      q: 'Why does ConnectException happen only in CI?',
+      a: 'CI runners often cannot reach private staging networks, or -Jhost and secrets differ from your laptop. Test connectivity from the runner environment first.',
+    },
+  ],
+
+  '/topics/errors/non-http-response-code': [
+    {
+      q: 'What is Non HTTP response code in JMeter?',
+      a: 'It means the HTTP sampler failed with a client-side exception before a normal HTTP status line was returned. The real error is the nested Java exception in the response message.',
+    },
+    {
+      q: 'Is Non HTTP response code an HTTP 500?',
+      a: 'No. It is not a server status code. Inspect the nested exception such as ConnectException, SSLHandshakeException, or SocketException to choose the right fix.',
+    },
+  ],
+
+  '/topics/errors/ssl-handshake-exception': [
+    {
+      q: 'Why does JMeter fail SSL when the browser works?',
+      a: 'Browsers trust the OS certificate store. JMeter uses the JVM truststore unless configured otherwise. Import the required CA into the Java truststore that launches JMeter.',
+    },
+    {
+      q: 'What causes unknown_ca during JMeter recording?',
+      a: 'The browser has not accepted the JMeter proxy certificate. Install ApacheJMeterTemporaryRootCA from the JMeter launch directory into the browser trust store.',
+    },
+    {
+      q: 'Is distributed RMI SSL the same as HTTPS sampler SSL?',
+      a: 'No. RMI SSL between controller and workers uses the RMI keystore setup documented for remote testing. HTTPS sampler failures are about the system under test certificates.',
+    },
+  ],
+
+  '/topics/errors/out-of-memory-heap': [
+    {
+      q: 'How do I fix OutOfMemoryError Java heap space in JMeter?',
+      a: 'Run non-GUI load, disable View Results Tree, increase HEAP or -Xmx, reduce threads per engine, save fewer result fields, prefer Groovy over heavy scripts, and ensure container memory limits exceed the heap.',
+    },
+    {
+      q: 'Is JMeter OutOfMemoryError always the server under test?',
+      a: 'Often it is the injector JVM. Check JMeter heap and GC behaviour before blaming the application servers.',
+    },
+  ],
+
+  '/topics/errors/socket-closed-connection-reset': [
+    {
+      q: 'What causes connection reset in JMeter load tests?',
+      a: 'Common causes include server or load balancer connection limits, idle timeouts closing keep-alive sockets, injector port exhaustion, application restarts, and unstable network paths.',
+    },
+    {
+      q: 'Why do connection resets appear only under high load?',
+      a: 'Connection pools and operating system limits usually appear only when many sockets are open. One-thread tests often hide those limits.',
+    },
+  ],
+
+  '/topics/errors/throughput-stuck': [
+    {
+      q: 'Why is JMeter throughput lower than my target RPS?',
+      a: 'Typical reasons are too few threads for the response time, response time growth under load, heavy listeners, think time, injector saturation, or server throttling. Size threads from measured response time and validate in CLI mode.',
+    },
+    {
+      q: 'Does adding threads always increase JMeter RPS?',
+      a: 'No. After the server saturates, extra threads mainly increase queueing and latency rather than useful throughput.',
+    },
+  ],
+
+  '/topics/errors/gui-works-cli-fails': [
+    {
+      q: 'Why does my JMeter plan work in GUI but fail in CLI?',
+      a: 'Common causes are different working directories for relative CSV paths, missing -J properties, missing plugins on the CLI host, network limits on CI agents, or different user.properties files.',
+    },
+    {
+      q: 'Should I trust GUI-only success before CI?',
+      a: 'No. Always prove the plan with jmeter -n on a representative environment before relying on it in pipelines.',
+    },
+  ],
+
+  '/topics/errors/401-403-after-recording': [
+    {
+      q: 'Why do I get 401 after recording a JMeter script?',
+      a: 'Replay starts a new session. Recorded cookies and tokens are often stale. Add a Cookie Manager and correlate CSRF tokens, hidden fields, or Bearer tokens for each virtual user.',
+    },
+    {
+      q: 'Do I need extractors if I already have a Cookie Manager?',
+      a: 'Cookies often handle classic server sessions. CSRF tokens, hidden form fields, and Authorization bearer tokens still need extractors.',
+    },
+  ],
 };
 
 /**

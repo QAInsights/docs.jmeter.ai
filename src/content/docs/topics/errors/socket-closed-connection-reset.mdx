@@ -1,0 +1,87 @@
+---
+title: "JMeter Socket Closed Connection Reset"
+seoTitle: "JMeter Connection Reset Socket Closed"
+description: "Fix JMeter connection reset and socket closed errors under load: server limits, idle timeouts, keep-alive, injector ports, and TLS drops. Symptom and fixes."
+keywords:
+  - JMeter connection reset
+  - JMeter socket closed
+  - JMeter SocketException
+  - Connection reset by peer JMeter
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Socket closed / connection reset in JMeter
+
+## Symptom
+
+Samples fail mid-run or under higher concurrency with messages such as:
+
+- `Connection reset` / `Connection reset by peer`  
+- `Socket closed` / `SocketException`  
+- `Broken pipe`  
+- Often shown as [Non HTTP response code](/topics/errors/non-http-response-code/)  
+
+Unlike pure **connection refused**, some samples may succeed first; failures increase with load or longer tests.
+
+## Common causes
+
+| Cause | Detail |
+|-------|--------|
+| Server or load balancer limits | Max connections, rate limits, or worker exhaustion |
+| Idle timeouts | LB/proxy closes keep-alive connections JMeter tries to reuse |
+| Injector ephemeral port / file descriptor exhaustion | Many short connections from one host |
+| TLS session / middlebox interference | Intermittent handshake or reset under load |
+| SUT crash or restart | Bursts of resets when the app dies |
+| Aggressive timeouts | Client gives up; appears as socket errors depending on stack |
+| Network path instability | VPN, NAT, or multi-hop firewalls |
+
+## Fix (ordered)
+
+1. Capture **error rate vs active threads** on the [dashboard](/user-manual/generating-dashboard/) and SUT metrics (connections, 5xx, restarts).  
+2. Reproduce with **moderate** threads; note whether failures are immediate or after idle.  
+3. Align **keep-alive** behaviour with the environment (HTTP client settings / connection reuse). If a proxy closes idle sockets quickly, reduce reuse or match idle timeouts.  
+4. Check SUT and LB **max connections** and **idle timeout** documentation for your stack.  
+5. On the injector: watch open files, TIME_WAIT, and CPU; split load across engines if the client is saturated ([distributed testing](/topics/distributed-testing/), [Thread Calculator](/tools/thread-calculator/)).  
+6. Distinguish from **ConnectException** (never connected) vs reset (peer closed an established or half-open connection).  
+7. Review TLS separately if resets cluster around HTTPS only ([SSLHandshakeException](/topics/errors/ssl-handshake-exception/)).  
+8. Ensure you are not melting the SUT with zero think time and huge threads ([best practices](/user-manual/best-practices/)).  
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Throughput stuck](/topics/errors/throughput-stuck/) | Resets plus flat RPS |
+| [OutOfMemoryError heap](/topics/errors/out-of-memory-heap/) | Injector death causing drops |
+| [Coordinated Omission](/tools/coordinated-omission/) | Throughput below target while latency looks fine |
+| [Grafana / Backend Listener](/topics/grafana-influx-backend-listener/) | Live error charts |
+
+## Frequently asked questions
+
+### Is connection reset always a JMeter bug?
+
+Rarely. It usually means something on the path or server closed the TCP connection. Validate with server and load-balancer metrics.
+
+### Why only under load?
+
+Connection pools and OS limits appear only when many sockets are open. One-thread tests often hide them.
+
+### Should I disable keep-alive?
+
+Sometimes as a diagnostic. Prefer fixing idle timeouts and server capacity; disabling keep-alive increases handshakes and can worsen injector load.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Correlate JMeter error timestamps with SUT connection counts and load-balancer idle timeout settings.
+</Fragment>
+<Fragment slot="related">
+- [Non HTTP response code](/topics/errors/non-http-response-code/)
+- [Best practices](/user-manual/best-practices/)
+- [Distributed testing](/topics/distributed-testing/)
+</Fragment>
+</RelatedContent>

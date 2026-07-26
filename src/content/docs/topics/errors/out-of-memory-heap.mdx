@@ -1,0 +1,90 @@
+---
+title: "JMeter OutOfMemoryError Java heap space"
+seoTitle: "JMeter OutOfMemoryError Java heap space"
+description: "Fix JMeter OutOfMemoryError Java heap space: raise heap, cut threads, disable View Results Tree, trim result saving, and split injectors. Symptom and fixes."
+keywords:
+  - JMeter OutOfMemoryError
+  - Java heap space JMeter
+  - JMeter Xmx
+  - JMeter memory
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# OutOfMemoryError: Java heap space in JMeter
+
+## Symptom
+
+- JMeter exits or freezes with `java.lang.OutOfMemoryError: Java heap space`  
+- Long GC pauses, injector becomes unresponsive  
+- In containers: pod/container **OOMKilled** even without a clear Java stack  
+- Often appears when increasing **threads**, enabling **View Results Tree**, or saving **full responses**
+
+## Common causes
+
+Official [best practices](/user-manual/best-practices/) stress lean injectors:
+
+| Cause | Detail |
+|-------|--------|
+| Heap too small for threads | Roughly more concurrent threads → more live objects; default heap may be too low |
+| View Results Tree / heavy listeners | Keep detailed sample data in memory - **debug only** |
+| Too many threads on one JVM | Need more engines ([distributed](/topics/distributed-testing/)) or lower concurrency |
+| Saving too much | XML results, response data, large bodies |
+| Heavy scripts | BeanShell/JavaScript on hot paths; prefer JSR223 Groovy with compile cache |
+| Container limit below `-Xmx` | cgroup kills the process ([Docker/K8s](/topics/docker-kubernetes/)) |
+
+## Fix (ordered)
+
+1. **Switch to non-GUI for load**  
+
+   ```bash
+   jmeter -n -t plan.jmx -l results.jtl -e -o report/
+   ```
+
+2. **Disable** View Results Tree, View Results in Table, and other heavy listeners for the load run (best practices).  
+3. **Size heap** for the injector using the [Heap Estimator](/tools/heap-estimator/) as a starting point; set `HEAP` / `JVM_ARGS` (for example `-Xms512m -Xmx2048m`) per your launch scripts, then restart JMeter.  
+4. **Reduce threads per engine**; scale out with multiple CLI instances or remote workers rather than one huge JVM.  
+5. Prefer **CSV** result files and only the saveservice fields you need ([dashboard requirements](/user-manual/generating-dashboard/)).  
+6. Replace expensive scripting with **JSR223 + Groovy**, cache compiled scripts, use `vars.get("x")` not embedded `\${x}` in cached scripts (best practices).  
+7. In Docker/K8s: set memory **limits above** `-Xmx` plus native overhead.  
+8. Re-test with a pilot; watch GC logs if problems continue.  
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Heap Estimator](/tools/heap-estimator/) | Starting `-Xmx` guess |
+| [Thread Calculator](/tools/thread-calculator/) | Fewer threads if RPS allows |
+| [Distributed testing](/topics/distributed-testing/) | Spread load across engines |
+| [Docker / Kubernetes](/topics/docker-kubernetes/) | cgroup OOM |
+| [Best practices](/user-manual/best-practices/) | Lean plan rules |
+
+## Frequently asked questions
+
+### Is OutOfMemoryError a server problem?
+
+Often it is the **JMeter injector**. Confirm with injector GC/heap metrics before blaming the SUT.
+
+### Why does GUI mode OOM faster?
+
+GUI rendering plus listeners keep more objects alive. Official guidance: use GUI to build, CLI for load.
+
+### How much heap do I need?
+
+It depends on threads, response sizes, scripting, and listeners. Start from the Heap Estimator, then validate under a pilot run.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Disable View Results Tree, set a larger HEAP for a pilot CLI run, and re-check with the Heap Estimator if you still OOM.
+</Fragment>
+<Fragment slot="related">
+- [Heap Estimator](/tools/heap-estimator/)
+- [Best practices](/user-manual/best-practices/)
+- [CI/CD load testing](/topics/ci-cd-load-testing/)
+</Fragment>
+</RelatedContent>

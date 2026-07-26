@@ -1,0 +1,87 @@
+---
+title: "JMeter Throughput Stuck Below Target RPS"
+seoTitle: "JMeter Throughput Not Reaching Target RPS"
+description: "Fix JMeter throughput stuck below target RPS: thread sizing, response time growth, listeners, think time, coordinated omission, and injector limits."
+keywords:
+  - JMeter throughput low
+  - JMeter not reaching RPS
+  - JMeter target throughput
+  - coordinated omission JMeter
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Throughput stuck / not reaching target RPS
+
+## Symptom
+
+- You aimed for a target **requests per second** (or “users”) but the [dashboard](/user-manual/generating-dashboard/) **hits/s** or throughput plateaus lower  
+- Active threads may be high while throughput stays flat  
+- Latency percentiles rise as you add threads  
+- Results can look “too good” if you under-issue load relative to the schedule ([coordinated omission](/user-manual/best-practices/))  
+
+## Common causes
+
+| Cause | What to check |
+|-------|----------------|
+| Not enough threads for target RPS | Little’s Law style sizing: threads ≈ RPS × response time (seconds) when busy ([Thread Calculator](/tools/thread-calculator/)) |
+| Response time grew under load | Server saturation; each thread completes fewer iterations |
+| View Results Tree / heavy listeners | Injector CPU burned on UI I/O ([best practices](/user-manual/best-practices/)) |
+| Think time / timers | By design lower RPS; expected for paced users |
+| Assertions and scripting cost | Too many expensive checks/scripts per sample |
+| Injector CPU, NIC, or heap pressure | One machine cannot generate the offered load |
+| SUT throttling | Rate limits, pool exhaustion, 429/503 |
+| Ramp still running | Steady-state not reached yet |
+
+Official best practices: incorrect thread sizing contributes to **coordinated omission** and inaccurate results. Use CLI for real load: `jmeter -n -t plan.jmx -l results.jtl`.
+
+## Fix (ordered)
+
+1. Measure **average response time** with a small pilot under CLI.  
+2. Estimate threads with the [Thread Calculator](/tools/thread-calculator/); add ramp-up (avoid 0-second ramp to huge threads).  
+3. Disable heavy listeners; write results with `-l` only.  
+4. Run long enough to leave ramp and warm-up.  
+5. Compare **achieved hits/s** to target; if RT rose, recompute threads or lower target.  
+6. Use the [Coordinated Omission](/tools/coordinated-omission/) helper when actual RPS is below target RPS to quantify skew.  
+7. Check injector CPU and GC; raise heap only if needed ([Heap Estimator](/tools/heap-estimator/)), or split engines ([distributed testing](/topics/distributed-testing/)).  
+8. Inspect SUT metrics (CPU, DB pools, rate limits) before adding infinite threads.  
+9. Gate CI on error % and percentiles, not only “threads configured” ([CI/CD](/topics/ci-cd-load-testing/), [APDEX/SLOs](/topics/apdex-slo-percentiles/)).  
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Thread Calculator](/tools/thread-calculator/) | Initial concurrency |
+| [Coordinated Omission](/tools/coordinated-omission/) | Actual RPS below target |
+| [Best practices](/user-manual/best-practices/) | Lean load generation |
+| [Socket closed / reset](/topics/errors/socket-closed-connection-reset/) | Errors cap throughput |
+
+## Frequently asked questions
+
+### Does more threads always mean more RPS?
+
+No. After the server saturates, extra threads mostly increase queueing and response time, not useful throughput.
+
+### Why is calculated RPS higher than the dashboard?
+
+Calculators assume stable service time and little think time. Under load, service time rises and timers reduce rate.
+
+### Is flat throughput with rising errors a success?
+
+No. Prefer healthy throughput with low error % and controlled percentiles ([glossary](/user-manual/glossary/)).
+
+<RelatedContent>
+<Fragment slot="next-step">
+Run a CLI pilot, capture average RT, size threads with the Thread Calculator, then compare achieved hits/s on the HTML dashboard.
+</Fragment>
+<Fragment slot="related">
+- [Thread Calculator](/tools/thread-calculator/)
+- [Coordinated Omission](/tools/coordinated-omission/)
+- [APDEX SLOs percentiles](/topics/apdex-slo-percentiles/)
+</Fragment>
+</RelatedContent>

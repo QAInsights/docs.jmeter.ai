@@ -1,7 +1,7 @@
 ---
 title: "JMeter Troubleshooting Guide"
 seoTitle: "JMeter Troubleshooting Common Errors"
-description: "Fix common JMeter failures: connection reset, 401 after recording, low throughput, OutOfMemoryError, SSL handshake errors, and GUI vs CLI differences."
+description: 'Fix common JMeter failures: connection reset, 401 after recording, low throughput, OutOfMemoryError, SSL handshake errors, and GUI vs CLI differences.'
 keywords:
   - JMeter troubleshooting
   - JMeter connection reset
@@ -21,9 +21,24 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 When tests fail, isolate **injector**, **plan**, and **system under test**. This playbook covers frequent symptoms with fixes grounded in [best practices](/user-manual/best-practices/), [remote testing](/user-manual/remote-test/), [functions](/user-manual/functions/), [recorder](/topics/http-recorder/), and [glossary](/user-manual/glossary/) metrics.
 
+For **search-friendly, one-error pages** (symptom → cause → fix), start with the [Error Playbooks index](/topics/errors/).
+
 :::tip[Reproduce small]
 Cut to **1 thread**, 1 loop, View Results Tree on, then grow. Load multiplies misconfiguration.
 :::
+
+## Dedicated error playbooks
+
+| Symptom | Playbook |
+|---------|----------|
+| `java.net.ConnectException` | [ConnectException](/topics/errors/connect-exception/) |
+| Non HTTP response code | [Non HTTP response code](/topics/errors/non-http-response-code/) |
+| `SSLHandshakeException` | [SSLHandshakeException](/topics/errors/ssl-handshake-exception/) |
+| `OutOfMemoryError: Java heap space` | [OutOfMemoryError heap](/topics/errors/out-of-memory-heap/) |
+| Socket closed / connection reset | [Socket closed / reset](/topics/errors/socket-closed-connection-reset/) |
+| Throughput stuck below target RPS | [Throughput stuck](/topics/errors/throughput-stuck/) |
+| Works in GUI, fails in CLI | [GUI works, CLI fails](/topics/errors/gui-works-cli-fails/) |
+| 401 / 403 after recording | [401/403 after recording](/topics/errors/401-403-after-recording/) |
 
 ## Quick triage tree
 

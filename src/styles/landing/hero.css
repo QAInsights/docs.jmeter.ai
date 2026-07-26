@@ -70,6 +70,19 @@
   box-shadow: 0 4px 16px rgba(234, 88, 12, 0.3);
 }
 
+.hero-cta .cta-tertiary {
+  background: transparent;
+  color: var(--sl-color-gray-2);
+  border: 1px solid var(--sl-color-gray-5);
+  padding: 0.65rem 1.15rem;
+}
+
+.hero-cta .cta-tertiary:hover {
+  border-color: var(--sl-color-gray-3);
+  color: var(--sl-color-white);
+  transform: translateY(-1px);
+}
+
 .hero-cta .cta-secondary {
   /* Solid fill for the padding box + animated gradient for the border box.
      The first background clips to padding-box (interior), the second to

@@ -1,0 +1,86 @@
+---
+title: "JMeter 401 403 After Recording"
+seoTitle: "JMeter 401 After Recording Fix"
+description: "Fix JMeter 401 and 403 after HTTP(S) recording: Cookie Manager, CSRF correlation, expired tokens, Header Manager scope, and CSV users. Symptom and fixes."
+keywords:
+  - JMeter 401 after recording
+  - JMeter 403
+  - JMeter session expired
+  - JMeter CSRF
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# 401 / 403 after recording
+
+## Symptom
+
+- Recording in the browser works and samplers appear under the Recording Controller  
+- Replay in JMeter returns **401 Unauthorized** or **403 Forbidden** on login-protected steps  
+- First sampler may work; later calls fail  
+- Or all calls fail after the recorded session cookie/token expires  
+
+This is one of the most common post-recorder failures ([HTTP recorder](/topics/http-recorder/), [best practices](/user-manual/best-practices/)).
+
+## Common causes
+
+| Cause | Detail |
+|-------|--------|
+| Missing Cookie Manager | Session cookies from `Set-Cookie` not stored per thread ([web test plan](/user-manual/build-web-test-plan/)) |
+| Hard-coded CSRF / viewstate / nonce | Values from the recording are stale ([correlation](/topics/correlation-dynamic-values/)) |
+| Hard-coded Bearer / session token | JWT expired; need extract + Header Manager ([JWT/OAuth](/topics/jwt-oauth-sso/)) |
+| Header Manager scope wrong | Authorization not applied to the failing sampler |
+| Same user / concurrency rules | App rejects parallel sessions for one account |
+| Include/exclude left noise out | Login API calls never recorded |
+| HTTPS recorder cert issues during capture | Incomplete journey recorded (`unknown_ca` per best practices) |
+
+## Fix (ordered)
+
+1. Replay with **1 thread**, View Results Tree on; find the **first** 401/403.  
+2. Add an [HTTP Cookie Manager](/user-manual/component-reference/) at Test Plan or Thread Group level.  
+3. Compare the failing request to the **previous** response: look for tokens in HTML/JSON/headers.  
+4. Add JSON or Regular Expression Extractor; replace hard-coded values with `\${var}` ([correlation guide](/topics/correlation-dynamic-values/), [Regex Extractor Builder](/tools/regex-tester/)).  
+5. For APIs: extract `access_token`, set header `Authorization` to ``Bearer `\${accessToken}` `` ([JWT/OAuth](/topics/jwt-oauth-sso/)).  
+6. Use **CSV Data Set** for unique users when the app requires it (best practices multi-user pattern).  
+7. Assert login success (status + body) so silent auth failure does not flood later steps.  
+8. Disable Tree, run CLI, confirm error % on the [dashboard](/user-manual/generating-dashboard/).  
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Correlation](/topics/correlation-dynamic-values/) | Extract dynamic fields |
+| [Regex Extractor Builder](/tools/regex-tester/) | Draft regex from a response body |
+| [HTTP recorder](/topics/http-recorder/) | Capture and cleanup |
+| [JWT / OAuth / SSO](/topics/jwt-oauth-sso/) | Token APIs |
+| [API load testing](/topics/api-load-testing/) | Assertions and headers |
+
+## Frequently asked questions
+
+### Why did recording work if replay returns 401?
+
+Recording used your live browser session. Replay is a new session unless cookies and tokens are correlated for each virtual user.
+
+### Do I need extractors if I only use Cookie Manager?
+
+Cookies often cover classic server sessions. CSRF tokens, hidden fields, and Bearer tokens still need extractors.
+
+### Can 403 be a WAF or CSRF failure?
+
+Yes. Correlate anti-forgery tokens and required headers; match the browser’s security headers when they are mandatory.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Add Cookie Manager, re-run one thread, and correlate the first dynamic token on the response before the first 401.
+</Fragment>
+<Fragment slot="related">
+- [Correlation](/topics/correlation-dynamic-values/)
+- [HTTP recorder](/topics/http-recorder/)
+- [Regex Extractor Builder](/tools/regex-tester/)
+</Fragment>
+</RelatedContent>

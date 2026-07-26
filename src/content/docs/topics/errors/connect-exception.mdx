@@ -1,0 +1,92 @@
+---
+title: "JMeter java.net.ConnectException"
+seoTitle: "JMeter java.net.ConnectException Fix"
+description: "Fix JMeter java.net.ConnectException: wrong host or port, firewall, TLS mismatch, timeouts, and injector network path. Symptom, causes, and ordered fixes."
+keywords:
+  - JMeter ConnectException
+  - java.net.ConnectException JMeter
+  - JMeter connection refused
+  - JMeter cannot connect
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# java.net.ConnectException in JMeter
+
+## Symptom
+
+In View Results Tree, the JTL, or dashboard error tables you see messages such as:
+
+- `java.net.ConnectException: Connection refused`  
+- `java.net.ConnectException: Connection timed out`  
+- `Non HTTP response code: java.net.ConnectException`  
+- Sample marked failed with **no** normal HTTP status (not 200/404/500)
+
+Often every thread fails immediately, or failures start when the system under test (SUT) or network path is wrong.
+
+## Common causes
+
+| Cause | Why it happens |
+|-------|----------------|
+| Wrong host, port, or protocol | HTTP Request Defaults / sampler still point at lab host or `http` vs `https` |
+| Property not applied | Plan uses `\${__P(host,)}` but CLI omitted `-Jhost=...` ([functions](/topics/functions-and-variables/)) |
+| SUT not listening | Process down, wrong interface, or container port not published |
+| Firewall / security group | Injector cannot reach SUT (common in CI and [Kubernetes](/topics/docker-kubernetes/)) |
+| Connect timeout too short | Network latency or cold start exceeds HTTP Request connect timeout |
+| Distributed workers differ | Workers lack DNS/route the controller has ([distributed testing](/topics/distributed-testing/)) |
+
+## Fix (ordered)
+
+1. **Copy the exact error** from the first failed sample (code + message).  
+2. **From the same machine that runs JMeter**, test reachability (`curl`, `Test-NetConnection`, browser). If curl fails, it is not a JMeter sampler bug.  
+3. Open **HTTP Request Defaults** and the failing sampler: protocol, server name, port, path. Prefer one defaults element so hosts stay consistent ([web test plan](/user-manual/build-web-test-plan/)).  
+4. If the plan uses properties, print the effective command:
+
+   ```bash
+   jmeter -n -t plan.jmx -Jhost=staging.example.com -Jport=443 -l out.jtl -j jmeter.log
+   ```
+
+   Confirm `\${__P(host,localhost)}` (or similar) is what you intend.  
+5. Raise **connect** and **response** timeouts only after host/port are correct.  
+6. On CI/K8s: check NetworkPolicy, egress, private DNS, and that the job runs in a network that can see the SUT ([CI/CD](/topics/ci-cd-load-testing/)).  
+7. Distributed: reproduce **on a worker** shell; fix worker networking and data, not only the controller ([remote testing](/user-manual/remote-test/)).  
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Non HTTP response code](/topics/errors/non-http-response-code/) | Broader non-HTTP failures |
+| [SSLHandshakeException](/topics/errors/ssl-handshake-exception/) | Connect works but TLS fails |
+| [GUI works, CLI fails](/topics/errors/gui-works-cli-fails/) | Host only wrong under CLI |
+| [Docker / Kubernetes](/topics/docker-kubernetes/) | Container networking |
+| [Troubleshooting overview](/topics/troubleshooting/) | Full triage tree |
+
+## Frequently asked questions
+
+### Is ConnectException an HTTP 500?
+
+No. It usually means JMeter never completed a normal HTTP exchange. The failure is at the TCP/connect layer (or is wrapped as a non-HTTP sample error).
+
+### Why does it work on my laptop but fail in CI?
+
+CI runners often cannot reach private staging hosts, or `-Jhost` / secrets differ. Test connectivity from the runner image first.
+
+### Should I increase threads to fix Connection refused?
+
+No. Connection refused means nothing accepted the socket. Fix host, port, process, or firewall first.
+
+<RelatedContent>
+<Fragment slot="next-step">
+From the injector host, curl the same URL JMeter uses; only then adjust the sampler or `\${__P(host)}`.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [Best practices](/user-manual/best-practices/)
+- [Distributed testing](/topics/distributed-testing/)
+</Fragment>
+</RelatedContent>

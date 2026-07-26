@@ -6,8 +6,15 @@
 import fs from 'fs';
 import path from 'path';
 
-const dir = path.resolve('src/content/docs/topics');
-const files = fs.readdirSync(dir).filter((f) => f.endsWith('.mdx'));
+function walk(dir, acc = []) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walk(p, acc);
+    else if (e.name.endsWith('.mdx')) acc.push(p);
+  }
+  return acc;
+}
+const files = walk(path.resolve('src/content/docs/topics'));
 
 const VAR_RE = /\\?\$\{([^}]+)\}/g;
 

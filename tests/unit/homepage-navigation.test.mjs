@@ -21,6 +21,8 @@ function contentPathForLink(link) {
 describe('homepage practitioner navigation', () => {
   it('defines the expected workflow cards', () => {
     const titles = [
+      'I need a calculator',
+      "I'm stuck on an error",
       'Record HTTP traffic',
       'Build a test plan',
       'Run distributed load',
@@ -30,8 +32,19 @@ describe('homepage practitioner navigation', () => {
     ];
 
     for (const title of titles) {
-      expect(indexSource).toContain(`title: '${title}'`);
+      // Titles may use single or double quotes in the source file.
+      expect(
+        indexSource.includes(`title: '${title}'`) || indexSource.includes(`title: "${title}"`),
+        `missing workflow title: ${title}`,
+      ).toBe(true);
     }
+  });
+
+  it('offers dual hero CTAs for new and experienced users', () => {
+    expect(indexSource).toContain("href=\"/topics/jmeter-for-beginners/\"");
+    expect(indexSource).toContain("href=\"/getting-started/get-started/\"");
+    expect(indexSource).toContain("I'm new");
+    expect(indexSource).toContain('I know JMeter');
   });
 
   it('links every homepage goal to an existing docs page', () => {

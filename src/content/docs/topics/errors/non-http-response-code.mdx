@@ -1,0 +1,101 @@
+---
+title: "JMeter Non HTTP response code"
+seoTitle: "JMeter Non HTTP response code Explained"
+description: "Understand JMeter Non HTTP response code and Non HTTP response message: connection, SSL, and client exceptions. Symptom, causes, and how to fix samples."
+keywords:
+  - JMeter Non HTTP response code
+  - Non HTTP response message
+  - JMeter sample error
+  - JMeter connection error
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Non HTTP response code in JMeter
+
+## Symptom
+
+View Results Tree or the results file shows:
+
+- **Response code:** `Non HTTP response code: java.net.…` (or similar)  
+- **Response message:** `Non HTTP response message: …`  
+
+There is **no** standard HTTP status such as 200, 401, or 503. The sample is failed because the HTTP client threw an exception before a normal status line was available.
+
+Common nested types:
+
+- `java.net.ConnectException`  
+- `java.net.SocketException` / connection reset  
+- `javax.net.ssl.SSLHandshakeException`  
+- `java.net.SocketTimeoutException`  
+- `java.net.UnknownHostException`  
+
+## Common causes
+
+| Cause | Typical nested message |
+|-------|------------------------|
+| Cannot connect | ConnectException, connection refused/timed out |
+| DNS failure | UnknownHostException |
+| TLS trust / handshake | SSLHandshakeException, PKIX path building failed |
+| Peer closed socket | Connection reset, SocketException, socket closed |
+| Read/connect timeout | SocketTimeoutException |
+| Wrong proxy settings | Connect or tunnel failures when a proxy is required |
+
+Official debugging still starts with **one thread** and View Results Tree ([best practices](/user-manual/best-practices/) recommend Tree only while scripting).
+
+## Fix (ordered)
+
+1. **Read the full message** after `Non HTTP response code:` / `message:` - treat the Java exception as the real error.  
+2. Route to the dedicated playbook:  
+   - [ConnectException](/topics/errors/connect-exception/)  
+   - [SSLHandshakeException](/topics/errors/ssl-handshake-exception/)  
+   - [Socket closed / connection reset](/topics/errors/socket-closed-connection-reset/)  
+3. Confirm **protocol/host/port** via HTTP Request Defaults.  
+4. Check **connect and response timeouts** on the HTTP Request sampler.  
+5. Disable corporate proxy surprises: if the OS proxy is set but the SUT is internal, configure JMeter proxy fields deliberately or clear them.  
+6. Re-run CLI with logging:
+
+   ```bash
+   jmeter -n -t plan.jmx -l results.jtl -j jmeter.log
+   ```
+
+7. After connect works, add **assertions** so HTTP 5xx pages are not mistaken for success ([API guide](/topics/api-load-testing/)).  
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [ConnectException](/topics/errors/connect-exception/) | Refused / timed out connect |
+| [SSLHandshakeException](/topics/errors/ssl-handshake-exception/) | Certificate and TLS failures |
+| [Dashboard report](/user-manual/generating-dashboard/) | Aggregate error rates after CLI |
+| [Troubleshooting overview](/topics/troubleshooting/) | Broader checklist |
+
+## Frequently asked questions
+
+### Is Non HTTP response code a real HTTP status?
+
+No. It is JMeter’s way of saying the sampler failed with a client-side exception instead of an HTTP status line.
+
+### Can Non HTTP errors appear only under load?
+
+Yes. Connection limits, TLS session issues, or server overload can surface as resets and timeouts only at higher concurrency. Still fix connectivity for one thread first.
+
+### Do these count in error percentage?
+
+Yes. Failed samples increase error % on the [HTML dashboard](/user-manual/generating-dashboard/) and in listeners.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Copy the nested Java exception from the sample and open the matching playbook in this error section.
+</Fragment>
+<Fragment slot="related">
+- [ConnectException](/topics/errors/connect-exception/)
+- [SSLHandshakeException](/topics/errors/ssl-handshake-exception/)
+- [Best practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

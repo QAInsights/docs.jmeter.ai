@@ -44,6 +44,7 @@
   color: inherit;
   padding: 1.2rem;
   text-decoration: none;
+  position: relative;
   transition: transform 180ms var(--mx-ease), border-color 180ms var(--mx-ease), background-color 180ms var(--mx-ease);
 }
 
@@ -51,6 +52,25 @@
   border-color: var(--sl-color-accent);
   background: color-mix(in srgb, var(--sl-color-gray-6) 82%, var(--sl-color-accent-low));
   transform: translateY(-2px);
+}
+
+.workflow-card--highlight {
+  border-color: color-mix(in srgb, var(--sl-color-accent) 45%, var(--sl-color-gray-5));
+  background: color-mix(in srgb, var(--sl-color-gray-6) 88%, var(--sl-color-accent-low));
+}
+
+.workflow-badge {
+  align-self: flex-start;
+  margin-bottom: 0.55rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--sl-color-accent-high);
+  background: color-mix(in srgb, var(--sl-color-accent-low) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
 }
 
 .workflow-title {

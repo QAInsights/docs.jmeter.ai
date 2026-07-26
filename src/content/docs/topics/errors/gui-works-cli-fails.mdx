@@ -1,0 +1,94 @@
+---
+title: "JMeter Works in GUI Fails in CLI"
+seoTitle: "JMeter GUI Works CLI Fails"
+description: "Fix JMeter plans that pass in GUI but fail in non-GUI CLI: working directory, CSV paths, -J properties, plugins, headless network, and result paths."
+keywords:
+  - JMeter CLI fails
+  - JMeter non-GUI error
+  - JMeter GUI vs CLI
+  - JMeter -n fails
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Script works in GUI, fails in CLI
+
+## Symptom
+
+- Green samples in the GUI with a few threads  
+- Same `.jmx` fails under:
+
+  ```bash
+  jmeter -n -t plan.jmx -l results.jtl
+  ```
+
+- Failures often show missing files, wrong host, plugin/class errors, or connection errors only on the CI agent  
+
+Official stance: use GUI to build and debug; use **non-GUI for real load** ([best practices](/user-manual/best-practices/)). CLI is required in [CI/CD](/topics/ci-cd-load-testing/) and containers.
+
+## Common causes
+
+| Cause | Detail |
+|-------|--------|
+| Working directory | Relative CSV, keystore, or payload paths resolve from different cwd |
+| Properties | GUI used defaults or GUI-set props; CLI missing `-J` / `-q` |
+| Plugins missing | CI image or server install lacks `lib/ext` JARs ([plugins](/topics/plugins-essentials/)) |
+| Headless network | Agent cannot reach SUT ([ConnectException](/topics/errors/connect-exception/)) |
+| Different `user.properties` | Local custom props not present on the agent |
+| Output paths | `-o` report dir already exists / not writable |
+| Java version skew | Different JVM behaviour or TLS defaults |
+
+## Fix (ordered)
+
+1. Run CLI **on the same machine** as the successful GUI run first:
+
+   ```bash
+   cd /path/to/plan-dir
+   jmeter -n -t plan.jmx -l results.jtl -j jmeter.log -e -o report/
+   ```
+
+2. Open `jmeter.log` for file-not-found, class-not-found, or SSL lines.  
+3. Make CSV and resource paths **stable** (relative to plan location or absolute). CSV Data Set is the documented multi-user pattern ([best practices](/user-manual/best-practices/)).  
+4. Parameterize hosts and threads with `` `\${__P(name,default)}` `` and pass the same `-J` flags you expect in CI ([functions](/topics/functions-and-variables/)).  
+5. Mirror plugins into the CLI environment; restart after installs.  
+6. In Docker/K8s, mount plans and outputs explicitly ([Docker guide](/topics/docker-kubernetes/)); use `qainsights/jmeter` or your pinned image consistently.  
+7. Only after local CLI is green, run the same command in CI with the same properties and network access.  
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [CI/CD load testing](/topics/ci-cd-load-testing/) | Pipeline patterns |
+| [Plugins essentials](/topics/plugins-essentials/) | Missing elements in CLI |
+| [ConnectException](/topics/errors/connect-exception/) | Network only in CI |
+| [Properties cheat sheet](/tools/properties-cheatsheet/) | Env differences |
+
+## Frequently asked questions
+
+### Is GUI success enough to ship a plan?
+
+No. Always prove non-GUI once. Production and CI never use the GUI for load.
+
+### Why relative CSV paths break in CLI?
+
+GUI often starts with a cwd near the plan or last open file. CLI cwd is wherever you launched the process. Prefer plan-relative layout and document the launch directory.
+
+### Does -n change sampler behaviour?
+
+Same engine, different resource profile (no GUI listeners). Functional failures are usually path/property/plugin/network differences, not `-n` itself.
+
+<RelatedContent>
+<Fragment slot="next-step">
+From the plan directory, run jmeter -n once with -j jmeter.log and fix the first path or property error in that log.
+</Fragment>
+<Fragment slot="related">
+- [Best practices](/user-manual/best-practices/)
+- [CI/CD](/topics/ci-cd-load-testing/)
+- [Functions and variables](/topics/functions-and-variables/)
+</Fragment>
+</RelatedContent>

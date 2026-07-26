@@ -8,6 +8,20 @@ import ToolsHubBanner from '../components/landing/ToolsHubBanner.astro';
 
 const workflows = [
   {
+    title: 'I need a calculator',
+    description: 'Size threads and heap, check coordinated omission, filter properties, or build regex extractors in the browser.',
+    href: '/tools/',
+    action: 'Open tools hub',
+    badge: 'Quick help',
+  },
+  {
+    title: "I'm stuck on an error",
+    description: 'Playbooks for ConnectException, SSL handshake, OOM, connection reset, stuck RPS, GUI vs CLI, and 401 after recording.',
+    href: '/topics/errors/',
+    action: 'Open error playbooks',
+    badge: 'Fix now',
+  },
+  {
     title: 'Record HTTP traffic',
     description: 'Capture browser journeys, filter noise, and turn real requests into a maintainable test plan.',
     href: '/topics/http-recorder/',
@@ -67,13 +81,16 @@ const goals = [
     <section class="hero-section">
       <div class="hero-text">
         <h1>Apache <span class="accent">JMeter</span> Documentation</h1>
-        <p>Find the JMeter guide that matches the job in front of you: record traffic, build a plan, run real load, analyze results, tune configuration, or extend the tool.</p>
+        <p>Find the JMeter guide that matches the job in front of you: first load test, record traffic, run real load, fix errors, or open a calculator.</p>
         <div class="hero-cta">
-          <a href="/getting-started/get-started/" class="cta-primary">
-            Get Started →
+          <a href="/topics/jmeter-for-beginners/" class="cta-primary">
+            I'm new →
           </a>
-          <a href="https://plugins.jmeter.ai" class="cta-secondary" target="_blank" rel="noopener noreferrer">
-            Plugins →
+          <a href="/getting-started/get-started/" class="cta-secondary">
+            I know JMeter →
+          </a>
+          <a href="https://plugins.jmeter.ai" class="cta-tertiary" target="_blank" rel="noopener noreferrer">
+            Plugins
           </a>
         </div>
       </div>
@@ -83,11 +100,12 @@ const goals = [
     <section class="workflow-section" aria-labelledby="workflow-heading">
       <div class="section-heading">
         <h2 id="workflow-heading">Choose the workflow</h2>
-        <p>Start with the task you need to finish, then move into the deeper manual pages when the plan is ready.</p>
+        <p>Stuck or sizing a test? Start with tools and error playbooks. Otherwise pick the task you need to finish.</p>
       </div>
       <div class="workflow-grid">
         {workflows.map((workflow) => (
-          <a class="workflow-card" href={workflow.href}>
+          <a class={`workflow-card${workflow.badge ? ' workflow-card--highlight' : ''}`} href={workflow.href}>
+            {workflow.badge && <span class="workflow-badge">{workflow.badge}</span>}
             <span class="workflow-title">{workflow.title}</span>
             <span class="workflow-desc">{workflow.description}</span>
             <span class="workflow-action">{workflow.action}</span>

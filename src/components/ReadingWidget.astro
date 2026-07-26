@@ -47,7 +47,15 @@
       data-rw-panel="recent"
     >
       <ul class="rw-list" data-rw-list="recent"></ul>
-      <p class="rw-empty" data-rw-empty="recent" hidden>No pages viewed yet</p>
+      <div class="rw-empty" data-rw-empty="recent" hidden>
+        <p class="rw-empty-title">No pages viewed yet</p>
+        <p class="rw-empty-copy">Start with a first path, a calculator, or an error playbook.</p>
+        <ul class="rw-starter-list">
+          <li><a href="/topics/jmeter-for-beginners/">Beginners path</a></li>
+          <li><a href="/tools/thread-calculator/">Thread calculator</a></li>
+          <li><a href="/topics/errors/">Error playbooks</a></li>
+        </ul>
+      </div>
     </div>
     <div
       class="rw-panel"
@@ -58,7 +66,15 @@
       hidden
     >
       <ul class="rw-list" data-rw-list="bookmarks"></ul>
-      <p class="rw-empty" data-rw-empty="bookmarks" hidden>No bookmarks yet</p>
+      <div class="rw-empty" data-rw-empty="bookmarks" hidden>
+        <p class="rw-empty-title">No bookmarks yet</p>
+        <p class="rw-empty-copy">Star a page while reading, or jump into these starters.</p>
+        <ul class="rw-starter-list">
+          <li><a href="/topics/jmeter-for-beginners/">Beginners path</a></li>
+          <li><a href="/tools/">Tools hub</a></li>
+          <li><a href="/topics/errors/">Error playbooks</a></li>
+        </ul>
+      </div>
     </div>
   </div>
 </div>
@@ -499,11 +515,59 @@
 
     /* Empty state (static markup — scoped) */
     .rw-empty {
-      text-align: center;
+      text-align: left;
       font-size: var(--sl-text-xs);
       color: var(--sl-color-gray-4);
-      padding: 1rem 0.75rem;
+      padding: 0.75rem 0.85rem 0.9rem;
       margin: 0;
+    }
+
+    .rw-empty-title {
+      margin: 0 0 0.25rem;
+      font-size: var(--sl-text-xs);
+      font-weight: 700;
+      color: var(--sl-color-gray-2);
+    }
+
+    .rw-empty-copy {
+      margin: 0 0 0.65rem;
+      line-height: 1.45;
+      color: var(--sl-color-gray-3);
+    }
+
+    .rw-starter-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .rw-starter-list a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 0.35rem;
+      border: 1px solid var(--sl-color-gray-5);
+      background: color-mix(in srgb, var(--sl-color-gray-6) 70%, transparent);
+      color: var(--sl-color-accent-high);
+      text-decoration: none;
+      font-weight: 600;
+      line-height: 1.35;
+      transition: border-color var(--mx-fast) var(--mx-ease),
+                  background-color var(--mx-fast) var(--mx-ease),
+                  color var(--mx-fast) var(--mx-ease);
+    }
+
+    .rw-starter-list a:hover {
+      border-color: var(--sl-color-accent);
+      background: var(--sl-color-accent-low);
+      color: var(--sl-color-white);
+    }
+
+    .rw-starter-list a:focus-visible {
+      outline: 2px solid var(--sl-color-accent);
+      outline-offset: 1px;
     }
   }
 </style>

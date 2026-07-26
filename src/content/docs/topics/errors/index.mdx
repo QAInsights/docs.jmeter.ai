@@ -1,0 +1,81 @@
+---
+title: "JMeter Error Playbooks"
+seoTitle: "JMeter Error Playbooks Index"
+description: "Symptom-based JMeter error playbooks: ConnectException, SSL handshake, OutOfMemoryError, connection reset, stuck throughput, GUI vs CLI, and 401 after record."
+keywords:
+  - JMeter errors
+  - JMeter troubleshooting
+  - JMeter ConnectException
+  - JMeter OutOfMemoryError
+  - JMeter SSLHandshakeException
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "4 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# JMeter Error Playbooks
+
+Dedicated pages for the failures people actually search for. Each playbook follows the same structure:
+
+1. **Symptom** - what you see in View Results Tree, the JTL, or `jmeter.log`  
+2. **Common causes** - grounded in JMeter behaviour and load-test ops  
+3. **Fix** - ordered checks that usually resolve the issue  
+4. **Related tools and topics** - calculators and deeper guides on this site  
+
+Use these for quick triage; use the [full troubleshooting guide](/topics/troubleshooting/) for the broader decision tree.
+
+:::tip[Reproduce with one thread first]
+Before large load, prove the scenario with **1 thread**, View Results Tree enabled, then re-run CLI with listeners disabled ([best practices](/user-manual/best-practices/)).
+:::
+
+## Connection and TLS
+
+| Error | Open playbook |
+|-------|----------------|
+| `java.net.ConnectException` | [ConnectException](/topics/errors/connect-exception/) |
+| `Non HTTP response code` / non-HTTP response message | [Non HTTP response code](/topics/errors/non-http-response-code/) |
+| `SSLHandshakeException` / PKIX path building failed | [SSLHandshakeException](/topics/errors/ssl-handshake-exception/) |
+| Socket closed / connection reset | [Socket closed / connection reset](/topics/errors/socket-closed-connection-reset/) |
+
+## Capacity and results
+
+| Error | Open playbook |
+|-------|----------------|
+| `OutOfMemoryError: Java heap space` | [OutOfMemoryError heap](/topics/errors/out-of-memory-heap/) |
+| Throughput stuck / not reaching target RPS | [Throughput stuck](/topics/errors/throughput-stuck/) |
+
+## Auth and environment
+
+| Error | Open playbook |
+|-------|----------------|
+| Script works in GUI, fails in CLI | [GUI works, CLI fails](/topics/errors/gui-works-cli-fails/) |
+| 401 / 403 after recording | [401/403 after recording](/topics/errors/401-403-after-recording/) |
+
+## How to read sample errors
+
+- **View Results Tree** (debug only): response code, message, request body  
+- **`jmeter.log` / `-j` log file**: startup, SSL, class, and plugin issues  
+- **HTML dashboard** ([generating dashboard](/user-manual/generating-dashboard/)): error % and top errors by sampler after a CLI run  
+- **Glossary** ([metrics](/user-manual/glossary/)): elapsed, latency, connect time, throughput  
+
+## Related
+
+- [Troubleshooting overview](/topics/troubleshooting/)  
+- [Best practices](/user-manual/best-practices/)  
+- [Interview questions](/topics/interview-questions/) (common verbal prompts map here)
+
+<RelatedContent>
+<Fragment slot="next-step">
+Open the playbook that matches your first red sampler message, then re-test with one thread.
+</Fragment>
+<Fragment slot="related">
+- [Thread Calculator](/tools/thread-calculator/)
+- [Heap Estimator](/tools/heap-estimator/)
+- [Coordinated Omission](/tools/coordinated-omission/)
+- [Regex Extractor Builder](/tools/regex-tester/)
+</Fragment>
+</RelatedContent>

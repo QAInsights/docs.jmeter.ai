@@ -1,0 +1,99 @@
+---
+title: "JMeter SSLHandshakeException"
+seoTitle: "JMeter SSLHandshakeException Fix"
+description: "Fix JMeter SSLHandshakeException and PKIX path building failed: truststore, SNI, TLS version, client certs, and recorder CA issues. Symptom, causes, fixes."
+keywords:
+  - JMeter SSLHandshakeException
+  - JMeter PKIX path building failed
+  - JMeter SSL error
+  - JMeter certificate
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# SSLHandshakeException in JMeter
+
+## Symptom
+
+Samples fail with TLS-related messages, often wrapped as Non HTTP response errors:
+
+- `javax.net.ssl.SSLHandshakeException`  
+- `PKIX path building failed` / unable to find valid certification path  
+- `Received fatal alert: handshake_failure`  
+- During **recording**: browser `unknown_ca` or HTTPS pages never record cleanly ([recorder best practices](/user-manual/best-practices/))  
+
+HTTP may work in a browser that already trusts the corporate CA, while JMeter’s JVM does not.
+
+## Common causes
+
+| Cause | Notes |
+|-------|------|
+| Untrusted server certificate | Lab/self-signed or private PKI not in the **JVM truststore** JMeter uses |
+| Hostname / SNI mismatch | Certificate CN/SAN does not match the server name in the sampler |
+| TLS version or cipher mismatch | Server requires TLS 1.2+; client restricted by JVM or properties |
+| Client certificate required | Mutual TLS; keystore not configured on the HTTP Request / system properties |
+| Recorder without JMeter CA | HTTPS recording needs `ApacheJMeterTemporaryRootCA` trusted ([proxy tutorial](/user-manual/jmeter-proxy-step-by-step/)) |
+| RMI SSL between engines | Distributed mode since JMeter 4.0 defaults to SSL for RMI ([remote testing](/user-manual/remote-test/)) - different from HTTP TLS |
+
+## Fix (ordered)
+
+### Load against HTTPS APIs
+
+1. Confirm the URL works in a browser **and** with curl using the same hostname.  
+2. Ensure the sampler uses `https` and the correct port (usually 443).  
+3. Import the issuing CA (or server cert, if appropriate for your org policy) into the truststore used by the **same Java** that launches JMeter.  
+4. Restart JMeter after truststore changes.  
+5. Align system clock (skew breaks cert validity).  
+6. For mTLS, configure client keystore settings on the HTTP Request / related SSL properties ([properties reference](/user-manual/properties-reference/)).  
+7. Avoid disabling certificate verification outside isolated labs - it hides real misconfiguration.  
+
+### Recording HTTPS
+
+1. Start the [HTTP(S) Test Script Recorder](/topics/http-recorder/).  
+2. Install `ApacheJMeterTemporaryRootCA.crt` from the JMeter launch directory into the browser trust store.  
+3. If certs are stale, regenerate per component reference (delete `proxyserver.jks` when documented).  
+4. Best practices: `unknown_ca` usually means the browser has not accepted the JMeter proxy certificate.  
+
+### Distributed RMI SSL
+
+1. Run `create-rmi-keystore` scripts and distribute `rmi_keystore.jks` to controller and workers.  
+2. Do not confuse RMI SSL failures with HTTP `SSLHandshakeException` against the SUT - check whether the error is on `jmeter-server` startup or on an HTTP sampler.  
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [HTTP recorder](/topics/http-recorder/) | Recording HTTPS |
+| [Properties cheat sheet](/tools/properties-cheatsheet/) | SSL-related properties |
+| [Remote testing](/user-manual/remote-test/) | RMI SSL keystores |
+| [Non HTTP response code](/topics/errors/non-http-response-code/) | How JMeter wraps SSL errors |
+
+## Frequently asked questions
+
+### Why does the browser work but JMeter fails SSL?
+
+Browsers use the OS trust store. JMeter uses the JVM trust store unless configured otherwise. Corporate CAs often exist in one but not the other.
+
+### Is unknown_ca the same as SSLHandshakeException?
+
+Related family: `unknown_ca` during recording means the browser rejected the JMeter MITM CA. Load-test `SSLHandshakeException` usually means JMeter rejected the **server** certificate (or mTLS failed).
+
+### Can I ignore SSL errors for performance tests?
+
+Only in controlled non-production labs, and document it. Production-like tests should use proper trust material so TLS cost and failures are realistic.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Identify whether the failure is HTTP sampler TLS, recorder CA, or distributed RMI SSL, then apply the matching section above.
+</Fragment>
+<Fragment slot="related">
+- [HTTP recorder](/topics/http-recorder/)
+- [Remote testing](/user-manual/remote-test/)
+- [Properties reference](/user-manual/properties-reference/)
+</Fragment>
+</RelatedContent>
