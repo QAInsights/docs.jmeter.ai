@@ -20,7 +20,7 @@ export const sidebar = [
   },
   {
     label: 'Interactive Tools',
-    collapsed: false,
+    collapsed: true,
     items: [
       { label: 'Tools Hub', link: '/tools' },
       { label: 'Thread Calculator', link: '/tools/thread-calculator' },
@@ -32,7 +32,7 @@ export const sidebar = [
   },
   {
     label: 'Topic Guides',
-    collapsed: false,
+    collapsed: true,
     items: [
       { label: 'JMeter for Beginners', link: '/topics/jmeter-for-beginners' },
       { label: 'API Load Testing', link: '/topics/api-load-testing' },
@@ -52,7 +52,7 @@ export const sidebar = [
       { label: 'Troubleshooting', link: '/topics/troubleshooting' },
       {
         label: 'Error Playbooks',
-        collapsed: false,
+        collapsed: true,
         items: [
           { label: 'Error Index', link: '/topics/errors' },
           { label: 'ConnectException', link: '/topics/errors/connect-exception' },
@@ -68,6 +68,7 @@ export const sidebar = [
       { label: 'Interview Questions', link: '/topics/interview-questions' },
       {
         label: 'JMeter vs Alternatives',
+        collapsed: true,
         items: [
           { label: 'Tool Comparison Hub', link: '/topics/jmeter-vs-alternatives' },
           { label: 'JMeter vs k6', link: '/topics/jmeter-vs-k6' },
@@ -81,7 +82,7 @@ export const sidebar = [
   },
   {
     label: 'User Manual',
-    collapsed: false,
+    collapsed: true,
     items: [
       { label: 'Building a Test Plan', link: '/user-manual/build-test-plan' },
       { label: 'Elements of a Test Plan', link: '/user-manual/test-plan' },

@@ -1,8 +1,11 @@
+import { EventEmitter } from 'node:events';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import lucode from 'lucode-starlight';
 import starlightDocSearch from '@astrojs/starlight-docsearch';
 import vercel from '@astrojs/vercel';
+
+EventEmitter.defaultMaxListeners = 30;
 import { loadEnv } from 'vite';
 import { sidebar } from './src/sidebar.mjs';
 import remarkImageOptimize from './src/remark-image-optimize.mjs';

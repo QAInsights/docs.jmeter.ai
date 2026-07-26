@@ -306,4 +306,46 @@ const shouldRenderSearch =
         const pagefindBtn = document.querySelector<HTMLElement>('site-search button[data-open-modal]');
         pagefindBtn?.click();
     });
+
+    function handleSidebarScroll() {
+        const scroller = document.querySelector<HTMLElement>('.container-sidebar, .sidebar-pane, #starlight__sidebar');
+        if (!scroller) return;
+
+        if (!scroller.dataset.scrollSaved) {
+            scroller.dataset.scrollSaved = 'true';
+            scroller.addEventListener('click', (e) => {
+                const link = (e.target as HTMLElement)?.closest('a');
+                if (link) {
+                    sessionStorage.setItem('sl-sidebar-scroll-pos', String(scroller.scrollTop));
+                }
+            });
+        }
+
+        const saved = sessionStorage.getItem('sl-sidebar-scroll-pos');
+        if (saved !== null) {
+            sessionStorage.removeItem('sl-sidebar-scroll-pos');
+            const pos = parseInt(saved, 10);
+            if (!isNaN(pos) && pos >= 0) {
+                scroller.scrollTop = pos;
+                return;
+            }
+        }
+
+        const current = scroller.querySelector<HTMLElement>('a[aria-current="page"]');
+        if (current) {
+            const rect = current.getBoundingClientRect();
+            const cRect = scroller.getBoundingClientRect();
+            if (rect.top >= cRect.top && rect.bottom <= cRect.bottom) return;
+
+            const targetTop = current.offsetTop - (scroller.clientHeight / 2) + (current.clientHeight / 2);
+            scroller.scrollTop = Math.max(0, targetTop);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', handleSidebarScroll, { once: true });
+    } else {
+        handleSidebarScroll();
+    }
+    document.addEventListener('astro:page-load', handleSidebarScroll);
 </script>

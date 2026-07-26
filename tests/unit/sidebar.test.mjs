@@ -11,6 +11,16 @@ describe('sidebar', () => {
     expect(overview).toBeDefined();
     expect(overview.label).toBe('Overview');
   });
+
+  it('contains Changes and Changes History adjacently in Reference group', () => {
+    const refGroup = sidebar.find((e) => e.label === 'Reference');
+    expect(refGroup).toBeDefined();
+    const changesIdx = refGroup.items.findIndex((item) => item.link === '/user-manual/changes');
+    const historyIdx = refGroup.items.findIndex((item) => item.link === '/user-manual/changes-history');
+    expect(changesIdx).toBeGreaterThan(-1);
+    expect(historyIdx).toBeGreaterThan(-1);
+    expect(Math.abs(changesIdx - historyIdx)).toBe(1);
+  });
 });
 
 describe('flattenSidebar', () => {

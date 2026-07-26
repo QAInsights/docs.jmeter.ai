@@ -35,9 +35,25 @@ html:hover::-webkit-scrollbar-thumb {
 }
 
 .sl-markdown-content table,
-.sl-markdown-content pre {
+.sl-markdown-content pre,
+.container-sidebar,
+.sidebar-pane,
+#starlight__sidebar {
   scrollbar-width: thin;
   scrollbar-color: var(--sl-color-accent) transparent;
+}
+
+.container-sidebar,
+.sidebar-pane,
+#starlight__sidebar {
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sidebar-entries,
+.sidebar-content {
+  padding-bottom: 5rem !important;
 }
 
 .sl-markdown-content table::-webkit-scrollbar,
