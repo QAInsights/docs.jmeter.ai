@@ -37,7 +37,18 @@
         }
       }
 
-      window.addEventListener('scroll', toggle, { passive: true });
+      var ticking = false;
+      function onScroll() {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(function() {
+            toggle();
+            ticking = false;
+          });
+        }
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
       toggle();
 
       btn.addEventListener('click', function() {

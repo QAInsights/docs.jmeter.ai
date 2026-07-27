@@ -153,8 +153,18 @@ const { toc } = Astro.locals.starlightRoute;
 			}
 		});
 
-		window.addEventListener('scroll', updateProgress, { passive: true });
-		window.addEventListener('resize', updateProgress);
+		let isProgressScheduled = false;
+		const scheduleUpdateProgress = () => {
+			if (isProgressScheduled) return;
+			isProgressScheduled = true;
+			requestAnimationFrame(() => {
+				updateProgress();
+				isProgressScheduled = false;
+			});
+		};
+
+		window.addEventListener('scroll', scheduleUpdateProgress, { passive: true });
+		window.addEventListener('resize', scheduleUpdateProgress, { passive: true });
 		enhanceToc();
 		enhanceHeadings();
 		observeHeadings();
