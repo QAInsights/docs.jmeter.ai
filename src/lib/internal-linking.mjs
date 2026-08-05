@@ -98,6 +98,14 @@ export const SYNCED_MANUAL_MAPPINGS = {
     practicalGuide: { title: 'Distributed Load Testing Guide', href: '/topics/distributed-testing/' },
     relatedTool: { title: 'Heap & Memory Estimator', href: '/tools/heap-estimator/' },
   },
+  '/user-manual/changes': {
+    practicalGuide: { title: 'Troubleshooting Common Errors', href: '/topics/troubleshooting/' },
+    relatedTool: { title: 'Properties Cheatsheet', href: '/tools/properties-cheatsheet/' },
+  },
+  '/user-manual/changes-history': {
+    practicalGuide: { title: 'Troubleshooting Common Errors', href: '/topics/troubleshooting/' },
+    relatedTool: { title: 'Properties Cheatsheet', href: '/tools/properties-cheatsheet/' },
+  },
 };
 
 export const HUB_AND_SPOKE_TAXONOMY = {

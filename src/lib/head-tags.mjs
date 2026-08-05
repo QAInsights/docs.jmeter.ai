@@ -145,6 +145,79 @@ export function buildTechArticleJsonLd({ title, description, url, dateModified, 
 }
 
 /**
+ * Build WebSite JSON-LD for the homepage. Identifies the site as an entity
+ * Google can associate with brand queries and sitelinks.
+ */
+export function buildWebSiteJsonLd({ url = 'https://docs.jmeter.ai' } = {}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'JMeter Docs',
+    alternateName: 'Apache JMeter Documentation',
+    description:
+      'Community-maintained Apache JMeter documentation with practical guides, interactive calculators, and LLM-friendly reference exports.',
+    url,
+    publisher: {
+      '@type': 'Organization',
+      name: 'docs.jmeter.ai',
+      url: 'https://docs.jmeter.ai',
+    },
+    inLanguage: 'en',
+  };
+}
+
+/**
+ * Build WebApplication JSON-LD for an interactive tool page
+ * (e.g. /tools/thread-calculator/). Marks the page as a free web tool so
+ * search engines can surface it for "calculator"/"generator" queries.
+ */
+export function buildWebApplicationJsonLd({ name, description, url }) {
+  if (!name || !url) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name,
+    description,
+    url,
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'Any',
+    browserRequirements: 'Requires JavaScript',
+    isAccessibleForFree: true,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    about: {
+      '@type': 'SoftwareApplication',
+      name: 'Apache JMeter',
+      applicationCategory: 'DeveloperApplication',
+    },
+  };
+}
+
+/**
+ * Build ItemList JSON-LD for a hub page that lists child pages.
+ * @param {{ name: string, url: string, items: Array<{ title: string, url: string }> }} params
+ */
+export function buildItemListJsonLd({ name, url, items }) {
+  if (!name || !url || !Array.isArray(items) || items.length === 0) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name,
+    url,
+    numberOfItems: items.length,
+    itemListElement: items.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.title,
+      url: item.url,
+    })),
+  };
+}
+
+/**
  * Build BreadcrumbList JSON-LD from a pathname.
  * Returns null if only Home (no path segments).
  */

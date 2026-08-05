@@ -3,6 +3,11 @@ import StarlightHead from '@astrojs/starlight/components/Head.astro';
 import type { Props } from '@astrojs/starlight/props';
 import { buildFaqJsonLd } from '../faq-schema.mjs';
 import { buildHowToJsonLd } from '../howto-schema.mjs';
+import {
+  buildWebSiteJsonLd,
+  buildWebApplicationJsonLd,
+  buildItemListJsonLd,
+} from '../lib/head-tags.mjs';
 
 const route = Astro.locals.starlightRoute;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
@@ -248,6 +253,50 @@ gtag('config', 'G-MVZN6CMXYQ');`,
       attrs: { type: 'application/ld+json', 'data-schema': 'how-to' },
       content: JSON.stringify(howToJsonLd)
     });
+  }
+
+  // WebSite JSON-LD on the homepage: brand entity for sitelinks and
+  // "docs.jmeter.ai" brand queries.
+  if (isHome) {
+    const webSiteJsonLd = buildWebSiteJsonLd({ url: canonicalUrl });
+    if (!hasTag('script', 'data-schema', 'website')) {
+      route.head.push({
+        tag: 'script',
+        attrs: { type: 'application/ld+json', 'data-schema': 'website' },
+        content: JSON.stringify(webSiteJsonLd)
+      });
+    }
+  }
+
+  // WebApplication JSON-LD for interactive tool pages, ItemList for the
+  // tools hub. Surfaces the calculators for "jmeter <x> calculator" queries.
+  const normalizedPath = Astro.url.pathname.replace(/\/+$/, '');
+  if (normalizedPath.startsWith('/tools') && !hasTag('script', 'data-schema', 'web-application')) {
+    const isToolsHub = normalizedPath === '/tools';
+    const toolsJsonLd = isToolsHub
+      ? buildItemListJsonLd({
+          name: 'JMeter Interactive Tools',
+          url: canonicalUrl,
+          items: [
+            { title: 'Thread Calculator', url: 'https://docs.jmeter.ai/tools/thread-calculator/' },
+            { title: 'Heap & Memory Estimator', url: 'https://docs.jmeter.ai/tools/heap-estimator/' },
+            { title: 'Coordinated Omission Calculator', url: 'https://docs.jmeter.ai/tools/coordinated-omission/' },
+            { title: 'Properties Cheat Sheet', url: 'https://docs.jmeter.ai/tools/properties-cheatsheet/' },
+            { title: 'Regex Extractor Builder', url: 'https://docs.jmeter.ai/tools/regex-tester/' },
+          ],
+        })
+      : buildWebApplicationJsonLd({
+          name: rawTitle || 'JMeter Tool',
+          description: seoDescription,
+          url: canonicalUrl,
+        });
+    if (toolsJsonLd) {
+      route.head.push({
+        tag: 'script',
+        attrs: { type: 'application/ld+json', 'data-schema': 'web-application' },
+        content: JSON.stringify(toolsJsonLd)
+      });
+    }
   }
 }
 ---

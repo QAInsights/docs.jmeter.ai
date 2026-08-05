@@ -7,6 +7,9 @@ import {
   injectSeoMeta,
   injectJsonLd,
   buildTechArticleJsonLd,
+  buildWebSiteJsonLd,
+  buildWebApplicationJsonLd,
+  buildItemListJsonLd,
   buildBreadcrumbJsonLd,
   applySeoOverrides,
 } from '../../src/lib/head-tags.mjs';
@@ -163,6 +166,68 @@ describe('buildTechArticleJsonLd', () => {
   it('omits proficiencyLevel for unknown difficulty', () => {
     const ld = buildTechArticleJsonLd({ title: 'X', description: 'Y', url: 'https://x', difficulty: 'unknown' });
     expect(ld.proficiencyLevel).toBeUndefined();
+  });
+});
+
+describe('buildWebSiteJsonLd', () => {
+  it('builds a WebSite entity with default URL', () => {
+    const ld = buildWebSiteJsonLd();
+    expect(ld['@type']).toBe('WebSite');
+    expect(ld.name).toBe('JMeter Docs');
+    expect(ld.url).toBe('https://docs.jmeter.ai');
+    expect(ld.publisher.name).toBe('docs.jmeter.ai');
+    expect(ld.inLanguage).toBe('en');
+  });
+
+  it('accepts a URL override', () => {
+    const ld = buildWebSiteJsonLd({ url: 'https://docs.jmeter.ai/' });
+    expect(ld.url).toBe('https://docs.jmeter.ai/');
+  });
+});
+
+describe('buildWebApplicationJsonLd', () => {
+  it('builds a free WebApplication entity', () => {
+    const ld = buildWebApplicationJsonLd({
+      name: 'Thread Calculator',
+      description: 'Size threads for a target RPS',
+      url: 'https://docs.jmeter.ai/tools/thread-calculator/',
+    });
+    expect(ld['@type']).toBe('WebApplication');
+    expect(ld.name).toBe('Thread Calculator');
+    expect(ld.applicationCategory).toBe('DeveloperApplication');
+    expect(ld.isAccessibleForFree).toBe(true);
+    expect(ld.offers.price).toBe('0');
+    expect(ld.about.name).toBe('Apache JMeter');
+  });
+
+  it('returns null without name or url', () => {
+    expect(buildWebApplicationJsonLd({ name: '', url: 'https://x' })).toBeNull();
+    expect(buildWebApplicationJsonLd({ name: 'Tool', url: '' })).toBeNull();
+  });
+});
+
+describe('buildItemListJsonLd', () => {
+  const items = [
+    { title: 'Thread Calculator', url: 'https://docs.jmeter.ai/tools/thread-calculator/' },
+    { title: 'Heap Estimator', url: 'https://docs.jmeter.ai/tools/heap-estimator/' },
+  ];
+
+  it('builds a positional ItemList', () => {
+    const ld = buildItemListJsonLd({
+      name: 'JMeter Interactive Tools',
+      url: 'https://docs.jmeter.ai/tools/',
+      items,
+    });
+    expect(ld['@type']).toBe('ItemList');
+    expect(ld.numberOfItems).toBe(2);
+    expect(ld.itemListElement[0].position).toBe(1);
+    expect(ld.itemListElement[1].name).toBe('Heap Estimator');
+  });
+
+  it('returns null for empty items or missing name/url', () => {
+    expect(buildItemListJsonLd({ name: 'X', url: 'https://x', items: [] })).toBeNull();
+    expect(buildItemListJsonLd({ name: '', url: 'https://x', items })).toBeNull();
+    expect(buildItemListJsonLd({ name: 'X', url: '', items })).toBeNull();
   });
 });
 
