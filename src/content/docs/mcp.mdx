@@ -38,8 +38,10 @@ Read one page in full markdown. Accepts the complete URL or a bare path like `to
 ### Claude Code
 
 ```bash
-claude mcp add --transport http jmeter-docs https://docs.jmeter.ai/api/mcp
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --scope user
 ```
+
+`--scope user` registers the server for all your projects, no matter which folder you run the command from. Restart Claude Code after adding it, then verify with `/mcp`.
 
 ### Qwen Code, Cursor, and other MCP clients
 
