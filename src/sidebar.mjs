@@ -121,6 +121,7 @@ export const sidebar = [
   {
     label: 'Reference',
     items: [
+      { label: 'Release Notes', link: '/releases' },
       { label: 'MCP Server', link: '/mcp' },
       { label: 'Changes', link: '/user-manual/changes' },
       { label: 'Changes History', link: '/user-manual/changes-history' },

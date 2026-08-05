@@ -9,11 +9,12 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "pnpm run lint && node scripts/generate-llms-full.mjs && node scripts/generate-llms-chunks.mjs && astro build",
+    "build": "pnpm run lint && node scripts/generate-release-pages.mjs && node scripts/generate-llms-full.mjs && node scripts/generate-llms-chunks.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "convert": "node tools/convert.mjs",
     "generate-sidebar": "node scripts/generate-sidebar.mjs",
+    "generate-release-pages": "node scripts/generate-release-pages.mjs",
     "generate-llms-full": "node scripts/generate-llms-full.mjs",
     "generate-llms-chunks": "node scripts/generate-llms-chunks.mjs",
     "lint": "vitest run tests/unit/schema-validation.test.mjs tests/unit/seo-validation.test.mjs",

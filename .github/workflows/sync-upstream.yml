@@ -50,6 +50,9 @@ jobs:
         env:
           JMETER_XDOCS: .tmp/jmeter/xdocs
 
+      - name: Regenerate release notes pages
+        run: node scripts/generate-release-pages.mjs
+
       - name: Copy NOTICE file
         run: |
           cp .tmp/jmeter/NOTICE public/NOTICE
