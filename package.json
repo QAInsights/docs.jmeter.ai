@@ -29,6 +29,7 @@
     "@astrojs/vercel": "^11.0.2",
     "@fontsource/geist-sans": "^5.2.5",
     "@fontsource/lora": "^5.2.8",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@resvg/resvg-js": "^2.6.2",
     "@upstash/redis": "^1.38.0",
     "ai": "^7.0.15",
@@ -37,7 +38,8 @@
     "lucode-starlight": "^0.1.6",
     "marked": "^18.0.5",
     "satori": "^0.12.2",
-    "sharp": "^0.34.2"
+    "sharp": "^0.34.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.9",

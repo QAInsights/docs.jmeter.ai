@@ -7,6 +7,7 @@ import { flattenSidebar } from '../../src/sidebar.mjs';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const indexSource = readFileSync(join(root, 'src/pages/index.astro'), 'utf8');
 const docsRoot = join(root, 'src/content/docs');
+const pagesRoot = join(root, 'src/pages');
 
 function contentPathForLink(link) {
   const normalized = link.replace(/^\/|\/$/g, '');
@@ -16,6 +17,17 @@ function contentPathForLink(link) {
   const index = join(docsRoot, normalized, 'index.mdx');
   if (existsSync(index)) return index;
   return direct;
+}
+
+/** Standalone pages (e.g. /mcp/) live in src/pages, not the docs collection. */
+function standalonePageForLink(link) {
+  const normalized = link.replace(/^\/|\/$/g, '');
+  if (!normalized) return null;
+  const astroPage = join(pagesRoot, `${normalized}.astro`);
+  if (existsSync(astroPage)) return astroPage;
+  const astroIndex = join(pagesRoot, normalized, 'index.astro');
+  if (existsSync(astroIndex)) return astroIndex;
+  return null;
 }
 
 describe('homepage practitioner navigation', () => {
@@ -54,9 +66,11 @@ describe('homepage practitioner navigation', () => {
 
     expect(goalLinks.length).toBeGreaterThanOrEqual(12);
     for (const href of goalLinks) {
-      const path = contentPathForLink(href);
-      expect(path, `${href} should resolve to docs content`).not.toBeNull();
-      expect(existsSync(path), `${href} should resolve to ${path}`).toBe(true);
+      const contentPath = contentPathForLink(href);
+      const pagePath = standalonePageForLink(href);
+      const resolved = existsSync(contentPath) ? contentPath : pagePath;
+      expect(resolved, `${href} should resolve to docs content or a standalone page`).not.toBeNull();
+      expect(existsSync(resolved), `${href} should resolve to ${resolved}`).toBe(true);
     }
   });
 
