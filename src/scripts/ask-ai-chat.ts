@@ -353,9 +353,16 @@ async function shareConversation() {
 }
 
 async function copyToClipboard(text: string) {
+  // The async clipboard API needs a secure context and, in some browsers,
+  // still-valid user activation — which the awaited /api/share round trip
+  // can outlive. Fall back to the legacy selection copy when it rejects.
   if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      /* fall through to the legacy path */
+    }
   }
   const ta = document.createElement('textarea');
   ta.value = text;
@@ -870,6 +877,7 @@ function formatCountPhrase(n: number): string {
 
 function setStreaming(on: boolean) {
   isStreaming = on;
+  updateShareEnabled();
   if (sendBtn) {
     sendBtn.classList.toggle('ask-ai-send--stop', on);
     sendBtn.setAttribute('aria-label', on ? 'Stop generating' : 'Send message');
