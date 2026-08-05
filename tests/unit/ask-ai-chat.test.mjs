@@ -43,4 +43,52 @@ describe('Ask AI share button state', () => {
     clear.click();
     expect(share.disabled).toBe(true);
   });
+
+  it('enables sharing after a streamed answer completes', async () => {
+    const chunks = [
+      'A JMeter **Thread Group** ',
+      'defines virtual users and ramp-up.',
+    ];
+    global.fetch = vi.fn(async (url) => {
+      if (url === '/api/chat-count') {
+        return new Response(JSON.stringify({ count: 0 }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (url !== '/api/chat') throw new Error(`Unexpected fetch: ${url}`);
+
+      const body = new ReadableStream({
+        start(controller) {
+          const encoder = new TextEncoder();
+          for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+          controller.close();
+        },
+      });
+      return new Response(body, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Grounded': 'true',
+          'X-Sources': encodeURIComponent('Thread Group|/user-manual/build-test-plan/'),
+          'X-Chat-Count': '42',
+        },
+      });
+    });
+
+    await import('../../src/scripts/ask-ai-chat.ts');
+
+    const input = document.querySelector('#ask-ai-input');
+    const send = document.querySelector('#ask-ai-send');
+    const share = document.querySelector('#ask-ai-share');
+
+    input.value = 'How do I configure a Thread Group?';
+    input.dispatchEvent(new Event('input'));
+    send.click();
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/chat',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(share.disabled).toBe(true);
+    await vi.waitFor(() => expect(share.disabled).toBe(false));
+  });
 });
