@@ -92,6 +92,8 @@ const input = document.getElementById('ask-ai-input') as HTMLTextAreaElement | n
 const sendBtn = document.getElementById('ask-ai-send') as HTMLButtonElement | null;
 const errorEl = document.getElementById('ask-ai-error') as HTMLElement | null;
 const statusEl = document.getElementById('ask-ai-status') as HTMLElement | null;
+const toastEl = document.getElementById('ask-ai-toast') as HTMLElement | null;
+const toastTextEl = document.getElementById('ask-ai-toast-text') as HTMLElement | null;
 const turnstileContainer = document.getElementById('ask-ai-turnstile') as HTMLElement | null;
 const countEl = document.getElementById('ask-ai-count') as HTMLElement | null;
 
@@ -104,6 +106,23 @@ let pendingAssistantEl: HTMLElement | null = null;
 let pendingAssistantText = '';
 let displayedCount = 0; // last count rendered into the badge
 let countFetched = false; // whether we've already fetched the count this session
+let toastHideTimer: ReturnType<typeof setTimeout> | undefined;
+let toastRemoveTimer: ReturnType<typeof setTimeout> | undefined;
+
+function showToast(message: string) {
+  if (!toastEl || !toastTextEl) return;
+  if (toastHideTimer) clearTimeout(toastHideTimer);
+  if (toastRemoveTimer) clearTimeout(toastRemoveTimer);
+  toastTextEl.textContent = message;
+  toastEl.hidden = false;
+  toastEl.classList.add('ask-ai-toast--visible');
+  toastHideTimer = setTimeout(() => {
+    toastEl.classList.remove('ask-ai-toast--visible');
+    toastRemoveTimer = setTimeout(() => {
+      toastEl.hidden = true;
+    }, 200);
+  }, 2000);
+}
 
 // --- Turnstile (bot protection) -------------------------------------------
 let turnstileSitekey = '';
@@ -335,7 +354,7 @@ async function shareConversation() {
     turnstileContainer?.classList.remove('ask-ai-turnstile--visible');
     await copyToClipboard(data.url);
     shareBtn.title = 'Link copied!';
-    if (statusEl) statusEl.textContent = 'Share link copied to clipboard.';
+    showToast('Link copied to clipboard');
     // Restore the original tooltip once the confirmation has been read.
     window.setTimeout(() => {
       if (!isSharing && shareBtn?.title === 'Link copied!') shareBtn.title = originalTitle;
