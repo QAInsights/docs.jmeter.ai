@@ -25,6 +25,8 @@ Thumbs.db
 .devin/
 .qwen/
 .commandcode/
+.freebuff/
+.poolside/
 
 # Astro cache
 .astro/
