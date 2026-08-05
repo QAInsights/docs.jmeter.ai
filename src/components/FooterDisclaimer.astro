@@ -6,12 +6,17 @@ import GoToTop from './GoToTop.astro';
 import DocActions from './DocActions.astro';
 import ImageLightbox from './ImageLightbox.astro';
 import PeopleAlsoAsk from './PeopleAlsoAsk.astro';
+import PageFeedback from './PageFeedback.astro';
 
 const isLandingPage = Astro.url.pathname === '/';
+const isDocPage = !isLandingPage
+  && !Astro.url.pathname.startsWith('/404')
+  && !Astro.url.pathname.startsWith('/legal');
 ---
 
 <div class="doc-footer-wrapper">
   {!isLandingPage && <PeopleAlsoAsk />}
+  {isDocPage && <PageFeedback />}
   <DocActions variant="footer" {...Astro.props} />
   <footer class="sl-flex doc-footer">
     <div class="meta sl-flex">
