@@ -31,6 +31,7 @@ interface ChatState {
 const STORAGE_KEY = 'jmeter-ai-chat:v1';
 const API_ENDPOINT = '/api/chat';
 const CHAT_COUNT_ENDPOINT = '/api/chat-count';
+const SHARE_ENDPOINT = '/api/share';
 const MAX_CONVERSATIONS = 10; // 10 user+assistant pairs per thread
 const TEXTAREA_MAX_HEIGHT = 192; // px — auto-resize cap for the input (matches CSS max-block-size upper bound of 12rem)
 const ERROR_PREVIEW_LENGTH = 300; // chars — truncate server error details
@@ -83,6 +84,7 @@ const trigger = document.getElementById('ask-ai-trigger') as HTMLButtonElement |
 const panel = document.getElementById('ask-ai-panel') as HTMLElement | null;
 const closeBtn = document.getElementById('ask-ai-close') as HTMLButtonElement | null;
 const clearBtn = document.getElementById('ask-ai-clear') as HTMLButtonElement | null;
+const shareBtn = document.getElementById('ask-ai-share') as HTMLButtonElement | null;
 const body = document.getElementById('ask-ai-body') as HTMLElement | null;
 const empty = document.getElementById('ask-ai-empty') as HTMLElement | null;
 const messagesEl = document.getElementById('ask-ai-messages') as HTMLElement | null;
@@ -278,6 +280,80 @@ function renderAll() {
   }
   updateThreadLimit();
   updateSendEnabled();
+  updateShareEnabled();
+}
+
+// Share is only meaningful once there is at least one AI answer.
+function updateShareEnabled() {
+  if (!shareBtn) return;
+  const hasAnswer = state.messages.some(
+    (m) => m.role === 'assistant' && m.content.trim().length > 0,
+  );
+  shareBtn.disabled = !hasAnswer || isStreaming;
+}
+
+// --- Share conversation ---------------------------------------------------
+// Saves the thread via /api/share and copies the public URL to the
+// clipboard. The endpoint accepts our session cookie (set on first chat);
+// if that is missing it falls back to a fresh Turnstile token.
+let isSharing = false;
+async function shareConversation() {
+  if (isSharing || !shareBtn) return;
+  const hasAnswer = state.messages.some(
+    (m) => m.role === 'assistant' && m.content.trim().length > 0,
+  );
+  if (!hasAnswer) return;
+
+  isSharing = true;
+  const originalTitle = shareBtn.title;
+  shareBtn.disabled = true;
+  shareBtn.title = 'Saving...';
+  hideError();
+
+  const messages = state.messages
+    .filter((m) => m.content.trim().length > 0)
+    .map((m) => ({ role: m.role, content: m.content }));
+
+  try {
+    const token = sessionVerified ? '' : getTurnstileToken();
+    const res = await fetch(SHARE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, turnstileToken: token }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) {
+      throw new Error(data.error || `Share failed (${res.status})`);
+    }
+    await copyToClipboard(data.url);
+    shareBtn.title = 'Link copied!';
+    if (statusEl) statusEl.textContent = 'Share link copied to clipboard.';
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Share failed.';
+    showError(msg);
+    shareBtn.title = originalTitle;
+  } finally {
+    isSharing = false;
+    // Consume a single-use Turnstile token if we had to send one.
+    if (!sessionVerified) resetTurnstile();
+    updateShareEnabled();
+  }
+}
+
+async function copyToClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  ta.remove();
 }
 
 function updateThreadLimit() {
@@ -619,6 +695,7 @@ function wireUI() {
   trigger!.addEventListener('click', openPanel);
   closeBtn!.addEventListener('click', closePanel);
   clearBtn!.addEventListener('click', clearState);
+  if (shareBtn) shareBtn.addEventListener('click', shareConversation);
 
   // Suggested prompts
   document.querySelectorAll<HTMLButtonElement>('.ask-ai-suggestion').forEach((btn) => {

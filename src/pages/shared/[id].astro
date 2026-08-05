@@ -1,0 +1,296 @@
+---
+/**
+ * /shared/[id] — public, indexable page for a shared Ask AI conversation.
+ *
+ * Server-rendered (prerender=false): loads the conversation from Upstash
+ * Redis by id, renders it with the same markdown pipeline as the chat
+ * panel, and exposes per-conversation SEO/OG metadata. Each shared thread
+ * becomes a new crawlable page that links back into the docs.
+ */
+import { getSharedConversation } from '../../lib/share-store.mjs';
+import { marked } from 'marked';
+
+export const prerender = false;
+
+const SITE = 'https://docs.jmeter.ai';
+const id = Astro.params.id ?? '';
+const conversation = await getSharedConversation(id);
+
+const found = Boolean(conversation);
+if (!found) {
+  // 410 rather than 404: ids are random and unguessable, so a miss is
+  // almost always an expired thread, and 410 tells search engines to
+  // drop the URL from their index faster than a 404 does.
+  Astro.response.status = 410;
+  Astro.response.statusText = 'Gone';
+}
+const messages = conversation?.messages ?? [];
+
+// Derive page metadata from the first user question + first AI answer.
+const firstQuestion = messages.find((m) => m.role === 'user')?.content ?? '';
+const firstAnswer = messages.find((m) => m.role === 'assistant')?.content ?? '';
+
+function stripMd(md: string): string {
+  return md
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[#*_>~-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const pageTitle = found && firstQuestion
+  ? `${firstQuestion.slice(0, 80)} | JMeter AI`
+  : 'Shared conversation | JMeter Docs AI';
+const pageDescription = found && firstAnswer
+  ? stripMd(firstAnswer).slice(0, 155)
+  : 'A shared Apache JMeter AI assistant conversation from docs.jmeter.ai.';
+const canonical = `${SITE}/shared/${id}/`;
+const ogImage = `${SITE}/og/home.png`;
+
+// Server-side markdown rendering for assistant messages.
+function renderMarkdown(md: string): string {
+  let html: string;
+  try {
+    html = marked.parse(md, { async: false, breaks: true }) as string;
+  } catch {
+    html = escapeHtml(md);
+  }
+  return sanitizeHtml(html);
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Minimal server-side sanitizer mirroring the client-side one: strip
+// script/style/iframe and event-handler / javascript: URLs.
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<(script|style|iframe|object|embed|form)\b[\s\S]*?<\/\1>/gi, '')
+    .replace(/<(script|style|iframe|object|embed|form)\b[^>]*\/?>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|src)\s*=\s*(["']?)\s*javascript:[^"'>\s]*\2/gi, '$1="#"');
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="stylesheet"
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap"
+    />
+  </head>
+  <body>
+    <main class="shared">
+      <header class="shared-header">
+        <a class="shared-brand" href="/">
+          <span class="shared-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z" />
+            </svg>
+          </span>
+          <span>JMeter Docs <em>Ask AI</em></span>
+        </a>
+        <a class="shared-cta" href="/">Ask your own question →</a>
+      </header>
+
+      {found ? (
+        <article class="shared-thread">
+          <h1 class="shared-q">{firstQuestion || 'Shared JMeter conversation'}</h1>
+          <p class="shared-meta">
+            Shared from the docs.jmeter.ai AI assistant · {messages.length} messages
+          </p>
+          <div class="shared-messages">
+            {messages.map((m) => (
+              <div class={`shared-msg shared-msg--${m.role}`}>
+                <span class="shared-msg-role">{m.role === 'user' ? 'You' : 'AI'}</span>
+                {m.role === 'user' ? (
+                  <div class="shared-msg-bubble">{m.content}</div>
+                ) : (
+                  <div class="shared-msg-bubble shared-md" set:html={renderMarkdown(m.content)} />
+                )}
+              </div>
+            ))}
+          </div>
+        </article>
+      ) : (
+        <article class="shared-missing">
+          <h1>Conversation expired or not found</h1>
+          <p>
+            This shared conversation has expired or the link is incorrect. Shared
+            threads stay public for one year after sharing.
+          </p>
+        </article>
+      )}
+
+      <footer class="shared-footer">
+        <p>
+          Answers are AI-generated and grounded in the
+          <a href="/">Apache JMeter community docs</a>. Verify anything critical against
+          the source pages.
+        </p>
+        <a class="shared-cta shared-cta--big" href="/">Open JMeter Docs</a>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style>
+  :root {
+    --accent: #ea580c;
+    --bg: #1c1917;
+    --panel: #292524;
+    --line: #44403c;
+    --text: #fafaf9;
+    --muted: #a8a29e;
+    color-scheme: dark;
+  }
+  html {
+    background: var(--bg);
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  .shared {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  .shared-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 2rem;
+  }
+  .shared-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .shared-brand em {
+    color: var(--accent);
+    font-style: normal;
+  }
+  .shared-brand-mark {
+    display: inline-flex;
+    color: var(--accent);
+  }
+  .shared-brand-mark svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+  .shared-cta {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .shared-cta:hover {
+    text-decoration: underline;
+  }
+  .shared-q {
+    font-size: 1.5rem;
+    line-height: 1.3;
+    margin: 0 0 0.35rem;
+  }
+  .shared-meta {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin: 0 0 1.5rem;
+  }
+  .shared-messages {
+    display: grid;
+    gap: 1rem;
+  }
+  .shared-msg {
+    border: 1px solid var(--line);
+    border-radius: 0.6rem;
+    padding: 0.85rem 1rem;
+    background: color-mix(in srgb, var(--panel) 55%, transparent);
+  }
+  .shared-msg-role {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+  .shared-msg--user .shared-msg-role {
+    color: var(--accent);
+  }
+  .shared-msg-bubble {
+    overflow-wrap: anywhere;
+  }
+  .shared-md :global(p) {
+    margin: 0.4rem 0;
+  }
+  .shared-md :global(pre) {
+    background: #131110;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    padding: 0.75rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+  }
+  .shared-md :global(code) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .shared-md :global(a) {
+    color: var(--accent);
+  }
+  .shared-missing h1 {
+    font-size: 1.4rem;
+  }
+  .shared-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+  .shared-footer a {
+    color: var(--accent);
+  }
+  .shared-cta--big {
+    display: inline-block;
+    margin-top: 0.75rem;
+    border: 1px solid var(--accent);
+    border-radius: 9999px;
+    padding: 0.5rem 1.1rem;
+  }
+</style>

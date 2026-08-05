@@ -35,9 +35,17 @@ import {
   createTextStreamResponse,
   type ModelMessage,
 } from 'ai';
-import { createHmac } from 'node:crypto';
 import { retrieve, buildSystemPrompt, buildUngroundedPrompt } from '../../lib/rag.mjs';
 import { incrementChatCount } from '../../lib/counter.mjs';
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_TTL_MS,
+  createSessionCookie,
+  verifySessionCookie,
+  parseCookies,
+  verifyTurnstileToken,
+  getClientIp,
+} from '../../lib/session.mjs';
 
 // Allow streaming responses up to 30 seconds on Vercel.
 export const prerender = false;
@@ -45,10 +53,6 @@ export const maxDuration = 30;
 
 // Google Gemini model — free tier: 15 RPM, 1,500 requests/day.
 const MODEL = 'gemini-2.5-flash';
-
-// Session cookie lifetime: 30 minutes after first Turnstile verification.
-const SESSION_COOKIE_NAME = 'jmeter-ai-session';
-const SESSION_TTL_MS = 30 * 60 * 1000;
 
 // Load env from .env (dev) or process.env (Vercel prod).
 const env = loadEnv(
@@ -63,86 +67,13 @@ const TURNSTILE_SECRET =
   process.env.TURNSTILE_SECRET_KEY ||
   env.TURNSTILE_SECRET_KEY;
 
-const TURNSTILE_VERIFY_URL =
-  'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-
 // --- Signed session cookie helpers ----------------------------------------
-// The cookie value is `<expiry>:<hmac>` where HMAC is derived from the
-// expiry + the Gemini API key (which is already secret and present).
-// No extra env vars needed.
+// Cookie signing/verification and Turnstile validation live in
+// ../../lib/session.mjs (shared with /api/share). The Gemini API key
+// doubles as the HMAC signing key.
 
 function getSigningKey(): string {
   return GEMINI_API_KEY || 'dev-fallback-key';
-}
-
-function createSessionCookie(): string {
-  const expiry = Date.now() + SESSION_TTL_MS;
-  const payload = String(expiry);
-  const sig = createHmac('sha256', getSigningKey())
-    .update(payload)
-    .digest('base64url');
-  return `${payload}.${sig}`;
-}
-
-function verifySessionCookie(value: string | null): boolean {
-  if (!value) return false;
-  const dot = value.lastIndexOf('.');
-  if (dot <= 0) return false;
-  const payload = value.slice(0, dot);
-  const sig = value.slice(dot + 1);
-  const expected = createHmac('sha256', getSigningKey())
-    .update(payload)
-    .digest('base64url');
-  if (sig !== expected) return false;
-  const expiry = Number(payload);
-  if (!Number.isFinite(expiry) || expiry < Date.now()) return false;
-  return true;
-}
-
-function parseCookies(request: Request): Record<string, string> {
-  const header = request.headers.get('cookie') || '';
-  const out: Record<string, string> = {};
-  for (const part of header.split(';')) {
-    const eq = part.indexOf('=');
-    if (eq > 0) {
-      const key = part.slice(0, eq).trim();
-      const val = part.slice(eq + 1).trim();
-      out[key] = val;
-    }
-  }
-  return out;
-}
-
-/** Validate a Cloudflare Turnstile token server-side. */
-async function verifyTurnstile(
-  token: string,
-  remoteip?: string,
-): Promise<boolean> {
-  if (!TURNSTILE_SECRET) return true; // dev mode — no secret configured
-  if (!token) return false;
-  try {
-    const body = new URLSearchParams();
-    body.append('secret', TURNSTILE_SECRET);
-    body.append('response', token);
-    if (remoteip) body.append('remoteip', remoteip);
-    const res = await fetch(TURNSTILE_VERIFY_URL, {
-      method: 'POST',
-      body,
-    });
-    const data = (await res.json()) as { success: boolean };
-    return data.success === true;
-  } catch {
-    return false;
-  }
-}
-
-function getClientIP(request: Request): string {
-  const headers = request.headers;
-  return (
-    headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    headers.get('x-real-ip') ||
-    'unknown'
-  );
 }
 
 /** Extract plain text from a ModelMessage's content (string or parts array). */
@@ -250,12 +181,16 @@ export async function POST({ request }: { request: Request }) {
   // If the user has a valid session cookie from a prior Turnstile verification,
   // skip the Turnstile check. Otherwise, validate the Turnstile token and
   // issue a new session cookie.
-  const cookies = parseCookies(request);
-  const hasValidSession = verifySessionCookie(cookies[SESSION_COOKIE_NAME]);
+  const cookies = parseCookies(request.headers.get('cookie'));
+  const hasValidSession = verifySessionCookie(cookies[SESSION_COOKIE_NAME], getSigningKey());
   let needsTurnstile = !hasValidSession;
 
   if (needsTurnstile) {
-    const verified = await verifyTurnstile(turnstileToken, getClientIP(request));
+    const verified = await verifyTurnstileToken(
+      turnstileToken,
+      TURNSTILE_SECRET,
+      getClientIp(request),
+    );
     if (!verified) {
       return new Response(
         JSON.stringify({ error: 'Bot verification failed. Please refresh the page and try again.' }),
@@ -301,7 +236,7 @@ export async function POST({ request }: { request: Request }) {
     // Set the session cookie after a successful Turnstile verification so
     // subsequent messages in this session skip the Turnstile round trip.
     if (needsTurnstile) {
-      const cookieValue = createSessionCookie();
+      const cookieValue = createSessionCookie(getSigningKey());
       headers['Set-Cookie'] =
         `${SESSION_COOKIE_NAME}=${cookieValue}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL_MS / 1000}`;
     }
