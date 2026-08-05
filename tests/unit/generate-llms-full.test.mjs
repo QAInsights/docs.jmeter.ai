@@ -4,6 +4,7 @@ import {
   parseFrontmatter,
   buildPageBlock,
   assembleDocument,
+  collectReleaseEntries,
 } from '../../scripts/generate-llms-full.mjs';
 import fs from 'fs';
 import path from 'path';
@@ -177,5 +178,38 @@ describe('assembleDocument', () => {
     const dir = makeDocsDir({ 'a/p.mdx': '---\ntitle: "A"\n---\n\nx' });
     const { content } = assembleDocument([{ label: 'A', link: '/a/p' }], dir, 'https://x');
     expect(content).not.toContain('Generated:');
+  });
+});
+
+describe('collectReleaseEntries', () => {
+  function makeReleasesDir(files) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'llms-releases-'));
+    const releases = path.join(dir, 'releases');
+    fs.mkdirSync(releases, { recursive: true });
+    for (const [name, content] of Object.entries(files)) {
+      fs.writeFileSync(path.join(releases, name), content, 'utf8');
+    }
+    return dir;
+  }
+
+  it('returns version pages newest-first and skips the hub', () => {
+    const dir = makeReleasesDir({
+      'index.mdx': 'hub',
+      '5-6.mdx': 'v56',
+      '5-6-2.mdx': 'v562',
+      '6-0-0.mdx': 'v600',
+    });
+    const entries = collectReleaseEntries(dir);
+    expect(entries.map((e) => e.link)).toEqual([
+      '/releases/6-0-0',
+      '/releases/5-6-2',
+      '/releases/5-6',
+    ]);
+    expect(entries[0].label).toBe('JMeter 6.0.0 Release Notes');
+  });
+
+  it('returns an empty list when the releases directory is absent', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'llms-releases-'));
+    expect(collectReleaseEntries(dir)).toEqual([]);
   });
 });

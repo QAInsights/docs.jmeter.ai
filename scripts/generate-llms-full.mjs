@@ -114,8 +114,39 @@ export function assembleDocument(entries, docsDir, site, { generatedAt } = {}) {
   return { content: header + blocks.join('\n\n'), included, skipped };
 }
 
+/**
+ * Collect sidebar entries for generated release-notes version pages.
+ * The sidebar only links the /releases/ hub; version pages are appended
+ * here so AI exports (llms-full.txt, chunk index, MCP search, Ask AI)
+ * cover them too. index.mdx is already in the sidebar and skipped.
+ *
+ * @param {string} docsDir
+ * @returns {Array<{ label: string, link: string }>}
+ */
+export function collectReleaseEntries(docsDir) {
+  const releasesDir = path.join(docsDir, 'releases');
+  if (!fs.existsSync(releasesDir)) return [];
+  const slugs = fs
+    .readdirSync(releasesDir)
+    .filter((f) => f.endsWith('.mdx') && f !== 'index.mdx')
+    .map((f) => f.replace(/\.mdx$/, ''))
+    .sort((a, b) => {
+      const pa = a.split('-').map(Number);
+      const pb = b.split('-').map(Number);
+      for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+        const diff = (pb[i] || 0) - (pa[i] || 0);
+        if (diff !== 0) return diff; // newest first
+      }
+      return 0;
+    });
+  return slugs.map((slug) => ({
+    label: `JMeter ${slug.replaceAll('-', '.')} Release Notes`,
+    link: `/releases/${slug}`,
+  }));
+}
+
 function main() {
-  const entries = flattenSidebar();
+  const entries = [...flattenSidebar(), ...collectReleaseEntries(DOCS_DIR)];
   const { content, included, skipped } = assembleDocument(entries, DOCS_DIR, SITE, {
     generatedAt: new Date().toISOString(),
   });
