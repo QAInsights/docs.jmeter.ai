@@ -72,8 +72,12 @@ const TURNSTILE_SECRET =
 // ../../lib/session.mjs (shared with /api/share). The Gemini API key
 // doubles as the HMAC signing key.
 
-function getSigningKey(): string {
-  return GEMINI_API_KEY || 'dev-fallback-key';
+// Fail closed: in production a missing key means cookies are neither
+// verified nor issued (every request re-runs Turnstile), rather than
+// trusting a public fallback constant.
+function getSigningKey(): string | null {
+  if (GEMINI_API_KEY) return GEMINI_API_KEY;
+  return process.env.NODE_ENV === 'production' ? null : 'dev-fallback-key';
 }
 
 /** Extract plain text from a ModelMessage's content (string or parts array). */
@@ -181,8 +185,9 @@ export async function POST({ request }: { request: Request }) {
   // If the user has a valid session cookie from a prior Turnstile verification,
   // skip the Turnstile check. Otherwise, validate the Turnstile token and
   // issue a new session cookie.
+  const signingKey = getSigningKey();
   const cookies = parseCookies(request.headers.get('cookie'));
-  const hasValidSession = verifySessionCookie(cookies[SESSION_COOKIE_NAME], getSigningKey());
+  const hasValidSession = verifySessionCookie(cookies[SESSION_COOKIE_NAME], signingKey);
   let needsTurnstile = !hasValidSession;
 
   if (needsTurnstile) {
@@ -235,8 +240,9 @@ export async function POST({ request }: { request: Request }) {
 
     // Set the session cookie after a successful Turnstile verification so
     // subsequent messages in this session skip the Turnstile round trip.
-    if (needsTurnstile) {
-      const cookieValue = createSessionCookie(getSigningKey());
+    // Skipped when no signing key is available (fail closed, no cookies).
+    if (needsTurnstile && signingKey) {
+      const cookieValue = createSessionCookie(signingKey);
       headers['Set-Cookie'] =
         `${SESSION_COOKIE_NAME}=${cookieValue}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL_MS / 1000}`;
     }

@@ -8,11 +8,13 @@
  * becomes a new crawlable page that links back into the docs.
  */
 import { getSharedConversation } from '../../lib/share-store.mjs';
-import { marked } from 'marked';
+import { renderSharedMarkdown } from '../../lib/shared-markdown.mjs';
 
 export const prerender = false;
 
-const SITE = 'https://docs.jmeter.ai';
+// Canonical URLs point at the configured production origin (Astro.site) so
+// preview deployments never mint competing indexed copies of a thread.
+const SITE = (Astro.site ?? Astro.url).origin;
 const id = Astro.params.id ?? '';
 const conversation = await getSharedConversation(id);
 
@@ -49,35 +51,9 @@ const pageDescription = found && firstAnswer
 const canonical = `${SITE}/shared/${id}/`;
 const ogImage = `${SITE}/og/home.png`;
 
-// Server-side markdown rendering for assistant messages.
-function renderMarkdown(md: string): string {
-  let html: string;
-  try {
-    html = marked.parse(md, { async: false, breaks: true }) as string;
-  } catch {
-    html = escapeHtml(md);
-  }
-  return sanitizeHtml(html);
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-// Minimal server-side sanitizer mirroring the client-side one: strip
-// script/style/iframe and event-handler / javascript: URLs.
-function sanitizeHtml(html: string): string {
-  return html
-    .replace(/<(script|style|iframe|object|embed|form)\b[\s\S]*?<\/\1>/gi, '')
-    .replace(/<(script|style|iframe|object|embed|form)\b[^>]*\/?>/gi, '')
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/(href|src)\s*=\s*(["']?)\s*javascript:[^"'>\s]*\2/gi, '$1="#"');
-}
+// Assistant messages render through renderSharedMarkdown (src/lib/shared-markdown.mjs):
+// escape-first markdown plus a tag/attribute allowlist, safe for set:html on
+// this public page. stripMd stays local because it only feeds meta text.
 ---
 
 <!doctype html>
@@ -128,7 +104,7 @@ function sanitizeHtml(html: string): string {
                 {m.role === 'user' ? (
                   <div class="shared-msg-bubble">{m.content}</div>
                 ) : (
-                  <div class="shared-msg-bubble shared-md" set:html={renderMarkdown(m.content)} />
+                  <div class="shared-msg-bubble shared-md" set:html={renderSharedMarkdown(m.content)} />
                 )}
               </div>
             ))}
@@ -137,19 +113,12 @@ function sanitizeHtml(html: string): string {
       ) : (
         <article class="shared-missing">
           <h1>Conversation expired or not found</h1>
-          <p>
-            This shared conversation has expired or the link is incorrect. Shared
-            threads stay public for one year after sharing.
-          </p>
+          <p>This shared conversation has expired or the link is incorrect. Shared threads stay public for one year after sharing.</p>
         </article>
       )}
 
       <footer class="shared-footer">
-        <p>
-          Answers are AI-generated and grounded in the
-          <a href="/">Apache JMeter community docs</a>. Verify anything critical against
-          the source pages.
-        </p>
+        <p>Answers are AI-generated and grounded in the <a href="/">Apache JMeter community docs</a>. Verify anything critical against the source pages.</p>
         <a class="shared-cta shared-cta--big" href="/">Open JMeter Docs</a>
       </footer>
     </main>

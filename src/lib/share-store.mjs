@@ -15,21 +15,59 @@ export const SHARE_TTL_SECONDS = 365 * 24 * 60 * 60;
 export const MAX_SHARED_MESSAGES = 60; // 30 user+assistant pairs
 export const MAX_SHARED_MESSAGE_CHARS = 10000;
 
-/** Ids: 10 chars from a URL-safe alphabet (~60 bits of entropy). */
+/** Ids: 10 chars from a URL-safe alphabet (~58.5 bits of entropy). */
 const ID_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
 const ID_LENGTH = 10;
 
 /**
  * Generate a short URL-safe conversation id.
+ *
+ * Uses rejection sampling so every alphabet character is equally likely:
+ * bytes at or above the largest multiple of the alphabet size contained in
+ * 0-255 are discarded instead of folded with modulo (256 % 57 != 0, which
+ * would bias the first 28 characters).
  * @returns {string}
  */
 export function generateShareId() {
-  const bytes = new Uint8Array(ID_LENGTH);
-  // crypto is global in Node 19+ and Vercel edge/node runtimes.
-  globalThis.crypto.getRandomValues(bytes);
+  const limit = 256 - (256 % ID_ALPHABET.length);
+  const buf = new Uint8Array(32);
   let id = '';
-  for (const b of bytes) id += ID_ALPHABET[b % ID_ALPHABET.length];
+  // crypto is global in Node 19+ and Vercel edge/node runtimes.
+  while (id.length < ID_LENGTH) {
+    globalThis.crypto.getRandomValues(buf);
+    for (const b of buf) {
+      if (b < limit) id += ID_ALPHABET[b % ID_ALPHABET.length];
+      if (id.length === ID_LENGTH) break;
+    }
+  }
   return id;
+}
+
+/** Rate-limit window: one hour, fixed. */
+export const SHARE_RATE_WINDOW_SECONDS = 60 * 60;
+
+/** Max share creates per client IP per window. */
+export const SHARE_RATE_MAX = 10;
+
+/**
+ * Fixed-window share counter per client IP.
+ *
+ * @param {string} ip client address (sanitized into the key)
+ * @param {object | null} [client] Redis client; defaults to the shared client
+ * @returns {Promise<{ allowed: boolean } | null>} null when Redis is
+ *   unavailable, so the caller degrades to the normal save path (which
+ *   already fails with 503 when Redis is down)
+ */
+export async function checkShareRateLimit(ip, client = getRedisClient()) {
+  if (!client) return null;
+  const key = `share:rate:${String(ip).replace(/[^a-zA-Z0-9.:_-]/g, '_').slice(0, 64)}`;
+  try {
+    const count = await client.incr(key);
+    if (count === 1) await client.expire(key, SHARE_RATE_WINDOW_SECONDS);
+    return count <= SHARE_RATE_MAX ? { allowed: true } : { allowed: false };
+  } catch {
+    return null;
+  }
 }
 
 /**

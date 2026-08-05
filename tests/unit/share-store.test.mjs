@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   validateSharePayload,
   generateShareId,
+  checkShareRateLimit,
+  SHARE_RATE_MAX,
+  SHARE_RATE_WINDOW_SECONDS,
   MAX_SHARED_MESSAGES,
   MAX_SHARED_MESSAGE_CHARS,
 } from '../../src/lib/share-store.mjs';
@@ -83,5 +86,70 @@ describe('generateShareId', () => {
   it('does not repeat ids', () => {
     const ids = new Set(Array.from({ length: 500 }, () => generateShareId()));
     expect(ids.size).toBe(500);
+  });
+
+  it('spreads ids across the alphabet (rejection sampling, not modulo bias)', () => {
+    // With an unbiased generator, drawing 10 chars x 2000 ids should touch
+    // most of the 57-char alphabet. A heavily biased generator would leave
+    // large gaps. This is a loose sanity check, not a statistical proof.
+    const seen = new Set();
+    for (let i = 0; i < 2000; i++) {
+      for (const ch of generateShareId()) seen.add(ch);
+    }
+    expect(seen.size).toBeGreaterThan(50);
+  });
+});
+
+describe('checkShareRateLimit', () => {
+  function fakeRedis() {
+    const store = new Map();
+    return {
+      store,
+      async incr(key) {
+        const next = (store.get(key) ?? 0) + 1;
+        store.set(key, next);
+        return next;
+      },
+      async expire(key, seconds) {
+        store.set(`ttl:${key}`, seconds);
+        return 1;
+      },
+    };
+  }
+
+  it('allows up to the cap, then blocks', async () => {
+    const redis = fakeRedis();
+    for (let i = 0; i < SHARE_RATE_MAX; i++) {
+      expect(await checkShareRateLimit('1.2.3.4', redis)).toEqual({ allowed: true });
+    }
+    expect(await checkShareRateLimit('1.2.3.4', redis)).toEqual({ allowed: false });
+  });
+
+  it('sets the window TTL on the first hit only', async () => {
+    const redis = fakeRedis();
+    await checkShareRateLimit('1.2.3.4', redis);
+    expect(redis.store.get('ttl:share:rate:1.2.3.4')).toBe(SHARE_RATE_WINDOW_SECONDS);
+  });
+
+  it('sanitizes unusual ip strings into the key', async () => {
+    const redis = fakeRedis();
+    await checkShareRateLimit('weird ip/../with spaces', redis);
+    expect([...redis.store.keys()].some((k) => k.startsWith('share:rate:') && !k.includes(' '))).toBe(true);
+  });
+
+  it('returns null when there is no client', async () => {
+    expect(await checkShareRateLimit('1.2.3.4', null)).toBeNull();
+  });
+
+  it('returns null when the client throws', async () => {
+    const broken = {
+      async incr() {
+        throw new Error('down');
+      },
+      async expire() {
+        return 1;
+      },
+    };
+    expect(await checkShareRateLimit('1.2.3.4', broken)).toBeNull();
   });
 });

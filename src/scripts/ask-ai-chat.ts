@@ -323,11 +323,23 @@ async function shareConversation() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.url) {
+      // 403 means the bot check failed or our session cookie expired:
+      // drop the flag so the retry grabs a fresh Turnstile token instead
+      // of failing the same way again.
+      if (res.status === 403) sessionVerified = false;
       throw new Error(data.error || `Share failed (${res.status})`);
     }
+    // The server accepted us and (when we sent a token) set the session
+    // cookie, so chat and later shares can skip Turnstile this session.
+    sessionVerified = true;
+    turnstileContainer?.classList.remove('ask-ai-turnstile--visible');
     await copyToClipboard(data.url);
     shareBtn.title = 'Link copied!';
     if (statusEl) statusEl.textContent = 'Share link copied to clipboard.';
+    // Restore the original tooltip once the confirmation has been read.
+    window.setTimeout(() => {
+      if (!isSharing && shareBtn?.title === 'Link copied!') shareBtn.title = originalTitle;
+    }, 2000);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Share failed.';
     showError(msg);
@@ -539,6 +551,9 @@ async function send(text: string) {
     });
 
     if (!res.ok) {
+      // 403 means the bot check failed or the session cookie expired:
+      // drop the flag so the next send requires a fresh Turnstile token.
+      if (res.status === 403) sessionVerified = false;
       const detail = await safeText(res);
       // Try to extract a clean error message from JSON responses.
       let msg = `Request failed (${res.status})`;

@@ -9,7 +9,7 @@
  * API key doubles as the signing key so no extra env vars are needed).
  */
 
-import { createHmac } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 /** Cookie name shared by /api/chat and /api/share. */
 export const SESSION_COOKIE_NAME = 'jmeter-ai-session';
@@ -23,6 +23,7 @@ export const SESSION_TTL_MS = 30 * 60 * 1000;
  * @returns {string} `<expiry>.<base64url-hmac>`
  */
 export function createSessionCookie(signingKey) {
+  if (!signingKey) throw new Error('createSessionCookie requires a signing key');
   const expiry = Date.now() + SESSION_TTL_MS;
   const payload = String(expiry);
   const sig = createHmac('sha256', signingKey)
@@ -33,13 +34,13 @@ export function createSessionCookie(signingKey) {
 
 /**
  * Verify a session cookie value: signature matches and expiry is in the
- * future. Never throws.
+ * future. Never throws. A missing signing key always fails closed.
  * @param {string | null | undefined} value
- * @param {string} signingKey
+ * @param {string | null | undefined} signingKey
  * @returns {boolean}
  */
 export function verifySessionCookie(value, signingKey) {
-  if (!value) return false;
+  if (!value || !signingKey) return false;
   const dot = value.lastIndexOf('.');
   if (dot <= 0) return false;
   const payload = value.slice(0, dot);
@@ -47,7 +48,10 @@ export function verifySessionCookie(value, signingKey) {
   const expected = createHmac('sha256', signingKey)
     .update(payload)
     .digest('base64url');
-  if (sig !== expected) return false;
+  // Constant-time comparison to avoid leaking signature bytes through
+  // timing. Lengths must match for timingSafeEqual, so reject first.
+  if (sig.length !== expected.length) return false;
+  if (!timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
   const expiry = Number(payload);
   if (!Number.isFinite(expiry) || expiry < Date.now()) return false;
   return true;
@@ -77,8 +81,10 @@ const TURNSTILE_VERIFY_URL =
   'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 /**
- * Validate a Cloudflare Turnstile token server-side. Returns true when no
- * secret is configured (dev mode) so local flows are never blocked.
+ * Validate a Cloudflare Turnstile token server-side. When no secret is
+ * configured, local dev passes so flows are never blocked, but production
+ * fails closed: a misconfigured deploy must not silently disable bot
+ * protection.
  *
  * @param {string} token
  * @param {string | undefined} secret
@@ -86,7 +92,7 @@ const TURNSTILE_VERIFY_URL =
  * @returns {Promise<boolean>}
  */
 export async function verifyTurnstileToken(token, secret, remoteip) {
-  if (!secret) return true; // dev mode — no secret configured
+  if (!secret) return process.env.NODE_ENV !== 'production';
   if (!token) return false;
   try {
     const body = new URLSearchParams();
