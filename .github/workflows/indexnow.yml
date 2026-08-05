@@ -1,0 +1,83 @@
+# Ping IndexNow (Bing, Yandex, Seznam, Naver, and others) whenever docs
+# content changes on main, so updated pages get re-crawled within hours
+# instead of weeks.
+#
+# Setup (one-time):
+#   1. Generate a key at https://www.bing.com/indexnow (or any IndexNow
+#      search engine).
+#   2. Commit the key verification file as public/<key>.txt containing the
+#      key itself.
+#   3. Add the key as the INDEXNOW_KEY repository secret.
+#
+# The workflow is a no-op until INDEXNOW_KEY is set.
+
+name: IndexNow Ping
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/content/docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Collect changed doc URLs
+        id: urls
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual run: resubmit the hub pages.
+            URLS="https://docs.jmeter.ai/,https://docs.jmeter.ai/releases/,https://docs.jmeter.ai/topics/errors/"
+          else
+            URLS=$(git diff --name-only HEAD^1 HEAD -- 'src/content/docs/**/*.mdx' \
+              | sed -E \
+                  -e 's|^src/content/docs/||' \
+                  -e 's|index\.mdx$||' \
+                  -e 's|\.mdx$|/|' \
+                  -e 's|^([^/].*)$|https://docs.jmeter.ai/\1|' \
+                  -e 's|^https://docs.jmeter.ai/$|https://docs.jmeter.ai/|' \
+              | head -100 \
+              | paste -sd, -)
+          fi
+          echo "urls=${URLS}" >> "$GITHUB_OUTPUT"
+          if [ -z "${URLS}" ]; then
+            echo "has_urls=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_urls=true" >> "$GITHUB_OUTPUT"
+            echo "Submitting: ${URLS}"
+          fi
+
+      - name: Submit to IndexNow
+        if: steps.urls.outputs.has_urls == 'true'
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+          URLS: ${{ steps.urls.outputs.urls }}
+        run: |
+          if [ -z "${INDEXNOW_KEY}" ]; then
+            echo "INDEXNOW_KEY secret not set - skipping submission."
+            exit 0
+          fi
+          PAYLOAD=$(jq -n \
+            --arg host "docs.jmeter.ai" \
+            --arg key "${INDEXNOW_KEY}" \
+            --arg urls "${URLS}" \
+            '{host: $host, key: $key, urlList: ($urls | split(","))}')
+          STATUS=$(curl -s -o /tmp/indexnow-response.txt -w "%{http_code}" \
+            -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d "${PAYLOAD}")
+          echo "IndexNow responded with HTTP ${STATUS}"
+          cat /tmp/indexnow-response.txt || true
+          if [ "${STATUS}" != "200" ] && [ "${STATUS}" != "202" ]; then
+            echo "::warning::IndexNow submission returned HTTP ${STATUS}"
+          fi
