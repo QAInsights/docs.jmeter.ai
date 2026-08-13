@@ -159,6 +159,19 @@ gtag('config', 'G-MVZN6CMXYQ');`,
     );
   }
 
+  // Cloudflare Web Analytics - loaded as a module and gated to production
+  // so dev/preview visits aren't tracked.
+  if (import.meta.env.PROD && !hasTag('script', 'src', 'https://static.cloudflareinsights.com/beacon.min.js')) {
+    route.head.push({
+      tag: 'script',
+      attrs: {
+        type: 'module',
+        src: 'https://static.cloudflareinsights.com/beacon.min.js',
+        'data-cf-beacon': '{"token": "540ccdd38bee486b8159d27e0adddfc8"}',
+      },
+    });
+  }
+
   // Inject robots meta tag
   if (!hasTag('meta', 'name', 'robots')) {
     route.head.push({ tag: 'meta', attrs: { name: 'robots', content: 'index, follow' } });
