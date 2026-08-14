@@ -153,12 +153,16 @@ function main() {
     console.warn(`WARNING: ${name} not found in .env — skipping.`);
   }
   for (const [name, value] of Object.entries(secrets)) {
-    const res = wrangler(['secret', 'put', name], { input: value });
+    // `versions secret put` (not `secret put`): dashboard Git deploys use
+    // Workers versions, where plain `secret put` errors with "the latest
+    // version of your Worker isn't currently deployed". Versioned secrets
+    // stage on the latest version and are inherited by the next deploy.
+    const res = wrangler(['versions', 'secret', 'put', name], { input: value });
     if (!res.ok) {
       console.error(`Failed to set secret ${name}:`, res.stderr || res.stdout);
       process.exit(1);
     }
-    console.log(`Set secret ${name}.`);
+    console.log(`Set secret ${name} (takes effect on next deploy).`);
   }
 
   if (process.argv.includes('--deploy')) {

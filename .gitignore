@@ -15,6 +15,7 @@ coverage/
 # env files
 .env
 .env.local
+.dev.vars
 
 # OS
 .DS_Store
@@ -41,3 +42,5 @@ preview.log
 
 # temp
 .tmp/
+.vercel
+.env*

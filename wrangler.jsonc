@@ -8,6 +8,7 @@
     "directory": "./dist",
     "binding": "ASSETS"
   },
+  "kv_namespaces": [{ "binding": "SESSION", "id": "1a5790178b7e43958a9e4718665575ed" }],
   // Public build-time config (Algolia DocSearch) — safe to commit.
   // Secrets (GOOGLE_GENERATIVE_AI_API_KEY, TURNSTILE_SECRET_KEY,
   // UPSTASH_REDIS_REST_URL/TOKEN) are set via `wrangler secret put`.
