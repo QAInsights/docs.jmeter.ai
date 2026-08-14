@@ -19,6 +19,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { z } from 'zod';
 import { retrieve, INDEX } from '../../lib/rag.mjs';
+import { checkMcpRateLimit } from '../../lib/mcp-rate-limit.mjs';
+import { getClientIp } from '../../lib/session.mjs';
 
 export const prerender = false;
 export const maxDuration = 30;
@@ -168,6 +170,27 @@ function createServer(): McpServer {
 }
 
 export async function POST({ request }: { request: Request }) {
+  const rate = await checkMcpRateLimit(getClientIp(request));
+  if (rate && !rate.allowed) {
+    // JSON-RPC-shaped error so MCP clients surface a meaningful message.
+    return new Response(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: null,
+        error: {
+          code: -32000,
+          message: `Rate limit exceeded: max 120 requests/min per IP. Retry after ${rate.retryAfter}s.`,
+        },
+      }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(rate.retryAfter),
+        },
+      },
+    );
+  }
   try {
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless: no session headers, Vercel-safe
