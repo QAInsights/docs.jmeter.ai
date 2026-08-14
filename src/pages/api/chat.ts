@@ -47,9 +47,7 @@ import {
   getClientIp,
 } from '../../lib/session.mjs';
 
-// Allow streaming responses up to 30 seconds on Vercel.
 export const prerender = false;
-export const maxDuration = 30;
 
 // Google Gemini model — free tier: 15 RPM, 1,500 requests/day.
 const MODEL = 'gemini-2.5-flash';

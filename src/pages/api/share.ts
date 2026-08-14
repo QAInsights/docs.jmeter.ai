@@ -35,7 +35,6 @@ import {
 } from '../../lib/share-store.mjs';
 
 export const prerender = false;
-export const maxDuration = 15;
 
 const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 const TURNSTILE_SECRET =

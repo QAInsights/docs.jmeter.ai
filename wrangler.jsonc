@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "docs-jmeter-ai",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-08-14",
+  "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env"],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  // Public build-time config (Algolia DocSearch) — safe to commit.
+  // Secrets (GOOGLE_GENERATIVE_AI_API_KEY, TURNSTILE_SECRET_KEY,
+  // UPSTASH_REDIS_REST_URL/TOKEN) are set via `wrangler secret put`.
+  "vars": {}
+}

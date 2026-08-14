@@ -23,7 +23,6 @@ import { checkMcpRateLimit } from '../../lib/mcp-rate-limit.mjs';
 import { getClientIp } from '../../lib/session.mjs';
 
 export const prerender = false;
-export const maxDuration = 30;
 
 const SERVER_NAME = 'jmeter-docs';
 const SERVER_VERSION = '1.0.0';

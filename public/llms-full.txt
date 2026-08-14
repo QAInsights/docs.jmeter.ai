@@ -3,8 +3,8 @@
 > Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience. This is an independent community resource and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation. For official documentation, visit jmeter.apache.org.
 
 Site: https://docs.jmeter.ai
-Pages: 111
-Generated: 2026-08-05T03:39:26.235Z
+Pages: 112
+Generated: 2026-08-14T21:08:50.424Z
 ---
 Title: User's Manual: Getting Started
 URL: https://docs.jmeter.ai/getting-started/get-started/
@@ -23584,6 +23584,87 @@ documented changes
 - [Current changes page](/user-manual/changes/)
 - [History of previous changes](/user-manual/changes-history/)
 - [Download JMeter](/reference/download-jmeter/)
+
+
+---
+Title: MCP Server
+URL: https://docs.jmeter.ai/mcp/
+---
+
+Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.ai/api/mcp` and your agent answers JMeter questions grounded in this documentation, with a source link for every answer. Free, no API key, no signup.
+
+**Endpoint:** `https://docs.jmeter.ai/api/mcp` (Streamable HTTP, stateless)
+
+**Fair use:** 120 requests/min per IP. Exceeding it returns HTTP 429 with a `Retry-After` header — well-behaved clients back off automatically.
+
+## Available tools
+
+### search_jmeter_docs
+
+Search the full documentation: user manual, topic guides, error playbooks, release notes, and interactive tool pages. Returns ranked pages with URLs and snippets.
+
+```json
+{ "query": "correlation dynamic values" }
+```
+
+### get_jmeter_page
+
+Read one page in full markdown. Accepts the complete URL or a bare path like `topics/api-load-testing`.
+
+```json
+{ "url": "topics/api-load-testing" }
+```
+
+## Connect your agent
+
+### Claude Code
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --scope user
+```
+
+`--scope user` registers the server for all your projects, no matter which folder you run the command from. Restart Claude Code after adding it, then verify with `/mcp`.
+
+### Qwen Code, Cursor, and other MCP clients
+
+Add this to your MCP configuration file:
+
+```json
+{
+  "mcpServers": {
+    "jmeter-docs": {
+      "url": "https://docs.jmeter.ai/api/mcp"
+    }
+  }
+}
+```
+
+### Verify with curl
+
+```bash
+curl -X POST https://docs.jmeter.ai/api/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-06-18",
+      "capabilities": {},
+      "clientInfo": { "name": "curl", "version": "1.0.0" }
+    }
+  }'
+```
+
+## Why connect the docs?
+
+- **Grounded answers.** Responses come from the actual JMeter documentation, not from stale model memory.
+- **Verifiable sources.** Every result carries the docs.jmeter.ai URL so you can check the advice.
+- **Always current.** The index rebuilds when the docs sync from apache/jmeter, so agents see new releases automatically.
+- **Zero cost.** Hosted on the community docs site with no rate-limited API key to manage.
+
+Prefer a chat interface? Use the **Ask AI** button on any page, or start with the [JMeter for Beginners guide](/topics/jmeter-for-beginners/).
 
 
 ---
