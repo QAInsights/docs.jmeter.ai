@@ -11,6 +11,8 @@
     "dev": "astro dev",
     "build": "pnpm run lint && node scripts/generate-release-pages.mjs && node scripts/generate-llms-full.mjs && node scripts/generate-llms-chunks.mjs && node scripts/generate-og-images.mjs && astro build",
     "preview": "astro preview",
+    "deploy:cloudflare": "node scripts/deploy-cloudflare.mjs",
+    "deploy:cloudflare:full": "node scripts/deploy-cloudflare.mjs --deploy",
     "astro": "astro",
     "convert": "node tools/convert.mjs",
     "generate-sidebar": "node scripts/generate-sidebar.mjs",
