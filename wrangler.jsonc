@@ -12,7 +12,8 @@
   // Workers Logs + traces in the dashboard (free). Watch for CPU-limit
   // errors (1102) and free-tier request-cap errors (1027) after cutover.
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "head_sampling_rate": 1
   },
   // Public build-time config (Algolia DocSearch) — safe to commit.
   // Secrets (GOOGLE_GENERATIVE_AI_API_KEY, TURNSTILE_SECRET_KEY,
