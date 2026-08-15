@@ -1,56 +1,72 @@
-import type { APIRoute, GetStaticPaths } from 'astro';
-import { getCollection } from 'astro:content';
+/**
+ * Generate public/og/<slug>.png Open Graph cards for every docs page.
+ *
+ * This replaced the prerendered /og/[...slug].png route during the
+ * Cloudflare migration: the Cloudflare adapter prerenders inside workerd
+ * (miniflare), where the native @resvg/resvg-js binding can't load. Running
+ * as a plain Node build script keeps satori + resvg working unchanged, and
+ * the PNGs deploy as plain static assets at identical URLs.
+ *
+ * Wired into `npm run build` so cards stay in sync automatically.
+ */
+
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
-import fs from 'node:fs';
-import path from 'node:path';
+import { stripFrontmatter, parseFrontmatter } from './generate-llms-full.mjs';
 
-// Load Geist 700 bold font buffer locally from node_modules/@fontsource/geist-sans
-const fontPath = path.resolve('node_modules/@fontsource/geist-sans/files/geist-sans-latin-700-normal.woff');
-const fontData = fs.readFileSync(fontPath);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
+const DOCS_DIR = path.join(ROOT, 'src/content/docs');
+const OUTPUT_DIR = path.join(ROOT, 'public', 'og');
+const FONT_PATH = path.join(
+  ROOT,
+  'node_modules/@fontsource/geist-sans/files/geist-sans-latin-700-normal.woff',
+);
 
-export const getStaticPaths: GetStaticPaths = async () => {
-  const docs = await getCollection('docs');
-  const paths = docs.map((entry) => {
-    const rawSlug = entry.id.replace(/\.(md|mdx)$/, '');
-    const firstSegment = rawSlug.split('/')[0] || '';
-    const categoryMap: Record<string, string> = {
-      tools: 'INTERACTIVE TOOL',
-      topics: 'TOPIC GUIDE',
-      'user-manual': 'USER MANUAL',
-      reference: 'REFERENCE',
-      extending: 'EXTENDING',
-      'getting-started': 'GETTING STARTED',
-      legal: 'LEGAL',
-    };
-    const category = categoryMap[firstSegment] || firstSegment.toUpperCase() || 'DOCUMENTATION';
-
-    return {
-      params: { slug: rawSlug },
-      props: {
-        title: entry.data.title || 'JMeter Documentation',
-        description: entry.data.description || 'Community-maintained Apache JMeter documentation with guides and tools.',
-        category,
-      },
-    };
-  });
-
-  // Root home page card
-  paths.push({
-    params: { slug: 'home' },
-    props: {
-      title: 'JMeter Documentation',
-      description: 'Modern Apache JMeter docs: user manual, interactive tools, and performance testing guides.',
-      category: 'DOCS.JMETER.AI',
-    },
-  });
-
-  return paths;
+const CATEGORY_MAP = {
+  tools: 'INTERACTIVE TOOL',
+  topics: 'TOPIC GUIDE',
+  'user-manual': 'USER MANUAL',
+  reference: 'REFERENCE',
+  extending: 'EXTENDING',
+  'getting-started': 'GETTING STARTED',
+  legal: 'LEGAL',
 };
 
-export const GET: APIRoute = async ({ props }) => {
-  const { title = 'JMeter Documentation', description = '', category = 'DOCUMENTATION' } = props || {};
+/** Recursively collect docs slugs: a/b.mdx → a/b, a/b/index.mdx → a/b. */
+function collectSlugs(dir, base = '') {
+  const slugs = [];
+  for (const name of fs.readdirSync(dir)) {
+    const full = path.join(dir, name);
+    const rel = base ? `${base}/${name}` : name;
+    if (fs.statSync(full).isDirectory()) {
+      slugs.push(...collectSlugs(full, rel));
+    } else if (name.endsWith('.mdx')) {
+      slugs.push(rel.replace(/\.mdx$/, '').replace(/\/index$/, ''));
+    }
+  }
+  return slugs;
+}
 
+function cardFor(slug) {
+  const file = path.join(DOCS_DIR, `${slug}.mdx`);
+  const indexFile = path.join(DOCS_DIR, slug, 'index.mdx');
+  const resolved = fs.existsSync(file) ? file : fs.existsSync(indexFile) ? indexFile : null;
+  const fm = resolved ? parseFrontmatter(stripFrontmatter(fs.readFileSync(resolved, 'utf8')).frontmatter) : {};
+  const firstSegment = slug.split('/')[0] || '';
+  return {
+    slug,
+    title: fm.title || 'JMeter Documentation',
+    description: fm.description || '',
+    category: CATEGORY_MAP[firstSegment] || firstSegment.toUpperCase() || 'DOCUMENTATION',
+  };
+}
+
+/** Satori markup for one card (unchanged from the old /og route). */
+async function renderCard({ title, description, category }, fontData) {
   const svg = await satori(
     {
       type: 'div',
@@ -170,24 +186,36 @@ export const GET: APIRoute = async ({ props }) => {
     {
       width: 1200,
       height: 630,
-      fonts: [
-        {
-          name: 'Geist',
-          data: fontData,
-          weight: 700,
-          style: 'normal',
-        },
-      ],
-    }
-  );
-
-  const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
-  const pngBuffer = resvg.render().asPng();
-
-  return new Response(pngBuffer, {
-    headers: {
-      'Content-Type': 'image/png',
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      fonts: [{ name: 'Geist', data: fontData, weight: 700, style: 'normal' }],
     },
-  });
-};
+  );
+  return new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } }).render().asPng();
+}
+
+async function main() {
+  const fontData = fs.readFileSync(FONT_PATH);
+  const slugs = collectSlugs(DOCS_DIR);
+  // Root home page card
+  slugs.push('home');
+  const cards = slugs.map((slug) =>
+    slug === 'home'
+      ? {
+          slug,
+          title: 'JMeter Documentation',
+          description:
+            'Modern Apache JMeter docs: user manual, interactive tools, and performance testing guides.',
+          category: 'DOCS.JMETER.AI',
+        }
+      : cardFor(slug),
+  );
+  for (const card of cards) {
+    const out = path.join(OUTPUT_DIR, `${card.slug}.png`);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, await renderCard(card, fontData));
+  }
+  console.log(`[og-images] wrote ${cards.length} cards to ${path.relative(ROOT, OUTPUT_DIR)}`);
+}
+
+// Run only when invoked directly, not when imported by tests.
+const invoked = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invoked) main();

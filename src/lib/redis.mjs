@@ -1,7 +1,7 @@
 /**
  * Shared Upstash Redis client for serverless endpoints.
  *
- * Env vars (auto-injected by the Vercel/Upstash integration on deploy):
+ * Env vars (set via `wrangler secret put` in prod, `.dev.vars` in local dev):
  *   - UPSTASH_REDIS_REST_URL
  *   - UPSTASH_REDIS_REST_TOKEN
  *
@@ -10,12 +10,6 @@
  */
 
 import { Redis } from '@upstash/redis';
-import { loadEnv } from 'vite';
-
-// Load env from .env files (dev) — in prod (Vercel) process.env is already
-// populated. Vite's loadEnv reads .env files that Astro/Vite don't auto-inject
-// into process.env for .mjs modules in dev mode.
-const _env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 
 let client = null;
 
@@ -27,16 +21,14 @@ export function getRedisClient() {
   if (client !== null) return client || null;
   // Support both Upstash REST env var names (UPSTASH_REDIS_REST_*) and
   // legacy Vercel KV env var names (KV_REST_API_*).
+  // Workers populates process.env from bindings/secrets via the
+  // nodejs_compat_populate_process_env compatibility flag.
   const url =
     process.env.UPSTASH_REDIS_REST_URL ||
-    _env.UPSTASH_REDIS_REST_URL ||
-    process.env.KV_REST_API_URL ||
-    _env.KV_REST_API_URL;
+    process.env.KV_REST_API_URL;
   const token =
     process.env.UPSTASH_REDIS_REST_TOKEN ||
-    _env.UPSTASH_REDIS_REST_TOKEN ||
-    process.env.KV_REST_API_TOKEN ||
-    _env.KV_REST_API_TOKEN;
+    process.env.KV_REST_API_TOKEN;
   if (!url || !token) {
     client = false; // mark as unavailable so we don't re-check env on every call
     return null;

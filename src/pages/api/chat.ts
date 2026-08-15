@@ -28,7 +28,6 @@
  */
 
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { loadEnv } from 'vite';
 import {
   streamText,
   toTextStream,
@@ -47,25 +46,15 @@ import {
   getClientIp,
 } from '../../lib/session.mjs';
 
-// Allow streaming responses up to 30 seconds on Vercel.
 export const prerender = false;
-export const maxDuration = 30;
 
 // Google Gemini model — free tier: 15 RPM, 1,500 requests/day.
 const MODEL = 'gemini-2.5-flash';
 
-// Load env from .env (dev) or process.env (Vercel prod).
-const env = loadEnv(
-  process.env.NODE_ENV || 'development',
-  process.cwd(),
-  '',
-);
-const GEMINI_API_KEY =
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-  env.GOOGLE_GENERATIVE_AI_API_KEY;
-const TURNSTILE_SECRET =
-  process.env.TURNSTILE_SECRET_KEY ||
-  env.TURNSTILE_SECRET_KEY;
+// Workers populate process.env from bindings/secrets via the
+// nodejs_compat_populate_process_env flag; in local dev use .dev.vars.
+const GEMINI_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
 
 // --- Signed session cookie helpers ----------------------------------------
 // Cookie signing/verification and Turnstile validation live in

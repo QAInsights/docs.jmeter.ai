@@ -18,7 +18,6 @@
  * origin so preview deployments link to themselves, not production.
  */
 
-import { loadEnv } from 'vite';
 import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_MS,
@@ -35,13 +34,9 @@ import {
 } from '../../lib/share-store.mjs';
 
 export const prerender = false;
-export const maxDuration = 15;
 
-const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
-const TURNSTILE_SECRET =
-  process.env.TURNSTILE_SECRET_KEY || env.TURNSTILE_SECRET_KEY;
-const GEMINI_API_KEY =
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY || env.GOOGLE_GENERATIVE_AI_API_KEY;
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
+const GEMINI_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
 // Same signing key as /api/chat so its session cookie verifies here.
 // Fail closed: in production a missing key means cookies are neither
