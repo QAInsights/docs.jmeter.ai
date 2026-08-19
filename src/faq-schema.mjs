@@ -114,11 +114,11 @@ export const faqSchema = {
   '/tools/thread-calculator': [
     {
       q: 'How many threads do I need in JMeter for a target RPS?',
-      a: 'As a first estimate with no think time, threads are approximately target RPS multiplied by average response time in seconds. For example, 50 RPS at 200 ms average response time needs about 10 concurrent threads. Always validate with a pilot run because real response times rise under load.',
+      a: 'Threads are approximately target RPS multiplied by cycle time in seconds. Cycle time is average response time plus think time. For example, 50 RPS at 200 ms with no think time needs about 10 threads; the same RPS with 800 ms think time needs about 50 threads. Always validate with a pilot run because real response times rise under load.',
     },
     {
       q: 'What is the formula for JMeter thread group sizing?',
-      a: 'Use concurrency approximately equal to arrival rate times service time. In JMeter terms: threads approximately equals ceil of target RPS times response time in milliseconds divided by 1000. Add think time, ramp-up, and client limits on top of that estimate.',
+      a: 'Use concurrency approximately equal to arrival rate times cycle time. In JMeter terms: threads approximately equals ceil of target RPS times (response time plus think time) in milliseconds divided by 1000. Add ramp-up and client limits on top of that estimate.',
     },
     {
       q: 'How long should JMeter ramp-up be?',
@@ -126,7 +126,30 @@ export const faqSchema = {
     },
     {
       q: 'Why is my JMeter throughput lower than the calculator estimate?',
-      a: 'The calculator assumes busy threads with no think time and a stable response time. Lower throughput usually means response time grew under load, the injector CPU or listeners are saturated, think time is present, or the server is throttling. Re-measure average response time under load and resize.',
+      a: 'The calculator assumes a stable response time. Lower throughput usually means response time grew under load, the injector CPU or listeners are saturated, extra timers or pacing are present, or the server is throttling. Re-measure average response time under load, include think time in the calculator, and resize.',
+    },
+  ],
+
+  '/tools/cli-builder': [
+    {
+      q: 'How do I run JMeter from the command line?',
+      a: 'Use non-GUI mode: jmeter -n -t plan.jmx -l results.jtl. Add -e -o report to generate the HTML dashboard after the run. The report directory should be empty unless you also pass -f to overwrite it.',
+    },
+    {
+      q: 'What do the JMeter -n -t and -l flags mean?',
+      a: '-n starts JMeter in non-GUI mode, -t points at the test plan jmx file, and -l writes sample results to a jtl or CSV file. Real load tests should always use -n instead of the GUI.',
+    },
+    {
+      q: 'How do I generate a JMeter HTML dashboard from the CLI?',
+      a: 'Add -e -o report/ to the same jmeter -n -t ... -l results.jtl command. JMeter writes the dashboard into that folder when the test finishes. Use -f if you need to overwrite an existing report directory.',
+    },
+    {
+      q: 'How do I set JMeter heap on the command line?',
+      a: 'Set the HEAP environment variable for that process, for example HEAP="-Xms512m -Xmx2048m" jmeter -n -t plan.jmx -l results.jtl. HEAP is consumed by JMeter startup scripts, not as a jmeter flag.',
+    },
+    {
+      q: 'How do I pass properties with -J in JMeter?',
+      a: 'Use -Jname=value on the command line and read it in the plan with the __P function, for example -Jhost=staging.example.com and ${__P(host,localhost)}. Prefer -J or -q over editing jmeter.properties.',
     },
   ],
 

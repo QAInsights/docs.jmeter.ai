@@ -13,6 +13,7 @@ export const THREAD_CALCULATOR = {
     threads: { min: 1, max: 50_000 },
     responseTimeMs: { min: 1, max: 120_000 },
     rampPerThread: { min: 0.1, max: 60 },
+    thinkTimeMs: { min: 0, max: 300_000 },
   },
   defaults: {
     mode: 'rps',
@@ -20,6 +21,7 @@ export const THREAD_CALCULATOR = {
     threads: 50,
     responseTimeMs: 200,
     rampPerThread: 1,
+    thinkTimeMs: 0,
   },
 };
 
@@ -121,6 +123,34 @@ export const COORDINATED_OMISSION = {
     avgResponseTimeMs: 5000,
     durationSeconds: 60,
   },
+};
+
+/**
+ * CLI command builder bounds and defaults.
+ * heapMb 0 means omit HEAP / JVM_ARGS from the generated command.
+ */
+export const CLI_BUILDER = {
+  limits: {
+    heapMb: { min: 0, max: 16_384 },
+    pathMaxLen: 260,
+    extraJMaxLen: 2000,
+    remoteHostsMaxLen: 500,
+  },
+  defaults: {
+    plan: 'plan.jmx',
+    results: 'results.jtl',
+    report: 'report',
+    generateReport: true,
+    force: false,
+    heapMb: 0,
+    propertiesFile: '',
+    logFile: '',
+    remoteHosts: '',
+    exitRemote: false,
+    extraJ: '',
+    shell: 'bash',
+  },
+  dockerImage: 'justb4/jmeter:5.6.3',
 };
 
 /**

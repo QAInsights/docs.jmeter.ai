@@ -108,6 +108,10 @@ const ArrowIcon = '<svg class="ask-ai-suggestion__arrow" xmlns="http://www.w3.or
       </div>
       <div class="ask-ai-suggestions">
         <span class="ask-ai-suggestions__label">Try one of these</span>
+        <button id="ask-ai-this-page" class="ask-ai-suggestion ask-ai-suggestion--page" type="button" hidden>
+          <span data-this-page-label>Explain this page</span>
+          <Fragment set:html={ArrowIcon} />
+        </button>
         <button class="ask-ai-suggestion" type="button" data-prompt="How do I build a basic HTTP load test plan in JMeter?">
           How do I build a basic HTTP load test plan?
           <Fragment set:html={ArrowIcon} />

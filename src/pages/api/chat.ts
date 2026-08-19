@@ -34,7 +34,7 @@ import {
   createTextStreamResponse,
   type ModelMessage,
 } from 'ai';
-import { retrieve, buildSystemPrompt, buildUngroundedPrompt } from '../../lib/rag.mjs';
+import { retrieve, buildSystemPrompt, buildUngroundedPrompt, findChunkByPath } from '../../lib/rag.mjs';
 import { incrementChatCount } from '../../lib/counter.mjs';
 import {
   SESSION_COOKIE_NAME,
@@ -112,10 +112,14 @@ function lastUserText(messages: ModelMessage[]): string {
 export async function POST({ request }: { request: Request }) {
   let messages: ModelMessage[];
   let turnstileToken: string;
+  let pagePath = '';
   try {
     const body = await request.json();
     messages = Array.isArray(body?.messages) ? body.messages : [];
     turnstileToken = body?.turnstileToken || '';
+    if (typeof body?.pagePath === 'string') {
+      pagePath = body.pagePath.trim().slice(0, 300);
+    }
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
       status: 400,
@@ -195,9 +199,12 @@ export async function POST({ request }: { request: Request }) {
 
   // --- RAG retrieval + prompt building ------------------------------------
   const query = lastUserText(messages);
-  const sources = retrieve(query);
+  const sources = retrieve(query, { pagePath });
   const isGrounded = sources.length > 0;
-  const system = isGrounded ? buildSystemPrompt(sources) : buildUngroundedPrompt();
+  const currentPage = pagePath ? findChunkByPath(pagePath) : undefined;
+  const system = isGrounded
+    ? buildSystemPrompt(sources, { currentPageUrl: currentPage?.url })
+    : buildUngroundedPrompt();
 
   const google = createGoogleGenerativeAI({ apiKey: GEMINI_API_KEY });
 

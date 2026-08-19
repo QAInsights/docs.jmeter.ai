@@ -1,0 +1,70 @@
+---
+title: "JMeter CLI Command Builder"
+seoTitle: "JMeter Command Line Generator (-n -t -l)"
+description: "Build a JMeter CLI command: non-GUI run, JTL results, HTML dashboard, HEAP, -J properties, and GitHub Actions or Docker snippets."
+keywords:
+  - JMeter command line
+  - jmeter -n -t
+  - JMeter CLI
+  - JMeter HTML report command
+  - JMeter non-GUI
+difficulty: beginner
+guideType: how-to
+estimatedReadTime: "3 min read"
+lastVerified: "JMeter 5.6"
+---
+
+import CliBuilder from '../../../components/tools/CliBuilder.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter CLI Command Builder
+
+Assemble a **non-GUI** JMeter command you can paste into a terminal, GitHub Actions, or Docker. Paths stay in your browser; nothing is uploaded.
+
+<CliBuilder />
+
+## What the flags mean
+
+| Flag | Purpose |
+|------|---------|
+| `-n` | Non-GUI (CLI) mode — required for real load |
+| `-t` | Test plan (`.jmx`) |
+| `-l` | Results file (`.jtl` / CSV) |
+| `-e` `-o` | Generate the HTML dashboard into an empty folder |
+| `-f` | Overwrite existing results and report directory |
+| `-q` | Extra properties file (prefer this over editing `jmeter.properties`) |
+| `-j` | JMeter log file |
+| `-Jname=value` | Set a property for this run (`__P` in the plan) |
+| `-R` | Remote worker hosts (start `jmeter-server` first) |
+| `-X` | Exit remote servers when the test ends |
+
+`HEAP` is an environment variable consumed by JMeter startup scripts, not a `jmeter` flag. Size it with the [Heap Estimator](/tools/heap-estimator/).
+
+## Typical workflow
+
+1. Size threads and think time with the [Thread Calculator](/tools/thread-calculator/).
+2. Build the CLI command here (add `-e -o` for a dashboard artifact).
+3. Parameterize hosts and threads with `-J` / `__P` so the same `.jmx` works in every environment.
+4. Gate the pipeline on dashboard error rate and percentiles, not only the process exit code.
+
+## Related reading
+
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+- [Best Practices](/user-manual/best-practices/)
+- [Generating Dashboard](/user-manual/generating-dashboard/)
+- [Remote Testing](/user-manual/remote-test/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    Paste the command into a small CLI run, then attach the HTML report as a CI artifact.
+  </Fragment>
+  <Fragment slot="related">
+    [Heap estimator](/tools/heap-estimator/) · [Properties cheat sheet](/tools/properties-cheatsheet/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Running load in GUI mode, or pointing -o at a non-empty report folder without -f.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    Command not found? Add JMeter bin to PATH, or use the full path to jmeter.bat / jmeter.
+  </Fragment>
+</RelatedContent>

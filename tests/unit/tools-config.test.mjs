@@ -4,6 +4,7 @@ import {
   THREAD_CALCULATOR,
   HEAP_ESTIMATOR,
   REGEX_EXTRACTOR,
+  CLI_BUILDER,
   buildDynamicKeyRegex,
 } from '../../src/lib/tools-config.mjs';
 import {
@@ -11,6 +12,7 @@ import {
   formatBytes,
   utf8ByteLength,
   readClampedNumber,
+  readNonNegativeClampedNumber,
   escapeRegExp,
 } from '../../src/lib/tools-utils.mjs';
 import { analyzeResponseBody, validateBody } from '../../src/lib/regex-extractor-builder.mjs';
@@ -26,6 +28,15 @@ describe('tools-config', () => {
     expect(THREAD_CALCULATOR.limits.threads.max).toBe(50_000);
     expect(THREAD_CALCULATOR.limits.responseTimeMs.max).toBe(120_000);
     expect(THREAD_CALCULATOR.limits.rampPerThread.max).toBe(60);
+    expect(THREAD_CALCULATOR.limits.thinkTimeMs.min).toBe(0);
+    expect(THREAD_CALCULATOR.limits.thinkTimeMs.max).toBe(300_000);
+    expect(THREAD_CALCULATOR.defaults.thinkTimeMs).toBe(0);
+  });
+
+  it('configures the CLI builder with optional heap', () => {
+    expect(CLI_BUILDER.defaults.plan).toBe('plan.jmx');
+    expect(CLI_BUILDER.defaults.generateReport).toBe(true);
+    expect(CLI_BUILDER.limits.heapMb.min).toBe(0);
   });
 
   it('configures regex extractor at 1 MB', () => {
@@ -53,6 +64,12 @@ describe('tools-utils', () => {
     expect(readClampedNumber(p, 'rps', THREAD_CALCULATOR.limits.rps, 50)).toBe(
       THREAD_CALCULATOR.limits.rps.max,
     );
+  });
+
+  it('allows zero for optional numeric params', () => {
+    const p = new URLSearchParams('think=0&heap=0');
+    expect(readNonNegativeClampedNumber(p, 'think', THREAD_CALCULATOR.limits.thinkTimeMs, 99)).toBe(0);
+    expect(readNonNegativeClampedNumber(p, 'heap', CLI_BUILDER.limits.heapMb, 99)).toBe(0);
   });
 
   it('escapes regex metacharacters', () => {

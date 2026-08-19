@@ -18,9 +18,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { z } from 'zod';
-import { retrieve, INDEX } from '../../lib/rag.mjs';
+import { retrieve, normalizeDocPath, findChunkByPath } from '../../lib/rag.mjs';
 import { checkMcpRateLimit } from '../../lib/mcp-rate-limit.mjs';
 import { getClientIp } from '../../lib/session.mjs';
+
+export { normalizeDocPath, findChunkByPath };
 
 export const prerender = false;
 
@@ -48,39 +50,6 @@ function snippet(body: string): string {
   return cleaned.length > SNIPPET_CHARS
     ? cleaned.slice(0, SNIPPET_CHARS) + '...'
     : cleaned;
-}
-
-/**
- * Normalize a user-supplied page reference to a docs path. Accepts full
- * URLs (https://docs.jmeter.ai/topics/x/), absolute paths (/topics/x/),
- * or bare paths (topics/x), with or without trailing slash and .mdx/.html.
- */
-export function normalizeDocPath(input: string): string {
-  let pathText = input.trim();
-  try {
-    if (/^https?:\/\//i.test(pathText)) {
-      pathText = new URL(pathText).pathname;
-    }
-  } catch {
-    // Not a URL — treat as a path below.
-  }
-  return pathText
-    .replace(/^\/+/, '')
-    .replace(/\/+$/, '')
-    .replace(/\.(mdx|html?)$/i, '');
-}
-
-/** Find an index chunk whose URL pathname matches the normalized path. */
-export function findChunkByPath(pathname: string) {
-  const clean = normalizeDocPath(pathname);
-  if (!clean) return undefined;
-  return INDEX.find((chunk) => {
-    try {
-      return normalizeDocPath(new URL(chunk.url).pathname) === clean;
-    } catch {
-      return false;
-    }
-  });
 }
 
 function createServer(): McpServer {

@@ -1,7 +1,7 @@
 ---
 title: "JMeter Thread Group Calculator"
 seoTitle: "JMeter Thread Calculator (RPS to Users)"
-description: "Free JMeter thread and RPS calculator: estimate concurrent users, ramp-up, and injector heap from target throughput and average response time."
+description: "Free JMeter thread and RPS calculator: estimate concurrent users, ramp-up, and heap from target throughput, response time, and think time."
 keywords:
   - JMeter thread calculator
   - JMeter RPS calculator
@@ -18,31 +18,31 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 # JMeter Thread Group Calculator
 
-Size your Thread Group before you hit Coordinated Omission. Enter a target **requests per second (RPS)** and expected **average response time** to estimate concurrent threads, ramp-up, and a rough CLI heap.
+Size your Thread Group before you hit Coordinated Omission. Enter a target **requests per second (RPS)**, expected **average response time**, and optional **think time** to estimate concurrent threads, ramp-up, and a rough CLI heap.
 
 <ThreadCalculator />
 
 ## How the estimate works
 
-With **no think time**, busy threads produce roughly:
+Little's Law: concurrency ≈ arrival rate × cycle time. Cycle time is **response time + think time**.
 
 ```text
-threads ≈ ceil(target_RPS × response_time_ms / 1000)
+threads ≈ ceil(target_RPS × (response_time_ms + think_time_ms) / 1000)
 ```
 
-This is Little's Law: concurrency ≈ arrival rate × service time.
+Leave think time at **0** for busy threads (no timer). Copy Thread Group writes the fields you paste into JMeter; add a **Constant Timer** when think time is greater than zero.
 
 ### Example
 
-| Target RPS | Avg response time | Recommended threads |
-|------------|-------------------|---------------------|
-| 50         | 200 ms            | 10                  |
-| 100        | 500 ms            | 50                  |
-| 200        | 100 ms            | 20                  |
+| Target RPS | Avg response time | Think time | Recommended threads |
+|------------|-------------------|------------|---------------------|
+| 50         | 200 ms            | 0          | 10                  |
+| 50         | 200 ms            | 800 ms     | 50                  |
+| 100        | 500 ms            | 0          | 50                  |
 
 ## What this does not include
 
-- Think time / pacing (real users pause between actions)
+- Pacing that holds a fixed iteration rate (Constant Throughput Timer)
 - Injector CPU, bandwidth, and listener overhead
 - Server saturation (response time rises under load; re-measure)
 - Splitting load across engines; see [Remote Testing](/user-manual/remote-test/)
@@ -61,6 +61,7 @@ This is Little's Law: concurrency ≈ arrival rate × service time.
 - [Building a Test Plan](/user-manual/build-test-plan/)
 - [Glossary](/user-manual/glossary/)
 - [Heap Estimator](/tools/heap-estimator/)
+- [CLI Command Builder](/tools/cli-builder/)
 
 <RelatedContent>
   <Fragment slot="next-step">

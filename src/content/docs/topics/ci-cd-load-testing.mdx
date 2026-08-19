@@ -76,7 +76,7 @@ Official [best practices](/user-manual/best-practices/) show the lean form:
 jmeter -n -t test.jmx -l test.jtl
 ```
 
-Adding `-e -o report/` is the standard way to attach human-readable results to a build.
+Adding `-e -o report/` is the standard way to attach human-readable results to a build. Use the [CLI command builder](/tools/cli-builder/) to assemble `-n`/`-t`/`-l`, the dashboard flags, `HEAP`, and `-J` properties without guessing.
 
 ### Exit codes and sample failures
 

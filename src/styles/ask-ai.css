@@ -509,6 +509,16 @@
   outline-offset: 2px;
 }
 
+.ask-ai-suggestion--page {
+  border-color: color-mix(in oklab, var(--sl-color-accent) 45%, var(--sl-color-gray-5));
+  background: color-mix(in oklab, var(--sl-color-accent) 12%, var(--sl-color-gray-6));
+  color: var(--sl-color-white);
+}
+
+.ask-ai-suggestion--page[hidden] {
+  display: none;
+}
+
 .ask-ai-suggestion__arrow {
   margin-inline-start: auto;
   color: var(--sl-color-accent-high);

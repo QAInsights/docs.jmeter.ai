@@ -98,6 +98,24 @@ export function readClampedNumber(params, key, range, fallback) {
 }
 
 /**
+ * Like readClampedNumber, but 0 is a valid value (think time, optional heap).
+ * @param {URLSearchParams | Record<string, string>} params
+ * @param {string} key
+ * @param {{ min: number, max: number }} range
+ * @param {number} fallback
+ */
+export function readNonNegativeClampedNumber(params, key, range, fallback) {
+  const raw =
+    typeof params.get === 'function'
+      ? params.get(key)
+      : /** @type {Record<string, string>} */ (params)[key];
+  if (raw == null || raw === '') return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return fallback;
+  return clampToRange(n, range, fallback);
+}
+
+/**
  * Clipboard write with textarea fallback (browser only).
  * @param {string} text
  * @returns {Promise<void>}

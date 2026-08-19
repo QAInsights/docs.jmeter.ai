@@ -1,7 +1,7 @@
 ---
 /**
  * Interactive JMeter thread / RPS calculator (client-side).
- * Both modes share one primary input and a fixed 3-column layout.
+ * Both modes share one primary input; think time is optional cycle time.
  */
 import { EMPTY_VALUE, THREAD_CALCULATOR } from '../../lib/tools-config.mjs';
 
@@ -21,7 +21,7 @@ const { limits, defaults } = THREAD_CALCULATOR;
   </div>
 
   <div class="tool-form" role="tabpanel" aria-labelledby="tc-tab-rps">
-    <div class="tool-form__grid">
+    <div class="tool-form__grid tool-form__grid--4">
       <div class="tool-field">
         <label class="tool-label" for="tc-primary" data-primary-field-label>Target RPS</label>
         <div class="tool-input-wrap">
@@ -75,6 +75,24 @@ const { limits, defaults } = THREAD_CALCULATOR;
         </div>
         <span class="tool-hint">0.1 to 60 s of ramp per thread</span>
       </div>
+
+      <div class="tool-field">
+        <label class="tool-label" for="tc-think">Think time</label>
+        <div class="tool-input-wrap">
+          <input
+            id="tc-think"
+            type="number"
+            data-think-input
+            min={limits.thinkTimeMs.min}
+            max={limits.thinkTimeMs.max}
+            step="1"
+            value={defaults.thinkTimeMs}
+            inputmode="numeric"
+          />
+          <span class="tool-suffix" aria-hidden="true">ms</span>
+        </div>
+        <span class="tool-hint">0 = busy threads; pause after each sampler</span>
+      </div>
     </div>
   </div>
 
@@ -95,14 +113,15 @@ const { limits, defaults } = THREAD_CALCULATOR;
 
   <div class="tool-formula" data-formula></div>
 
-  <div class="tool-actions">
-    <button type="button" class="tool-btn" data-copy-link>Copy shareable link</button>
+  <div class="tool-actions tool-actions--wrap">
+    <button type="button" class="tool-btn" data-copy-settings>Copy Thread Group</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-link>Copy shareable link</button>
     <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
     <span class="tool-status" data-copy-status aria-live="polite" hidden></span>
   </div>
 
   <p class="tool-disclaimer">
-    Estimate only: concurrency ≈ RPS × response time (no think time).
+    Estimate only: concurrency ≈ RPS × (response time + think time).
     {' '}Validate with a pilot run.
     {' '}See <a href="/user-manual/best-practices/">Best Practices</a>.
   </p>
@@ -116,6 +135,7 @@ const { limits, defaults } = THREAD_CALCULATOR;
     rpsForThreads,
     suggestRampUpSeconds,
     estimateHeapMb,
+    formatThreadGroupSettings,
     parseCalculatorParams,
     serializeCalculatorParams,
   } from '../../lib/thread-calculator.mjs';
@@ -129,6 +149,7 @@ const { limits, defaults } = THREAD_CALCULATOR;
     const primaryInput = root.querySelector('[data-primary-input]');
     const rtInput = root.querySelector('[data-rt-input]');
     const rampInput = root.querySelector('[data-ramp-input]');
+    const thinkInput = root.querySelector('[data-think-input]');
     const primaryFieldLabel = root.querySelector('[data-primary-field-label]');
     const primaryHint = root.querySelector('[data-primary-hint]');
     const primarySuffix = root.querySelector('[data-primary-suffix]');
@@ -203,30 +224,40 @@ const { limits, defaults } = THREAD_CALCULATOR;
     function clampSecondaryInputs({ writeBack = false } = {}) {
       const rt = clampToRange(Number(rtInput.value), limits.responseTimeMs, defaults.responseTimeMs);
       const ramp = clampToRange(Number(rampInput.value), limits.rampPerThread, defaults.rampPerThread);
+      const thinkRaw = Number(thinkInput.value);
+      const think = Number.isFinite(thinkRaw)
+        ? clampToRange(thinkRaw, limits.thinkTimeMs, defaults.thinkTimeMs)
+        : defaults.thinkTimeMs;
       if (writeBack) {
         if (Number(rtInput.value) !== rt) rtInput.value = String(Math.round(rt));
         if (Number(rampInput.value) !== ramp) rampInput.value = String(Number(ramp.toFixed(2)));
+        if (Number(thinkInput.value) !== think) thinkInput.value = String(Math.round(think));
       }
-      return { responseTimeMs: rt, rampPerThread: ramp };
+      return { responseTimeMs: rt, rampPerThread: ramp, thinkTimeMs: think };
     }
 
     function recompute() {
       readAndClampPrimary();
-      const { responseTimeMs, rampPerThread } = clampSecondaryInputs();
+      const { responseTimeMs, rampPerThread, thinkTimeMs } = clampSecondaryInputs();
+      const thinkOpts = { thinkTimeMs };
       let outThreads = threads;
       let outRps = rps;
+      const cycleLabel =
+        thinkTimeMs > 0
+          ? `(${responseTimeMs} + ${thinkTimeMs} think) ms`
+          : `${responseTimeMs} ms`;
 
       if (mode === 'rps') {
-        outThreads = threadsForRps(rps, responseTimeMs);
+        outThreads = threadsForRps(rps, responseTimeMs, thinkOpts);
         if (primaryValue) primaryValue.textContent = outThreads > 0 ? String(outThreads) : EMPTY_VALUE;
         if (formulaEl) {
           formulaEl.textContent =
             outThreads > 0
-              ? `threads ≈ ceil(${rps} RPS × ${responseTimeMs} ms / 1000) = ${outThreads}`
+              ? `threads ≈ ceil(${rps} RPS × ${cycleLabel} / 1000) = ${outThreads}`
               : 'Enter a positive RPS and response time.';
         }
       } else {
-        outRps = rpsForThreads(threads, responseTimeMs);
+        outRps = rpsForThreads(threads, responseTimeMs, thinkOpts);
         if (primaryValue) {
           primaryValue.textContent =
             outRps > 0 ? (outRps >= 10 ? String(Math.round(outRps)) : outRps.toFixed(2)) : EMPTY_VALUE;
@@ -234,7 +265,7 @@ const { limits, defaults } = THREAD_CALCULATOR;
         if (formulaEl) {
           formulaEl.textContent =
             outRps > 0
-              ? `RPS ≈ ${threads} threads ÷ (${responseTimeMs} ms / 1000) = ${outRps.toFixed(2)}`
+              ? `RPS ≈ ${threads} threads ÷ (${cycleLabel} / 1000) = ${outRps.toFixed(2)}`
               : 'Enter a positive thread count and response time.';
         }
       }
@@ -244,12 +275,18 @@ const { limits, defaults } = THREAD_CALCULATOR;
       const heap = estimateHeapMb(outThreads);
       if (heapValue) heapValue.textContent = outThreads > 0 ? `~${heap.heapMb} MB` : EMPTY_VALUE;
 
+      root.dataset.settings = formatThreadGroupSettings({
+        threads: outThreads,
+        rampUpSeconds: rampSec,
+        thinkTimeMs,
+      });
       root.dataset.shareQuery = serializeCalculatorParams({
         mode,
         rps: mode === 'rps' ? rps : outRps,
         threads: outThreads,
         responseTimeMs,
         rampPerThread,
+        thinkTimeMs,
       });
     }
 
@@ -271,6 +308,7 @@ const { limits, defaults } = THREAD_CALCULATOR;
     primaryInput.addEventListener('input', recompute);
     rtInput.addEventListener('input', recompute);
     rampInput.addEventListener('input', recompute);
+    thinkInput.addEventListener('input', recompute);
     primaryInput.addEventListener('change', () => {
       readAndClampPrimary({ writeBack: true });
       recompute();
@@ -282,6 +320,19 @@ const { limits, defaults } = THREAD_CALCULATOR;
     rampInput.addEventListener('change', () => {
       clampSecondaryInputs({ writeBack: true });
       recompute();
+    });
+    thinkInput.addEventListener('change', () => {
+      clampSecondaryInputs({ writeBack: true });
+      recompute();
+    });
+
+    root.querySelector('[data-copy-settings]')?.addEventListener('click', async () => {
+      try {
+        await copyText(root.dataset.settings || '');
+        showStatus('Thread Group copied');
+      } catch {
+        showStatus('Copy failed');
+      }
     });
 
     root.querySelector('[data-copy-link]')?.addEventListener('click', async () => {
@@ -301,6 +352,7 @@ const { limits, defaults } = THREAD_CALCULATOR;
       threads = defaults.threads;
       rtInput.value = String(defaults.responseTimeMs);
       rampInput.value = String(defaults.rampPerThread);
+      thinkInput.value = String(defaults.thinkTimeMs);
       applyMode();
       history.replaceState(null, '', window.location.pathname);
     });
@@ -311,6 +363,7 @@ const { limits, defaults } = THREAD_CALCULATOR;
     threads = params.threads;
     rtInput.value = String(params.responseTimeMs);
     rampInput.value = String(params.rampPerThread);
+    thinkInput.value = String(params.thinkTimeMs);
     applyMode();
   }
 

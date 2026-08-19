@@ -4,9 +4,18 @@ import {
   retrieve,
   buildSystemPrompt,
   buildUngroundedPrompt,
+  findChunkByPath,
+  normalizeDocPath,
   INDEX,
   TOP_K,
 } from '../../src/lib/rag.mjs';
+
+describe('rag: normalizeDocPath', () => {
+  it('normalizes urls and extensions', () => {
+    expect(normalizeDocPath('https://docs.jmeter.ai/tools/cli-builder/')).toBe('tools/cli-builder');
+    expect(normalizeDocPath('/user-manual/best-practices.mdx')).toBe('user-manual/best-practices');
+  });
+});
 
 describe('rag: tokenize', () => {
   it('lowercases and splits on non-alphanumeric boundaries', () => {
@@ -83,6 +92,23 @@ describe('rag: retrieve', () => {
     expect(retrieve('the a an of to')).toEqual([]);
   });
 
+  it('pins the current page first when pagePath is provided', () => {
+    const page = findChunkByPath('tools/thread-calculator');
+    expect(page).toBeDefined();
+    const results = retrieve('how many threads for a target rps', {
+      pagePath: '/tools/thread-calculator/',
+    });
+    expect(results[0].url).toBe(page.url);
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.length).toBeLessThanOrEqual(TOP_K);
+  });
+
+  it('returns the current page alone when the query has no terms', () => {
+    const results = retrieve('   ', { pagePath: '/tools/thread-calculator' });
+    expect(results).toHaveLength(1);
+    expect(results[0].url).toContain('thread-calculator');
+  });
+
   it('returns chunks in descending score order (best first)', () => {
     const results = retrieve('build a web test plan');
     // We can't read scores back, but the first result should be the
@@ -97,6 +123,11 @@ describe('rag: buildSystemPrompt', () => {
     const prompt = buildSystemPrompt([]);
     expect(prompt).toContain('JMeter Docs AI assistant');
     expect(prompt).toContain('ONLY the documentation context');
+  });
+
+  it('mentions the current page when provided', () => {
+    const prompt = buildSystemPrompt([], { currentPageUrl: 'https://docs.jmeter.ai/tools/cli-builder/' });
+    expect(prompt).toContain('currently reading https://docs.jmeter.ai/tools/cli-builder/');
   });
 
   it('embeds retrieved chunk titles, urls, and bodies', () => {

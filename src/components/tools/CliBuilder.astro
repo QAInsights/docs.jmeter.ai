@@ -1,0 +1,282 @@
+---
+/**
+ * Interactive JMeter CLI command builder (client-side).
+ * Assembles -n/-t/-l/-e/-o plus HEAP, -J, remotes, and CI/Docker snippets.
+ */
+import { CLI_BUILDER } from '../../lib/tools-config.mjs';
+
+const { defaults } = CLI_BUILDER;
+---
+
+<div class="tool" data-cli-builder data-shell="bash">
+  <div class="tool-seg tool-seg--3" role="tablist" aria-label="Shell">
+    <button type="button" class="tool-seg__btn is-active" data-shell="bash" role="tab" aria-selected="true" id="cli-tab-bash">
+      bash
+    </button>
+    <button type="button" class="tool-seg__btn" data-shell="powershell" role="tab" aria-selected="false" id="cli-tab-ps">
+      PowerShell
+    </button>
+    <button type="button" class="tool-seg__btn" data-shell="cmd" role="tab" aria-selected="false" id="cli-tab-cmd">
+      cmd
+    </button>
+  </div>
+
+  <div class="tool-grid tool-grid--2">
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Test plan</span>
+      <input type="text" name="plan" value={defaults.plan} autocomplete="off" spellcheck="false" />
+      <span class="tool-hint">-t path to the .jmx file</span>
+    </label>
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Results file</span>
+      <input type="text" name="results" value={defaults.results} autocomplete="off" spellcheck="false" />
+      <span class="tool-hint">-l JTL / CSV output</span>
+    </label>
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Report directory</span>
+      <input type="text" name="report" value={defaults.report} autocomplete="off" spellcheck="false" />
+      <span class="tool-hint">-o HTML dashboard folder</span>
+    </label>
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Heap</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="heap" min="0" max={CLI_BUILDER.limits.heapMb.max} step="128" value={defaults.heapMb} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">MB</span>
+      </div>
+      <span class="tool-hint">0 omits HEAP; see Heap Estimator</span>
+    </label>
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Properties file</span>
+      <input type="text" name="q" value="" placeholder="user.properties" autocomplete="off" spellcheck="false" />
+      <span class="tool-hint">Optional -q extra properties</span>
+    </label>
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Log file</span>
+      <input type="text" name="log" value="" placeholder="jmeter.log" autocomplete="off" spellcheck="false" />
+      <span class="tool-hint">Optional -j jmeter.log path</span>
+    </label>
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto;grid-column:1/-1">
+      <span class="tool-label">Remote hosts</span>
+      <input type="text" name="hosts" value="" placeholder="host1,host2" autocomplete="off" spellcheck="false" />
+      <span class="tool-hint">Optional -R list; start jmeter-server first</span>
+    </label>
+  </div>
+
+  <label class="tool-field tool-field-wide">
+    <span class="tool-label">Extra -J properties</span>
+    <textarea name="extraJ" rows="3" placeholder={'threads=50\nhost=staging.example.com'} spellcheck="false"></textarea>
+    <span class="tool-hint">One name=value per line. Becomes -Jname=value (no spaces).</span>
+  </label>
+
+  <div class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+    <label class="tool-check"><input type="checkbox" name="reportOn" checked={defaults.generateReport} /> <span>Generate HTML dashboard (-e -o)</span></label>
+    <label class="tool-check"><input type="checkbox" name="force" /> <span>Overwrite existing results and report (-f)</span></label>
+    <label class="tool-check"><input type="checkbox" name="exit" /> <span>Exit remote servers when the test ends (-X)</span></label>
+  </div>
+
+  <pre class="tool-code" data-command tabindex="0" aria-live="polite"></pre>
+  <ul class="tool-notes" data-notes></ul>
+
+  <div class="tool-actions tool-actions--wrap">
+    <button type="button" class="tool-btn" data-copy-command>Copy command</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-gha>Copy GitHub Actions</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-docker>Copy Docker</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-link>Copy shareable link</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
+    <span class="tool-status" data-copy-status aria-live="polite" hidden></span>
+  </div>
+
+  <p class="tool-disclaimer">
+    Assembles flags only. Paths stay in your shell; nothing is uploaded.
+    {' '}See <a href="/topics/ci-cd-load-testing/">CI/CD load testing</a>
+    {' '}and <a href="/user-manual/best-practices/">Best Practices</a>.
+  </p>
+</div>
+
+<script>
+  import { CLI_BUILDER } from '../../lib/tools-config.mjs';
+  import { copyText } from '../../lib/tools-utils.mjs';
+  import {
+    buildCliCommand,
+    buildGithubActionsSnippet,
+    buildDockerSnippet,
+    parseCliParams,
+    serializeCliParams,
+  } from '../../lib/cli-builder.mjs';
+
+  const { defaults } = CLI_BUILDER;
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const planInput = root.querySelector('input[name="plan"]');
+    const resultsInput = root.querySelector('input[name="results"]');
+    const reportInput = root.querySelector('input[name="report"]');
+    const heapInput = root.querySelector('input[name="heap"]');
+    const qInput = root.querySelector('input[name="q"]');
+    const logInput = root.querySelector('input[name="log"]');
+    const hostsInput = root.querySelector('input[name="hosts"]');
+    const extraInput = root.querySelector('textarea[name="extraJ"]');
+    const reportOnInput = root.querySelector('input[name="reportOn"]');
+    const forceInput = root.querySelector('input[name="force"]');
+    const exitInput = root.querySelector('input[name="exit"]');
+    const commandEl = root.querySelector('[data-command]');
+    const notesEl = root.querySelector('[data-notes]');
+    const status = root.querySelector('[data-copy-status]');
+    const shellButtons = root.querySelectorAll('.tool-seg__btn[data-shell]');
+
+    let shell = defaults.shell;
+
+    function state() {
+      return {
+        plan: planInput.value,
+        results: resultsInput.value,
+        report: reportInput.value,
+        generateReport: reportOnInput.checked,
+        force: forceInput.checked,
+        heapMb: Number(heapInput.value) || 0,
+        propertiesFile: qInput.value,
+        logFile: logInput.value,
+        remoteHosts: hostsInput.value,
+        exitRemote: exitInput.checked,
+        extraJ: extraInput.value,
+        shell,
+      };
+    }
+
+    function showStatus(msg) {
+      if (!status) return;
+      status.hidden = !msg;
+      status.textContent = msg || '';
+      if (msg) setTimeout(() => showStatus(''), 1600);
+    }
+
+    function applyShell() {
+      root.dataset.shell = shell;
+      shellButtons.forEach((btn) => {
+        const active = btn.dataset.shell === shell;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-selected', String(active));
+      });
+    }
+
+    function recompute() {
+      const s = state();
+      const built = buildCliCommand(s);
+      if (commandEl) commandEl.textContent = built.command;
+      if (notesEl) {
+        notesEl.innerHTML = built.notes.map((n) => `<li>${n}</li>`).join('');
+      }
+      root.dataset.shareQuery = serializeCliParams(s);
+      root.dataset.command = built.command;
+      root.dataset.gha = buildGithubActionsSnippet(s);
+      root.dataset.docker = buildDockerSnippet(s);
+    }
+
+    shellButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        shell = btn.dataset.shell === 'powershell' || btn.dataset.shell === 'cmd'
+          ? btn.dataset.shell
+          : 'bash';
+        applyShell();
+        recompute();
+      });
+    });
+
+    const fields = [
+      planInput,
+      resultsInput,
+      reportInput,
+      heapInput,
+      qInput,
+      logInput,
+      hostsInput,
+      extraInput,
+      reportOnInput,
+      forceInput,
+      exitInput,
+    ];
+    fields.forEach((el) => {
+      el.addEventListener('input', recompute);
+      el.addEventListener('change', recompute);
+    });
+
+    root.querySelector('[data-copy-command]')?.addEventListener('click', async () => {
+      try {
+        await copyText(root.dataset.command || '');
+        showStatus('Command copied');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector('[data-copy-gha]')?.addEventListener('click', async () => {
+      try {
+        await copyText(root.dataset.gha || '');
+        showStatus('GitHub Actions copied');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector('[data-copy-docker]')?.addEventListener('click', async () => {
+      try {
+        await copyText(root.dataset.docker || '');
+        showStatus('Docker copied');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector('[data-copy-link]')?.addEventListener('click', async () => {
+      const url = `${window.location.origin}${window.location.pathname}?${root.dataset.shareQuery || ''}`;
+      try {
+        await copyText(url);
+        history.replaceState(null, '', `?${root.dataset.shareQuery || ''}`);
+        showStatus('Link copied');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector('[data-reset]')?.addEventListener('click', () => {
+      shell = defaults.shell;
+      planInput.value = defaults.plan;
+      resultsInput.value = defaults.results;
+      reportInput.value = defaults.report;
+      heapInput.value = String(defaults.heapMb);
+      qInput.value = '';
+      logInput.value = '';
+      hostsInput.value = '';
+      extraInput.value = '';
+      reportOnInput.checked = defaults.generateReport;
+      forceInput.checked = false;
+      exitInput.checked = false;
+      applyShell();
+      recompute();
+      history.replaceState(null, '', window.location.pathname);
+    });
+
+    const params = parseCliParams(new URLSearchParams(window.location.search));
+    shell = params.shell;
+    planInput.value = params.plan;
+    resultsInput.value = params.results;
+    reportInput.value = params.report;
+    heapInput.value = String(params.heapMb);
+    qInput.value = params.propertiesFile;
+    logInput.value = params.logFile;
+    hostsInput.value = params.remoteHosts;
+    extraInput.value = params.extraJ;
+    reportOnInput.checked = params.generateReport;
+    forceInput.checked = params.force;
+    exitInput.checked = params.exitRemote;
+    applyShell();
+    recompute();
+  }
+
+  document.querySelectorAll('[data-cli-builder]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll('[data-cli-builder]').forEach(init);
+  });
+</script>

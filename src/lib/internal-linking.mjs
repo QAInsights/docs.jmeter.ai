@@ -157,6 +157,7 @@ export const HUB_AND_SPOKE_TAXONOMY = {
       { title: 'Troubleshooting Common Errors', href: '/topics/troubleshooting/' },
     ],
     tools: [
+      { title: 'CLI Command Builder', href: '/tools/cli-builder/' },
       { title: 'Properties Cheatsheet', href: '/tools/properties-cheatsheet/' },
       { title: 'Heap & Memory Estimator', href: '/tools/heap-estimator/' },
     ],

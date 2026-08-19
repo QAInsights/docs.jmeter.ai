@@ -4,7 +4,7 @@
  */
 
 import { THREAD_CALCULATOR } from './tools-config.mjs';
-import { clampToRange, readClampedNumber } from './tools-utils.mjs';
+import { clampToRange, readClampedNumber, readNonNegativeClampedNumber } from './tools-utils.mjs';
 
 /** @deprecated Prefer THREAD_CALCULATOR.limits; kept for existing imports/tests. */
 export const LIMITS = THREAD_CALCULATOR.limits;
@@ -14,32 +14,67 @@ export { clampToRange };
 const { limits, defaults } = THREAD_CALCULATOR;
 
 /**
+ * Cycle time for Little's Law: response time plus optional think time.
+ * @param {number} responseTimeMs
+ * @param {number} [thinkTimeMs=0]
+ * @returns {number}
+ */
+export function cycleTimeMs(responseTimeMs, thinkTimeMs = 0) {
+  const rt = Number(responseTimeMs);
+  if (!Number.isFinite(rt) || rt <= 0) return 0;
+  const think = Number(thinkTimeMs);
+  const pause = Number.isFinite(think) && think > 0 ? think : 0;
+  return rt + pause;
+}
+
+/**
  * @param {number} rps
  * @param {number} responseTimeMs
- * @param {{ maxThreads?: number }} [opts]
+ * @param {{ maxThreads?: number, thinkTimeMs?: number }} [opts]
  * @returns {number}
  */
 export function threadsForRps(rps, responseTimeMs, opts = {}) {
   const r = Number(rps);
-  const rt = Number(responseTimeMs);
-  if (!Number.isFinite(r) || !Number.isFinite(rt) || r <= 0 || rt <= 0) return 0;
+  const cycleMs = cycleTimeMs(responseTimeMs, opts.thinkTimeMs);
+  if (!Number.isFinite(r) || r <= 0 || cycleMs <= 0) return 0;
   const maxThreads = opts.maxThreads ?? limits.threads.max;
-  const threads = Math.max(1, Math.ceil(r * (rt / 1000)));
+  const threads = Math.max(1, Math.ceil(r * (cycleMs / 1000)));
   return Math.min(threads, maxThreads);
 }
 
 /**
  * @param {number} threads
  * @param {number} responseTimeMs
- * @param {{ maxRps?: number }} [opts]
+ * @param {{ maxRps?: number, thinkTimeMs?: number }} [opts]
  * @returns {number}
  */
 export function rpsForThreads(threads, responseTimeMs, opts = {}) {
   const t = Number(threads);
-  const rt = Number(responseTimeMs);
-  if (!Number.isFinite(t) || !Number.isFinite(rt) || t <= 0 || rt <= 0) return 0;
+  const cycleMs = cycleTimeMs(responseTimeMs, opts.thinkTimeMs);
+  if (!Number.isFinite(t) || t <= 0 || cycleMs <= 0) return 0;
   const maxRps = opts.maxRps ?? limits.rps.max;
-  return Math.min(t / (rt / 1000), maxRps);
+  return Math.min(t / (cycleMs / 1000), maxRps);
+}
+
+/**
+ * Copy-ready Thread Group fields (plus a timer hint when think time is set).
+ * @param {{ threads: number, rampUpSeconds: number, thinkTimeMs?: number }} state
+ * @returns {string}
+ */
+export function formatThreadGroupSettings(state) {
+  const threads = Math.max(0, Math.round(Number(state.threads) || 0));
+  const ramp = Math.max(0, Math.round(Number(state.rampUpSeconds) || 0));
+  const think = Math.max(0, Math.round(Number(state.thinkTimeMs) || 0));
+  const lines = [
+    `Number of Threads (users): ${threads}`,
+    `Ramp-up period (seconds): ${ramp}`,
+  ];
+  if (think > 0) {
+    lines.push(`Think time: ${think} ms (add a Constant Timer after each sampler)`);
+  } else {
+    lines.push('Think time: 0 ms (busy threads)');
+  }
+  return lines.join('\n');
 }
 
 /**
@@ -92,11 +127,24 @@ export function parseCalculatorParams(params, config = THREAD_CALCULATOR) {
     threads: readClampedNumber(params, 'threads', lim.threads, def.threads),
     responseTimeMs: readClampedNumber(params, 'rt', lim.responseTimeMs, def.responseTimeMs),
     rampPerThread: readClampedNumber(params, 'ramp', lim.rampPerThread, def.rampPerThread),
+    thinkTimeMs: readNonNegativeClampedNumber(
+      params,
+      'think',
+      lim.thinkTimeMs,
+      def.thinkTimeMs,
+    ),
   };
 }
 
 /**
- * @param {{ mode: string, rps: number, threads: number, responseTimeMs: number, rampPerThread: number }} state
+ * @param {{
+ *   mode: string,
+ *   rps: number,
+ *   threads: number,
+ *   responseTimeMs: number,
+ *   rampPerThread: number,
+ *   thinkTimeMs?: number,
+ * }} state
  * @param {typeof THREAD_CALCULATOR} [config]
  */
 export function serializeCalculatorParams(state, config = THREAD_CALCULATOR) {
@@ -113,6 +161,10 @@ export function serializeCalculatorParams(state, config = THREAD_CALCULATOR) {
   p.set(
     'ramp',
     String(Number(clampToRange(state.rampPerThread, lim.rampPerThread, def.rampPerThread).toFixed(2))),
+  );
+  p.set(
+    'think',
+    String(Math.round(clampToRange(state.thinkTimeMs ?? 0, lim.thinkTimeMs, def.thinkTimeMs))),
   );
   return p.toString();
 }

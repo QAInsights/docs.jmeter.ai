@@ -29,6 +29,29 @@ interface ChatState {
 }
 
 const STORAGE_KEY = 'jmeter-ai-chat:v1';
+
+/** Doc pages where "Explain this page" is useful. Home, legal, and shared threads are not. */
+export function isAskableDocPath(pathname: string): boolean {
+  const path = String(pathname || '').replace(/\/+$/, '') || '/';
+  if (path === '/') return false;
+  if (path.startsWith('/legal')) return false;
+  if (path.startsWith('/shared')) return false;
+  if (path.startsWith('/404')) return false;
+  return true;
+}
+
+export function buildThisPagePrompt(title: string, pathname: string): string {
+  const path = String(pathname || '').replace(/\/+$/, '') || '/';
+  const cleanTitle = String(title || '')
+    .replace(/\s*[·|].*$/, '')
+    .trim() || path;
+  return `Explain this page: ${cleanTitle} (${path}). Walk me through the key points and how to apply them in JMeter.`;
+}
+
+function currentPagePath(): string {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  return isAskableDocPath(path) ? path : '';
+}
 const API_ENDPOINT = '/api/chat';
 const CHAT_COUNT_ENDPOINT = '/api/chat-count';
 const SHARE_ENDPOINT = '/api/share';
@@ -142,6 +165,7 @@ declare global {
       reset: (id?: string) => void;
       remove: (id: string) => void;
     };
+    __jmeterAskAiPageLoadBound?: boolean;
   }
 }
 
@@ -228,15 +252,40 @@ function getTurnstileToken(): string {
   return turnstileToken;
 }
 
+function updateThisPageSuggestion() {
+  const btn = document.getElementById('ask-ai-this-page') as HTMLButtonElement | null;
+  if (!btn) return;
+  const path = currentPagePath();
+  if (!path) {
+    btn.hidden = true;
+    btn.removeAttribute('data-prompt');
+    return;
+  }
+  const titleEl = document.querySelector('[data-slot="doc-title"] h1');
+  const title = titleEl?.textContent?.trim() || document.title;
+  btn.hidden = false;
+  btn.dataset.prompt = buildThisPagePrompt(title, path);
+  const label = btn.querySelector('[data-this-page-label]');
+  if (label) {
+    const short = titleEl?.textContent?.trim() || 'this page';
+    label.textContent = short.length > 56 ? 'Explain this page' : `Explain this page: ${short}`;
+  }
+}
+
 function init() {
   // Move the panel to <body> so it is a top-level element. This keeps the
   // popover's top-layer promotion clean and lets us inert every other
   // body child for keyboard/AT users while the panel is open.
   document.body.appendChild(panel!);
   loadState();
+  updateThisPageSuggestion();
   renderAll();
   wireUI();
   initTurnstile();
+  if (!window.__jmeterAskAiPageLoadBound) {
+    window.__jmeterAskAiPageLoadBound = true;
+    document.addEventListener('astro:page-load', updateThisPageSuggestion);
+  }
 }
 
 if (
@@ -572,7 +621,11 @@ async function send(text: string) {
     const res = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: modelMessages, turnstileToken: token }),
+      body: JSON.stringify({
+        messages: modelMessages,
+        turnstileToken: token,
+        pagePath: currentPagePath(),
+      }),
       signal: abortController.signal,
     });
 
@@ -618,15 +671,17 @@ async function send(text: string) {
     // Hide the Turnstile widget — no longer needed for this session.
     turnstileContainer?.classList.remove('ask-ai-turnstile--visible');
 
-    // Finalize: full markdown render + syntax highlighting + sources.
+    // Finalize: persist the answer and enable Share before the slower
+    // markdown/highlight pass so the control is usable as soon as text exists.
     const finalText = pendingAssistantText;
     assistantMsg.content = finalText;
     assistantMsg.sources = sources;
+    saveState();
+    setStreaming(false);
     await renderMarkdownInto(bubble, finalText, true);
     if (sources.length) {
       el.appendChild(buildSourcesEl(sources));
     }
-    saveState();
     if (statusEl) {
       if (grounded && sources.length) {
         statusEl.textContent = `Based on ${sources.length} doc page${sources.length > 1 ? 's' : ''}. AI-generated, verify important steps.`;
@@ -638,10 +693,11 @@ async function send(text: string) {
     if ((err as Error).name === 'AbortError') {
       // Keep partial text if any was streamed.
       assistantMsg.content = pendingAssistantText || '(stopped)';
+      saveState();
+      setStreaming(false);
       if (pendingAssistantEl) {
         await renderMarkdownInto(pendingAssistantEl, assistantMsg.content, true);
       }
-      saveState();
     } else {
       // Server error (403 bot check, 429 rate limit, 500, etc.).
       // Roll back the user message and empty assistant bubble so the
@@ -800,13 +856,16 @@ function onOpened() {
   setInertOutside(panel!, true);
   // Fetch the global chat count once to populate the header badge.
   void fetchAndRenderCount();
+  updateThisPageSuggestion();
   // Focus the input if there's already a conversation, otherwise focus the
   // first suggestion so keyboard users get a quick start.
   if (state.messages.length > 0) {
     input?.focus();
     scrollToBottom(false);
   } else {
-    const firstSuggestion = panel!.querySelector<HTMLButtonElement>('.ask-ai-suggestion');
+    const firstSuggestion = panel!.querySelector<HTMLButtonElement>(
+      '.ask-ai-suggestion:not([hidden])',
+    );
     firstSuggestion?.focus();
   }
 }

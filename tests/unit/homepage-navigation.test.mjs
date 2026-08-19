@@ -34,6 +34,7 @@ describe('homepage practitioner navigation', () => {
   it('defines the expected workflow cards', () => {
     const titles = [
       'I need a calculator',
+      'Run a CLI test',
       "I'm stuck on an error",
       'Record HTTP traffic',
       'Build a test plan',

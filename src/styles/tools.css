@@ -39,6 +39,10 @@
   background: color-mix(in oklab, var(--sl-color-black) 45%, transparent);
 }
 
+.tool-seg--3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 .tool-seg__btn {
   appearance: none;
   box-sizing: border-box;
@@ -136,11 +140,27 @@
   gap: 0.35rem;
 }
 
+.tool-form__grid--4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: none;
+  grid-auto-rows: 1.25rem var(--tool-control-h) 2.25em;
+}
+
+@container tool (min-width: 42rem) {
+  .tool-form__grid--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @container tool (max-width: 36rem) {
   .tool-form__grid {
     grid-template-columns: 1fr;
     grid-template-rows: none;
     row-gap: var(--tool-gap);
+  }
+
+  .tool-form__grid--4 {
+    grid-auto-rows: auto;
   }
 
   .tool-field {
@@ -486,9 +506,17 @@
   min-height: var(--tool-btn-h);
 }
 
+.tool-actions--wrap {
+  grid-template-columns: repeat(auto-fit, minmax(9.25rem, 1fr));
+}
+
 @container tool (max-width: 28rem) {
   .tool-actions {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .tool-actions--wrap {
+    grid-template-columns: 1fr;
   }
 
   .tool-status {
@@ -929,8 +957,32 @@
   gap: var(--tool-gap);
 }
 
+.tool-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tool-code {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: var(--tool-border);
+  border-radius: 0.65rem;
+  background: color-mix(in oklab, var(--sl-color-black) 55%, transparent);
+  color: var(--sl-color-white);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 3.25rem;
+}
+
 @container tool (max-width: 36rem) {
   .tool-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tool-grid--2 {
     grid-template-columns: 1fr;
   }
 }
