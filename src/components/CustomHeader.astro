@@ -2,6 +2,10 @@
 import config from 'virtual:starlight/user-config';
 import Search from 'virtual:starlight/components/Search';
 import SocialIcons from 'lucode-starlight/components/overrides/SocialIcons.astro';
+// Cloudflare prerenders in workerd, which does not share Node's globalThis from
+// content.config.ts. Importing the schema here marks it loaded in that runtime
+// so Lucode does not warn on Starlight's built-in 404 hero.
+import 'lucode-starlight/schema';
 import LanguageSelect from '@astrojs/starlight/components/LanguageSelect.astro';
 import ThemeSelect from 'lucode-starlight/components/overrides/ThemeSelect.astro';
 import SiteTitle from 'lucode-starlight/components/overrides/SiteTitle.astro';

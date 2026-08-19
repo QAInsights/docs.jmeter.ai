@@ -39,7 +39,7 @@
     "ai": "^7.0.15",
     "astro": "^7.2.4",
     "highlight.js": "^11.11.1",
-    "lucode-starlight": "^0.1.6",
+    "lucode-starlight": "^1.0.0",
     "marked": "^18.0.5",
     "satori": "^0.12.2",
     "sharp": "^0.34.2",
