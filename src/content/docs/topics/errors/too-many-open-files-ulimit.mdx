@@ -1,0 +1,162 @@
+---
+title: "JMeter Too Many Open Files (ulimit)"
+seoTitle: "Fix JMeter SocketException Too Many Open Files with ulimit"
+description: "Fix JMeter java.net.SocketException: Too many open files. Raise file descriptor limits with ulimit, limits.conf, or launchctl, and size limits per thread."
+keywords:
+  - "JMeter too many open files"
+  - "JMeter SocketException too many open files"
+  - "ulimit JMeter"
+  - "JMeter file descriptor limit"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Too Many Open Files in JMeter
+
+## Symptom
+
+At high thread counts, samplers fail in the **View Results Tree** listener or `jmeter.log` with:
+
+```text
+Response code: Non HTTP response code: java.net.SocketException
+Response message: Non HTTP response message: Too many open files
+```
+
+CSV reading or log writing can fail with the same root cause:
+
+```text
+java.io.IOException: Too many open files
+```
+
+The test usually passes with fewer threads and fails only once concurrency crosses a threshold.
+
+## Quick diagnosis (TL;DR)
+
+Every open TCP connection, CSV file, and log handle consumes one operating system file descriptor. When the count exceeds the per-process limit (often 1024 on Linux, 256 on macOS), the JVM cannot open another socket and the sampler fails. Raise the limit in the shell that starts JMeter, or reduce how many descriptors each thread needs.
+
+## Common causes
+
+| Cause | Specific Error | Why it happens |
+|-------|----------------|----------------|
+| High concurrency with short-lived connections | `SocketException: Too many open files` | Each request opens a new socket, and descriptors pile up faster than the OS reclaims them |
+| Low default descriptor limit | Same error near 1024 or 256 active connections | Many Linux distributions default to a 1024 soft limit; macOS defaults to 256 |
+| Keep-Alive disabled | Socket count grows with thread count | Without connection reuse, one thread can hold many sockets across embedded resources |
+| Listeners and CSV files in large plans | `IOException: Too many open files` | Open result files and data sets add to the descriptor count |
+| Limit raised in the wrong shell | Error persists after `ulimit -n` | The new limit applies only to processes started from that shell session |
+
+## Fix (ordered)
+
+### 1. Confirm the current limit and usage
+
+Check the soft limit of the shell you start JMeter from:
+
+```bash
+ulimit -n
+```
+
+For a running JMeter process, inspect the actual ceiling and current usage:
+
+```bash
+# Linux: hard and soft limits of the JVM process
+cat /proc/<jmeter-pid>/limits | grep "open files"
+
+# Count currently open descriptors
+lsof -p <jmeter-pid> | wc -l
+```
+
+If the open count sits at the limit when failures start, this diagnosis is confirmed.
+
+### 2. Raise the limit in the launching shell
+
+File descriptor limits are inherited at process start, so raise the limit first and launch JMeter from the same shell:
+
+```bash
+ulimit -n 65536
+./jmeter
+```
+
+A value of 65536 comfortably covers large single-machine tests. Setting the limit only in a different terminal, or after JMeter started, has no effect on the running JVM.
+
+### 3. Make the limit persistent (Linux)
+
+Shell changes vanish on logout. For a permanent limit, edit `/etc/security/limits.conf` (requires root):
+
+```text
+*    soft    nofile    65536
+*    hard    nofile    65536
+```
+
+If JMeter runs as a systemd service, set the limit in the unit file instead:
+
+```ini
+[Service]
+LimitNOFILE=65536
+```
+
+### 4. Make the limit persistent (macOS)
+
+```bash
+# Session limit
+ulimit -n 65536
+
+# System-wide (survives reboot)
+sudo launchctl limit maxfiles 65536 200000
+```
+
+### 5. Reduce descriptors per thread
+
+Raising the limit treats the symptom; connection reuse lowers the demand:
+
+- Enable **Use KeepAlive** in **HTTP Request Defaults** so threads reuse connections instead of opening one per request.
+- Run in CLI mode (`-n`) with no GUI listeners; visual listeners hold extra file handles.
+- Close CSV Data Sets that are no longer needed, and avoid opening a fresh file per iteration.
+
+### 6. Verify under load
+
+Re-run the test at the failing concurrency and watch descriptor usage during the run:
+
+```bash
+watch -n 5 "lsof -p <jmeter-pid> | wc -l"
+```
+
+Usage should now plateau well below the limit. If it grows without bound, keep-alive is not taking effect; re-check that the server actually honors persistent connections.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [BindException / Address in use](/topics/errors/bind-exception-address-in-use/) | The related ephemeral port exhaustion error |
+| [Thread Calculator](/tools/thread-calculator/) | Estimating how much concurrency the generator should produce |
+| [Best practices](/user-manual/best-practices/) | Listener and CLI-mode guidance for large tests |
+| [Docker / Kubernetes](/topics/docker-kubernetes/) | Container runtimes apply their own descriptor limits |
+
+## Frequently asked questions
+
+### What does Too many open files mean in JMeter?
+The JVM tried to open a socket or file but the operating system refused because the process reached its file descriptor limit. It is an OS resource limit error, not a JMeter bug.
+
+### How do I check how many file descriptors JMeter is using?
+On Linux, count them with `lsof -p <jmeter-pid> | wc -l` and compare against `cat /proc/<jmeter-pid>/limits`. On macOS, use `lsof -p <pid>` the same way.
+
+### Why does raising ulimit in another terminal not fix JMeter?
+Limits are inherited when a process starts. The shell where you run `ulimit -n` must be the same shell that launches JMeter, and the change does not reach processes that are already running.
+
+### Should I set the limit to unlimited?
+Prefer an explicit large value such as 65536. An unlimited setting can mask descriptor leaks, and the real fix is usually keep-alive plus a sane limit, not no limit at all.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Raise the descriptor limit in the launching shell, enable Use KeepAlive, then re-run the test and watch the open descriptor count stay below the ceiling.
+</Fragment>
+<Fragment slot="related">
+- [Distributed testing](/topics/distributed-testing/)
+- [API load testing](/topics/api-load-testing/)
+- [Best practices](/user-manual/best-practices/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

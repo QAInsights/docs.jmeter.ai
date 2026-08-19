@@ -1,0 +1,152 @@
+---
+title: "JMeter java.net.UnknownHostException"
+seoTitle: "JMeter UnknownHostException DNS Resolution Fix"
+description: "Fix JMeter UnknownHostException: DNS resolution failure, wrong server names, proxy issues, and Docker/Kubernetes container DNS resolution troubleshooting."
+keywords:
+  - "java.net.UnknownHostException JMeter"
+  - "JMeter unknown host exception fix"
+  - "JMeter DNS error"
+  - "JMeter cannot resolve hostname"
+  - "JMeter DNS Cache Manager"
+difficulty: beginner
+guideType: troubleshooting
+estimatedReadTime: "5 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# java.net.UnknownHostException in JMeter
+
+## Symptom
+
+In View Results Tree, `jmeter.log`, or JTL execution results, all or specific requests fail immediately with:
+
+```text
+Response code: Non HTTP response code: java.net.UnknownHostException
+Response message: Non HTTP response message: staging-api.internal.corp
+```
+
+The sample fails within 0–5 milliseconds without transmitting any network packets to the destination server.
+
+## Quick diagnosis (TL;DR)
+
+`UnknownHostException` means the Java Virtual Machine running JMeter could not resolve the specified hostname or domain into an IP address using the operating system's DNS resolvers or JMeter's **DNS Cache Manager**.
+
+## Common causes
+
+| Cause | Why it happens |
+|-------|----------------|
+| Protocol / Path in Server Name field | Entering `https://api.example.com` or `api.example.com/v1` in the "Server Name or IP" field instead of just `api.example.com` |
+| Unresolved property variable | Using `\${__P(host)}` without supplying `-Jhost=api.example.com` on the command line |
+| Private / Internal DNS inaccessible | Running load tests in CI/CD (GitHub Actions, GitLab CI) or Docker where private enterprise DNS is not reachable |
+| Trailing whitespace in server name | Copy-pasting hostname with invisible leading/trailing whitespace into HTTP Request Defaults |
+| Missing DNS Cache Manager | High-concurrency tests overwhelming local OS DNS cache with repeated lookups |
+| Docker / Kubernetes CoreDNS | Containerized JMeter workers unable to resolve cluster services (`service.namespace.svc.cluster.local`) |
+
+## Fix (ordered)
+
+### 1. Clean the "Server Name or IP" Field
+
+In **HTTP Request Defaults** and individual **HTTP Request** samplers:
+
+- **Protocol**: `https` (do **not** put `https://` in Server Name)
+- **Server Name or IP**: `api.example.com` (no `http://`, no trailing `/`, no `/path`)
+- **Port Number**: `443` (or leave blank if standard 80/443)
+- **Path**: `/v1/users`
+
+```xml
+<!-- Correct XML structure in JMX -->
+<stringProp name="HTTPSampler.domain">api.example.com</stringProp>
+<stringProp name="HTTPSampler.port">443</stringProp>
+<stringProp name="HTTPSampler.protocol">https</stringProp>
+<stringProp name="HTTPSampler.path">/v1/users</stringProp>
+```
+
+### 2. Verify Property Defaults in Command Line Runs
+
+If using JMeter properties for dynamic environment switching:
+
+```bash
+# If using ${__P(hostname,)} in the JMX, always provide -Jhostname
+jmeter -n -t test.jmx -Jhostname=staging.example.com -l results.jtl -j jmeter.log
+```
+
+In your JMX, always supply a fallback default:
+
+```text
+${__P(hostname,api.example.com)}
+```
+
+### 3. Add and Configure the DNS Cache Manager
+
+To simulate real browser DNS caching behavior or use custom DNS servers:
+
+1. Right-click **Thread Group** -> **Add** -> **Config Element** -> **DNS Cache Manager**.
+2. Select **Use System DNS** or **Use Custom DNS**.
+3. If testing internal staging environments, add static host mappings directly in the table:
+
+| Host | Hostname | IP Address |
+|------|----------|------------|
+| `api.staging.internal` | `api.staging.internal` | `10.0.4.15` |
+
+### 4. Test DNS Resolution from Injector Terminal
+
+Verify that the host machine running JMeter can resolve the target name:
+
+```bash
+# Linux / macOS
+nslookup api.example.com
+dig api.example.com
+
+# Windows PowerShell
+Resolve-DnsName api.example.com
+Test-NetConnection -ComputerName api.example.com -Port 443
+```
+
+### 5. Fix Docker & Kubernetes Container DNS
+
+If running JMeter inside Docker or Kubernetes pods:
+
+```yaml
+# Kubernetes Pod spec DNS config
+spec:
+  dnsPolicy: "ClusterFirst"
+  hostAliases:
+  - ip: "10.240.0.1"
+    hostnames:
+    - "auth.staging.internal"
+    - "api.staging.internal"
+```
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [ConnectException](/topics/errors/connect-exception/) | DNS resolves but connection is refused or timed out |
+| [Non HTTP response code](/topics/errors/non-http-response-code/) | Overview of all non-HTTP sample errors |
+| [Docker & Kubernetes](/topics/docker-kubernetes/) | Containerized JMeter networking configuration |
+| [CLI Command Builder](/tools/cli-builder/) | Generate CLI commands with `-Jhostname` properties |
+
+## Frequently asked questions
+
+### Why does it work in a browser on my laptop but fail in JMeter?
+Your browser may use DoH (DNS-over-HTTPS) or an active VPN profile that Java's network stack does not inherit, or the browser proxy configuration is not replicated inside JMeter.
+
+### Can DNS resolution failures cause high response times in JMeter?
+Yes. If DNS queries timeout before failing over, sample elapsed time includes the multi-second DNS lookup delay. Adding a **DNS Cache Manager** eliminates repeated DNS queries per thread iteration.
+
+### How do I point JMeter to a specific IP without changing DNS?
+Add a **DNS Cache Manager** to your Test Plan, choose "Use Custom DNS", and add a static entry mapping the hostname to the target IP address.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Check the Server Name field in HTTP Request Defaults to ensure protocol (`https://`) and paths are separated.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [Docker / Kubernetes](/topics/docker-kubernetes/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

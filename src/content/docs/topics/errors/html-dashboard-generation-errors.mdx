@@ -1,0 +1,157 @@
+---
+title: "JMeter HTML Dashboard Generation Errors & Fixes"
+seoTitle: "JMeter HTML Dashboard Generation Errors and JTL Fixes"
+description: "Fix JMeter HTML dashboard generation errors: Begin date cannot be after end date, non-empty output directory, corrupt JTL files, and missing column headers."
+keywords:
+  - "Cannot generate HTML report JMeter"
+  - "Consumer failed with message: Begin date cannot be after end date"
+  - "JMeter HTML report empty"
+  - "JMeter JTL file missing headers"
+  - "JMeter dashboard error"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# HTML Dashboard Generation Errors in JMeter
+
+## Symptom
+
+When attempting to generate an HTML report dashboard from a `.jtl` / `.csv` results file, the command fails in the terminal:
+
+```text
+An error occurred: Cannot generate report: Error while processing samples: 
+Consumer failed with message: Begin date cannot be after end date
+```
+
+Or when the target output folder already exists and contains files:
+
+```text
+An error occurred: Cannot generate report: 
+Error while processing samples: /reports is not empty, please choose an empty folder
+```
+
+Or when the generated HTML dashboard shows empty charts and 0 total samples:
+
+```text
+An error occurred: Cannot generate report: 
+Results file is empty or missing required CSV headers
+```
+
+## Quick diagnosis (TL;DR)
+
+- **`Folder is not empty`**: JMeter requires the destination directory (`-o ./report_dir`) to be completely empty or non-existent.
+- **`Begin date cannot be after end date`**: Timestamps in the JTL file are corrupted, out of chronological order (e.g. from appending multiple runs without headers), or skewed across unsynced distributed worker system clocks.
+- **`Missing CSV headers`**: The JTL was saved in XML format instead of CSV, or `jmeter.save.saveservice.timestamp_format` was misconfigured.
+
+## Common causes
+
+| Error | Root Cause | Fix |
+|-------|------------|-----|
+| Output directory not empty | Passing `-o ./dashboard` when `./dashboard` already contains previous run files | Delete the folder before running: `rm -rf ./dashboard` |
+| `Begin date cannot be after end date` | JTL contains unsorted timestamps or multiple test runs appended | Sort JTL by timestamp or delete old JTL file before new run |
+| Timezone / clock skew | Distributed worker nodes have drifting system clocks | Sync all worker clocks with NTP (`chrony` / `systemd-timesyncd`) |
+| Empty charts / 0 samples | JTL was generated with XML format instead of CSV | Set `jmeter.save.saveservice.output_format=csv` |
+| Missing columns error | Custom `user.properties` disabled mandatory dashboard columns | Restore default `jmeter.save.saveservice.*` properties |
+
+## Fix (ordered)
+
+### 1. Ensure the Output Directory is Empty Before Generating
+
+JMeter will refuse to overwrite existing report folders to protect against accidental data loss. Always clean the directory prior to generation:
+
+```bash
+# Linux / macOS
+rm -rf ./html-report && jmeter -g results.jtl -o ./html-report
+
+# Windows PowerShell
+Remove-Item -Recurse -Force ./html-report; jmeter -g results.jtl -o ./html-report
+```
+
+### 2. Generate Dashboard Automatically in One CLI Command
+
+Instead of generating the dashboard in a separate second step, generate it natively at the end of the test execution:
+
+```bash
+# -n: CLI mode | -t: test plan | -l: results log | -e: generate report | -o: output directory
+jmeter -n -t testplan.jmx -l results.jtl -e -o ./html-report -j jmeter.log
+```
+
+### 3. Fix "Begin date cannot be after end date" (Sort JTL)
+
+If multiple test runs were appended to the same JTL, or if distributed worker nodes flushed samples out of order:
+
+```bash
+# 1. Extract the header line
+head -n 1 results.jtl > sorted.jtl
+
+# 2. Sort remaining rows numerically by the first column (timestamp) and append
+tail -n +2 results.jtl | sort -n -t ',' -k 1 >> sorted.jtl
+
+# 3. Generate the report from the sorted file
+rm -rf ./html-report
+jmeter -g sorted.jtl -o ./html-report
+```
+
+### 4. Verify Required JTL Saveservice Properties
+
+The HTML dashboard generator requires standard CSV formatting. Ensure these properties are set in `bin/user.properties`:
+
+```properties
+# Mandatory properties for HTML Dashboard generation
+jmeter.save.saveservice.output_format=csv
+jmeter.save.saveservice.timestamp_format=ms
+jmeter.save.saveservice.bytes=true
+jmeter.save.saveservice.label=true
+jmeter.save.saveservice.latency=true
+jmeter.save.saveservice.response_code=true
+jmeter.save.saveservice.response_message=true
+jmeter.save.saveservice.successful=true
+jmeter.save.saveservice.thread_counts=true
+jmeter.save.saveservice.thread_name=true
+jmeter.save.saveservice.time=true
+jmeter.save.saveservice.connect_time=true
+```
+
+### 5. Synchronize System Clocks (NTP) on Distributed Nodes
+
+In distributed testing, if Worker A's clock is 5 minutes ahead of Worker B, the merged JTL file will contain backwards timestamp jumps.
+
+Ensure NTP is enabled across all machines:
+
+```bash
+# Check NTP synchronization status on Linux
+timedatectl status
+```
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Dashboard Report user manual](/user-manual/generating-dashboard/) | Full guide to charts, APDEX, and dashboard metrics |
+| [CLI Command Builder](/tools/cli-builder/) | Generate clean CLI flags for report generation |
+| [Throughput stuck](/topics/errors/throughput-stuck/) | Analyzing response time charts in the report |
+| [Distributed testing](/topics/distributed-testing/) | Time synchronization across remote worker nodes |
+
+## Frequently asked questions
+
+### Can I generate an HTML report from an XML results file?
+No. The HTML dashboard generator only supports **CSV** format. You must configure `jmeter.save.saveservice.output_format=csv` before running the test.
+
+### Why is APDEX score showing 0 or bad ratings in my report?
+APDEX thresholds default to 500ms satisfied (`T`) and 1500ms tolerated (`F`). You can customize these thresholds in `user.properties` by setting `jmeter.reportgenerator.apdex_satisfied_threshold=1000` and `jmeter.reportgenerator.apdex_tolerated_threshold=3000`.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Delete the existing report folder and run `jmeter -g results.jtl -o ./html-report` with a sorted CSV file.
+</Fragment>
+<Fragment slot="related">
+- [Dashboard Report user manual](/user-manual/generating-dashboard/)
+- [CLI Command Builder](/tools/cli-builder/)
+- [Best practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

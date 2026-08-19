@@ -1,0 +1,165 @@
+---
+title: "JMeter Distributed Testing RMI Connection Refused & Port Errors"
+seoTitle: "JMeter Distributed Testing RMI Connection Refused Fix"
+description: "Fix JMeter distributed testing RMI Connection Refused to host 127.0.0.1, rmi_keystore.jks errors, dynamic firewall ports, and remote worker setup."
+keywords:
+  - "JMeter distributed testing connection refused"
+  - "java.rmi.ConnectException Connection refused to host"
+  - "jmeter rmi server hostname 127.0.0.1"
+  - "jmeter remote testing error"
+  - "rmi_keystore.jks JMeter"
+difficulty: advanced
+guideType: troubleshooting
+estimatedReadTime: "8 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Distributed Testing RMI Connection Refused in JMeter
+
+## Symptom
+
+When launching a distributed load test from the controller machine (`jmeter -r` or `jmeter -R 10.0.0.2,10.0.0.3`), the test fails immediately with:
+
+```text
+2026-08-18 15:30:10 ERROR o.a.j.e.ClientJMeterEngine: Error in rsystem
+java.rmi.ConnectException: Connection refused to host: 127.0.0.1; nested exception is: 
+	java.net.ConnectException: Connection refused
+```
+
+Or when starting the remote worker daemon (`jmeter-server`):
+
+```text
+Server failed to start: java.rmi.server.ExportException: Listen failed on port: 1099
+```
+
+Or later, when the controller invokes an engine on a worker that published the wrong address:
+
+```text
+java.rmi.ServerException: RemoteException occurred in server thread; nested exception is:
+	java.rmi.ConnectException: Connection refused to host: 127.0.0.1
+```
+
+Or an SSL certificate handshake failure:
+
+```text
+java.io.FileNotFoundException: rmi_keystore.jks (No such file or directory)
+```
+
+The master/controller cannot initialize the remote engines, and the test halts.
+
+## Quick diagnosis (TL;DR)
+
+- **`Connection refused to host: 127.0.0.1`**: The remote worker bound its RMI stub to the local loopback interface (`127.0.0.1`) instead of its routable LAN/VPC IP address. The controller is trying to connect to its own localhost instead of the worker.
+- **`Listen failed on port: 1099`**: Port 1099 is already in use by another instance or blocked by a firewall.
+- **`rmi_keystore.jks missing`**: JMeter requires RMI over SSL by default since JMeter 4.0. You must either generate the keystore or explicitly disable RMI SSL.
+
+## Common causes
+
+| Error Message | Root Cause | Fix |
+|---------------|------------|-----|
+| `Connection refused to host: 127.0.0.1` | Remote worker did not publish its external IP | Set `java.rmi.server.hostname=WORKER_IP` |
+| `Listen failed on port: 1099` | Port collision or another `jmeter-server` running | Kill existing process or set `server_port=1099` |
+| `FileNotFoundException: rmi_keystore.jks` | Missing SSL keystore in `JMETER_HOME/bin/` | Run `create-rmi-keystore.sh` or set `server.rmi.ssl.disable=true` |
+| Controller hangs after `Starting the test` | Worker firewall blocking dynamic RMI response port | Fix `client.rmi.localport` and `server.rmi.localport` |
+| Plugin mismatch / ClassNotFound | Worker nodes lack plugins installed on controller | Sync `lib/` and `lib/ext/` across all workers |
+
+## Fix (ordered)
+
+### 1. Fix the RMI Hostname on Every Worker Node
+
+When starting `jmeter-server` on remote worker machines, always supply the worker's routable network IP address:
+
+```bash
+# On Remote Worker 1 (IP: 10.0.0.15)
+./bin/jmeter-server -Djava.rmi.server.hostname=10.0.0.15
+
+# On Remote Worker 2 (IP: 10.0.0.16)
+./bin/jmeter-server -Djava.rmi.server.hostname=10.0.0.16
+```
+
+### 2. Configure RMI SSL (or Explicitly Disable for Private VPCs)
+
+Since JMeter 4.0, RMI over SSL is mandatory by default:
+
+**Option A: Generate a Shared Keystore (Recommended for Security)**
+1. On the controller, run `./bin/create-rmi-keystore.sh` (or `create-rmi-keystore.bat`).
+2. Copy the resulting `bin/rmi_keystore.jks` to the `bin/` folder of **every worker machine**.
+
+**Option B: Disable RMI SSL (For Isolated Private VPCs/Labs)**
+Add to `bin/user.properties` on **both controller and all worker machines**:
+
+```properties
+server.rmi.ssl.disable=true
+```
+
+### 3. Fix Dynamic RMI Firewall Ports (Prevent Controller Hangs)
+
+By default, Java RMI uses random ephemeral ports for two-way communication after the initial port 1099 handshake. If your cloud firewall only opens port 1099, the test will hang.
+
+Lock all RMI communication to fixed ports in `user.properties`:
+
+```properties
+# Port used by jmeter-server registry
+server_port=1099
+
+# Fixed local port for RMI engine on worker
+server.rmi.localport=50000
+
+# Fixed local port for RMI response on controller
+client.rmi.localport=50001
+```
+
+Now configure your cloud Security Group / Firewall to allow TCP traffic on ports **`1099`**, **`50000`**, and **`50001`**.
+
+### 4. Verify End-to-End Connectivity with Netcat
+
+From the controller machine, verify that the worker port is open:
+
+```bash
+nc -zv 10.0.0.15 1099
+nc -zv 10.0.0.15 50000
+```
+
+### 5. Launch the Distributed Run from Controller
+
+```bash
+# Execute distributed test against multiple workers in non-GUI mode
+jmeter -n -t testplan.jmx \
+  -R 10.0.0.15,10.0.0.16 \
+  -Gserver.rmi.ssl.disable=true \
+  -l results.jtl -j jmeter.log
+```
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Distributed testing guide](/topics/distributed-testing/) | Full architectural walkthrough of remote testing |
+| [Docker & Kubernetes](/topics/docker-kubernetes/) | Setting up distributed JMeter in Kubernetes clusters |
+| [CLI Command Builder](/tools/cli-builder/) | Generate CLI commands with `-R` and `-G` properties |
+| [Remote testing user manual](/user-manual/remote-test/) | Official remote testing documentation |
+
+## Frequently asked questions
+
+### What does `-G` mean on the JMeter command line?
+`-G` sets a property **globally on all remote worker nodes** (e.g. `-Gthreads=100`), whereas `-J` sets a property **only on the local controller**.
+
+### Why are CSV files not found on remote workers?
+The JMeter controller transmits the compiled `.jmx` test tree over RMI, but it **never transmits test data files**. You must replicate CSV files to the identical local path on every worker node before launching the test.
+
+### Why does jmeter-server bind to the wrong IP on a multi-homed host?
+Without an explicit setting, Java RMI picks an address from the default network interface, which on multi-homed or containerized hosts can be an internal or loopback address. Start the worker with `-Djava.rmi.server.hostname=ROUTABLE_IP` for the interface the controller can reach, and list those same routable IPs in `remote_hosts` in the controller's `jmeter.properties` instead of hostnames that might resolve to the wrong interface.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Set `java.rmi.server.hostname` when launching each `jmeter-server` and verify that `server.rmi.ssl.disable` settings match.
+</Fragment>
+<Fragment slot="related">
+- [Distributed testing](/topics/distributed-testing/)
+- [Docker / Kubernetes](/topics/docker-kubernetes/)
+- [Remote testing manual](/user-manual/remote-test/)
+</Fragment>
+</RelatedContent>

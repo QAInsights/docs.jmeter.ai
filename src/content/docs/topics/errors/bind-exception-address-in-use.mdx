@@ -1,0 +1,142 @@
+---
+title: "JMeter java.net.BindException: Address already in use"
+seoTitle: "JMeter BindException Address Already in Use Port Exhaustion Fix"
+description: "Fix JMeter java.net.BindException Address already in use. Resolve ephemeral port exhaustion, TIME_WAIT socket accumulation, and OS TCP networking bottlenecks."
+keywords:
+  - "java.net.BindException Address already in use"
+  - "JMeter port exhaustion"
+  - "JMeter ephemeral port exhaustion"
+  - "TIME_WAIT sockets JMeter"
+  - "JMeter BindException fix"
+difficulty: advanced
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# java.net.BindException: Address already in use in JMeter
+
+## Symptom
+
+During high-concurrency load tests or high-throughput API benchmarks, JMeter samplers suddenly start failing en masse with:
+
+```text
+Response code: Non HTTP response code: java.net.BindException
+Response message: Non HTTP response message: Address already in use: connect
+```
+
+On Linux or macOS load generators, you may also see:
+
+```text
+java.net.BindException: Cannot assign requested address (connect failed)
+```
+
+The error typically starts after running at high request rates (e.g. 500+ requests per second per injector) for several minutes.
+
+## Quick diagnosis (TL;DR)
+
+`BindException: Address already in use: connect` occurs when the operating system running JMeter runs out of available outbound **ephemeral ports** (temporary client-side TCP ports). When connections are opened and closed rapidly without Keep-Alive, thousands of sockets remain locked in the `TIME_WAIT` state for 1–4 minutes, blocking new outbound connections.
+
+## Common causes
+
+| Cause | Why it happens |
+|-------|----------------|
+| HTTP Keep-Alive disabled | Disabling "Use KeepAlive" forces JMeter to open a fresh TCP socket for every single request |
+| High request throughput on single IP | Exceeding available ephemeral port capacity (default ~16,000–28,000 ports) on the load generator |
+| OS `TIME_WAIT` duration too long | Default TCP `TIME_WAIT` delay is 60–240 seconds per closed socket before the OS reclaims the port |
+| Limited local port range | OS default `ip_local_port_range` or Windows `MaxUserPort` is constrained |
+| High thread count with short loops | Hundreds of threads executing fast iterations without connection pooling |
+
+## Fix (ordered)
+
+### 1. Ensure "Use KeepAlive" is Checked
+
+The primary prevention for port exhaustion is TCP connection reuse:
+
+1. Open **HTTP Request Defaults**.
+2. Check **Use KeepAlive** (enabled by default in modern JMeter).
+3. Ensure the target server supports and honors HTTP Keep-Alive headers.
+
+### 2. Tune OS Ephemeral Ports & TCP Timeouts (Linux)
+
+Apply sysctl tuning on all Linux JMeter load generator machines:
+
+```bash
+# 1. Expand the available ephemeral port range (provides ~64,500 ports)
+sudo sysctl -w net.ipv4.ip_local_port_range="1024 65535"
+
+# 2. Enable fast recycling of TIME_WAIT sockets for outgoing connections
+sudo sysctl -w net.ipv4.tcp_tw_reuse=1
+
+# 3. Reduce TCP FIN timeout from 60s to 15s
+sudo sysctl -w net.ipv4.tcp_fin_timeout=15
+
+# 4. Increase maximum file descriptors and socket backlog
+sudo sysctl -w fs.file-max=2097152
+```
+
+To make these permanent across reboots, add them to `/etc/sysctl.conf` and run `sudo sysctl -p`.
+
+### 3. Tune Windows Ephemeral Ports and `TcpTimedWaitDelay`
+
+On Windows load generator machines:
+
+1. Open PowerShell as Administrator.
+2. Expand dynamic port range:
+
+```powershell
+# Set TCP dynamic port range to start at 1024 with 64511 ports
+netsh int ipv4 set dynamicport tcp start=1024 num=64511
+```
+
+3. Open `regedit` and navigate to `HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters`:
+   - Add `DWORD (32-bit)`: **`TcpTimedWaitDelay`** = `30` (Decimal, reduces TIME_WAIT from 240s to 30s).
+   - Add `DWORD (32-bit)`: **`MaxUserPort`** = `65534` (Decimal).
+4. Restart Windows.
+
+### 4. Distribute Load Across Multiple IP Addresses (IP Spoofing)
+
+If a single IP cannot sustain the required connection rate, configure multiple local IP addresses on the load generator network interface and assign them to JMeter samplers:
+
+1. Add secondary IP addresses (e.g. `192.168.1.101`, `192.168.1.102`) to the network adapter.
+2. In JMeter **HTTP Request** or **HTTP Request Defaults**, scroll to **Source address (IP/Hostname)**:
+   - Use a CSV variable: `\${client_ip}`
+   - Select **Source Type: IP/Hostname**.
+
+### 5. Scale Out to Distributed Load Testing
+
+When a single injector reaches its network card or kernel socket capacity, scale horizontally across multiple worker nodes rather than overloading a single instance ([distributed testing guide](/topics/distributed-testing/)).
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [ConnectException](/topics/errors/connect-exception/) | Connection refused on target host |
+| [Socket closed / connection reset](/topics/errors/socket-closed-connection-reset/) | Remote server resets connection |
+| [Distributed testing](/topics/distributed-testing/) | Scaling load across multiple load injectors |
+| [Thread Calculator](/tools/thread-calculator/) | Estimating required concurrency and throughput |
+
+## Frequently asked questions
+
+### How can I check how many sockets are currently in TIME_WAIT?
+Run `netstat -an | grep TIME_WAIT | wc -l` on Linux or `(Get-NetTCPConnection -State TimeWait).Count` in Windows PowerShell.
+
+### Does adding more JMeter threads fix this?
+No. Adding more threads increases the rate of socket creation, which accelerates ephemeral port exhaustion. You must enable Keep-Alive or tune OS TCP parameters.
+
+### Is BindException caused by the target server or JMeter?
+`Address already in use: connect` is strictly a **client-side (load generator)** operating system limit. The target server never received the connection attempt because the client OS had no available port to initiate the TCP SYN.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Enable "Use KeepAlive" in HTTP Request Defaults and apply `net.ipv4.ip_local_port_range` OS tuning on your load injector.
+</Fragment>
+<Fragment slot="related">
+- [Distributed testing](/topics/distributed-testing/)
+- [Best practices](/user-manual/best-practices/)
+- [Docker / Kubernetes](/topics/docker-kubernetes/)
+</Fragment>
+</RelatedContent>

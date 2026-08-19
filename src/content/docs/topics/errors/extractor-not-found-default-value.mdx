@@ -1,0 +1,134 @@
+---
+title: "JMeter JSON & Regex Extractor Returns Default Value (NOT_FOUND)"
+seoTitle: "JMeter JSON and Regex Extractor Returns Default Value Fix"
+description: "Fix JMeter JSON Extractor and Regex Extractor returning default values or NOT_FOUND. Troubleshoot PostProcessor scoping, JSONPath syntax, and correlation."
+keywords:
+  - "JMeter JSON Extractor default value"
+  - "JMeter Regex Extractor NOT_FOUND"
+  - "JMeter dynamic correlation failed"
+  - "JMeter variable not resolving"
+  - "JMeter extractor fix"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# JSON & Regex Extractor Returns Default Value in JMeter
+
+## Symptom
+
+When extracting dynamic values (such as OAuth tokens, session IDs, or transaction IDs) to use in subsequent requests, downstream requests fail with HTTP 401, 403, or 400, and Debug Sampler shows:
+
+```text
+token_var=NOT_FOUND
+# Or the variable is not replaced at all in the outgoing request:
+Authorization: Bearer ${token_var}
+```
+
+The Extractor failed to capture the target value and fell back to the configured **Default Value** (or left the variable undefined).
+
+## Quick diagnosis (TL;DR)
+
+Extractors fail when:
+1. **Wrong Scope**: The Extractor is checking **Main sample only**, but the target token is inside a redirected **Sub-sample** (or embedded resource).
+2. **Incorrect Execution Order / Parent Placement**: The Extractor is placed as a sibling or above the target sampler instead of as a child element.
+3. **Invalid JSONPath / Regex Syntax**: The expression does not match the actual response structure (e.g. `$.token` instead of `$.data.token`).
+
+## Common causes
+
+| Cause | Component | Why it happens |
+|-------|-----------|----------------|
+| Scoping set to "Main sample only" | JSON / Regex | Target response came from a redirect (HTTP 302 -> 200) located in a sub-sample |
+| Wrong Field to check | Regex / Boundary | Extractor is checking "Body" when the token is inside "Response Headers" (e.g. `Set-Cookie`, `Location`) |
+| Unescaped regex characters | Regex Extractor | Special characters (`.`, `[`, `]`, `?`, `$`) not escaped in regex template |
+| Array indexing in JSONPath | JSON Extractor | Querying `$.items.id` on an array instead of `$.items[0].id` or `$.items[*].id` |
+| Variable name typos | Downstream | Extractor created variable `authToken`, but downstream sampler calls `\${authtoken}` (case-sensitive) |
+
+## Fix (ordered)
+
+### 1. Test Expressions Directly in View Results Tree Tester
+
+Never guess regex or JSONPath queries in your head. Use JMeter's built-in interactive testers:
+
+1. Add a **View Results Tree** listener under the target request.
+2. Run the test with 1 thread.
+3. Select the sampler in the left tree.
+4. In the response pane dropdown, change **Text** to:
+   - **JSON Path Tester** (for JSON Extractors)
+   - **RegExp Tester** (for Regular Expression Extractors)
+   - **Boundary Extractor Tester**
+5. Enter your expression (e.g. `$.data.user.jwtToken`) and click **Test**. JMeter will highlight the exact matches and match counts.
+
+### 2. Verify PostProcessor Scoping (Main sample vs Sub-samples)
+
+If your request performs HTTP redirects (302/301) or downloads embedded resources:
+
+- Open your Extractor.
+- Under **Apply to**, choose:
+  - **Main sample and sub-samples** (if the token may appear on either).
+  - **Sub-samples only** (if returned by the redirect target).
+
+### 3. Check the Correct "Field to check"
+
+- If extracting a `Set-Cookie` or `Location` header, select **Response Headers** (not **Body**).
+- If extracting from the redirect URL, select **URL**.
+- If extracting from standard JSON/HTML, select **Body**.
+
+### 4. Ensure Correct Hierarchical Placement in Test Tree
+
+In JMeter, PostProcessors execute **only after their parent or preceding sampler finishes**:
+
+```text
+✅ CORRECT (Scoped to Sampler A only):
+  - HTTP Request (Sampler A)
+    └─ JSON Extractor (Extracts token from Sampler A)
+  - HTTP Request (Sampler B - uses ${token})
+
+❌ WRONG (Scoped to all samplers, may overwrite variable with empty match):
+  - JSON Extractor
+  - HTTP Request (Sampler A)
+  - HTTP Request (Sampler B)
+```
+
+### 5. Debug Live Variables with the Debug Sampler
+
+To verify what variables exist at each point in execution:
+
+1. Add **Debug Sampler** immediately after the sampler with the Extractor.
+2. Set `JMeter Variables: true`.
+3. In **View Results Tree**, click on **Debug Sampler** -> **Response data** -> **Response Body**.
+4. Confirm whether your variable name and value are listed.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Regex Extractor Builder](/tools/regex-tester/) | Interactive browser-based regex pattern builder |
+| [Correlation & dynamic values](/topics/correlation-dynamic-values/) | Complete guide to CSRF and token extraction |
+| [401/403 after recording](/topics/errors/401-403-after-recording/) | Handling authentication failures |
+| [Functions and variables](/topics/functions-and-variables/) | Variable syntax and built-in functions |
+
+## Frequently asked questions
+
+### What does "Match No. (0 for Random)" mean in JSON Extractor?
+- `0`: Random match from all matching results.
+- `1`: First match.
+- `-1`: Extract all matches into an array (`var_1`, `var_2`, ... and `var_matchNr`).
+
+### Why is my variable showing literally as `\${my_var}`?
+JMeter only replaces `\${my_var}` if a variable with that exact name exists. If the variable was never created or has a typo, JMeter sends the literal text `\${my_var}` in the HTTP request.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Open View Results Tree, switch the dropdown to JSON Path Tester, and verify your query against the actual response body.
+</Fragment>
+<Fragment slot="related">
+- [Correlation & dynamic values](/topics/correlation-dynamic-values/)
+- [Regex Extractor Builder](/tools/regex-tester/)
+- [API load testing](/topics/api-load-testing/)
+</Fragment>
+</RelatedContent>

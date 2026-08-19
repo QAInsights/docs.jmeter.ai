@@ -1,0 +1,138 @@
+---
+title: "JMeter JDBC Connection Pool & SQL Database Errors"
+seoTitle: "JMeter JDBC Connection Pool and SQL Database Errors Fix"
+description: "Fix JMeter JDBC Connection Configuration errors: Cannot create PoolableConnectionFactory, Communications link failure, driver setup, and pool exhaustion."
+keywords:
+  - "Cannot create PoolableConnectionFactory JMeter"
+  - "JMeter JDBC Connection Configuration error"
+  - "Communications link failure JDBC JMeter"
+  - "JMeter database connection pool exhausted"
+  - "JMeter JDBC driver setup"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# JDBC Connection Pool & Database Errors in JMeter
+
+## Symptom
+
+When running database performance tests using the **JDBC Request** sampler and **JDBC Connection Configuration** element, samplers fail in View Results Tree or `jmeter.log` with:
+
+```text
+Response code: 500
+Response message: java.sql.SQLException: Cannot create PoolableConnectionFactory (Communications link failure)
+	The last packet successfully received from the server was 0 milliseconds ago.
+```
+
+Or when database credentials or database names are incorrect:
+
+```text
+java.sql.SQLException: Cannot create PoolableConnectionFactory (Access denied for user 'dbuser'@'10.0.0.5')
+```
+
+Or when all connections in the pool are busy:
+
+```text
+java.sql.SQLException: Timeout waiting for idle object
+	at org.apache.commons.dbcp2.PoolableConnectionFactory...
+```
+
+The JDBC Request sampler fails, and database queries are not executed against the database.
+
+## Quick diagnosis (TL;DR)
+
+- **`Cannot create PoolableConnectionFactory`**: The connection pool failed to establish its initial connection. Check JDBC URL syntax, port numbers, database credentials, or database firewall rules.
+- **`Timeout waiting for idle object`**: All database connections in the pool (`Max Number of Connections`) are currently checked out by active virtual users, and new requests timed out waiting for a connection to be returned.
+
+## Common causes
+
+| Error Message | Cause | Why it happens |
+|---------------|-------|----------------|
+| `Communications link failure` / `Connection refused` | Database network unreachable | Database port (3306, 5432, 1521, 1433) closed, blocked by firewall, or DB not listening on external interface |
+| `Cannot load JDBC driver class` | Missing JAR file | JDBC Driver `.jar` is not placed in `JMETER_HOME/lib/` or JMeter was not restarted |
+| `Timeout waiting for idle object` | Connection pool exhausted | Concurrency exceeds `Max Number of Connections` with slow-running SQL queries |
+| `Access denied for user` | Authentication failure | Incorrect database username/password or user not permitted from load injector IP |
+| Variable name mismatch | Config element mapping | **Variable Name Bound to Pool** in JDBC Request does not match the name in JDBC Connection Configuration |
+
+## Fix (ordered)
+
+### 1. Verify Variable Name Bound to Pool
+
+In JMeter, the **JDBC Connection Configuration** creates a named pool, and each **JDBC Request** must specify the exact matching pool name:
+
+- In **JDBC Connection Configuration**:
+  - Variable Name for created pool: `APP_DB_POOL`
+- In **JDBC Request**:
+  - Variable Name of Pool declared in JDBC Connection Configuration: `APP_DB_POOL`
+
+If these names differ by even one character (or case), the request will fail immediately.
+
+### 2. Configure Correct Driver Class Name and JDBC URL
+
+Ensure the driver class and URL format match your database engine:
+
+| Database | Driver Class Name | Database URL Format |
+|----------|-------------------|---------------------|
+| **PostgreSQL** | `org.postgresql.Driver` | `jdbc:postgresql://localhost:5432/dbname?sslmode=disable` |
+| **MySQL / MariaDB** | `com.mysql.cj.jdbc.Driver` | `jdbc:mysql://localhost:3306/dbname?useSSL=false&serverTimezone=UTC` |
+| **Oracle** | `oracle.jdbc.OracleDriver` | `jdbc:oracle:thin:@localhost:1521:orcl` or `jdbc:oracle:thin:@//localhost:1521/XEPDB1` |
+| **Microsoft SQL Server** | `com.microsoft.sqlserver.jdbc.SQLServerDriver` | `jdbc:sqlserver://localhost:1433;databaseName=dbname;encrypt=false` |
+
+Ensure the matching driver `.jar` is in `JMETER_HOME/lib/` ([ClassNotFound playbook](/topics/errors/class-not-found-noclassdeffound/)).
+
+### 3. Tune Connection Pool Sizing and Validation Query
+
+In **JDBC Connection Configuration**:
+
+- **Max Number of Connections**: Set equal to or slightly higher than your active thread count (e.g. `50`–`100`).
+- **Max Wait (ms)**: `10000` (10 seconds timeout before failing if pool is full).
+- **Validation Query**: Always set a lightweight ping query to discard broken sockets:
+  - MySQL / PostgreSQL / MSSQL: `SELECT 1`
+  - Oracle: `SELECT 1 FROM DUAL`
+- **Test While Idle**: `True`
+- **Soft Min Evictable Idle Time**: `60000`
+
+### 4. Configure Auto Commit and Query Type
+
+In **JDBC Request**:
+- If running `SELECT` queries, set **Query Type** to `Select Statement`.
+- If running `INSERT`, `UPDATE`, or `DELETE`, set **Query Type** to `Update Statement`.
+- In **JDBC Connection Configuration**, set **Auto Commit** to `True` for simple read queries, or `False` if managing multi-statement transactions.
+
+### 5. Extract and Assert SQL Results
+
+To capture values returned by database queries:
+- **Variable names**: `userId,userName,userEmail`
+- In subsequent samplers, access individual rows: `\${userId_1}`, `\${userId_2}`, or count via `\${userId_#}`.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [ClassNotFoundException](/topics/errors/class-not-found-noclassdeffound/) | Missing JDBC driver JAR files in `lib/` |
+| [Database Test Plan guide](/user-manual/build-db-test-plan/) | Step-by-step user manual for JDBC testing |
+| [Functions and variables](/topics/functions-and-variables/) | Passing variables between JDBC and HTTP samplers |
+
+## Frequently asked questions
+
+### Should each thread have its own JDBC Connection Configuration?
+No. Place one **JDBC Connection Configuration** at the Thread Group or Test Plan root. All threads share the pooled connections efficiently.
+
+### Why is my query timing out under load?
+Check the database server's active locks and slow query log. Long-running queries hold connections checked out of the pool, starving other virtual users.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Ensure the JDBC driver JAR is in `JMETER_HOME/lib/`, verify the pool variable name, and configure `SELECT 1` as the validation query.
+</Fragment>
+<Fragment slot="related">
+- [Database Test Plan](/user-manual/build-db-test-plan/)
+- [ClassNotFoundException](/topics/errors/class-not-found-noclassdeffound/)
+- [Best practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

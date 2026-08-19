@@ -1,0 +1,130 @@
+---
+title: "JMeter HTTP 407 Proxy Authentication Required"
+seoTitle: "Fix JMeter HTTP 407 Proxy Authentication Required"
+description: "Fix JMeter HTTP 407 Proxy Authentication Required: set proxy credentials in HTTP Request Defaults, http.proxyUser properties, or a Header Manager."
+keywords:
+  - "JMeter 407"
+  - "JMeter HTTP 407 Proxy Authentication Required"
+  - "JMeter corporate proxy authentication"
+  - "JMeter proxy username password"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# HTTP 407 Proxy Authentication Required in JMeter
+
+## Symptom
+
+Samplers fail with:
+
+```text
+Response code: 407
+Response message: Proxy Authentication Required
+```
+
+The same requests usually work when the load generator bypasses the proxy, or fail only inside the office or CI network.
+
+## Quick diagnosis (TL;DR)
+
+A 407 is not returned by your application. An intermediate proxy between JMeter and the target demands credentials before it forwards anything. Supply the proxy username and password through HTTP Request Defaults, the `http.proxyUser`/`http.proxyPass` properties, or an explicit `Proxy-Authorization` header.
+
+## Common causes
+
+| Cause | Specific Error | Why it happens |
+|-------|----------------|----------------|
+| Corporate forward proxy requires authentication | `407` on every request | Office networks route outbound traffic through an authenticating proxy |
+| Credentials missing from the test plan | `407` immediately | Proxy host and port are set, but no username and password |
+| Expired or rotated credentials | Worked before, now `407` | Domain password changed since the test was recorded |
+| NTLM or Kerberos domain proxy | `407` despite correct password | Challenge-response schemes need the right credential format and JVM support |
+| Proxy set at JVM level without credentials | `407` in CI only | Environment proxy variables route traffic, but nothing authenticates |
+
+## Fix (ordered)
+
+### 1. Set proxy credentials in HTTP Request Defaults
+
+The proxy section of **HTTP Request Defaults** (and of each **HTTP Request** sampler) accepts credentials, and defaults apply to every sampler beneath them:
+
+1. Add **HTTP Request Defaults** to the test plan.
+2. Open the **Advanced** tab and find the **Proxy Server** section.
+3. Fill in **Server (proxy)**, **Port**, **Username**, and **Password**.
+
+Note that the password is stored unencrypted in the test plan file, which matters when the JMX is committed to version control.
+
+### 2. Pass credentials through properties instead
+
+To keep credentials out of the JMX, use the `http.proxyUser` and `http.proxyPass` properties. Put them in `user.properties`:
+
+```properties
+http.proxyUser=loadtest-user
+http.proxyPass=change-me
+```
+
+Or inject them per run without touching any file:
+
+```bash
+jmeter -n -t testplan.jmx -Jhttp.proxyUser=loadtest-user -Jhttp.proxyPass=change-me -l results.jtl
+```
+
+This is the right approach in CI, where secrets can come from the pipeline's secret store.
+
+### 3. Fallback: send a Proxy-Authorization header
+
+If a proxy ignores the sampler's proxy configuration, add an **HTTP Header Manager** with an explicit header, where the value is `Basic` plus the Base64 encoding of `username:password`:
+
+```text
+Proxy-Authorization: Basic ${__base64Encode(loadtest-user:change-me)}
+```
+
+`${__base64Encode()}` is evaluated at runtime, so the plain credential does not appear in the header value itself.
+
+### 4. NTLM and Kerberos environments
+
+Domain proxies that answer with NTLM or SPNEGO challenges need the credential in `DOMAIN\username` form in the proxy Username field. If authentication still fails:
+
+1. Confirm with the network team which scheme the proxy enforces.
+2. Run the load generator on a host that is domain-joined when Kerberos tickets are required.
+3. As a clean alternative, ask for a proxy bypass or a dedicated non-authenticating route for the load generators, which also removes credentials from test plans entirely.
+
+### 5. Verify the fix
+
+Run one thread against the target and confirm the sampler returns the application's real status code instead of 407. Then remove the proxy settings temporarily and confirm the request fails differently (connection refused or timeout): that proves traffic really travels through the proxy.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [HTTP 401/403 after recording](/topics/errors/401-403-after-recording/) | The application itself rejects the request, not a proxy |
+| [HTTP Recorder](/topics/http-recorder/) | Recording through an authenticating corporate proxy |
+| [Properties Cheat Sheet](/tools/properties-cheatsheet/) | Looking up `http.proxyUser` and other proxy properties |
+| [CI/CD Load Testing](/topics/ci-cd-load-testing/) | Injecting proxy secrets from pipeline secret stores |
+
+## Frequently asked questions
+
+### What is HTTP 407 in JMeter?
+It means an intermediate proxy, not the target application, rejected the request because the proxy credentials are missing or wrong. JMeter must authenticate to the proxy before the request is forwarded.
+
+### What is the difference between 401 and 407?
+A 401 comes from the target server and means the application wants authentication. A 407 comes from a proxy in front of the target and means the proxy itself wants authentication. The fix targets a different credential in each case.
+
+### How do I pass proxy credentials without storing them in the test plan?
+Use `-Jhttp.proxyUser` and `-Jhttp.proxyPass` on the command line, or set the properties in a user.properties file that stays out of version control. In CI pipelines, source the values from the secret store.
+
+### Why does the test pass at home but fail at the office?
+The office network routes outbound traffic through an authenticating forward proxy that home connections do not use. Configure the proxy and its credentials in HTTP Request Defaults, or ask for a bypass for the load generator.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Add the proxy server, port, username, and password to HTTP Request Defaults, then run one thread to confirm the 407 is gone before scaling up.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [CI/CD load testing](/topics/ci-cd-load-testing/)
+- [HTTP Recorder](/topics/http-recorder/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

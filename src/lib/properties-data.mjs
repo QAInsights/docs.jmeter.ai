@@ -50,6 +50,27 @@ export const propertiesCheatsheet = [
     tags: ['http', 'retry'],
   },
   {
+    name: 'httpclient4.validate_after_inactivity',
+    category: 'HTTP',
+    defaultValue: '2000',
+    summary: 'Validate idle persistent connections before reuse (ms) to avoid NoHttpResponseException.',
+    tags: ['http', 'keepalive', 'timeout', 'errors'],
+  },
+  {
+    name: 'httpclient4.time_to_live',
+    category: 'HTTP',
+    defaultValue: '60000',
+    summary: 'Maximum connection pool Time-To-Live in milliseconds.',
+    tags: ['http', 'connection', 'pool'],
+  },
+  {
+    name: 'httpclient4.idletimeout',
+    category: 'HTTP',
+    defaultValue: '0',
+    summary: 'Idle connection timeout in milliseconds before closed by client pool.',
+    tags: ['http', 'timeout', 'keepalive'],
+  },
+  {
     name: 'httpclient.timeout',
     category: 'HTTP',
     defaultValue: '0',

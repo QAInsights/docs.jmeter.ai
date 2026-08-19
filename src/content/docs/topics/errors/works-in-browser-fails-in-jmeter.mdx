@@ -1,0 +1,124 @@
+---
+title: "Site Works in Browser but Fails in JMeter"
+seoTitle: "Why JMeter Fails When the Browser Works (Fix Checklist)"
+description: "Fix the classic JMeter problem: requests work in a browser but fail in JMeter. Missing headers, cookies, redirects, correlation, and JavaScript gaps."
+keywords:
+  - "JMeter works in browser but not in JMeter"
+  - "JMeter fails but browser works"
+  - "JMeter 403 but browser OK"
+  - "JMeter recorded script fails on replay"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Site Works in Browser but Fails in JMeter
+
+## Symptom
+
+The application works perfectly in a browser, but the same requests in JMeter fail with:
+
+```text
+Response code: 401 / 403 / 404 / 500
+```
+
+empty response bodies, redirects that never land, or assertion failures. Recorded scripts replay once and then fail on every subsequent run.
+
+## Quick diagnosis (TL;DR)
+
+Browsers do far more than send the URL: they attach a full header set, manage cookies, follow redirects, execute JavaScript that fires extra requests, and carry fresh dynamic tokens. A replayed JMeter script does none of that automatically. Find which of these the failing request depends on and add it explicitly.
+
+## Common causes
+
+| Cause | Typical Error | Why it happens |
+|-------|---------------|----------------|
+| Missing request headers | `403` or `400` | The server or WAF checks `User-Agent`, `Accept`, `Origin`, or custom headers the browser sends but the script omits |
+| No Cookie Manager | `401` or lost session | Sessions ride cookies; without a Cookie Manager each request arrives stateless |
+| Uncorrelated dynamic values | `401`, `403`, `400` | CSRF tokens, session IDs, or bearer tokens from the recording are stale |
+| Redirect handling mismatch | Redirect loops or `302` chains | `Follow Redirects` and `Redirect Automatically` behave differently, and one is often disabled |
+| JavaScript-driven flows | Missing requests entirely | SPAs fire API calls from JavaScript, which JMeter never executes |
+| URL encoding differences | `400` or `404` | Special characters in parameters encode differently between browser and sampler |
+
+## Fix (ordered)
+
+### 1. Compare the failing request with browser DevTools
+
+Open the browser's Network tab, perform the action manually, and inspect the successful request. Compare, field by field against the JMeter sampler:
+
+1. Request headers (especially `User-Agent`, `Accept`, `Content-Type`, `Origin`, and any custom security headers).
+2. Cookies sent with the request.
+3. Query and body parameters, including tokens.
+4. The exact URL and encoding.
+
+Add the missing pieces to the sampler, then re-run one thread.
+
+### 2. Add missing headers with an HTTP Header Manager
+
+Add an **HTTP Header Manager** at the test plan or thread group level for global headers, or under a single sampler for request-specific ones. Replicate only what the server actually inspects; there is no need to copy every browser header.
+
+### 3. Add an HTTP Cookie Manager
+
+Sessions break without one. Add an **HTTP Cookie Manager** to each thread group. Keep the default "clear cookies each iteration" behavior unless the scenario explicitly models a returning user with a persistent session.
+
+### 4. Correlate dynamic values
+
+Extract tokens from the response that provides them and pass them into the next request:
+
+1. Locate the token in the login or page-load response (CSRF field, session ID, bearer token).
+2. Add a **Regular Expression Extractor** or **JSON Extractor** for it.
+3. Reference the variable in the failing request.
+
+The [Correlation & Dynamic Values](/topics/correlation-dynamic-values/) guide covers the patterns in depth, and [HTTP 401/403 after recording](/topics/errors/401-403-after-recording/) covers the auth-specific variants.
+
+### 5. Check redirect settings
+
+In the sampler, **Follow Redirects** (HttpClient implementation) hands redirects to JMeter's logic and records the final response, while **Redirect Automatically** replays them at the protocol level with fewer hooks. Enable exactly one per sampler, never both, and inspect the redirect chain in DevTools to know how many hops to expect.
+
+### 6. Script what JavaScript would have done
+
+JMeter does not execute JavaScript. For SPA flows:
+
+1. Watch the Network tab while the page runs and list the real API calls behind the UI action.
+2. Script those calls directly as HTTP Requests in the right order.
+3. Replace browser-only behavior (token refresh, polling) with its HTTP equivalent.
+
+[API Load Testing](/topics/api-load-testing/) shows how to structure these protocol-level tests.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [HTTP 401/403 after recording](/topics/errors/401-403-after-recording/) | Auth failures dominate the replay |
+| [Correlation & Dynamic Values](/topics/correlation-dynamic-values/) | Tokens and session IDs need extraction |
+| [HTTP Recorder](/topics/http-recorder/) | Capturing browser traffic cleanly in the first place |
+| [Extractor Default Value](/topics/errors/extractor-not-found-default-value/) | Extractors return NOT_FOUND during correlation |
+
+## Frequently asked questions
+
+### Why does JMeter not execute JavaScript like a browser?
+JMeter is a protocol-level tool: it sends and receives HTTP requests without rendering pages or running scripts. Any request a browser fires from JavaScript must be discovered in DevTools and scripted as an explicit HTTP Request.
+
+### Which browser headers does JMeter actually need?
+Only the ones the server or WAF inspects. Start with `User-Agent`, `Accept`, `Content-Type`, and any custom security or anti-bot headers visible in DevTools, then add more only while failures persist.
+
+### Why does my recorded script fail on the second run?
+Recording captures tokens and cookies that expire after the first use. Add a Cookie Manager and correlate CSRF tokens, session IDs, and bearer values so each virtual user gets fresh ones.
+
+### Can JMeter test a single-page application?
+Yes, but at the API level. Identify the HTTP calls the SPA makes behind its UI, script them in order, and treat the browser as a reference for the request sequence rather than as something to emulate.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Diff the failing sampler against the browser's DevTools request, add the missing headers and Cookie Manager, then correlate any stale tokens before replaying with one thread.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [Correlation & dynamic values](/topics/correlation-dynamic-values/)
+- [HTTP Recorder](/topics/http-recorder/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

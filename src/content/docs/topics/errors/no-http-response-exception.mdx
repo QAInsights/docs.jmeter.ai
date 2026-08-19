@@ -1,0 +1,127 @@
+---
+title: "JMeter org.apache.http.NoHttpResponseException"
+seoTitle: "JMeter NoHttpResponseException The Target Server Failed to Respond"
+description: "Fix JMeter org.apache.http.NoHttpResponseException: The target server failed to respond. Understand HTTP keep-alive race conditions and connection reuse tuning."
+keywords:
+  - "org.apache.http.NoHttpResponseException"
+  - "JMeter target server failed to respond"
+  - "NoHttpResponseException JMeter fix"
+  - "JMeter keep-alive error"
+  - "JMeter connection stale"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# org.apache.http.NoHttpResponseException in JMeter
+
+## Symptom
+
+In View Results Tree, JTL results, or `jmeter.log`, HTTP samplers fail intermittently with:
+
+```text
+Response code: Non HTTP response code: org.apache.http.NoHttpResponseException
+Response message: Non HTTP response message: The target server failed to respond
+```
+
+The error typically appears intermittently during tests with think time, between loop iterations, or when reusing pooled connections over HTTP Keep-Alive.
+
+## Quick diagnosis (TL;DR)
+
+`NoHttpResponseException` occurs when JMeter sends an HTTP request over an established persistent (Keep-Alive) TCP socket that the server or intermediate proxy has already closed due to an idle timeout. When JMeter transmits bytes on the stale connection, the server drops or resets the socket without returning an HTTP response line.
+
+## Common causes
+
+| Cause | Why it happens |
+|-------|----------------|
+| Keep-Alive race condition | Server idle timeout (e.g. 5s) is shorter than JMeter's connection reuse interval / think time |
+| Server connection backlog full | Target server or load balancer terminates idle client connections under heavy memory or socket pressure |
+| Intermediate proxy / NAT timeout | Firewalls (AWS ALB, Nginx, Cloudflare) close idle TCP connections silently without TCP FIN packets |
+| Stale connection checking disabled | JMeter uses pooled sockets without validating whether the connection is still alive before sending data |
+| Thread iteration state | Previous thread loop left an open TCP connection in a state that the server subsequently closed |
+
+## Fix (ordered)
+
+### 1. Validate Idle Connections Before Reuse in `user.properties`
+
+Configure JMeter's underlying Apache HttpComponents HttpClient to check whether a connection is stale before transmitting a new request. Add the following to `bin/user.properties`:
+
+```properties
+# Validate idle persistent connections if inactive for more than 2000ms
+httpclient4.validate_after_inactivity=2000
+
+# Set maximum connection Time-To-Live (in milliseconds)
+httpclient4.time_to_live=60000
+
+# Set idle connection timeout (in milliseconds)
+httpclient4.idletimeout=10000
+```
+
+### 2. Reset HTTP State on Thread Group Iteration
+
+Ensure each iteration starts with a clean connection state if your virtual users simulate independent sessions:
+
+1. Open your **Thread Group**.
+2. Check **Same user on each iteration** if simulating sticky browser sessions, or **uncheck** it if each iteration represents a distinct new user.
+3. In **HTTP Request Defaults**, ensure the implementation is set to **`HttpClient4`** (the default and recommended client).
+
+### 3. Match JMeter Keep-Alive Timeout with Server Keep-Alive
+
+Check your web server / reverse proxy Keep-Alive configuration:
+
+- **Nginx**: `keepalive_timeout 65;` (ensure JMeter `httpclient4.idletimeout` is lower than this value, e.g. `60000`).
+- **Apache HTTPD**: `KeepAliveTimeout 5`.
+- **AWS ALB**: Default idle timeout is 60 seconds.
+
+If JMeter holds connections longer than the upstream timeout, JMeter will attempt to send requests over dead sockets.
+
+### 4. Enable Automatic Connection Retry Strategy
+
+By default, JMeter's `HttpClient4` does not automatically retry non-idempotent requests (like `POST` or `PUT`) if a socket drops. You can configure retry behavior in `user.properties`:
+
+```properties
+# Number of retries on connection reset (default: 0 in modern JMeter)
+httpclient4.retrycount=1
+
+# Whether to retry request sent failure
+httpclient4.request_sent_retry_enabled=true
+```
+
+:::caution[Idempotency Warning]
+Only enable `request_sent_retry_enabled=true` if your test endpoints are idempotent or if simulating real-world browser retry behavior. Retrying non-idempotent `POST` requests may generate duplicate orders or payments.
+:::
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Socket closed / connection reset](/topics/errors/socket-closed-connection-reset/) | Server abruptly resets active TCP connection |
+| [SocketTimeoutException](/topics/errors/socket-timeout-exception/) | Server receives request but response is too slow |
+| [HTTP 502/503/504](/topics/errors/http-502-503-504/) | Proxy responses when backends fail to respond |
+| [Properties Cheat Sheet](/tools/properties-cheatsheet/) | Quick lookup for `httpclient4.*` properties |
+
+## Frequently asked questions
+
+### Why does NoHttpResponseException happen mostly during think times?
+When threads pause for Timers (e.g. 10 seconds), the pooled TCP connection sits idle. If the server idle timeout is 5 seconds, the server closes the connection during the think time. When JMeter resumes, it tries to use the dead connection.
+
+### Is NoHttpResponseException a bug in JMeter?
+No. It is a standard TCP/HTTP Keep-Alive timing condition. Setting `httpclient4.validate_after_inactivity=2000` prevents JMeter from writing to closed sockets.
+
+### Should I disable Keep-Alive in HTTP Request Defaults?
+Only if your target application architecture does not support Keep-Alive. Disabling Keep-Alive forces a fresh TCP and TLS handshake for every single request, which creates CPU overhead and can cause [ephemeral port exhaustion](/topics/errors/bind-exception-address-in-use/).
+
+<RelatedContent>
+<Fragment slot="next-step">
+Add `httpclient4.validate_after_inactivity=2000` to `user.properties` and verify that the error disappears on the next test execution.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [Best practices](/user-manual/best-practices/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

@@ -1,0 +1,130 @@
+---
+title: "JMeter Won't Open a Test Plan (JMX Load Errors)"
+seoTitle: "Fix JMeter Error Loading Test Plan and Corrupt JMX Files"
+description: "Fix JMeter test plans that won't open: Error loading test plan, XML parse errors, merge conflict markers, and version mismatches, with recovery steps."
+keywords:
+  - "JMeter error loading test plan"
+  - "JMeter JMX corrupt"
+  - "JMeter cannot open test plan"
+  - "JMX SAXParseException"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# JMeter Won't Open a Test Plan (JMX Load Errors)
+
+## Symptom
+
+Opening a `.jmx` file shows a dialog or log entry such as:
+
+```text
+Error loading test plan
+```
+
+with an XML parse detail like:
+
+```text
+org.xml.sax.SAXParseException: The element type "HTTPSamplerProxy" must be terminated by the matching end-tag "</HTTPSamplerProxy>".
+```
+
+Other variants open the GUI but show an empty or partially built test plan, or log unknown-element warnings during load.
+
+## Quick diagnosis (TL;DR)
+
+A JMX file is XML, so load errors mean either the XML is malformed (interrupted save, manual edit, or git merge conflict markers) or JMeter cannot construct an element it finds (missing plugin JARs or a newer JMeter version). Repair the XML first, then check plugins and versions.
+
+## Common causes
+
+| Cause | Specific Error | Why it happens |
+|-------|----------------|----------------|
+| Interrupted save | Truncated file, abrupt `SAXParseException` | A crash or full disk stopped the write mid-file |
+| Git merge conflict markers | Parse error at `<<<<<<<` | Merging left conflict markers inside the XML |
+| Manual hand edit | Tag mismatch errors | A text edit broke tag nesting or escaping |
+| Missing plugin JARs | Unknown element warnings, missing samplers | The plan references elements whose classes are not installed |
+| Version mismatch | Plan loads partially or with warnings | A newer JMeter wrote features an older JMeter does not know |
+
+## Fix (ordered)
+
+### 1. Find the exact error location
+
+Open `jmeter.log` after the failed load. The `SAXParseException` carries a line and column number, which points straight at the broken region of the file.
+
+### 2. Inspect the XML
+
+Open the JMX in a text editor and check:
+
+1. Merge conflict markers: search for `<<<<<<<`, `=======`, and `>>>>>>>`. Remove them and keep the correct element.
+2. The file ending: a complete plan ends with `</jmeterTestPlan>`. If it stops mid-tag, the save was interrupted.
+3. Tag nesting around the reported line: every opened element needs its matching close tag, and special characters in attribute values must stay escaped.
+
+### 3. Restore from version control or backup
+
+If the file is truncated or badly mangled, restoration beats hand repair:
+
+```bash
+# Compare against the last committed version
+git diff HEAD -- path/to/plan.jmx
+
+# Restore the committed copy
+git checkout HEAD -- path/to/plan.jmx
+```
+
+Keep test plans in git going forward; JMeter has no built-in autosave, so version control is the recovery mechanism.
+
+### 4. Check plugins and element availability
+
+If the XML is valid but elements are missing after load:
+
+1. Look for unknown-element or class warnings in `jmeter.log`.
+2. Install the matching plugin JARs into `lib/ext/`, following [ClassNotFound & Missing JARs](/topics/errors/class-not-found-noclassdeffound/).
+3. Reopen the plan and confirm every element appears in the tree.
+
+### 5. Match JMeter versions
+
+The JMX header records which version wrote it:
+
+```xml
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+```
+
+If the `jmeter` attribute is newer than your installation, open the plan with that version (or newer) and re-save it, or upgrade your installation. Newer JMeter reads older plans without trouble; the reverse direction is where load errors appear.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [ClassNotFound & Missing JARs](/topics/errors/class-not-found-noclassdeffound/) | Elements fail to construct because plugin JARs are missing |
+| [GUI works, CLI fails](/topics/errors/gui-works-cli-fails/) | The plan loads but the CLI run misbehaves |
+| [Building a Test Plan](/user-manual/build-test-plan/) | Saving and organizing plans safely |
+| [Hints and Tips](/user-manual/hints-and-tips/) | General test plan hygiene |
+
+## Frequently asked questions
+
+### Can a corrupted JMX file be repaired?
+Often, yes. If the damage is a truncated tail or merge conflict markers, fixing the XML by hand restores the plan. When whole sections are missing, restoring from git or a backup is faster and safer than reconstruction.
+
+### Why does my JMX open on a colleague's machine but not mine?
+Version or plugin differences. Check the `jmeter` attribute in the JMX header against your installed version, and compare the contents of `lib/ext/` for plugin JARs the plan depends on.
+
+### Where does JMeter report the exact XML error?
+In `jmeter.log`. The `SAXParseException` line names the problem and includes line and column numbers, which map directly to a position in the JMX file.
+
+### How do I prevent JMX corruption?
+Save before large edits, keep plans in git so merges are visible and reversible, and avoid hand-editing the XML without an editor that validates well-formedness. Committing after each meaningful change keeps the last-good version close.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Read the SAXParseException line number from jmeter.log, inspect that region of the JMX, and restore from git if more than a few lines are damaged.
+</Fragment>
+<Fragment slot="related">
+- [Building a Test Plan](/user-manual/build-test-plan/)
+- [JMeter for beginners](/topics/jmeter-for-beginners/)
+- [Plugins essentials](/topics/plugins-essentials/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

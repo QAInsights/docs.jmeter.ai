@@ -1,0 +1,152 @@
+---
+title: "JMeter OutOfMemoryError: Metaspace & GC overhead limit exceeded"
+seoTitle: "JMeter OutOfMemoryError Metaspace and GC Overhead Limit Fix"
+description: "Fix JMeter OutOfMemoryError: Metaspace and GC overhead limit exceeded. Prevent Groovy compilation leaks, tune JVM GC, and configure MaxMetaspaceSize."
+keywords:
+  - "OutOfMemoryError Metaspace JMeter"
+  - "GC overhead limit exceeded JMeter"
+  - "JMeter Metaspace leak"
+  - "JMeter Groovy compilation memory leak"
+  - "JMeter GC pause"
+difficulty: advanced
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# OutOfMemoryError: Metaspace & GC overhead limit in JMeter
+
+## Symptom
+
+During execution or extended soak tests, JMeter crashes with one of these JVM OutOfMemory errors in `jmeter.log` or console:
+
+```text
+java.lang.OutOfMemoryError: Metaspace
+	at java.lang.ClassLoader.defineClass1(Native Method)
+	at groovy.lang.GroovyClassLoader.createSubClass(GroovyClassLoader.java:940)
+```
+
+Or when garbage collection takes up nearly 100% of CPU time with minimal memory recovered:
+
+```text
+java.lang.OutOfMemoryError: GC overhead limit exceeded
+	at org.apache.jmeter.threads.JMeterVariables.put(JMeterVariables.java:95)
+```
+
+Throughput drops to near zero, response times spike dramatically, and the load generator CPU spikes to 100% due to continuous full garbage collection cycles.
+
+## Quick diagnosis (TL;DR)
+
+- **`OutOfMemoryError: Metaspace`**: The JVM class metadata area is exhausted. The most common cause is embedding `\${var}` variable interpolation inside JSR223 Groovy scripts, forcing the Groovy runtime to compile a brand-new Java class on every execution.
+- **`GC overhead limit exceeded`**: Java spent more than 98% of its total CPU time performing garbage collection and recovered less than 2% of the heap.
+
+## Common causes
+
+| Cause | Error | Why it happens |
+|-------|-------|----------------|
+| In-script string interpolation (`\${var}`) | Metaspace | Using `vars.get("x")` vs `"Hello ${x}"` avoids generating millions of temporary dynamic classes that fill Metaspace |
+| Unchecked "Cache compiled script" | Metaspace / CPU | JSR223 elements re-parse and compile script source on every single sample execution |
+| Small default Metaspace cap | Metaspace | JVM default `-XX:MaxMetaspaceSize` is too constrained for large test plans with many plugins |
+| Heavy listener memory retention | GC Overhead | Listeners (View Results Tree, Graph Results) retaining millions of SampleResult objects in heap |
+| Large in-memory file buffers | GC Overhead | Reading large CSV files or response bodies entirely into Groovy script memory variables |
+
+## Fix (ordered)
+
+### 1. Fix Groovy Variable Interpolation (The #1 Metaspace Culprit)
+
+Never embed `\${variable_name}` directly inside JSR223 Groovy code. Groovy treats the script text as a template and generates a new class file every time the variable changes:
+
+```groovy
+// ❌ WRONG: Leaks Metaspace and exhausts compilation cache!
+String token = "${auth_token}";
+log.info("Processing user ${user_id}");
+
+// ✅ CORRECT: Reuses compiled class, zero Metaspace growth
+String token = vars.get("auth_token");
+log.info("Processing user " + vars.get("user_id"));
+```
+
+### 2. Enable "Cache compiled script if available"
+
+In every **JSR223 PreProcessor**, **JSR223 PostProcessor**, **JSR223 Sampler**, and **JSR223 Assertion**:
+
+1. Set **Language** to `groovy (Groovy ... / Groovy Scripting Engine)`.
+2. Ensure the checkbox **Cache compiled script if available** is **checked**.
+3. Always supply a unique **Compilation Key** if using script files.
+
+```xml
+<!-- Correct JSR223 configuration in JMX -->
+<JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Process Data">
+  <stringProp name="scriptLanguage">groovy</stringProp>
+  <stringProp name="parameters"></stringProp>
+  <stringProp name="filename"></stringProp>
+  <stringProp name="cacheKey">true</stringProp>
+  <stringProp name="script">String id = vars.get(&quot;userId&quot;);
+vars.put(&quot;processedId&quot;, id.toUpperCase());</stringProp>
+</JSR223Sampler>
+```
+
+### 3. Increase JVM Metaspace and Heap Configuration
+
+Set explicit Metaspace and Heap sizing in your launch environment:
+
+```bash
+# Linux / macOS environment variables
+export JVM_ARGS="-Xms4g -Xmx4g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC"
+jmeter -n -t test.jmx -l results.jtl -j jmeter.log
+```
+
+```bat
+@REM Windows bin/jmeter.bat or set in terminal
+set JVM_ARGS=-Xms4g -Xmx4g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC
+jmeter.bat -n -t test.jmx -l results.jtl
+```
+
+### 4. Remove Memory-Heavy Listeners in CLI Mode
+
+During load tests, disable all visual listeners:
+- **Delete or disable**: View Results Tree, Summary Report, Aggregate Graph, View Results in Table.
+- Use only command-line logging (`-l results.jtl`) and generate the HTML dashboard after the test completes ([dashboard guide](/user-manual/generating-dashboard/)).
+
+### 5. Tune Modern G1 Garbage Collector
+
+Ensure modern G1GC settings are configured for low pause times:
+
+```properties
+# Recommended JVM arguments for high-throughput JMeter testing
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=100
+-XX:G1ReservePercent=15
+-XX:InitiatingHeapOccupancyPercent=45
+```
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [OutOfMemoryError heap](/topics/errors/out-of-memory-heap/) | Standard Java heap memory troubleshooting |
+| [JSR223 Groovy script errors](/topics/errors/jsr223-groovy-script-errors/) | Resolving Groovy scripting exceptions |
+| [Heap Estimator](/tools/heap-estimator/) | Sizing JVM heap and Metaspace memory |
+| [Best practices](/user-manual/best-practices/) | Official performance tuning guidelines |
+
+## Frequently asked questions
+
+### Why does Metaspace keep growing even when heap is healthy?
+Metaspace lives in native memory outside the Java heap. If Groovy compiles new classes dynamically (due to `\${var}` string interpolation), these classes are loaded into Metaspace and are rarely garbage collected unless classloaders are completely unloaded.
+
+### What is the difference between Heap OOM and Metaspace OOM?
+Heap OOM means Java objects (byte arrays, strings, collections) filled `-Xmx`. Metaspace OOM means loaded class metadata filled `-XX:MaxMetaspaceSize`.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Audit all JSR223 elements to replace `\${var}` interpolation with `vars.get("var")` and verify that script caching is enabled.
+</Fragment>
+<Fragment slot="related">
+- [JSR223 Groovy errors](/topics/errors/jsr223-groovy-script-errors/)
+- [Heap Estimator](/tools/heap-estimator/)
+- [Best practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

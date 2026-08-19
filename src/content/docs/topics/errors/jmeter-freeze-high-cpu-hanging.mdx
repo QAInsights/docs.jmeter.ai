@@ -1,0 +1,137 @@
+---
+title: "JMeter Freezing, 100% CPU Usage & CLI Hanging at End"
+seoTitle: "JMeter Freezing 100% CPU Usage and CLI Hang Troubleshooting"
+description: "Troubleshoot JMeter GUI freezing, 100% CPU utilization on load generators, and CLI tests hanging at completion with thread dumps and JVM tuning."
+keywords:
+  - "JMeter GUI freezes"
+  - "JMeter CLI hangs at end of test"
+  - "JMeter 100% CPU usage"
+  - "JMeter load injector bottleneck"
+  - "JMeter thread dump"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# JMeter Freezing, 100% CPU Usage & CLI Hanging
+
+## Symptom
+
+You encounter one of the following performance bottlenecks on the load generator machine:
+
+1. **JMeter GUI completely freezes / becomes unresponsive**: The window grays out or locks up during a test run.
+2. **100% CPU saturation on the load injector**: JMeter consumes all CPU cores on the testing host, causing request times to distort and throughput to plateau.
+3. **CLI execution hangs at the end of a test**: The test duration finishes, but the terminal command prompt never returns, and the process remains stuck indefinitely.
+
+## Quick diagnosis (TL;DR)
+
+- **GUI Freeze**: Running tests with active listeners (e.g. View Results Tree) in GUI mode consumes memory and blocks the Swing event dispatch thread.
+- **100% CPU on Injector**: Caused by CPU-intensive JSR223 Groovy parsing (missing cache), catastrophic regex backtracking, full GC loops, or excessive disk logging.
+- **CLI Hang**: Non-daemon background threads (unclosed DB connections, async listeners, or alive RMI engines) preventing the JVM from exiting.
+
+## Common causes
+
+| Symptom | Primary Cause | Why it happens |
+|---------|---------------|----------------|
+| GUI Freeze | Listeners in GUI | View Results Tree stores full XML/JSON response payloads in RAM, blocking UI threads |
+| 100% CPU | Inefficient RegEx / Groovy | Complex regex patterns with catastrophic backtracking, or recompiling Groovy scripts |
+| 100% CPU | Continuous Garbage Collection | Java Heap nearly full, triggering back-to-back Full GC pauses |
+| CLI Hang | Non-daemon active threads | Custom plugins, Backend Listeners (InfluxDB/Kafka), or open JDBC pools blocking process exit |
+| CLI Hang | Remote RMI engines | Distributed testing controller waiting for unresponsive worker nodes |
+
+## Fix (ordered)
+
+### 1. Always Run Load Tests in Non-GUI (CLI) Mode
+
+Never use the JMeter GUI for actual load generation. Use GUI strictly for test plan creation and debugging with 1–2 virtual users:
+
+```bash
+# Standard Non-GUI execution command
+jmeter -n -t testplan.jmx -l results.jtl -j jmeter.log
+```
+
+### 2. Diagnose Active Threads with a JVM Thread Dump
+
+When a CLI test hangs or freezes, take a thread dump to identify the exact blocking thread:
+
+```bash
+# 1. Find the JMeter process ID
+jps -v | grep ApacheJMeter
+
+# 2. Capture the stack trace of all running threads
+jstack <PID> > thread_dump.txt
+```
+
+Look for threads in the `RUNNABLE` or `BLOCKED` state:
+- `BackendListener` or `InfluxDBRawData`: Waiting for remote metrics flush.
+- `StandardJMeterEngine`: Waiting for lingering worker threads to exit.
+- `HikariPool` / `JDBC`: Open database connection pool connections.
+
+### 3. Force CLI Process Exit on Test Completion
+
+If a third-party plugin or listener leaves background non-daemon threads open, configure JMeter to force JVM exit when the test finishes:
+
+Add to `bin/user.properties` or pass via CLI:
+
+```properties
+# Force JVM exit (System.exit(0)) when engine finishes test
+jmeterengine.force.system.exit=true
+
+# Maximum time (in milliseconds) to wait for threads to stop on shutdown
+jmeterengine.threadstop.wait=5000
+```
+
+### 4. Optimize Regex and JSR223 CPU Overhead
+
+- Replace complex Regular Expression Extractors with **Boundary Extractor** (significantly faster, zero CPU regex overhead).
+- Ensure all JSR223 elements use **Groovy** with **"Cache compiled script if available"** checked.
+- Never use BeanShell (BeanShell is 10–20x slower and CPU-heavy compared to Groovy).
+
+### 5. Check Disk I/O Bottlenecks and Log Levels
+
+Writing verbose debug logs during a 1,000 RPS test saturates disk I/O and locks CPU threads:
+
+1. Ensure `jmeter.log` level is set to `INFO` or `WARN` in `bin/log4j2.xml`.
+2. Save only required fields in `results.jtl`:
+
+```properties
+# Keep JTL output minimal for maximum throughput
+jmeter.save.saveservice.output_format=csv
+jmeter.save.saveservice.response_data=false
+jmeter.save.saveservice.samplerData=false
+jmeter.save.saveservice.requestHeaders=false
+jmeter.save.saveservice.url=true
+jmeter.save.saveservice.response_code=true
+```
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [GUI works, CLI fails](/topics/errors/gui-works-cli-fails/) | Differences between GUI and CLI execution |
+| [OutOfMemoryError heap](/topics/errors/out-of-memory-heap/) | Heap memory exhaustion troubleshooting |
+| [CLI Command Builder](/tools/cli-builder/) | Generate clean CLI commands with proper flags |
+| [Best practices](/user-manual/best-practices/) | Official tuning guidelines |
+
+## Frequently asked questions
+
+### Why does JMeter hang at the end when using InfluxDB Backend Listener?
+The Backend Listener buffers metrics and attempts to flush remaining data to InfluxDB over HTTP. If the InfluxDB server is slow or unreachable, the listener blocks until timeout. Set `summaryOnly=true` or lower the client timeout.
+
+### How do I stop a hung JMeter CLI test safely?
+Run `./bin/stoptest.sh` (or `stoptest.bat` on Windows) from a separate terminal. This instructs JMeter to gracefully terminate thread groups. If it remains stuck, use `./bin/shutdown.sh`.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Run your test in CLI mode with `jmeter -n -t plan.jmx -l results.jtl` and verify that `jmeterengine.force.system.exit=true` is set.
+</Fragment>
+<Fragment slot="related">
+- [CLI Command Builder](/tools/cli-builder/)
+- [Best practices](/user-manual/best-practices/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

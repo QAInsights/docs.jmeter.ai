@@ -1,0 +1,136 @@
+---
+title: "JMeter HTTP 429 Too Many Requests & WAF Blocks"
+seoTitle: "JMeter HTTP 429 Too Many Requests and WAF Rate Limit Fix"
+description: "Fix JMeter HTTP 429 Too Many Requests and WAF 403 Forbidden blocks. Handle Cloudflare, AWS WAF, rate limits, request pacing, and IP distribution."
+keywords:
+  - "HTTP 429 Too Many Requests JMeter"
+  - "JMeter rate limited"
+  - "JMeter Cloudflare blocked"
+  - "JMeter WAF 403 Forbidden"
+  - "JMeter rate limit bypass"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# HTTP 429 Too Many Requests & WAF Rate Limiting in JMeter
+
+## Symptom
+
+During load ramp-up or sustained concurrency, requests suddenly start returning HTTP 429 or 403 status codes with security challenge HTML or JSON errors:
+
+```text
+Response code: 429 (Too Many Requests)
+Response message: Rate limit exceeded. Try again in 60 seconds.
+```
+
+Or when blocked by a Web Application Firewall (Cloudflare, AWS WAF, Akamai, Datadog):
+
+```text
+Response code: 403 (Forbidden)
+Response message: Cloudflare Ray ID: ... / Access Denied by WAF
+```
+
+Samplers pass during low-concurrency runs (1 thread) but fail consistently when concurrency or request rate scales up.
+
+## Quick diagnosis (TL;DR)
+
+`HTTP 429` means the target API rate limiter has capped your request frequency (e.g. 100 req/min per IP or API token). `HTTP 403 WAF Block` means an automated security rule detected JMeter's default User-Agent signature, rapid connection patterns, or missing browser fingerprinting attributes.
+
+## Common causes
+
+| Cause | Status | Why it happens |
+|-------|--------|----------------|
+| IP-based API rate limiting | 429 | Hundreds of virtual users share a single injector IP address, triggering per-IP throttles (e.g. Nginx `limit_req`, Redis token buckets) |
+| User / Token rate limiting | 429 | All threads use the same API key or Bearer token instead of parameterized test accounts |
+| WAF bot detection | 403 | Cloudflare, Akamai, or AWS WAF blocks default `Apache-HttpClient` User-Agent string |
+| Cloudflare Turnstile / CAPTCHA | 403 | Bot mitigation returns JS challenges or CAPTCHAs that headless HTTP samplers cannot compute |
+| Aggressive burst rates | 429 | Lack of pacing timers generates unnatural millisecond bursts upon thread group start |
+
+## Fix (ordered)
+
+### 1. Set Realistic Browser User-Agent & Headers
+
+By default, JMeter sends `User-Agent: Apache-HttpClient/...`. Many WAFs block this header instantly. Add an **HTTP Header Manager** to your Test Plan with standard browser headers:
+
+```text
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Accept-Language: en-US,en;q=0.9
+Accept-Encoding: gzip, deflate, br
+```
+
+### 2. Coordinate Testing IP Whitelisting & WAF Bypass Rules
+
+For performance testing in pre-production or staging environments:
+
+1. Request that DevOps / SecOps whitelist the public IP addresses of your JMeter load injectors.
+2. Provide a custom secret bypass header (supported by AWS WAF, Cloudflare Custom Rules, and Kong Gateway):
+   ```text
+   X-Load-Test-Bypass: secret-token-from-devops
+   ```
+3. In pre-prod environments, request that security teams temporarily disable or elevate rate limits for the duration of the test window.
+
+### 3. Parameterize API Keys & User Accounts
+
+If testing authenticated APIs with per-user rate limits:
+1. Add a **CSV Data Set Config** with hundreds of unique test credentials or API keys.
+2. Parameterize authorization headers:
+   ```text
+   Authorization: Bearer ${user_token}
+   ```
+3. Set **Sharing Mode** to **All threads** so each virtual user operates with independent rate quotas.
+
+### 4. Implement Request Pacing with Timers
+
+Avoid burst spikes that trigger rate limiters by smoothing traffic distribution:
+
+- **Constant Throughput Timer**: Controls overall target samples per minute.
+- **Precise Throughput Timer**: Schedules Poisson-distributed request arrivals to model natural user traffic without simultaneous synchronized bursts.
+- **Uniform Random Timer**: Adds jitter and realistic think time between consecutive requests.
+
+```xml
+<!-- Precise Throughput Timer in JMX -->
+<PreciseThroughputTimer guiclass="TestBeanGUI" testclass="PreciseThroughputTimer" testname="Precise Throughput Timer">
+  <doubleProp name="throughput">50.0</doubleProp>
+  <intProp name="throughputPeriod">1</intProp>
+  <intProp name="duration">300</intProp>
+</PreciseThroughputTimer>
+```
+
+### 5. Distribute Load Across Multiple Injector IPs
+
+If per-IP rate limiting is a business requirement under test:
+- Use **Distributed Testing** ([distributed guide](/topics/distributed-testing/)) with multiple worker machines in different subnets.
+- Use multiple local network interfaces with IP spoofing (`Source IP` field in HTTP Request Defaults).
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [401/403 after recording](/topics/errors/401-403-after-recording/) | Session tokens and credentials issues |
+| [Throughput stuck](/topics/errors/throughput-stuck/) | Virtual users blocked from reaching target RPS |
+| [Distributed testing](/topics/distributed-testing/) | Scaling load across multiple distinct IP addresses |
+| [Thread Calculator](/tools/thread-calculator/) | Calculating required pacing and thread numbers |
+
+## Frequently asked questions
+
+### Should I test through a WAF or bypass it during performance testing?
+Best practice is to test **both**: first, test the application directly (bypassing the WAF) to measure pure backend capacity and find application bottlenecks. Second, test through the WAF (with elevated rate limit rules) to measure WAF latency overhead and rule evaluation limits.
+
+### Can JMeter solve Cloudflare CAPTCHAs or Turnstile challenges?
+No. Standard JMeter HTTP samplers only parse network protocols, not client-side JavaScript execution. In staging environments, Cloudflare Turnstile should be disabled for test IPs or set to pass-through mode.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Coordinate with your infrastructure team to obtain a test-bypass header or whitelist your load generator IP addresses.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [Distributed testing](/topics/distributed-testing/)
+- [Best practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

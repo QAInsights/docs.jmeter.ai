@@ -1,0 +1,125 @@
+---
+title: "JMeter CSV Data Set Config: File not found & Sharing Mode"
+seoTitle: "JMeter CSV Data Set Config File not found and Sharing Fix"
+description: "Fix JMeter CSV Data Set Config File not found errors and data sharing issues. Master relative file paths, EOF settings, and multi-thread data distribution."
+keywords:
+  - "CSV Data Set Config File not found"
+  - "JMeter CSV relative path"
+  - "JMeter all threads read same CSV"
+  - "JMeter CSV sharing mode"
+  - "JMeter test data error"
+difficulty: beginner
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# CSV Data Set Config: File not found & Sharing Issues
+
+## Symptom
+
+When executing a test in CLI mode, CI/CD pipelines, or distributed testing, one of the following errors occurs in `jmeter.log`:
+
+```text
+2026-08-18 14:02:11,551 ERROR o.a.j.c.CSVDataSet: java.io.FileNotFoundException: users.csv (The system cannot find the file specified)
+	at java.io.FileInputStream.open0(Native Method)
+```
+
+Or a test data logic error occurs:
+- All concurrent virtual user threads read the exact same row of data simultaneously.
+- The test terminates unexpectedly early because of an unexpected End of File (EOF).
+- Dynamic CSV variables appear literally as `\${username}` in HTTP requests.
+
+## Quick diagnosis (TL;DR)
+
+- **`FileNotFoundException` in CLI/CI**: JMeter resolves relative CSV paths relative to the current working directory from which the `jmeter` command was executed, **not** necessarily the directory containing the `.jmx` file.
+- **Duplicate Data Read**: The CSV Data Set Config is placed inside a loop or child controller, resetting file pointers on each iteration, or **Sharing Mode** is misconfigured.
+
+## Common causes
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| CLI `FileNotFoundException` | Invoked `jmeter` from a folder other than the test plan folder | Use `\${__P(testdata.path)}` or FileServer basedir |
+| Distributed testing `FileNotFoundException` | CSV file exists on controller machine but was not copied to remote worker nodes | Copy the CSV file to the exact same file path on all remote worker machines |
+| All threads reading same line | CSV Data Set Config placed as child of a Loop Controller | Move CSV Data Set Config to the root of the **Thread Group** |
+| Test stops prematurely | "Stop thread on EOF" set to `true` on a small CSV file | Set "Recycle on EOF" to `true` and "Stop thread on EOF" to `false` |
+| Variables not assigned | "Variable Names" blank and CSV has no header row | Provide comma-separated variable names in configuration |
+
+## Fix (ordered)
+
+### 1. Use Robust Relative Path Resolution
+
+To make `.jmx` test plans fully portable across local GUI, CLI, and CI/CD runners regardless of current working directory:
+
+In **CSV Data Set Config** -> **Filename**, use the `FileServer` basedir function:
+
+```text
+${__groovy(org.apache.jmeter.services.FileServer.getFileServer().getBaseDir())}/users.csv
+```
+
+Or configure a dynamic property with a default fallback:
+
+```text
+${__P(data.dir,${__groovy(org.apache.jmeter.services.FileServer.getFileServer().getBaseDir())})}/users.csv
+```
+
+Now you can override data paths dynamically in CI/CD:
+
+```bash
+jmeter -n -t /plans/checkout.jmx -Jdata.dir=/ci-data/ -l results.jtl
+```
+
+### 2. Configure Sharing Mode for Concurrent Threads
+
+The **Sharing Mode** setting controls how file pointers advance across virtual users:
+
+| Sharing Mode | Behavior | Best for |
+|--------------|----------|----------|
+| **All threads** (Default) | Single global file pointer shared across all thread groups. Each thread reads the next unique line | Unique user logins, single-use promo codes |
+| **Current thread group** | Each Thread Group maintains its own independent file pointer | Separate scenarios that need the same test data set |
+| **Current thread** | Each individual virtual user reads the entire CSV file from line 1 independently | Iterating through a fixed list of product IDs per user |
+
+### 3. Handle End of File (EOF) Behavior
+
+In **CSV Data Set Config**:
+
+- **Recycle on EOF?**: Set to **`True`** if you want threads to loop back to line 1 when the file ends.
+- **Stop thread on EOF?**: Set to **`False`** to allow tests to run for their scheduled duration. Set to **`True`** only if the test must stop immediately after exhausting the data file.
+
+### 4. Fix CSV Distribution in Distributed / Remote Testing
+
+In distributed mode (`jmeter -r`):
+1. JMeter **does NOT send CSV files** over RMI to worker nodes.
+2. You must place the CSV file on **every remote worker machine** at the exact same path.
+3. If using shared network storage (NFS/EFS), ensure all worker pods mount the share at the identical mount path.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [GUI works, CLI fails](/topics/errors/gui-works-cli-fails/) | File path and working directory differences |
+| [Functions and variables](/topics/functions-and-variables/) | Built-in functions like `__CSVRead` |
+| [Distributed testing](/topics/distributed-testing/) | Managing test data across remote workers |
+| [CLI Command Builder](/tools/cli-builder/) | Generate CLI commands with dynamic data properties |
+
+## Frequently asked questions
+
+### Should I use CSV Data Set Config or `__CSVRead()` function?
+Always prefer **CSV Data Set Config**. It is significantly faster, thread-safe, supports multi-threaded sharing modes, and handles quotes and delimiter parsing properly.
+
+### How do I split one CSV file across multiple worker nodes?
+Split the CSV file into chunks before the test run (e.g. `split -l 1000 users.csv worker_`) and copy chunk 1 to Worker 1, chunk 2 to Worker 2.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Use `\${__groovy(org.apache.jmeter.services.FileServer.getFileServer().getBaseDir())}/file.csv` in the CSV Filename field for bulletproof path resolution.
+</Fragment>
+<Fragment slot="related">
+- [Functions and variables](/topics/functions-and-variables/)
+- [Distributed testing](/topics/distributed-testing/)
+- [Best practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

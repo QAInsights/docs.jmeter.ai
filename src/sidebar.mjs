@@ -19,6 +19,76 @@ export const sidebar = [
     ],
   },
   {
+    label: 'Error Playbooks',
+    collapsed: false,
+    items: [
+      { label: 'Error Playbooks Index', link: '/topics/errors' },
+      {
+        label: 'Network & TLS',
+        collapsed: true,
+        items: [
+          { label: 'ConnectException', link: '/topics/errors/connect-exception' },
+          { label: 'SocketTimeoutException', link: '/topics/errors/socket-timeout-exception' },
+          { label: 'NoHttpResponseException', link: '/topics/errors/no-http-response-exception' },
+          { label: 'Premature EOF / Connection Aborted', link: '/topics/errors/premature-eof-connection-abort' },
+          { label: 'UnknownHostException', link: '/topics/errors/unknown-host-exception' },
+          { label: 'BindException / Port Exhaustion', link: '/topics/errors/bind-exception-address-in-use' },
+          { label: 'SSLHandshakeException', link: '/topics/errors/ssl-handshake-exception' },
+          { label: 'SSLPeerUnverifiedException', link: '/topics/errors/ssl-peer-unverified' },
+          { label: 'Socket closed / reset', link: '/topics/errors/socket-closed-connection-reset' },
+          { label: 'Non HTTP response code', link: '/topics/errors/non-http-response-code' },
+        ],
+      },
+      {
+        label: 'HTTP Status Codes',
+        collapsed: true,
+        items: [
+          { label: 'HTTP 401/403 after recording', link: '/topics/errors/401-403-after-recording' },
+          { label: 'Works in Browser, Fails in JMeter', link: '/topics/errors/works-in-browser-fails-in-jmeter' },
+          { label: 'HTTP 400 / 415 Bad Request', link: '/topics/errors/http-415-400-bad-request' },
+          { label: 'HTTP 429 & WAF Rate Limits', link: '/topics/errors/http-429-rate-limited' },
+          { label: 'HTTP 500 / 502 / 503 / 504', link: '/topics/errors/http-502-503-504' },
+          { label: 'HTTP 407 Proxy Authentication', link: '/topics/errors/http-407-proxy-authentication' },
+        ],
+      },
+      {
+        label: 'Memory, CPU & Startup',
+        collapsed: true,
+        items: [
+          { label: 'OutOfMemoryError heap', link: '/topics/errors/out-of-memory-heap' },
+          { label: 'OOM: Native Thread Limit', link: '/topics/errors/outofmemory-unable-to-create-native-thread' },
+          { label: 'OOM: Metaspace & GC', link: '/topics/errors/metaspace-gc-overhead-limit' },
+          { label: 'Too Many Open Files (ulimit)', link: '/topics/errors/too-many-open-files-ulimit' },
+          { label: 'Throughput stuck', link: '/topics/errors/throughput-stuck' },
+          { label: 'Freezing, CPU & CLI Hangs', link: '/topics/errors/jmeter-freeze-high-cpu-hanging' },
+          { label: "JMeter Won't Start / Crash on Launch", link: '/topics/errors/jmeter-wont-start-crash-on-launch' },
+          { label: 'Test Stops Early / Unexpectedly', link: '/topics/errors/test-stops-early-unexpectedly' },
+        ],
+      },
+      {
+        label: 'Scripting & Data',
+        collapsed: true,
+        items: [
+          { label: 'JSR223 Groovy Script Errors', link: '/topics/errors/jsr223-groovy-script-errors' },
+          { label: 'ClassNotFound & Missing JARs', link: '/topics/errors/class-not-found-noclassdeffound' },
+          { label: "JMX Won't Load / Corrupt Plan", link: '/topics/errors/jmx-wont-load-corrupt-plan' },
+          { label: 'Extractor Default Value (NOT_FOUND)', link: '/topics/errors/extractor-not-found-default-value' },
+          { label: 'CSV Data Set & Sharing Issues', link: '/topics/errors/csv-data-set-file-not-found-sharing' },
+        ],
+      },
+      {
+        label: 'Distributed, DB & Reporting',
+        collapsed: true,
+        items: [
+          { label: 'Distributed RMI Errors', link: '/topics/errors/rmi-connection-refused-remote-testing' },
+          { label: 'JDBC Connection Pool Errors', link: '/topics/errors/jdbc-connection-pool-errors' },
+          { label: 'GUI works, CLI fails', link: '/topics/errors/gui-works-cli-fails' },
+          { label: 'HTML Dashboard Errors', link: '/topics/errors/html-dashboard-generation-errors' },
+        ],
+      },
+    ],
+  },
+  {
     label: 'Interactive Tools',
     collapsed: true,
     items: [
@@ -51,21 +121,6 @@ export const sidebar = [
       { label: 'Distributed Testing', link: '/topics/distributed-testing' },
       { label: 'Programmatic / DSL Plans', link: '/topics/programmatic-dsl-plans' },
       { label: 'Troubleshooting', link: '/topics/troubleshooting' },
-      {
-        label: 'Error Playbooks',
-        collapsed: true,
-        items: [
-          { label: 'Error Index', link: '/topics/errors' },
-          { label: 'ConnectException', link: '/topics/errors/connect-exception' },
-          { label: 'Non HTTP response code', link: '/topics/errors/non-http-response-code' },
-          { label: 'SSLHandshakeException', link: '/topics/errors/ssl-handshake-exception' },
-          { label: 'OutOfMemoryError heap', link: '/topics/errors/out-of-memory-heap' },
-          { label: 'Socket closed / reset', link: '/topics/errors/socket-closed-connection-reset' },
-          { label: 'Throughput stuck', link: '/topics/errors/throughput-stuck' },
-          { label: 'GUI works, CLI fails', link: '/topics/errors/gui-works-cli-fails' },
-          { label: '401/403 after recording', link: '/topics/errors/401-403-after-recording' },
-        ],
-      },
       { label: 'Interview Questions', link: '/topics/interview-questions' },
       {
         label: 'JMeter vs Alternatives',

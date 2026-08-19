@@ -1,0 +1,128 @@
+---
+title: "JMeter HTTP 500, 502, 503, 504 Server Errors"
+seoTitle: "JMeter HTTP 500 502 503 504 Gateway Error Troubleshooting"
+description: "Troubleshoot JMeter HTTP 500, 502 Bad Gateway, 503 Service Unavailable, and 504 Gateway Timeout errors during load testing with root causes and fixes."
+keywords:
+  - "JMeter 502 Bad Gateway"
+  - "JMeter 503 Service Unavailable"
+  - "JMeter 504 Gateway Timeout"
+  - "JMeter 500 internal server error"
+  - "JMeter server errors fix"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# HTTP 500, 502, 503, 504 Errors in JMeter
+
+## Symptom
+
+During load testing, JMeter samples turn red in View Results Tree, the HTML dashboard reports elevated error rates, and samplers return HTTP 5xx status codes:
+
+- `Response code: 500 (Internal Server Error)`
+- `Response code: 502 (Bad Gateway)`
+- `Response code: 503 (Service Unavailable)`
+- `Response code: 504 (Gateway Timeout)`
+
+Unlike `Non HTTP response code` errors (which indicate client or TCP failures), HTTP 5xx codes are valid HTTP responses returned by the backend application, reverse proxy, or API gateway.
+
+## Quick diagnosis (TL;DR)
+
+- **HTTP 500**: Unhandled exception, null pointer, or DB query error inside the application code.
+- **HTTP 502**: The reverse proxy (Nginx, ALB, Cloudflare) could not establish a connection to the upstream app pod/process or the app crashed mid-request.
+- **HTTP 503**: The server thread pool, connection backlog, or queue is completely full and rejecting new requests.
+- **HTTP 504**: The upstream application server took longer to calculate the response than the reverse proxy's gateway timeout threshold.
+
+## 5xx Triage Matrix
+
+| Status Code | Layer | Root Cause |
+|-------------|-------|------------|
+| **500 Internal Server Error** | Application / DB | Code exceptions, database connection deadlocks, unhandled edge-case payload |
+| **502 Bad Gateway** | Ingress / Proxy / Envoy | Upstream app crashed (OOM), closed socket prematurely, or pod restarted during test |
+| **503 Service Unavailable** | Gateway / Rate Limiter | Server overload, connection pool backlog saturated, circuit breaker open |
+| **504 Gateway Timeout** | Reverse Proxy / Load Balancer | Application took longer than proxy timeout (e.g. Nginx `proxy_read_timeout 60s`) |
+
+## Fix (ordered)
+
+### 1. Extract the Full Response Body in View Results Tree
+
+HTTP 5xx responses usually contain informative JSON or HTML error payloads explaining the failure. In JMeter GUI (during single-thread validation):
+
+1. Add **View Results Tree** listener under the failing sampler.
+2. Inspect the **Response data** tab for stack traces, error codes, or database constraint violations.
+3. In CLI mode, configure JTL logging to save response data for failed samples:
+
+```properties
+# Add to user.properties for debugging runs
+jmeter.save.saveservice.response_data.on_error=true
+```
+
+### 2. Isolate 502 Bad Gateway (Upstream Crash or OOM)
+
+If seeing bursts of 502 errors at high concurrency:
+1. Check if the application crashed with an OutOfMemoryError:
+   ```bash
+   # Kubernetes pod status
+   kubectl get pods -n production -w
+   # Look for OOMKilled or Restarts > 0
+   ```
+2. Check reverse proxy upstream error logs:
+   - Nginx: `connect() failed (111: Connection refused) while connecting to upstream`
+   - AWS ALB: `HTTP 502: TargetConnectionError`
+
+### 3. Diagnose 503 Service Unavailable (Capacity Limits)
+
+When 503 errors occur:
+1. Check the application server thread pool (e.g. Tomcat `maxThreads`, Node.js cluster, Puma/Unicorn workers).
+2. Check database connection pool sizing (HikariCP `maximumPoolSize`). If the pool is exhausted, requests queue up until timeout.
+3. Check rate limiters and API gateway throttling rules.
+
+### 4. Resolve 504 Gateway Timeout (Proxy Timeout vs App Latency)
+
+If 504 errors spike:
+1. Check backend database slow query logs and external service latency.
+2. If long operations (e.g. PDF generation, heavy reporting) are expected, increase the proxy timeout:
+   ```nginx
+   # Nginx proxy timeout tuning
+   proxy_connect_timeout 120s;
+   proxy_send_timeout    120s;
+   proxy_read_timeout    120s;
+   ```
+3. In JMeter, verify that the **Response Timeout** in HTTP Request Defaults is larger than the expected server processing window.
+
+### 5. Use Response Assertions to Validate Business Logic
+
+Do not assume HTTP 200 is always a success; some flawed APIs return HTTP 200 with an embedded `{"error": "Internal database error"}` payload. Add **Response Assertions** checking for expected JSON fields or status strings ([API guide](/topics/api-load-testing/)).
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [SocketTimeoutException](/topics/errors/socket-timeout-exception/) | Client-side timeout before receiving any bytes |
+| [Throughput stuck](/topics/errors/throughput-stuck/) | Requests queuing and throughput collapsing under load |
+| [Coordinated Omission](/tools/coordinated-omission/) | Measuring true user impact when servers stall |
+| [Generating Dashboard](/user-manual/generating-dashboard/) | Viewing Top 5 Errors table in HTML report |
+
+## Frequently asked questions
+
+### Can JMeter cause HTTP 500 errors on its own?
+No. An HTTP 500 is generated strictly by the server application. However, JMeter may trigger it if your test sends invalid JSON data, missing headers, or unexpected concurrency that exposes race conditions in the server code.
+
+### How do I ignore expected HTTP 500 errors in a negative test?
+Add a **Response Assertion** under the sampler, check **Ignore Status**, and add `500` to the patterns to test.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Inspect the response body of failed 5xx samples in View Results Tree and check server-side APM/Kubernetes restart logs.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [Best practices](/user-manual/best-practices/)
+- [Dashboard report](/user-manual/generating-dashboard/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

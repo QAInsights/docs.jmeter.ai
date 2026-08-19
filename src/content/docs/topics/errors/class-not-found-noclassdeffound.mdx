@@ -1,0 +1,133 @@
+---
+title: "JMeter ClassNotFoundException & NoClassDefFoundError"
+seoTitle: "JMeter ClassNotFoundException and Missing JAR Troubleshooting"
+description: "Fix JMeter java.lang.ClassNotFoundException and NoClassDefFoundError. Understand lib/ vs lib/ext/ directory structure, JDBC drivers, and classpath setup."
+keywords:
+  - "java.lang.ClassNotFoundException JMeter"
+  - "java.lang.NoClassDefFoundError JMeter"
+  - "JMeter missing JAR"
+  - "JMeter where to put JAR files"
+  - "JMeter JDBC driver not found"
+difficulty: beginner
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# ClassNotFoundException & NoClassDefFoundError in JMeter
+
+## Symptom
+
+When starting JMeter, opening a JMX file, or running a test involving JDBC, custom plugins, or Groovy libraries, an error occurs in the console or `jmeter.log`:
+
+```text
+java.lang.ClassNotFoundException: com.mysql.cj.jdbc.Driver
+	at java.net.URLClassLoader.findClass(URLClassLoader.java:382)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+```
+
+Or when opening a Test Plan that depends on an uninstalled plugin:
+
+```text
+2026-08-18 11:20:01 ERROR o.a.j.g.a.Load: Unexpected error
+java.lang.NoClassDefFoundError: kg/apc/jmeter/vizualizers/CorrectedResultCollector
+```
+
+The test fails to start, or samplers throw runtime exceptions during execution.
+
+## Quick diagnosis (TL;DR)
+
+`ClassNotFoundException` and `NoClassDefFoundError` occur when JMeter's Java ClassLoader cannot find a required `.jar` file on its classpath. The fix is placing the missing JAR file into the correct directory (`lib/` for drivers/libraries vs `lib/ext/` for JMeter plugins) and **restarting JMeter**.
+
+## JMeter Classpath Architecture: `lib/` vs `lib/ext/`
+
+JMeter uses a hierarchical classloader structure:
+
+| Directory | What belongs here | Examples |
+|-----------|-------------------|----------|
+| `JMETER_HOME/lib/` | Utility JARs, 3rd-party dependencies, JDBC database drivers, messaging client JARs | `mysql-connector-j-8.x.jar`, `postgresql-42.x.jar`, `ojdbc8.jar`, `kafka-clients.jar` |
+| `JMETER_HOME/lib/ext/` | JMeter GUI components, visualizers, samplers, and official plugin bundles | `jmeter-plugins-cmn-jmeter.jar`, `jmeter-plugins-webdriver.jar` |
+| `JMETER_HOME/lib/junit/` | JUnit test classes if using the JUnit Sampler | Custom compiled JUnit test JARs |
+
+:::important[Always Restart JMeter]
+Java cannot dynamically reload JAR files dropped into `lib/` or `lib/ext/` while JMeter is running. You must restart JMeter (or re-run the CLI command) for new JARs to take effect.
+:::
+
+## Fix (ordered)
+
+### 1. Fix Missing Database JDBC Drivers
+
+For database testing (JDBC Connection Configuration), download the JDBC driver `.jar` and place it into `JMETER_HOME/lib/`:
+
+- **MySQL**: `mysql-connector-j-8.x.jar` -> `lib/`
+- **PostgreSQL**: `postgresql-42.x.jar` -> `lib/`
+- **Oracle**: `ojdbc8.jar` -> `lib/`
+- **Microsoft SQL Server**: `mssql-jdbc-xx.jar` -> `lib/`
+
+```bash
+# Example: Copying PostgreSQL driver to JMeter lib directory
+cp postgresql-42.7.3.jar /opt/apache-jmeter/lib/
+```
+
+### 2. Install Missing Plugins via JMeter Plugins Manager
+
+If a `.jmx` script contains elements prefixed with `kg.apc.jmeter` (Custom Thread Groups, Dummy Sampler, Throughput Shaping Timer):
+
+1. Download **`jmeter-plugins-manager.jar`** from [jmeter-plugins.org](https://jmeter-plugins.org).
+2. Place it into `JMETER_HOME/lib/ext/`.
+3. Start JMeter GUI -> **Options** -> **Plugins Manager**.
+4. The Plugins Manager will detect any missing plugins in the loaded test plan and offer to install them automatically with one click.
+
+### 3. Add Custom JARs via `user.properties` (Without Copying Files)
+
+If you maintain a shared repository of corporate JARs or CI/CD dependencies, add them to `user.properties` without moving files:
+
+```properties
+# Add custom directory or individual JAR paths (comma or semicolon separated)
+user.classpath=/opt/shared/jars/custom-crypto.jar;/opt/shared/drivers/
+plugin_dependency_paths=/opt/jmeter/plugins/
+```
+
+### 4. Provide Dynamic Classpath in CLI Runs
+
+When running in CI/CD pipelines (GitHub Actions / Jenkins / Docker):
+
+```bash
+# Pass user.classpath dynamically via command line
+jmeter -n -t plan.jmx -Juser.classpath=/libs/mysql.jar -l results.jtl -j jmeter.log
+```
+
+### 5. Verify Distributed Testing Worker Nodes
+
+In distributed testing, every remote worker node (`jmeter-server`) **must have identical JAR files** installed in their respective `lib/` and `lib/ext/` folders. The controller does not transmit JAR files to workers over RMI.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [JDBC Connection Pool errors](/topics/errors/jdbc-connection-pool-errors/) | Resolving database connection errors |
+| [Plugins Essentials](/topics/plugins-essentials/) | Installing and managing JMeter plugins |
+| [CLI Command Builder](/tools/cli-builder/) | Building CLI commands with custom property flags |
+| [Distributed testing](/topics/distributed-testing/) | Syncing dependencies across worker nodes |
+
+## Frequently asked questions
+
+### Can I put JDBC drivers into `lib/ext/`?
+Putting JDBC drivers in `lib/ext/` can cause classloader conflicts or failure to register with Java's `DriverManager`. Always place utility libraries and database drivers in `lib/`, and place JMeter GUI plugins in `lib/ext/`.
+
+### Why does the script fail in CI/CD when it worked on my laptop?
+Your local JMeter installation has plugins or JDBC drivers in `lib/` or `lib/ext/` that were not packaged into the CI/CD Docker image or runner environment.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Place the missing JAR file into `JMETER_HOME/lib/` (or `lib/ext/` for plugins) and restart JMeter.
+</Fragment>
+<Fragment slot="related">
+- [JDBC Connection Pool errors](/topics/errors/jdbc-connection-pool-errors/)
+- [Plugins Essentials](/topics/plugins-essentials/)
+- [Best practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

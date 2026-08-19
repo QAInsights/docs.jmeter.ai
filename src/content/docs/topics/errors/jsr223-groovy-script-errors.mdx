@@ -1,0 +1,166 @@
+---
+title: "JMeter JSR223 Groovy Script Errors & Exceptions"
+seoTitle: "JMeter JSR223 Groovy Script Errors and Exceptions Fix"
+description: "Fix JMeter JSR223 Groovy script errors: ScriptException, MissingPropertyException, null pointer errors, vars vs props scope, and compilation caching."
+keywords:
+  - "JSR223 Groovy script error"
+  - "javax.script.ScriptException JMeter"
+  - "groovy.lang.MissingPropertyException"
+  - "vars.get null pointer JMeter"
+  - "JMeter Groovy compilation error"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# JSR223 Groovy Script Errors in JMeter
+
+## Symptom
+
+When executing JSR223 Samplers, PreProcessors, PostProcessors, or Assertions, samples turn red or errors appear in `jmeter.log`:
+
+```text
+2026-08-18 10:15:32,410 ERROR o.a.j.m.JSR223PostProcessor: Problem in JSR223 script, JSR223 PostProcessor
+javax.script.ScriptException: groovy.lang.MissingPropertyException: No such property: token for class: Script1
+	at org.codehaus.groovy.jsr223.GroovyScriptEngineImpl.eval(GroovyScriptEngineImpl.java:324)
+```
+
+Or for null pointers when accessing variables:
+
+```text
+java.lang.NullPointerException: Cannot invoke method split() on null object
+	at Script1.run(Script1.groovy:4)
+```
+
+The error causes the sampler to fail and logs a stack trace for every virtual user thread execution.
+
+## Quick diagnosis (TL;DR)
+
+- **`MissingPropertyException`**: You referenced an undeclared variable directly (e.g. `println token`) instead of accessing it via the JMeter variables object (`vars.get("token")`).
+- **`NullPointerException`**: `vars.get("name")` returned `null` because the variable was never created or an upstream extractor failed to find a match.
+- **`Compilation Cache Full` / High CPU**: Script text contains `\${var}` string interpolation instead of using `vars.get("var")`.
+
+## Essential JSR223 Implicit Objects Reference
+
+JMeter automatically injects predefined context objects into Groovy scripts:
+
+| Object | Class | Scope & Purpose |
+|--------|-------|-----------------|
+| `vars` | `JMeterVariables` | Thread-scoped read/write (`vars.get("k")`, `vars.put("k", "v")`, `vars.putObject("k", obj)`) |
+| `props` | `JMeterProperties` | Global cross-thread properties (`props.get("p")`, `props.put("p", "v")`) |
+| `prev` | `SampleResult` | Previous sampler result (`prev.getResponseDataAsString()`, `prev.setSuccessful(false)`) |
+| `sampler` | `Sampler` | Current sampler object (`sampler.setName("New Name")`) |
+| `ctx` | `JMeterContext` | Engine context (`ctx.getThreadNum()`, `ctx.getPreviousResult()`) |
+| `log` | `Logger` | Log4j2 logger (`log.info("msg")`, `log.error("err", exception)`) |
+
+## Fix (ordered)
+
+### 1. Always Use `vars.get()` and `vars.put()` (Never Direct Variables)
+
+In Groovy, JMeter variables are **not** global script variables. Always access them via the `vars` object:
+
+```groovy
+// ❌ WRONG: Throws MissingPropertyException if not declared in script
+String myId = userId; 
+
+// ❌ WRONG: String interpolation breaks compilation caching and leaks Metaspace!
+String myId = "${userId}"; 
+
+// ✅ CORRECT: Safe retrieval with null checking
+String myId = vars.get("userId");
+if (myId != null) {
+    vars.put("processedUserId", myId.trim().toUpperCase());
+} else {
+    log.warn("Variable 'userId' was null! Upstream extractor may have failed.");
+}
+```
+
+### 2. Defensively Handle Null Values
+
+If an upstream JSON Extractor or Regex Extractor fails, `vars.get()` returns `null`. Add safe navigation (`?.`) or explicit null guards:
+
+```groovy
+// Using Groovy safe navigation operator
+String rawResponse = prev?.getResponseDataAsString();
+
+String authToken = vars.get("authToken");
+if (!authToken) {
+    // Fail the sample deliberately with a clear error message
+    prev.setSuccessful(false);
+    prev.setResponseMessage("Missing required authToken from previous step");
+    prev.setResponseCode("500");
+    return;
+}
+```
+
+### 3. Share Data Between Different Thread Groups with `props`
+
+`vars` are strictly isolated per thread. If Thread Group A extracts a token needed by Thread Group B, use `props`:
+
+```groovy
+// In Thread Group A (Writer)
+props.put("GLOBAL_AUTH_TOKEN", vars.get("authToken"));
+
+// In Thread Group B (Reader)
+String globalToken = props.get("GLOBAL_AUTH_TOKEN");
+vars.put("localToken", globalToken);
+```
+
+### 4. Enable Script Caching
+
+In every JSR223 component:
+1. Ensure **Language** is set to `groovy`.
+2. Check **Cache compiled script if available**.
+3. Do **not** put dynamic values in the script body; use `vars.get()` or script **Parameters**:
+   - Parameters: `\${__threadNum} \${userId}`
+   - Script access: `String p0 = args[0];`
+
+### 5. Parse JSON and XML Safely with Groovy Builders
+
+Use built-in Groovy parsers instead of manual regex string manipulation:
+
+```groovy
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+
+try {
+    def json = new JsonSlurper().parseText(prev.getResponseDataAsString())
+    String itemId = json.data.items[0].id
+    vars.put("firstItemId", itemId)
+} catch (Exception e) {
+    log.error("Failed to parse JSON response: " + e.getMessage(), e)
+    prev.setSuccessful(false)
+}
+```
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Metaspace & GC overhead](/topics/errors/metaspace-gc-overhead-limit/) | Fixing Metaspace leaks caused by Groovy scripts |
+| [Functions and variables](/topics/functions-and-variables/) | Built-in JMeter functions guide |
+| [Correlation & dynamic values](/topics/correlation-dynamic-values/) | Extracting and passing dynamic values |
+| [Best practices](/user-manual/best-practices/) | Scripting language performance recommendations |
+
+## Frequently asked questions
+
+### Should I use BeanShell or Groovy for scripting in JMeter?
+Always use **Groovy (JSR223)**. Groovy compiles down to native Java bytecode and supports script compilation caching, making it 10x to 50x faster than BeanShell. BeanShell is deprecated for high-load testing.
+
+### Why do my changes to `vars` not appear in other threads?
+`vars` (`JMeterVariables`) are local to the current thread. To pass data across threads, use `props.put("key", value)` and `props.get("key")`.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Audit your JSR223 Groovy scripts to replace `\${var}` interpolation with `vars.get("var")` and verify `null` checks.
+</Fragment>
+<Fragment slot="related">
+- [Functions and variables](/topics/functions-and-variables/)
+- [Correlation & dynamic values](/topics/correlation-dynamic-values/)
+- [Best practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

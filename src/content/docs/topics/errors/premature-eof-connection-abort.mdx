@@ -1,0 +1,133 @@
+---
+title: "JMeter Premature EOF / Unexpected End of File"
+seoTitle: "Fix JMeter Premature EOF and Unexpected End of File Errors"
+description: "Fix JMeter EOFException Premature EOF and Unexpected end of file from server: keep-alive mismatch, load balancer idle timeouts, and gzip truncation."
+keywords:
+  - "JMeter premature EOF"
+  - "JMeter EOFException"
+  - "Unexpected end of file from server JMeter"
+  - "JMeter connection aborted during response"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Premature EOF / Unexpected End of File in JMeter
+
+## Symptom
+
+Samplers fail while reading the response body, in the **View Results Tree** listener or `jmeter.log`:
+
+```text
+Response code: Non HTTP response code: java.io.EOFException
+Response message: Non HTTP response message: Premature EOF
+```
+
+Or when the connection dies before any response bytes arrive:
+
+```text
+Response code: Non HTTP response code: java.io.IOException
+Response message: Non HTTP response message: Unexpected end of file from server
+```
+
+The failures are usually intermittent and increase with test duration or concurrency.
+
+## Quick diagnosis (TL;DR)
+
+The server, or a load balancer in front of it, closed the connection while JMeter was still using it: mid-response, or between a pooled connection's reuse. The fix is to align client connection lifetimes with server-side timeouts, and to rule out servers that abort responses under load.
+
+## Common causes
+
+| Cause | Specific Error | Why it happens |
+|-------|----------------|----------------|
+| Server or LB idle timeout shorter than client reuse window | `Unexpected end of file from server` | The server closes idle keep-alive sockets (AWS ALB defaults to 60s) and JMeter reuses one that is already dead |
+| Server aborts mid-response under load | `Premature EOF` | Worker crashes, OOM kills, or request cancellations cut the response stream |
+| Truncated gzip or deflate stream | `EOFException` while decompressing | The compressed body ends before its terminator; some applications signal stream end early |
+| Proxy or CDN cuts long responses | `Premature EOF` on large downloads | An intermediate hop applies its own response size or time limit |
+| Missing Content-Length with Connection: close | Ambiguous body end | HTTP/1.0-style responses rely on connection close, which races with pooled reuse |
+
+## Fix (ordered)
+
+### 1. Align client connection lifetime with server timeouts
+
+Cap how long JMeter reuses a connection, and validate idle connections before use, in `user.properties`:
+
+```properties
+# Absolute connection lifetime in milliseconds: retire connections before the server does
+httpclient4.time_to_live=30000
+# Check idle connections before reuse (milliseconds)
+httpclient4.validate_after_inactivity=2000
+```
+
+Set `time_to_live` below the smallest idle timeout in the path (load balancer, reverse proxy, application server). Full tuning guidance is in [NoHttpResponseException](/topics/errors/no-http-response-exception/), which shares this root cause.
+
+### 2. Check load balancer and reverse proxy idle timeouts
+
+If the stack includes AWS ALB/CLB, nginx, HAProxy, or a CDN:
+
+1. Find the idle or keep-alive timeout on each hop (ALB default is 60 seconds).
+2. Either raise the LB timeout above the client's `time_to_live`, or lower `time_to_live` below the LB timeout.
+3. Enable client-side keepalive probes only if the LB supports them; otherwise the lifetime cap is the reliable control.
+
+### 3. Rule out server-side aborts under load
+
+If `Premature EOF` appears only at high concurrency, the response stream is being cut by the server itself:
+
+1. Check application logs and OS logs (`dmesg` for OOM kills) at the failure timestamps.
+2. Watch server CPU, worker pool saturation, and JVM GC pauses.
+3. Confirm the failing endpoint returns complete bodies at low concurrency with the same JMeter script.
+
+### 4. Handle truncated compressed streams
+
+When a known-buggy application ends gzip or deflate streams early, JMeter can tolerate it:
+
+```properties
+# Ignore EOFException on early-ended compressed streams
+httpclient4.gzip_relax_mode=true
+httpclient4.deflate_relax_mode=true
+```
+
+Use these only after verifying the response content is actually complete: relaxed mode hides real truncation as readily as it hides harmless stream-end signaling.
+
+### 5. Verify the fix
+
+Re-run the soak or high-concurrency scenario and confirm the EOF samples disappear. Compare total sample counts and error rates before and after; a correct fix removes the errors without changing response times in any meaningful way.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [NoHttpResponseException](/topics/errors/no-http-response-exception/) | The sibling keep-alive race with no response bytes at all |
+| [Socket closed / connection reset](/topics/errors/socket-closed-connection-reset/) | TCP RST variants of the same connection-lifetime family |
+| [HTTP 502/503/504](/topics/errors/http-502-503-504/) | The proxy reports the failure instead of dropping the connection |
+| [Properties Cheat Sheet](/tools/properties-cheatsheet/) | Interactive lookup for `httpclient4.*` tuning properties |
+
+## Frequently asked questions
+
+### What does Premature EOF mean in JMeter?
+The response stream ended before the complete body arrived. JMeter was still reading when the connection closed, so the sample fails instead of returning a full response.
+
+### Is Premature EOF a JMeter bug?
+No. The connection was closed on the server side, by the application, a load balancer, or a proxy. JMeter only reports the cut stream; the fix lives in timeout alignment or server capacity.
+
+### When should I enable httpclient4.gzip_relax_mode?
+Only after confirming that a specific application sends complete bodies with early-ended gzip streams. Relaxed mode also masks genuine truncation, so treat it as a targeted workaround, not a default.
+
+### Why does the error appear only in long-running tests?
+Pooled connections accumulate idle time in soak tests. Once a connection sits idle longer than the server's keep-alive timeout, the next reuse hits a dead socket, which is exactly what `time_to_live` and `validate_after_inactivity` prevent.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Set httpclient4.time_to_live below the smallest idle timeout in the path, enable validate_after_inactivity, then re-run the failing scenario.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [Best practices](/user-manual/best-practices/)
+- [Distributed testing](/topics/distributed-testing/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

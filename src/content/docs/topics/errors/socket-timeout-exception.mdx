@@ -1,0 +1,142 @@
+---
+title: "JMeter java.net.SocketTimeoutException"
+seoTitle: "JMeter SocketTimeoutException Read timed out Fix"
+description: "Fix JMeter SocketTimeoutException: Read timed out and connect timed out errors. Understand root causes, server latency vs client timeouts, and configuration."
+keywords:
+  - "JMeter SocketTimeoutException"
+  - "JMeter Read timed out"
+  - "JMeter connect timed out"
+  - "java.net.SocketTimeoutException JMeter"
+  - "JMeter timeout error"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# java.net.SocketTimeoutException in JMeter
+
+## Symptom
+
+In the **View Results Tree** listener, `jmeter.log`, or JTL output, a sampler fails with:
+
+```text
+Response code: Non HTTP response code: java.net.SocketTimeoutException
+Response message: Non HTTP response message: Read timed out
+```
+
+Or during the initial TCP connection phase:
+
+```text
+Response code: Non HTTP response code: java.net.SocketTimeoutException
+Response message: Non HTTP response message: connect timed out
+```
+
+The sample is marked as failed without a standard HTTP status code (such as 200, 500, or 504).
+
+## Quick diagnosis (TL;DR)
+
+`SocketTimeoutException: Read timed out` means JMeter connected successfully to the server, sent the request, but the server failed to transmit response bytes within the configured **Response Timeout**. `connect timed out` means the initial TCP 3-way handshake did not finish within the **Connect Timeout**.
+
+## Common causes
+
+| Cause | Specific Error | Why it happens |
+|-------|----------------|----------------|
+| Slow server processing | `Read timed out` | Database locks, CPU saturation, or heavy downstream microservice calls delay response generation beyond client timeout |
+| Full GC pause on server | `Read timed out` | Stop-the-world garbage collection pauses the application worker threads, causing all in-flight sockets to stall |
+| Connect timeout too aggressive | `connect timed out` | Network latency, TLS negotiation overhead, or SYN queue backlog exceeds a short Connect Timeout (e.g. 500ms) |
+| Missing timeout configuration | Hangs indefinitely | When timeouts are blank (default `0`), JMeter threads wait indefinitely for dead TCP connections until the OS socket timeout triggers |
+| Load balancer / proxy silent drop | `Read timed out` | Intermediate firewall or load balancer drops the idle connection without sending a TCP RST or FIN packet |
+
+## Fix (ordered)
+
+### 1. Differentiate Connect vs Read Timeout
+
+- If the message is **`connect timed out`**: The failure is on the network or firewall layer before the server processed anything. Check host reachability, firewall rules, and ingress controller SYN queues.
+- If the message is **`Read timed out`**: The server received the request but took too long to answer. The bottleneck is inside the application or database layer.
+
+### 2. Configure Explicit Timeouts in HTTP Request Defaults
+
+Never leave timeouts empty (`0` means infinite in Java sockets). Add explicit thresholds in **HTTP Request Defaults** under the **Timeouts (milliseconds)** section:
+
+```text
+Connect: 10000  (10 seconds)
+Response: 60000 (60 seconds)
+```
+
+You can parameterize timeouts with properties for dynamic CLI overrides:
+
+```text
+Connect:  ${__P(connect.timeout,10000)}
+Response: ${__P(response.timeout,60000)}
+```
+
+```bash
+# Override timeouts dynamically via CLI properties
+jmeter -n -t testplan.jmx -Jconnect.timeout=5000 -Jresponse.timeout=30000 -l results.jtl -j jmeter.log
+```
+
+### 3. Inspect Server-Side APM & Slow Query Logs
+
+When `Read timed out` spikes under load:
+1. Check server CPU, memory, and JVM garbage collection metrics.
+2. Check database connection pool utilization (HikariCP, Tomcat JDBC) and active slow queries.
+3. Check downstream third-party API dependencies and external HTTP calls.
+
+### 4. Verify Keep-Alive & Connection Pooling Settings
+
+If long-running requests drop intermittently, verify keep-alive behavior in `user.properties`:
+
+```properties
+# Validate idle connections before reuse (milliseconds)
+httpclient4.validate_after_inactivity=2000
+# Connection time to live in milliseconds
+httpclient4.time_to_live=60000
+```
+
+### 5. Tune OS TCP Socket Keepalive (Load Injector)
+
+For long soak tests on Linux load generators:
+
+```bash
+# Check current TCP keepalive settings
+sysctl net.ipv4.tcp_keepalive_time
+sysctl net.ipv4.tcp_keepalive_intvl
+sysctl net.ipv4.tcp_keepalive_probes
+```
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Non HTTP response code](/topics/errors/non-http-response-code/) | Understanding generic client-side sample failures |
+| [NoHttpResponseException](/topics/errors/no-http-response-exception/) | Server closes socket before sending any bytes |
+| [HTTP 502/503/504](/topics/errors/http-502-503-504/) | Gateway timeouts returned by reverse proxies |
+| [Thread Calculator](/tools/thread-calculator/) | Calibrating concurrency against server response times |
+| [Properties Cheat Sheet](/tools/properties-cheatsheet/) | Interactive reference for JMeter core properties |
+
+## Frequently asked questions
+
+### Is SocketTimeoutException a client error or server error?
+`connect timed out` is typically a network routing, DNS, or firewall issue. `Read timed out` is almost always a server-side performance bottleneck where the application takes longer to calculate the response than JMeter is configured to wait.
+
+### Why does SocketTimeoutException only appear at higher concurrency?
+Under light load, the server responds in 200ms. Under heavy concurrency, thread contention, database connection pool exhaustion, and CPU saturation cause response times to exceed the timeout threshold (e.g. 5000ms).
+
+### Does increasing response timeout in JMeter fix the root problem?
+No. Raising the timeout merely prevents JMeter from failing the sample early. If response times breach your service level agreement (SLA), you must optimize the server code, queries, or server capacity.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Add explicit connect and response timeouts to HTTP Request Defaults, then check server-side APM logs during the next test run.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [Best practices](/user-manual/best-practices/)
+- [Distributed testing](/topics/distributed-testing/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

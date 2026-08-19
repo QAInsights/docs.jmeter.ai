@@ -1,0 +1,165 @@
+---
+title: "JMeter Won't Start or Crashes on Launch"
+seoTitle: "Fix JMeter Not Starting: Flashing Window, JVM & Java Errors"
+description: "Fix JMeter startup failures: window flashes and closes, UnsupportedClassVersionError, heap reservation errors, and missing Java. Step-by-step diagnosis."
+keywords:
+  - "JMeter won't start"
+  - "JMeter not opening"
+  - "jmeter.bat closes immediately"
+  - "JMeter UnsupportedClassVersionError"
+  - "JMeter startup error"
+difficulty: beginner
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# JMeter Won't Start or Crashes on Launch
+
+## Symptom
+
+Double-clicking `jmeter.bat` (Windows) or `jmeter.sh` (Linux/macOS) produces one of these behaviors:
+
+```text
+The window appears for a fraction of a second, then closes by itself.
+```
+
+Or the terminal shows one of these errors:
+
+```text
+'java' is not recognized as an internal or external command
+```
+
+```text
+java.lang.UnsupportedClassVersionError: org/apache/jmeter/NewDriver
+```
+
+```text
+Error occurred during initialization of VM
+Could not reserve enough space for object heap
+```
+
+```text
+Error: Could not find or load main class org.apache.jmeter.NewDriver
+```
+
+## Quick diagnosis (TL;DR)
+
+JMeter is a Java application, so startup failures almost always come from the JVM environment, not from the test plan: Java is missing from the PATH, the installed Java version is unsupported, or the requested heap is larger than the machine's memory. Launch JMeter from a terminal instead of double-clicking, because the terminal shows the real error that the GUI hides.
+
+## Common causes
+
+| Cause | Specific Error | Why it happens |
+|-------|----------------|----------------|
+| Java not installed or not on PATH | `'java' is not recognized` | No JDK/JRE installed, or `JAVA_HOME`/`PATH` not set |
+| Java version too old | `UnsupportedClassVersionError` | JMeter 5.x requires Java 8 or newer; an older runtime cannot load the classes |
+| Heap larger than available memory | `Could not reserve enough space for object heap` | `JVM_ARGS` or `HEAP` requests more RAM than the machine has |
+| Incomplete or corrupt installation | `Could not find or load main class org.apache.jmeter.NewDriver` | Missing files from a partial unzip or a broken copy |
+| macOS Gatekeeper block | "cannot be opened because the developer cannot be verified" | The downloaded archive carries a quarantine attribute |
+
+## Fix (ordered)
+
+### 1. Launch from a terminal to see the real error
+
+The GUI swallows startup errors. Open a terminal in the JMeter `bin/` directory and run:
+
+```bash
+# Linux / macOS
+cd /path/to/jmeter/bin
+./jmeter
+
+# Windows (cmd.exe)
+cd C:\path\to\jmeter\bin
+jmeter.bat
+```
+
+The stack trace printed here tells you which of the fixes below applies.
+
+### 2. Verify the Java version
+
+JMeter 5.6 requires Java 8 or newer; a current LTS JDK such as 17 or 21 is recommended for load generators.
+
+```bash
+java -version
+```
+
+If the command is not found, install a JDK (for example Eclipse Temurin) and open a new terminal so the PATH update takes effect. If the version is older than 8, upgrade: the `UnsupportedClassVersionError` disappears once a supported runtime starts JMeter.
+
+### 3. Fix the JVM heap reservation
+
+The startup scripts default to `-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m`, which is read from the `JVM_ARGS` (Linux/macOS) or `HEAP` (Windows) environment variables. If someone raised these beyond the machine's physical memory, the JVM refuses to start. Start JMeter with a sane heap:
+
+```bash
+# Linux / macOS: heap for this launch only
+JVM_ARGS="-Xms1g -Xmx2g" ./jmeter
+
+# Windows (cmd.exe)
+set HEAP=-Xms1g -Xmx2g
+jmeter.bat
+```
+
+Keep `-Xmx` below the machine's free physical RAM. For heap sizing on real load tests, use the [Heap & Memory Estimator](/tools/heap-estimator/).
+
+### 4. Reinstall cleanly
+
+`Could not find or load main class org.apache.jmeter.NewDriver` means files are missing. Download the full archive from [jmeter.apache.org](https://jmeter.apache.org/), extract it completely, and confirm that `bin/ApacheJMeter.jar` exists. Avoid extracting into folders synced or locked by security software.
+
+### 5. macOS: clear the quarantine attribute
+
+If macOS refuses to open JMeter after download:
+
+```bash
+xattr -d com.apple.quarantine /path/to/jmeter
+chmod +x /path/to/jmeter/bin/jmeter.sh
+```
+
+Alternatively, right-click the launcher and choose Open, then confirm the prompt once.
+
+### 6. Docker and CI containers
+
+In containers the same JVM rules apply, plus two extras: set `JAVA_HOME` explicitly in the image, and pass the heap through the container's environment rather than editing the scripts:
+
+```bash
+docker run -e JVM_ARGS="-Xms1g -Xmx2g" -v $(pwd):/jmx jmeter -n -t /jmx/plan.jmx -l /jmx/results.jtl
+```
+
+A container killed at startup with exit code 137 was OOM-killed by the orchestrator: raise the container memory limit or lower `-Xmx`. See [Docker / Kubernetes](/topics/docker-kubernetes/) for full setup.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Download JMeter](/reference/download-jmeter/) | Getting a clean, current installation |
+| [Heap & Memory Estimator](/tools/heap-estimator/) | Calculating `-Xms`, `-Xmx`, and Metaspace for real load |
+| [CLI Command Builder](/tools/cli-builder/) | Building correct non-GUI launch commands |
+| [OutOfMemoryError heap](/topics/errors/out-of-memory-heap/) | JMeter starts but dies during the test |
+| [GUI works, CLI fails](/topics/errors/gui-works-cli-fails/) | Startup is fine but the CLI run behaves differently |
+
+## Frequently asked questions
+
+### Why does the JMeter window flash and close immediately?
+The GUI hides console errors, so a failed startup looks like a window that closes itself. Launch `jmeter.bat` or `./jmeter` from a terminal: the printed stack trace names the actual cause, usually Java, heap, or a broken installation.
+
+### Which Java version does JMeter need?
+JMeter 5.x requires Java 8 or newer, and a current LTS JDK such as 17 or 21 is recommended for load generators. Verify with `java -version` and install a JDK if the command is missing.
+
+### How do I give JMeter more memory if it won't start?
+The startup scripts read `-Xms1g -Xmx1g` defaults from the `JVM_ARGS` (Linux/macOS) or `HEAP` (Windows) environment variables. Set them to values your machine actually has before launching, for example `JVM_ARGS="-Xms1g -Xmx2g" ./jmeter`.
+
+### Can a corrupt test plan stop JMeter from starting?
+No. Test plans load after startup, so a broken JMX cannot prevent the GUI from opening. If JMeter itself does not open, the cause is the Java runtime, the heap, or the installation, not the plan.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Run JMeter from a terminal, note the exact error, then apply the matching fix above before retrying the GUI.
+</Fragment>
+<Fragment slot="related">
+- [JMeter for beginners](/topics/jmeter-for-beginners/)
+- [Docker / Kubernetes](/topics/docker-kubernetes/)
+- [CI/CD load testing](/topics/ci-cd-load-testing/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

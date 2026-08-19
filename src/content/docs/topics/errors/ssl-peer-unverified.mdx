@@ -1,0 +1,138 @@
+---
+title: "JMeter javax.net.ssl.SSLPeerUnverifiedException"
+seoTitle: "JMeter SSLPeerUnverifiedException Hostname Verification Fix"
+description: "Fix JMeter SSLPeerUnverifiedException and Certificate Hostname Mismatch errors. Configure TLS truststores, SNI, and SSL context properties in JMeter."
+keywords:
+  - "javax.net.ssl.SSLPeerUnverifiedException"
+  - "JMeter certificate hostname mismatch"
+  - "JMeter SSL hostname verification failed"
+  - "JMeter SSLPeerUnverifiedException fix"
+  - "JMeter SNI"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# javax.net.ssl.SSLPeerUnverifiedException in JMeter
+
+## Symptom
+
+When sending HTTPS requests in View Results Tree, JTL results, or `jmeter.log`, samplers fail with:
+
+```text
+Response code: Non HTTP response code: javax.net.ssl.SSLPeerUnverifiedException
+Response message: Non HTTP response message: Hostname api.internal.corp not verified:
+    certificate: sha256/...
+    DN: CN=*.prod.example.com
+    subjectAltNames: [*.prod.example.com, prod.example.com]
+```
+
+Or when hitting an HTTPS IP address directly:
+
+```text
+javax.net.ssl.SSLPeerUnverifiedException: Certificate for <192.168.1.50> doesn't match any of the subject alternative names: [api.example.com]
+```
+
+The TLS handshake fails before any HTTP request headers or body payload are sent.
+
+## Quick diagnosis (TL;DR)
+
+`SSLPeerUnverifiedException` occurs when the server presents an SSL/TLS certificate whose Subject Common Name (`CN`) or Subject Alternative Names (`SAN`) do not match the hostname configured in JMeter's **HTTP Request** sampler, or when SNI (Server Name Indication) is omitted.
+
+## Common causes
+
+| Cause | Why it happens |
+|-------|----------------|
+| Direct IP addressing over HTTPS | HTTP Sampler points to `10.0.1.5` instead of `api.example.com`, but the TLS cert only contains the domain name |
+| Wildcard certificate mismatch | Domain has multiple subdomains (e.g. `a.b.example.com`) but the cert is only valid for single-level `*.example.com` |
+| SNI (Server Name Indication) missing | Server hosts multiple virtual hosts on one IP; TLS handshake receives the default certificate instead of the target domain cert |
+| Incomplete certificate chain | Server does not send intermediate CA certificates during TLS negotiation |
+| Cached SSL context reuse | JMeter shares an outdated or incorrect SSL context across multiple iterations |
+
+## Fix (ordered)
+
+### 1. Use the Real Domain Name in HTTP Samplers
+
+If testing staging environments, do **not** enter the raw IP address into the "Server Name or IP" field of the sampler if the server presents a certificate for `staging.example.com`.
+
+Use the actual domain name in the sampler and route it via the **DNS Cache Manager** or local `/etc/hosts` file:
+
+```text
+# Add to DNS Cache Manager -> Custom DNS:
+Host: staging.example.com
+IP:   10.0.1.5
+```
+
+### 2. Configure SSL Context Properties in `system.properties`
+
+To manage SSL/TLS trust and hostname verification behavior, add these properties to `bin/system.properties` or pass them via CLI:
+
+```properties
+# Enable Server Name Indication (SNI) for modern TLS hosts
+jsse.enableSNIExtension=true
+
+# Force specific TLS protocol version if server rejects TLS 1.3
+https.protocols=TLSv1.2,TLSv1.3
+```
+
+### 3. Reset SSL Context on Each Thread Iteration
+
+When testing applications with client certificates or multiple domains, ensure SSL state is cleared between iterations in `user.properties`:
+
+```properties
+# Reset SSL context per iteration (useful for client certs and dynamic TLS)
+https.use.cached.ssl.context=false
+```
+
+### 4. Provide a Custom TrustStore with the Root/Intermediate CA
+
+If using internal private CAs or self-signed certificates:
+
+```bash
+# Launch JMeter with explicit truststore containing the internal CA
+jmeter -n -t test.jmx \
+  -Djavax.net.ssl.trustStore=/path/to/truststore.jks \
+  -Djavax.net.ssl.trustStorePassword=changeit \
+  -l results.jtl -j jmeter.log
+```
+
+### 5. Validate Certificate SANs with OpenSSL
+
+Verify what domains the target certificate actually supports:
+
+```bash
+openssl s_client -connect api.example.com:443 -servername api.example.com </dev/null 2>/dev/null \
+  | openssl x509 -noout -text | grep -A1 "Subject Alternative Name"
+```
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [SSLHandshakeException](/topics/errors/ssl-handshake-exception/) | PKIX path building and untrusted CA failures |
+| [ConnectException](/topics/errors/connect-exception/) | Port 443 closed or unreachable |
+| [Non HTTP response code](/topics/errors/non-http-response-code/) | General client-side exception triage |
+| [Properties Cheat Sheet](/tools/properties-cheatsheet/) | Full reference for SSL and TLS system properties |
+
+## Frequently asked questions
+
+### Can I completely disable SSL hostname verification in JMeter?
+While JMeter provides trust-all behavior for self-signed certificates in some samplers, modern Java and `HttpClient4` strictly enforce SAN hostname matching for HTTPS security. The cleanest and most realistic approach is to map the hostname to the target IP using a **DNS Cache Manager**.
+
+### Why does this error occur in CI/CD pipelines but not on local machines?
+Local machines often have corporate root certificates installed in the OS keychain or local hosts mapped in `/etc/hosts`, while clean CI/CD container runners lack those custom configurations.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Use the DNS Cache Manager to map the certificate's valid domain name to the target IP address instead of using the raw IP in HTTP samplers.
+</Fragment>
+<Fragment slot="related">
+- [SSLHandshakeException](/topics/errors/ssl-handshake-exception/)
+- [API load testing](/topics/api-load-testing/)
+- [Best practices](/user-manual/best-practices/)
+</Fragment>
+</RelatedContent>

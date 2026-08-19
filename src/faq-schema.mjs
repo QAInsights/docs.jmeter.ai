@@ -879,6 +879,10 @@ export const faqSchema = {
       q: 'Is distributed RMI SSL the same as HTTPS sampler SSL?',
       a: 'No. RMI SSL between controller and workers uses the RMI keystore setup documented for remote testing. HTTPS sampler failures are about the system under test certificates.',
     },
+    {
+      q: 'What does Unsupported or unrecognized SSL message mean in JMeter?',
+      a: 'It means JMeter tried to speak TLS to a port that answers with something else, usually plain HTTP. Use https only against ports that actually serve TLS, and check the sampler protocol and port first.',
+    },
   ],
 
   '/topics/errors/out-of-memory-heap': [
@@ -933,6 +937,317 @@ export const faqSchema = {
     {
       q: 'Do I need extractors if I already have a Cookie Manager?',
       a: 'Cookies often handle classic server sessions. CSRF tokens, hidden form fields, and Authorization bearer tokens still need extractors.',
+    },
+  ],
+
+  '/topics/errors/socket-timeout-exception': [
+    {
+      q: 'What is the difference between Read timed out and connect timed out in JMeter?',
+      a: 'Connect timed out means the initial TCP handshake failed to complete within the connect timeout limit. Read timed out means the TCP connection was established, but the target server took longer to send response bytes than the configured response timeout.',
+    },
+    {
+      q: 'How do I configure timeouts in JMeter?',
+      a: 'Add an HTTP Request Defaults configuration element to your test plan, navigate to the Timeouts section, and configure explicit Connect and Response timeout values in milliseconds.',
+    },
+    {
+      q: 'Does increasing JMeter timeout fix slow server performance?',
+      a: 'No. Increasing timeouts only stops JMeter from failing the sample early. If response times exceed your service level agreements, you must optimize server application code, database queries, or server capacity.',
+    },
+  ],
+
+  '/topics/errors/no-http-response-exception': [
+    {
+      q: 'What causes NoHttpResponseException in JMeter?',
+      a: 'It is typically caused by an HTTP Keep-Alive race condition where the server or intermediate load balancer closes an idle persistent TCP socket, and JMeter attempts to reuse the closed socket without validating its state.',
+    },
+    {
+      q: 'How do I fix NoHttpResponseException in JMeter?',
+      a: 'Set httpclient4.validate_after_inactivity=2000 and httpclient4.idletimeout=10000 in user.properties, and ensure server keep-alive timeouts are aligned with client settings.',
+    },
+  ],
+
+  '/topics/errors/unknown-host-exception': [
+    {
+      q: 'Why does UnknownHostException occur in JMeter?',
+      a: 'UnknownHostException occurs when the Java Virtual Machine cannot resolve the domain name into an IP address using system DNS or JMeter DNS Cache Manager.',
+    },
+    {
+      q: 'How do I fix UnknownHostException in JMeter?',
+      a: 'Ensure the Server Name field contains only the domain name without protocols or paths, verify CLI property values, and add a DNS Cache Manager with custom DNS mappings if testing internal staging environments.',
+    },
+  ],
+
+  '/topics/errors/bind-exception-address-in-use': [
+    {
+      q: 'What causes java.net.BindException Address already in use in JMeter?',
+      a: 'It is caused by ephemeral port exhaustion on the load generator machine when opening and closing thousands of outbound TCP connections without Keep-Alive, leaving sockets in TIME_WAIT state.',
+    },
+    {
+      q: 'How do I resolve port exhaustion in JMeter load testing?',
+      a: 'Enable Use KeepAlive in HTTP Request Defaults, tune operating system ephemeral port ranges and TIME_WAIT timeouts via sysctl or Windows registry, and scale horizontally across distributed worker nodes.',
+    },
+  ],
+
+  '/topics/errors/ssl-peer-unverified': [
+    {
+      q: 'What causes SSLPeerUnverifiedException in JMeter?',
+      a: 'It occurs when the target server presents an SSL certificate whose Subject Common Name or Subject Alternative Names do not match the hostname requested by JMeter.',
+    },
+    {
+      q: 'How do I resolve certificate hostname mismatches in JMeter?',
+      a: 'Use the domain name in HTTP samplers rather than direct IP addresses, route hostnames via DNS Cache Manager, and configure custom truststores using Java system properties.',
+    },
+  ],
+
+  '/topics/errors/http-502-503-504': [
+    {
+      q: 'What is the difference between HTTP 500, 502, 503, and 504 in JMeter tests?',
+      a: 'HTTP 500 is an unhandled application crash. HTTP 502 indicates a reverse proxy could not connect to upstream backend pods. HTTP 503 means server queues or connection pools are full. HTTP 504 means the upstream app took longer than the proxy gateway timeout.',
+    },
+    {
+      q: 'How do I view error details for HTTP 5xx responses in JMeter?',
+      a: 'Add a View Results Tree listener during single-thread debugging to inspect response bodies, or enable jmeter.save.saveservice.response_data.on_error in user.properties for CLI test runs.',
+    },
+  ],
+
+  '/topics/errors/http-415-400-bad-request': [
+    {
+      q: 'Why does JMeter return HTTP 415 Unsupported Media Type?',
+      a: 'HTTP 415 occurs when an API requires Content-Type application/json or application/xml, but the request was sent without an HTTP Header Manager specifying the required Content-Type.',
+    },
+    {
+      q: 'How do I fix HTTP 400 Bad Request in JMeter REST API testing?',
+      a: 'Check the Body Data tab for unquoted JSON strings, ensure variable interpolation syntax is valid, and uncheck Use multipart/form-data unless performing file uploads.',
+    },
+  ],
+
+  '/topics/errors/http-429-rate-limited': [
+    {
+      q: 'Why am I getting HTTP 429 Too Many Requests in JMeter?',
+      a: 'HTTP 429 indicates that the target server or API gateway rate limiter has capped your request frequency per IP address or per authenticated API token.',
+    },
+    {
+      q: 'How do I prevent WAF and rate limit blocks during JMeter load testing?',
+      a: 'Set realistic User-Agent headers, parameterize user credentials from CSV, use pacing timers like Precise Throughput Timer, coordinate test IP whitelisting with DevOps, or distribute load across multiple injector nodes.',
+    },
+  ],
+
+  '/topics/errors/outofmemory-unable-to-create-native-thread': [
+    {
+      q: 'What causes OutOfMemoryError unable to create new native thread in JMeter?',
+      a: 'It is caused by hitting operating system user process limits, system PID limits, or exhausting native RAM available for OS thread stacks outside the Java heap.',
+    },
+    {
+      q: 'How do I fix unable to create new native thread in JMeter?',
+      a: 'Increase ulimit -u in /etc/security/limits.conf, tune kernel.pid_max, reduce JVM thread stack size using -Xss256k, and distribute load across multiple worker engines.',
+    },
+  ],
+
+  '/topics/errors/metaspace-gc-overhead-limit': [
+    {
+      q: 'What causes OutOfMemoryError Metaspace in JMeter?',
+      a: 'The most common cause is embedding variable interpolation inside JSR223 Groovy scripts, which forces the Groovy engine to compile a new Java class into Metaspace on every execution.',
+    },
+    {
+      q: 'How do I prevent Groovy Metaspace memory leaks in JMeter?',
+      a: 'Always use vars.get() instead of string interpolation inside scripts, check Cache compiled script if available in JSR223 elements, and increase -XX:MaxMetaspaceSize=512m in JVM_ARGS.',
+    },
+  ],
+
+  '/topics/errors/jmeter-freeze-high-cpu-hanging': [
+    {
+      q: 'Why does JMeter GUI freeze during a load test?',
+      a: 'Visual listeners like View Results Tree store raw response payloads in heap memory and block the Swing event dispatch thread. Always use CLI mode for load testing.',
+    },
+    {
+      q: 'Why does JMeter CLI hang at the end of a test run?',
+      a: 'Active non-daemon threads from custom plugins, unclosed JDBC connection pools, or async metrics listeners can prevent JVM shutdown. Enable jmeterengine.force.system.exit=true in user.properties.',
+    },
+  ],
+
+  '/topics/errors/jsr223-groovy-script-errors': [
+    {
+      q: 'What causes MissingPropertyException in JMeter JSR223 Groovy scripts?',
+      a: 'It occurs when accessing a JMeter variable directly by name instead of retrieving it through the vars object using vars.get(variableName).',
+    },
+    {
+      q: 'How do I pass variables between different Thread Groups in JMeter?',
+      a: 'Use the props object. Set a global property in the source thread group with props.put(key, value) and read it in the destination thread group with props.get(key).',
+    },
+  ],
+
+  '/topics/errors/class-not-found-noclassdeffound': [
+    {
+      q: 'Where do I put third-party JAR files and JDBC drivers in JMeter?',
+      a: 'Place utility libraries, JDBC database drivers, and messaging client JARs in JMETER_HOME/lib. Place JMeter GUI plugins and visualizers in JMETER_HOME/lib/ext, then restart JMeter.',
+    },
+    {
+      q: 'Why is my newly added JAR file not recognized by JMeter?',
+      a: 'Java classloaders cannot dynamically scan new JAR files while the JVM is active. You must restart JMeter or launch a fresh CLI process for changes to take effect.',
+    },
+  ],
+
+  '/topics/errors/extractor-not-found-default-value': [
+    {
+      q: 'Why does my JSON Extractor or Regex Extractor return NOT_FOUND?',
+      a: 'Common reasons include incorrect PostProcessor scoping, targeting Body instead of Response Headers for cookies, invalid JSONPath or Regex syntax, or the extractor running before the target response arrives.',
+    },
+    {
+      q: 'How do I test my regular expression or JSONPath in JMeter?',
+      a: 'Open View Results Tree, run a single request, switch the response pane dropdown from Text to JSON Path Tester or RegExp Tester, and evaluate your expression against the live response.',
+    },
+  ],
+
+  '/topics/errors/csv-data-set-file-not-found-sharing': [
+    {
+      q: 'Why does CSV Data Set Config fail with FileNotFoundException in CLI mode?',
+      a: 'JMeter resolves relative paths from the directory where the command was executed. Use the FileServer getBaseDir Groovy expression to resolve paths relative to the JMX file.',
+    },
+    {
+      q: 'What is the difference between Sharing Modes in CSV Data Set Config?',
+      a: 'All threads shares one global file pointer across all virtual users. Current thread group maintains independent file pointers per Thread Group. Current thread gives each thread its own independent file reader.',
+    },
+  ],
+
+  '/topics/errors/rmi-connection-refused-remote-testing': [
+    {
+      q: 'What causes Connection refused to host 127.0.0.1 in JMeter distributed testing?',
+      a: 'Remote worker nodes bound their RMI registry to the local loopback address. Start jmeter-server with -Djava.rmi.server.hostname set to the routable network IP of the worker.',
+    },
+    {
+      q: 'Why does JMeter distributed testing fail with rmi_keystore.jks missing?',
+      a: 'JMeter enables RMI over SSL by default. Either run create-rmi-keystore script to generate a shared keystore across all nodes or set server.rmi.ssl.disable=true in user.properties.',
+    },
+    {
+      q: 'Why does jmeter-server bind to the wrong IP on a multi-homed host?',
+      a: 'Without an explicit setting, Java RMI picks an address from the default network interface, which on multi-homed or containerized hosts can be an internal or loopback address. Start the worker with -Djava.rmi.server.hostname set to the routable IP and list routable IPs in remote_hosts.',
+    },
+  ],
+
+  '/topics/errors/jdbc-connection-pool-errors': [
+    {
+      q: 'What causes Cannot create PoolableConnectionFactory in JMeter JDBC testing?',
+      a: 'It indicates database connection failure due to incorrect JDBC URLs, missing database driver JARs in lib, incorrect credentials, or database firewall blocks.',
+    },
+    {
+      q: 'How do I fix database connection pool exhaustion in JMeter?',
+      a: 'Increase Max Number of Connections in JDBC Connection Configuration to match concurrency and configure a lightweight Validation Query like SELECT 1.',
+    },
+  ],
+
+  '/topics/errors/html-dashboard-generation-errors': [
+    {
+      q: 'Why does JMeter HTML report fail with output folder not empty?',
+      a: 'JMeter requires the target destination directory specified with -o to be completely empty or non-existent to prevent accidental data overwriting.',
+    },
+    {
+      q: 'How do I fix Consumer failed with message Begin date cannot be after end date in JMeter?',
+      a: 'This error occurs when timestamps in the JTL file are out of chronological order. Sort the CSV rows by timestamp or delete old JTL files before starting a new test run.',
+    },
+  ],
+
+  '/topics/errors/jmeter-wont-start-crash-on-launch': [
+    {
+      q: 'Why does the JMeter window flash and close immediately?',
+      a: 'The GUI hides console errors, so a failed startup looks like a window that closes itself. Launch jmeter.bat or ./jmeter from a terminal: the printed stack trace names the actual cause, usually Java, heap, or a broken installation.',
+    },
+    {
+      q: 'Which Java version does JMeter need?',
+      a: 'JMeter 5.x requires Java 8 or newer, and a current LTS JDK such as 17 or 21 is recommended for load generators. Verify with java -version and install a JDK if the command is missing.',
+    },
+    {
+      q: 'Can a corrupt test plan stop JMeter from starting?',
+      a: 'No. Test plans load after startup, so a broken JMX cannot prevent the GUI from opening. If JMeter itself does not open, the cause is the Java runtime, the heap, or the installation, not the plan.',
+    },
+  ],
+
+  '/topics/errors/too-many-open-files-ulimit': [
+    {
+      q: 'What does Too many open files mean in JMeter?',
+      a: 'The JVM tried to open a socket or file but the operating system refused because the process reached its file descriptor limit. It is an OS resource limit error, not a JMeter bug.',
+    },
+    {
+      q: 'How do I check how many file descriptors JMeter is using?',
+      a: 'On Linux, count them with lsof -p followed by the JMeter process ID and compare against the open files limits shown in /proc for that process. On macOS, use lsof the same way.',
+    },
+    {
+      q: 'Why does raising ulimit in another terminal not fix JMeter?',
+      a: 'Limits are inherited when a process starts. The shell where you run ulimit must be the same shell that launches JMeter, and the change does not reach processes that are already running.',
+    },
+  ],
+
+  '/topics/errors/http-407-proxy-authentication': [
+    {
+      q: 'What is HTTP 407 in JMeter?',
+      a: 'It means an intermediate proxy, not the target application, rejected the request because the proxy credentials are missing or wrong. JMeter must authenticate to the proxy before the request is forwarded.',
+    },
+    {
+      q: 'What is the difference between 401 and 407?',
+      a: 'A 401 comes from the target server and means the application wants authentication. A 407 comes from a proxy in front of the target and means the proxy itself wants authentication. The fix targets a different credential in each case.',
+    },
+    {
+      q: 'How do I pass proxy credentials without storing them in the test plan?',
+      a: 'Use -Jhttp.proxyUser and -Jhttp.proxyPass on the command line, or set the properties in a user.properties file that stays out of version control. In CI pipelines, source the values from the secret store.',
+    },
+  ],
+
+  '/topics/errors/premature-eof-connection-abort': [
+    {
+      q: 'What does Premature EOF mean in JMeter?',
+      a: 'The response stream ended before the complete body arrived. JMeter was still reading when the connection closed, so the sample fails instead of returning a full response.',
+    },
+    {
+      q: 'Is Premature EOF a JMeter bug?',
+      a: 'No. The connection was closed on the server side, by the application, a load balancer, or a proxy. JMeter only reports the cut stream; the fix lives in timeout alignment or server capacity.',
+    },
+    {
+      q: 'When should I enable httpclient4.gzip_relax_mode?',
+      a: 'Only after confirming that a specific application sends complete bodies with early-ended gzip streams. Relaxed mode also masks genuine truncation, so treat it as a targeted workaround, not a default.',
+    },
+  ],
+
+  '/topics/errors/works-in-browser-fails-in-jmeter': [
+    {
+      q: 'Why does JMeter not execute JavaScript like a browser?',
+      a: 'JMeter is a protocol-level tool: it sends and receives HTTP requests without rendering pages or running scripts. Any request a browser fires from JavaScript must be discovered in DevTools and scripted as an explicit HTTP Request.',
+    },
+    {
+      q: 'Which browser headers does JMeter actually need?',
+      a: 'Only the ones the server or WAF inspects. Start with User-Agent, Accept, Content-Type, and any custom security headers visible in DevTools, then add more only while failures persist.',
+    },
+    {
+      q: 'Why does my recorded script fail on the second run?',
+      a: 'Recording captures tokens and cookies that expire after the first use. Add a Cookie Manager and correlate CSRF tokens, session IDs, and bearer values so each virtual user gets fresh ones.',
+    },
+  ],
+
+  '/topics/errors/test-stops-early-unexpectedly': [
+    {
+      q: 'Why did my JMeter test stop after only a few seconds?',
+      a: 'Usually the Thread Group scheduler: Specify Thread lifetime is checked with a short Duration in seconds. The other common cause is a sampler error action set to Stop Test combined with an early failing sample.',
+    },
+    {
+      q: 'Where do I see why JMeter stopped the test?',
+      a: 'Check jmeter.log for end-of-test messages, then the results file for the last samples. A clean stop shows listener notifications; a crash leaves no end-of-test lines at all, which points to the JVM dying.',
+    },
+    {
+      q: 'Can a failing assertion stop the whole test?',
+      a: 'Yes. A failed assertion marks its sample as failed, and the Thread Group sampler error action then applies to it exactly like a transport error. Fix the assertion or change the action to Continue.',
+    },
+  ],
+
+  '/topics/errors/jmx-wont-load-corrupt-plan': [
+    {
+      q: 'Can a corrupted JMX file be repaired?',
+      a: 'Often, yes. If the damage is a truncated tail or merge conflict markers, fixing the XML by hand restores the plan. When whole sections are missing, restoring from git or a backup is faster and safer than reconstruction.',
+    },
+    {
+      q: 'Why does my JMX open on another machine but not mine?',
+      a: 'Version or plugin differences. Check the jmeter attribute in the JMX header against your installed version, and compare the contents of lib/ext for plugin JARs the plan depends on.',
+    },
+    {
+      q: 'Where does JMeter report the exact XML error?',
+      a: 'In jmeter.log. The SAXParseException line names the problem and includes line and column numbers, which map directly to a position in the JMX file.',
     },
   ],
 };

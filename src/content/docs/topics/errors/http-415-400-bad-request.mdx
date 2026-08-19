@@ -1,0 +1,142 @@
+---
+title: "JMeter HTTP 400 Bad Request & 415 Unsupported Media Type"
+seoTitle: "JMeter HTTP 400 Bad Request and 415 Error Fix"
+description: "Fix JMeter HTTP 400 Bad Request and 415 Unsupported Media Type errors. Configure HTTP Header Manager, Content-Type headers, and JSON body payloads correctly."
+keywords:
+  - "JMeter 415 Unsupported Media Type"
+  - "JMeter 400 Bad Request"
+  - "JMeter missing Content-Type"
+  - "JMeter JSON payload error"
+  - "JMeter Header Manager"
+difficulty: beginner
+guideType: troubleshooting
+estimatedReadTime: "5 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# HTTP 400 Bad Request & 415 Unsupported Media Type in JMeter
+
+## Symptom
+
+When executing REST API requests in View Results Tree or JTL results, samplers return client-side HTTP 4xx error codes:
+
+```text
+Response code: 415 (Unsupported Media Type)
+Response message: Unsupported Media Type
+```
+
+Or for payload validation issues:
+
+```text
+Response code: 400 (Bad Request)
+Response message: Bad Request
+```
+
+The response body typically explains that the server cannot parse the incoming payload or that the `Content-Type` header is missing or unexpected.
+
+## Quick diagnosis (TL;DR)
+
+- **HTTP 415**: The API endpoint requires `Content-Type: application/json` (or `application/xml`), but JMeter sent the request without a `Content-Type` header (or sent default `text/plain`). Add an **HTTP Header Manager**.
+- **HTTP 400**: The payload syntax is malformed (e.g. unescaped quotes in JSON strings, missing required parameters, or invalid variable interpolation like `{"name": \${var}}` without quotes).
+
+## Common causes
+
+| Cause | Status | Why it happens |
+|-------|--------|----------------|
+| Missing `Content-Type` header | 415 | JMeter HTTP Request does not include `Content-Type` by default without an HTTP Header Manager |
+| Wrong Header Manager scope | 415 | HTTP Header Manager placed under a different Thread Group or sampler, leaving child samplers without headers |
+| Unquoted variable in JSON | 400 | Writing `{"id": \${userId}}` where `userId` is a string value, resulting in invalid JSON `{"id": abc}` |
+| Multipart form data checkbox | 415 / 400 | Checking "Use multipart/form-data" for standard raw JSON body payloads |
+| Malformed JSON quotes / newlines | 400 | CSV variables containing unescaped double quotes (`"`) or literal newlines breaking JSON schema validation |
+
+## Fix (ordered)
+
+### 1. Add HTTP Header Manager at the Test Plan or Thread Group Level
+
+To ensure every REST API request transmits the proper headers:
+
+1. Right-click your **Thread Group** -> **Add** -> **Config Element** -> **HTTP Header Manager**.
+2. Add the standard REST API headers:
+
+| Name | Value |
+|------|-------|
+| `Content-Type` | `application/json; charset=UTF-8` |
+| `Accept` | `application/json` |
+
+```xml
+<!-- HTTP Header Manager configuration in JMX -->
+<HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager">
+  <collectionProp name="HeaderManager.headers">
+    <elementProp name="" elementType="Header">
+      <stringProp name="Header.name">Content-Type</stringProp>
+      <stringProp name="Header.value">application/json</stringProp>
+    </elementProp>
+    <elementProp name="" elementType="Header">
+      <stringProp name="Header.name">Accept</stringProp>
+      <stringProp name="Header.value">application/json</stringProp>
+    </elementProp>
+  </collectionProp>
+</HeaderManager>
+```
+
+### 2. Configure the "Body Data" Tab (Do Not Mix with Parameters)
+
+In your **HTTP Request** sampler:
+1. Select the **Body Data** tab (not the **Parameters** tab).
+2. Uncheck **Use multipart/form-data** (unless performing actual file uploads).
+3. Ensure strings inside JSON payloads are wrapped in quotes:
+
+```json
+{
+  "username": "${username}",
+  "email": "${email}",
+  "age": ${age}
+}
+```
+
+### 3. Handle Escaped JSON Strings with `__groovy()`
+
+If CSV data contains special characters, quotes, or newlines, use Groovy's `JsonOutput.toJson()` to safely escape strings:
+
+```text
+${__groovy(groovy.json.JsonOutput.toJson(vars.get('csv_text_column')))}
+```
+
+### 4. Inspect Request Headers in View Results Tree
+
+To verify what headers JMeter actually sent over the wire:
+1. Run with 1 thread in GUI.
+2. Select the failed sampler in **View Results Tree**.
+3. Open the **Request** tab -> **Request Headers** sub-tab.
+4. Verify that `Content-Type: application/json` is present and matches API documentation.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [401/403 after recording](/topics/errors/401-403-after-recording/) | Authentication and authorization header issues |
+| [API load testing](/topics/api-load-testing/) | Full end-to-end API load testing tutorial |
+| [Correlation & dynamic values](/topics/correlation-dynamic-values/) | Extracting and passing dynamic tokens in headers |
+| [Properties Cheat Sheet](/tools/properties-cheatsheet/) | Quick lookup of JMeter configuration elements |
+
+## Frequently asked questions
+
+### Can I set different Content-Type headers for different samplers?
+Yes. Place an HTTP Header Manager directly as a child of a specific HTTP Request sampler to override the parent Thread Group's headers for that individual request.
+
+### Why does JMeter change my JSON payload into form parameters?
+If you add rows to the "Parameters" tab of an HTTP Request, JMeter switches to `application/x-www-form-urlencoded`. Always clear the Parameters tab when using the "Body Data" tab for raw JSON payloads.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Add an HTTP Header Manager with `Content-Type: application/json` to your Thread Group and verify the Body Data tab in your samplers.
+</Fragment>
+<Fragment slot="related">
+- [API load testing](/topics/api-load-testing/)
+- [401/403 after recording](/topics/errors/401-403-after-recording/)
+- [Functions & variables](/topics/functions-and-variables/)
+</Fragment>
+</RelatedContent>

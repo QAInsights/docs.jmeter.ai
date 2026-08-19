@@ -22,10 +22,11 @@ import RelatedContent from '../../../../components/RelatedContent.astro';
 
 Samples fail with TLS-related messages, often wrapped as Non HTTP response errors:
 
-- `javax.net.ssl.SSLHandshakeException`  
-- `PKIX path building failed` / unable to find valid certification path  
-- `Received fatal alert: handshake_failure`  
-- During **recording**: browser `unknown_ca` or HTTPS pages never record cleanly ([recorder best practices](/user-manual/best-practices/))  
+- `javax.net.ssl.SSLHandshakeException`
+- `PKIX path building failed` / unable to find valid certification path
+- `Received fatal alert: handshake_failure`
+- `javax.net.ssl.SSLException: Unsupported or unrecognized SSL message` (TLS aimed at a port that answers with plain HTTP)
+- During **recording**: browser `unknown_ca` or HTTPS pages never record cleanly ([recorder best practices](/user-manual/best-practices/))
 
 HTTP may work in a browser that already trusts the corporate CA, while JMeter’s JVM does not.
 
@@ -36,6 +37,7 @@ HTTP may work in a browser that already trusts the corporate CA, while JMeter’
 | Untrusted server certificate | Lab/self-signed or private PKI not in the **JVM truststore** JMeter uses |
 | Hostname / SNI mismatch | Certificate CN/SAN does not match the server name in the sampler |
 | TLS version or cipher mismatch | Server requires TLS 1.2+; client restricted by JVM or properties |
+| TLS aimed at a plain HTTP port | `Unsupported or unrecognized SSL message`; the server's plain HTTP reply cannot be parsed as a TLS handshake |
 | Client certificate required | Mutual TLS; keystore not configured on the HTTP Request / system properties |
 | Recorder without JMeter CA | HTTPS recording needs `ApacheJMeterTemporaryRootCA` trusted ([proxy tutorial](/user-manual/jmeter-proxy-step-by-step/)) |
 | RMI SSL between engines | Distributed mode since JMeter 4.0 defaults to SSL for RMI ([remote testing](/user-manual/remote-test/)) - different from HTTP TLS |
@@ -50,7 +52,16 @@ HTTP may work in a browser that already trusts the corporate CA, while JMeter’
 4. Restart JMeter after truststore changes.  
 5. Align system clock (skew breaks cert validity).  
 6. For mTLS, configure client keystore settings on the HTTP Request / related SSL properties ([properties reference](/user-manual/properties-reference/)).  
-7. Avoid disabling certificate verification outside isolated labs - it hides real misconfiguration.  
+7. Avoid disabling certificate verification outside isolated labs - it hides real misconfiguration.
+
+### Unsupported or unrecognized SSL message
+
+This variant is a protocol/port mismatch, not a certificate problem:
+
+1. Check the sampler's protocol and port. `https` against a port that serves plain HTTP triggers this error, because the server answers with HTTP text the TLS layer cannot parse.
+2. Confirm which protocol the port actually serves: `curl -v http://host:port/` versus `curl -vk https://host:port/`.
+3. Fix the sampler, or HTTP Request Defaults, to match: `http` for plain HTTP ports, `https` for TLS ports (usually 443).
+4. Behind load balancers that terminate TLS, target the frontend address with `https`; the backend ports behind it are usually plain HTTP and reject TLS.
 
 ### Recording HTTPS
 
@@ -86,6 +97,10 @@ Related family: `unknown_ca` during recording means the browser rejected the JMe
 ### Can I ignore SSL errors for performance tests?
 
 Only in controlled non-production labs, and document it. Production-like tests should use proper trust material so TLS cost and failures are realistic.
+
+### What does Unsupported or unrecognized SSL message mean in JMeter?
+
+It means JMeter tried to speak TLS to a port that answers with something else, usually plain HTTP. The server's reply cannot be parsed as a TLS handshake. Check the sampler's protocol and port, and use https only against ports that actually serve TLS.
 
 <RelatedContent>
 <Fragment slot="next-step">

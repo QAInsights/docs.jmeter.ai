@@ -1,0 +1,126 @@
+---
+title: "JMeter Test Stops Early or Unexpectedly"
+seoTitle: "Fix JMeter Test Stopping Early or Unexpectedly"
+description: "Fix JMeter tests that stop early: scheduler duration, sampler error actions like Stop Test, loop controllers, and JVM crashes, diagnosed step by step."
+keywords:
+  - "JMeter test stops early"
+  - "JMeter test stopped unexpectedly"
+  - "JMeter stops before duration"
+  - "JMeter Stop Test on sampler error"
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# JMeter Test Stops Early or Unexpectedly
+
+## Symptom
+
+A test ends well before its intended duration or loop count:
+
+```text
+The CLI summary prints far fewer samples than expected, and the run exits.
+```
+
+`jmeter.log` may contain lines such as:
+
+```text
+INFO o.a.j.e.StandardJMeterEngine: Notifying test listeners of end of test
+```
+
+and the results file simply stops at some timestamp.
+
+## Quick diagnosis (TL;DR)
+
+JMeter ends a test for a small number of reasons: a configured duration expired, a sampler or assertion failure triggered a stop action, a controller finished the flow, or the JVM crashed. Check the Thread Group scheduler and the "Action to be taken after a Sampler error" setting first, then look for the failing sample.
+
+## Common causes
+
+| Cause | Where to look | Why it happens |
+|-------|---------------|----------------|
+| Scheduler duration set | Thread Group, **Specify Thread lifetime** | **Duration (seconds)** ends the test after that many seconds, regardless of loops |
+| Sampler error action is Stop Test | Thread Group bottom panel | The first failed sample or failed assertion ends the whole run |
+| Assertion failures count as errors | Any assertion in scope | A failing Response Assertion marks the sample failed, which feeds the stop action |
+| Loop or While Controller condition | Controller logic | The condition evaluates false and the flow exits sooner than expected |
+| JVM crash | OS logs, no clean shutdown | Out of memory or a killed process ends the run without JMeter's own log lines |
+| Manual or remote stop | Run menu, remote engines | Someone stopped the test, or a remote engine disconnected |
+
+## Fix (ordered)
+
+### 1. Check the Thread Group scheduler
+
+Open the Thread Group and look at the **Specify Thread lifetime** checkbox:
+
+1. If it is checked, **Duration (seconds)** caps the run. Raise it or uncheck the box so loop count controls the length.
+2. **Startup delay (seconds)** only postpones the start; it does not extend the run.
+
+### 2. Review the sampler error action
+
+The Thread Group's **Action to be taken after a Sampler error** decides what a failed sample does. The five options:
+
+- `Continue` - ignore the error and continue with the test
+- `Start next thread loop` - skip the rest of the current iteration and restart the loop
+- `Stop Thread` - the current thread exits
+- `Stop Test` - the entire test stops at the end of any current samples
+- `Stop Test Now` - the entire test stops abruptly, interrupting current samplers
+
+During debugging and in most load tests, use `Continue`. Reserve `Stop Test` for smoke tests where a failure invalidates the whole run.
+
+### 3. Find the sample that triggered the stop
+
+With `Continue` in place, re-run with one thread in the GUI with a **View Results Tree** listener, or inspect the results of the failed run:
+
+1. Look for the first red sample before the run ended.
+2. Check its assertions: a failing assertion marks the sample failed even when the HTTP status was 200.
+3. Fix the underlying request or loosen the assertion, depending on which is wrong.
+
+### 4. Rule out a JVM crash
+
+If `jmeter.log` has no clean end-of-test lines and the process simply vanished:
+
+1. Check OS logs (`dmesg` on Linux, Event Viewer on Windows) for an OOM kill.
+2. Check heap sizing with the [Heap & Memory Estimator](/tools/heap-estimator/).
+3. Follow [OutOfMemoryError heap](/topics/errors/out-of-memory-heap/) or [Freezing, CPU & CLI Hangs](/topics/errors/jmeter-freeze-high-cpu-hanging/) depending on what the logs show.
+
+### 5. Check controller conditions
+
+A **Loop Controller** with a lower count than expected, a **While Controller** whose condition flips early, or a **Throughput Controller** percentage can all end a thread's work before the Thread Group's own loop count finishes. Trace the flow with one thread and confirm each controller executes as often as intended.
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [OutOfMemoryError heap](/topics/errors/out-of-memory-heap/) | The run died from memory pressure |
+| [Freezing, CPU & CLI Hangs](/topics/errors/jmeter-freeze-high-cpu-hanging/) | The run hangs instead of stopping cleanly |
+| [Thread Calculator](/tools/thread-calculator/) | Recomputing realistic durations and concurrency |
+| [Building a Test Plan](/user-manual/build-test-plan/) | Thread Group scheduler fundamentals |
+
+## Frequently asked questions
+
+### Why did my JMeter test stop after only a few seconds?
+Usually the Thread Group scheduler: **Specify Thread lifetime** is checked with a short **Duration (seconds)**. The other common cause is a sampler error action set to `Stop Test` combined with an early failing sample.
+
+### Where do I see why JMeter stopped the test?
+Check `jmeter.log` for end-of-test messages, then the results file for the last samples. A clean stop shows listener notifications; a crash leaves no end-of-test lines at all, which points to the JVM dying.
+
+### Should I use Stop Test on sampler error for load tests?
+Usually not. Load tests expect some failures under pressure, and `Continue` keeps the measurement going. Use `Stop Test` only for smoke tests where any failure makes the rest of the run meaningless.
+
+### Can a failing assertion stop the whole test?
+Yes. A failed assertion marks its sample as failed, and the Thread Group's sampler error action then applies to it exactly like a transport error. Fix the assertion or change the action to `Continue`.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Check the Thread Group scheduler duration and set the sampler error action to Continue, then re-run with one thread to see which sample, if any, was failing.
+</Fragment>
+<Fragment slot="related">
+- [Building a Test Plan](/user-manual/build-test-plan/)
+- [Best practices](/user-manual/best-practices/)
+- [CI/CD load testing](/topics/ci-cd-load-testing/)
+- [Troubleshooting overview](/topics/troubleshooting/)
+</Fragment>
+</RelatedContent>

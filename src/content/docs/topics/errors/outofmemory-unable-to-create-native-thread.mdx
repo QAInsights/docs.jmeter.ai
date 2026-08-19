@@ -1,0 +1,152 @@
+---
+title: "JMeter OutOfMemoryError: unable to create new native thread"
+seoTitle: "JMeter unable to create new native thread Fix"
+description: "Fix JMeter java.lang.OutOfMemoryError: unable to create new native thread. Tune OS ulimit, kernel.pid_max, JVM stack size (-Xss), and thread scaling."
+keywords:
+  - "OutOfMemoryError unable to create new native thread"
+  - "JMeter thread limit"
+  - "JMeter native thread error"
+  - "JMeter max threads limit"
+  - "JMeter ulimit thread fix"
+difficulty: advanced
+guideType: troubleshooting
+estimatedReadTime: "7 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# java.lang.OutOfMemoryError: unable to create new native thread in JMeter
+
+## Symptom
+
+When ramping up to hundreds or thousands of threads in a JMeter test plan, the test suddenly halts or crashes with an unrecoverable JVM fatal error in the console or `jmeter.log`:
+
+```text
+java.lang.OutOfMemoryError: unable to create new native thread
+	at java.lang.Thread.start0(Native Method)
+	at java.lang.Thread.start(Thread.java:717)
+	at org.apache.jmeter.threads.ThreadGroup.start(ThreadGroup.java:310)
+	at org.apache.jmeter.engine.StandardJMeterEngine.run(StandardJMeterEngine.java:490)
+```
+
+New virtual users fail to spawn, and the JMeter process may become unresponsive or terminate immediately.
+
+## Quick diagnosis (TL;DR)
+
+This error is **not** caused by running out of Java Heap memory (`-Xmx`). It occurs when the Java Virtual Machine requests the underlying operating system kernel to allocate a new OS-level native thread, and the OS denies the request because the OS user process limit (`ulimit -u`), system PID limit (`kernel.pid_max`), or available native RAM for thread call stacks has been exhausted.
+
+## Common causes
+
+| Cause | Layer | Why it happens |
+|-------|-------|----------------|
+| Linux user process limit (`ulimit -u`) | OS | Default `nproc` limit (often 1024 or 4096) reached by Java and background OS tasks |
+| Kernel PID limit | OS | System-wide `/proc/sys/kernel/pid_max` or `/proc/sys/vm/max_map_count` cap reached |
+| Large JVM thread stack size (`-Xss`) | JVM | Default stack size (1MB per thread) consumes all physical native RAM outside heap |
+| Oversized single-instance thread count | JMeter Plan | Attempting to spawn 5,000+ threads on a single load injector machine |
+| Thread leaks in plugins or Groovy | Custom Code | Third-party plugins or scripts spawning unmanaged `new Thread()` instances |
+
+## Fix (ordered)
+
+### 1. Increase Linux OS User Process & File Descriptor Limits
+
+On Linux load injector machines, edit `/etc/security/limits.conf`:
+
+```text
+# Add at the bottom of /etc/security/limits.conf
+* soft nproc 65535
+* hard nproc 65535
+* soft nofile 65535
+* hard nofile 65535
+root soft nproc 65535
+root hard nproc 65535
+```
+
+Verify active limits in your current terminal session:
+
+```bash
+ulimit -u   # max user processes (should show 65535)
+ulimit -n   # max open files (should show 65535)
+```
+
+### 2. Increase System PID and Memory Map Limits
+
+Configure Linux kernel sysctl parameters:
+
+```bash
+# Check current PID capacity
+sysctl kernel.pid_max
+sysctl vm.max_map_count
+
+# Temporarily increase limits
+sudo sysctl -w kernel.pid_max=4194304
+sudo sysctl -w vm.max_map_count=262144
+
+# Make permanent in /etc/sysctl.conf
+echo "kernel.pid_max = 4194304" | sudo tee -a /etc/sysctl.conf
+echo "vm.max_map_count = 262144" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+```
+
+### 3. Tune JVM Thread Stack Size (`-Xss`)
+
+In Java, each thread receives a dedicated native memory stack outside the heap. By default, 64-bit JVMs allocate **1MB** per thread stack. If you run 2,000 threads, thread stacks alone consume 2GB of native RAM.
+
+Reduce thread stack size in your JMeter launch environment:
+
+```bash
+# Set -Xss to 256k or 512k in bin/jmeter or environment variables
+export JVM_ARGS="-Xms4g -Xmx4g -Xss256k"
+jmeter -n -t test.jmx -l results.jtl -j jmeter.log
+```
+
+On Windows, edit `bin/jmeter.bat` or pass:
+
+```bat
+set JVM_ARGS=-Xms4g -Xmx4g -Xss256k
+jmeter.bat -n -t test.jmx -l results.jtl
+```
+
+### 4. Optimize Thread Sizing (Little's Law)
+
+Before scaling to thousands of threads, check if high thread counts are truly necessary. Many engineers add threads because responses are slow:
+
+```text
+Threads = Target RPS × Average Response Time (seconds)
+```
+
+If your target is 500 RPS and the server responds in 100ms (0.1s), you only need **50 threads**, not 2,000. Use the [Thread Calculator](/tools/thread-calculator/) to calculate optimal concurrency.
+
+### 5. Scale Out Horizontally with Distributed Testing
+
+When a single machine reaches hardware or kernel limitations (typically ~1,500–2,500 threads per modern server depending on test complexity), distribute the load across multiple JMeter server instances ([distributed testing guide](/topics/distributed-testing/)).
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [OutOfMemoryError heap](/topics/errors/out-of-memory-heap/) | Java heap space exhaustion |
+| [Metaspace & GC overhead](/topics/errors/metaspace-gc-overhead-limit/) | ClassLoader and Metaspace memory leaks |
+| [Thread Calculator](/tools/thread-calculator/) | Calculate required thread count from throughput targets |
+| [Heap Estimator](/tools/heap-estimator/) | Sizing JVM heap and native memory |
+| [Distributed testing](/topics/distributed-testing/) | Setting up multi-node remote load generators |
+
+## Frequently asked questions
+
+### Will increasing `-Xmx` (heap size) fix this error?
+**No.** In fact, increasing `-Xmx` can make this error happen *faster* on machines with limited RAM, because the JVM heap reserves more physical memory, leaving less native unmanaged RAM for OS thread stacks.
+
+### How many threads can one JMeter instance safely run?
+On modern 64-bit Linux servers with properly tuned `ulimit` and `-Xss256k`, a single CLI instance can typically run between 1,000 and 3,000 threads for standard HTTP APIs. Complex scripts with heavy Groovy processing or large payload buffers should stay under 1,000 threads per injector.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Adjust `ulimit -u` in `/etc/security/limits.conf` and set `JVM_ARGS="-Xss256k"` before your next high-concurrency run.
+</Fragment>
+<Fragment slot="related">
+- [Distributed testing](/topics/distributed-testing/)
+- [Best practices](/user-manual/best-practices/)
+- [Docker / Kubernetes](/topics/docker-kubernetes/)
+</Fragment>
+</RelatedContent>

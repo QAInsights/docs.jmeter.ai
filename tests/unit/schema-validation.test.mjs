@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { faqSchema, buildFaqJsonLd } from '../../src/faq-schema.mjs';
 import { howtoSchema, buildHowToJsonLd } from '../../src/howto-schema.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ERRORS_DIR = path.resolve(__dirname, '../../src/content/docs/topics/errors');
 
 describe('faq-schema', () => {
   it('should have at least one entry', () => {
@@ -126,4 +132,25 @@ describe('schema key uniqueness', () => {
     const shared = howtoKeys.filter((k) => faqKeys.has(k));
     expect(shared).toEqual([]);
   });
+});
+
+describe('error-playbooks-schema-coverage', () => {
+  const errorFiles = fs.existsSync(ERRORS_DIR)
+    ? fs.readdirSync(ERRORS_DIR).filter((f) => f.endsWith('.mdx'))
+    : [];
+
+  it('should find error playbook files', () => {
+    expect(errorFiles.length).toBeGreaterThan(0);
+  });
+
+  for (const file of errorFiles) {
+    const slug = file === 'index.mdx' ? '/topics/errors' : `/topics/errors/${file.replace('.mdx', '')}`;
+    it(`should have FAQ schema for error playbook: ${slug}`, () => {
+      expect(faqSchema[slug]).toBeDefined();
+      expect(faqSchema[slug].length).toBeGreaterThan(0);
+      const jsonLd = buildFaqJsonLd(slug, `https://docs.jmeter.ai${slug}`);
+      expect(jsonLd).not.toBeNull();
+      expect(jsonLd['@type']).toBe('FAQPage');
+    });
+  }
 });
