@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { defineConfig } from 'astro/config';
+import { unified } from '@astrojs/markdown-remark';
 import starlight from '@astrojs/starlight';
 import lucode from 'lucode-starlight';
 import starlightDocSearch from '@astrojs/starlight-docsearch';
@@ -31,7 +32,9 @@ export default defineConfig({
     imageService: 'compile',
   }),
   markdown: {
-    remarkPlugins: [remarkImageOptimize],
+    processor: unified({
+      remarkPlugins: [remarkImageOptimize],
+    }),
   },
   integrations: [
     starlight({
