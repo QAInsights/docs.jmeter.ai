@@ -1,0 +1,94 @@
+---
+title: "Distributed Testing Port & Firewall Planner"
+seoTitle: "JMeter Distributed Testing Port & Firewall Planner"
+description: "Plan JMeter distributed testing ports, firewall rules, user.properties, and Docker setups for AWS, Azure, GCP, and Kubernetes clusters."
+keywords:
+  - JMeter distributed testing ports
+  - JMeter firewall planner
+  - JMeter RMI ports
+  - client.rmi.localport
+  - server.rmi.localport
+  - JMeter remote testing setup
+difficulty: advanced
+guideType: reference
+estimatedReadTime: "4 min read"
+---
+
+import DistributedPlanner from '../../../components/tools/DistributedPlanner.astro';
+
+<DistributedPlanner />
+
+## How JMeter Distributed Testing Works
+
+When you launch a distributed load test from a **Controller (Master)** against remote **Workers (Injectors)**, JMeter uses **Java RMI (Remote Method Invocation)** for two-way coordination:
+
+1. **RMI Registry (`server_port`, default 1099)**: The controller connects to port 1099 on each worker node to look up the remote engine service.
+2. **Worker Engine Execution (`server.rmi.localport`, e.g. 50000)**: The controller sends the compiled test plan, parameters, and startup signals to the worker's dedicated engine port.
+3. **Return Sample Callback (`client.rmi.localport`, e.g. 60000)**: As workers generate load, they stream sample results and metrics back to the controller over this return port.
+
+### Why Default Setups Fail in the Cloud
+
+By default, Java RMI uses dynamic ephemeral ports (`0`) for engine communication and callback channels. In cloud environments (AWS Security Groups, Azure NSGs, GCP Firewalls, Docker, or Kubernetes), firewalls silently drop return packets, causing tests to **freeze indefinitely at initialization**.
+
+By **pinning all three ports** (`server_port`, `server.rmi.localport`, and `client.rmi.localport`), you can write strict, deterministic firewall rules without opening wide port ranges.
+
+---
+
+## Step-by-Step Distributed Setup Guide
+
+### 1. Configure Controller (Master) Node
+
+Place these properties in `bin/user.properties` on your controller machine:
+
+```properties
+remote_hosts=10.0.1.10:1099,10.0.1.11:1099,10.0.1.12:1099
+client.rmi.localport=60000
+mode=StrippedBatch
+server.rmi.ssl.disable=false
+java.rmi.server.hostname=10.0.0.5
+```
+
+Launch the distributed run in CLI mode:
+
+```bash
+jmeter -n -t test.jmx -R 10.0.1.10,10.0.1.11,10.0.1.12 -l results.jtl -e -o ./report
+```
+
+### 2. Configure Worker (Server) Nodes
+
+On each worker node, configure `bin/user.properties`:
+
+```properties
+server_port=1099
+server.rmi.localport=50000
+server.rmi.ssl.disable=false
+```
+
+Start the daemon specifying its routable network IP address:
+
+```bash
+./bin/jmeter-server -Djava.rmi.server.hostname=10.0.1.10
+```
+
+### 3. Verify Network Reachability Before Running Tests
+
+Always test bidirectional TCP connectivity with `nc` (Netcat) or `Test-NetConnection` (PowerShell) before starting tests:
+
+```bash
+# Test from Controller to Worker
+nc -zv 10.0.1.10 1099
+nc -zv 10.0.1.10 50000
+
+# Test from Worker to Controller
+nc -zv 10.0.0.5 60000
+```
+
+---
+
+## Related Guides & Playbooks
+
+- [Remote Testing User Manual](/user-manual/remote-test/)
+- [Step-by-Step Distributed Testing Tutorial](/user-manual/jmeter-distributed-testing-step-by-step/)
+- [RMI Connection Refused & Port Troubleshooting](/topics/errors/rmi-connection-refused-remote-testing/)
+- [Docker & Kubernetes Deployment Guide](/topics/docker-kubernetes/)
+- [Heap Estimator for Injector Engines](/tools/heap-estimator/)

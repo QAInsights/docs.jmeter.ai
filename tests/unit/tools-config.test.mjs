@@ -98,3 +98,17 @@ describe('heap config', () => {
     expect(HEAP_ESTIMATOR.limits.heapMb.max).toBe(16_384);
   });
 });
+
+describe('distributed planner config', () => {
+  it('exposes valid port limits and default nodes', async () => {
+    const { DISTRIBUTED_PLANNER } = await import('../../src/lib/tools-config.mjs');
+    expect(DISTRIBUTED_PLANNER.limits.port.min).toBe(1024);
+    expect(DISTRIBUTED_PLANNER.limits.port.max).toBe(65535);
+    expect(DISTRIBUTED_PLANNER.defaults.serverPort).toBe(1099);
+    expect(DISTRIBUTED_PLANNER.defaults.serverRmiLocalPort).toBe(50000);
+    expect(DISTRIBUTED_PLANNER.defaults.clientRmiLocalPort).toBe(60000);
+    expect(DISTRIBUTED_PLANNER.transmissionModes).toContain('StrippedBatch');
+    expect(DISTRIBUTED_PLANNER.environments.length).toBeGreaterThanOrEqual(4);
+  });
+});
+

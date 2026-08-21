@@ -96,11 +96,13 @@ export const sidebar = [
       { label: 'Thread Calculator', link: '/tools/thread-calculator' },
       { label: 'Heap Estimator', link: '/tools/heap-estimator' },
       { label: 'CLI Command Builder', link: '/tools/cli-builder' },
+      { label: 'Distributed Testing Planner', link: '/tools/distributed-planner' },
       { label: 'Coordinated Omission', link: '/tools/coordinated-omission' },
       { label: 'Properties Cheat Sheet', link: '/tools/properties-cheatsheet' },
       { label: 'Regex Extractor Builder', link: '/tools/regex-tester' },
     ],
   },
+
   {
     label: 'Topic Guides',
     collapsed: true,

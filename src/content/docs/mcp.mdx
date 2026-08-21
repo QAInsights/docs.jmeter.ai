@@ -1,13 +1,14 @@
 ---
 title: "MCP Server"
 seoTitle: "JMeter Docs MCP Server - Add JMeter Docs to Your AI Agent"
-description: "Connect AI agents to Apache JMeter docs over MCP: search guides, lint JMX test plans, calculate workload sizing, and get Groovy recipes."
+description: "Connect AI agents to Apache JMeter docs over MCP: search guides, lint JMX test plans, calculate workload sizing, and plan distributed clusters."
 keywords:
   - JMeter MCP server
   - JMeter docs MCP
   - Model Context Protocol
   - JMX linter
   - Little's Law calculator
+  - JMeter distributed planner
 difficulty: intermediate
 guideType: reference
 estimatedReadTime: "4 min read"
@@ -27,12 +28,12 @@ Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.
 | [`get_jmeter_page`](#get_jmeter_page) | Knowledge | Fetch full markdown text of any documentation page |
 | [`lint_jmx_snippet`](#lint_jmx_snippet) | Diagnostics | Scan JMX XML for anti-patterns (GUI listeners, BeanShell, missing timeouts) |
 | [`calculate_workload_model`](#calculate_workload_model) | Calculator | Little's Law concurrency, pacing, ramp-up schedules, and JVM heap sizing |
+| [`plan_distributed_testing`](#plan_distributed_testing) | Topology | Pinned RMI ports, `user.properties`, firewall rules, and Docker manifests |
 | [`lookup_jmeter_property`](#lookup_jmeter_property) | Reference | Search curated tuning properties with defaults and config locations |
 | [`get_jsr223_recipe`](#get_jsr223_recipe) | Code | Production Groovy recipes (JWT decoding, HMAC signing, dynamic headers) |
 | [`lookup_error_playbook`](#lookup_error_playbook) | Diagnostics | Instant remediation and OS/JVM fixes for common runtime exceptions |
 
 ### search_jmeter_docs
-
 
 Search the full documentation: user manual, topic guides, error playbooks, release notes, and interactive tool pages. Returns ranked pages with URLs and snippets.
 
@@ -64,9 +65,24 @@ Compute required thread concurrency, pacing delays, ramp-up schedules, and JVM h
 { "targetRps": 500, "avgResponseTimeMs": 250, "safetyFactor": 1.25 }
 ```
 
+### plan_distributed_testing
+
+Generate Master-Worker RMI port assignments, `user.properties`, CLI commands, firewall/security group rules, and Docker Compose manifests for distributed load testing.
+
+```json
+{
+  "controllerIp": "10.0.0.5",
+  "workerIps": "10.0.1.10, 10.0.1.11, 10.0.1.12",
+  "serverPort": 1099,
+  "serverRmiLocalPort": 50000,
+  "clientRmiLocalPort": 60000
+}
+```
+
 ### lookup_jmeter_property
 
 Search or inspect curated JMeter tuning properties (HTTP client pool, distributed testing RMI ports, InfluxDB backend listener, result formatting, engine settings).
+
 
 ```json
 { "query": "httpclient4.idletimeout" }

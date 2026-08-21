@@ -56,7 +56,7 @@ describe('findChunkByPath', () => {
 });
 
 describe('GET /api/mcp endpoint discovery', () => {
-  it('advertises all 7 MCP tools and streamable HTTP metadata', async () => {
+  it('advertises all 8 MCP tools and streamable HTTP metadata', async () => {
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -66,9 +66,11 @@ describe('GET /api/mcp endpoint discovery', () => {
     expect(body.tools).toContain('get_jmeter_page');
     expect(body.tools).toContain('lint_jmx_snippet');
     expect(body.tools).toContain('calculate_workload_model');
+    expect(body.tools).toContain('plan_distributed_testing');
     expect(body.tools).toContain('lookup_jmeter_property');
     expect(body.tools).toContain('get_jsr223_recipe');
     expect(body.tools).toContain('lookup_error_playbook');
   });
 });
+
 

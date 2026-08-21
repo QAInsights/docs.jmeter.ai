@@ -94,6 +94,8 @@ describe('/api/mcp POST rate limiting', () => {
     });
   }
 
+  // 15s timeout: dynamic import with mocked rate-limiter requires full module
+  // re-compilation/transformation in Vitest on cold start on Windows environments.
   it('returns 429 with Retry-After when the limiter blocks', async () => {
     vi.doMock('../../src/lib/mcp-rate-limit.mjs', () => ({
       checkMcpRateLimit: async () => ({ allowed: false, retryAfter: 60 }),
@@ -105,7 +107,7 @@ describe('/api/mcp POST rate limiting', () => {
     const body = await res.json();
     expect(body.error.message).toMatch(/rate limit/i);
     vi.doUnmock('../../src/lib/mcp-rate-limit.mjs');
-  });
+  }, 15000);
 
   it('passes through when the limiter allows (incl. fail-open null)', async () => {
     vi.doMock('../../src/lib/mcp-rate-limit.mjs', () => ({
@@ -117,5 +119,5 @@ describe('/api/mcp POST rate limiting', () => {
     const body = await res.json();
     expect(body.result.serverInfo.name).toBe('jmeter-docs');
     vi.doUnmock('../../src/lib/mcp-rate-limit.mjs');
-  });
+  }, 15000);
 });

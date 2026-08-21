@@ -26,13 +26,14 @@ import { calculateWorkloadModel } from '../../lib/mcp/workload-calculator.mjs';
 import { propertiesCheatsheet, filterProperties } from '../../lib/properties-data.mjs';
 import { getJsr223Recipes } from '../../lib/mcp/jsr223-recipes.mjs';
 import { lookupErrorPlaybook } from '../../lib/mcp/error-playbooks.mjs';
+import { generateDistributedPlan } from '../../lib/distributed-planner.mjs';
 
 export { normalizeDocPath, findChunkByPath, createServer };
 
 export const prerender = false;
 
 const SERVER_NAME = 'jmeter-docs';
-const SERVER_VERSION = '1.1.0';
+const SERVER_VERSION = '1.2.0';
 const SNIPPET_CHARS = 500;
 const MAX_PAGE_CHARS = 24000;
 
@@ -41,12 +42,14 @@ const SERVER_INSTRUCTIONS = [
   'Use search_jmeter_docs to find documentation pages, and get_jmeter_page to read pages in full.',
   'Use lint_jmx_snippet to validate JMX test plan snippets against performance best practices.',
   'Use calculate_workload_model to compute Little\'s Law concurrency, pacing, ramp-up, and JVM heap sizing.',
+  'Use plan_distributed_testing to configure Master-Worker RMI ports, user.properties, firewall rules, and Docker manifests.',
   'Use lookup_jmeter_property, get_jsr223_recipe, and lookup_error_playbook for precise configuration and troubleshooting guidance.',
   'Always cite the docs.jmeter.ai URL you used when answering.',
 ].join(' ');
 
 /** Strip markdown noise so search snippets stay readable. */
 function snippet(body: string): string {
+
   const cleaned = body
     .replace(/^import .*$/gm, '')
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
@@ -297,7 +300,46 @@ function createServer(): McpServer {
         ],
       };
     },
+  );
 
+  server.registerTool(
+    'plan_distributed_testing',
+
+    {
+      title: 'Plan Distributed Testing Ports & Firewall Rules',
+      description:
+        'Generate Master-Worker RMI port assignments, user.properties, CLI commands, firewall/security group rules, and Docker Compose manifests for distributed load testing.',
+      inputSchema: {
+        controllerIp: z.string().optional().describe('Controller / Master node IP or hostname (default: "10.0.0.5").'),
+        workerIps: z.string().describe('Comma or space-separated list of worker / injector IP addresses (e.g. "10.0.1.10, 10.0.1.11, 10.0.1.12").'),
+        serverPort: z.number().int().min(1024).max(65535).optional().describe('RMI registry port on workers (default: 1099).'),
+        serverRmiLocalPort: z.number().int().min(1024).max(65535).optional().describe('Pinned worker engine port (default: 50000).'),
+        clientRmiLocalPort: z.number().int().min(1024).max(65535).optional().describe('Pinned controller callback port (default: 60000).'),
+        disableSsl: z.boolean().optional().describe('Disable RMI SSL (default: false). Only for isolated labs.'),
+        mode: z.enum(['StrippedBatch', 'Statistical', 'Batch', 'Standard']).optional().describe('Sample transmission mode (default: "StrippedBatch").'),
+        environment: z.enum(['aws', 'azure', 'gcp', 'linux', 'docker', 'k8s']).optional().describe('Target infrastructure environment for firewall/CLI rules (default: "aws").'),
+      },
+    },
+
+    async (params) => {
+      try {
+        const plan = generateDistributedPlan(params);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(plan, null, 2),
+            },
+          ],
+        };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: 'text' as const, text: `Distributed planner error: ${message}` }],
+          isError: true,
+        };
+      }
+    },
   );
 
   return server;
@@ -351,7 +393,7 @@ export async function GET() {
         name: SERVER_NAME,
         version: SERVER_VERSION,
         description:
-          'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, lint JMX test plans, calculate workload sizing, query tuning properties, fetch Groovy recipes, and lookup diagnostic error playbooks.',
+          'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, lint JMX test plans, calculate workload sizing, plan distributed clusters, query tuning properties, fetch Groovy recipes, and lookup diagnostic error playbooks.',
         transport: 'streamable-http',
         endpoint: 'https://docs.jmeter.ai/api/mcp',
         auth: 'none',
@@ -360,6 +402,7 @@ export async function GET() {
           'get_jmeter_page',
           'lint_jmx_snippet',
           'calculate_workload_model',
+          'plan_distributed_testing',
           'lookup_jmeter_property',
           'get_jsr223_recipe',
           'lookup_error_playbook',
@@ -380,4 +423,3 @@ export function DELETE() {
     headers: { 'Content-Type': 'application/json', Allow: 'GET, POST' },
   });
 }
-

@@ -1,0 +1,370 @@
+---
+/**
+ * Interactive JMeter Distributed Testing Port & Firewall Planner (client-side).
+ * Generates exact RMI properties, pinned ports, firewall rules, and verification scripts.
+ */
+import { DISTRIBUTED_PLANNER } from '../../lib/tools-config.mjs';
+
+const { defaults, limits, transmissionModes, environments } = DISTRIBUTED_PLANNER;
+---
+
+<div class="tool" data-distributed-planner data-view="controller">
+  <div class="tool-grid tool-grid--2">
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Controller (Master) IP</span>
+      <input type="text" name="controllerIp" value={defaults.controllerIp} autocomplete="off" spellcheck="false" />
+      <span class="tool-hint">Reachable VPC/LAN IP of controller</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Environment</span>
+      <select name="environment">
+        {environments.map((env) => (
+          <option value={env.id} selected={env.id === defaults.environment}>{env.label}</option>
+        ))}
+      </select>
+      <span class="tool-hint">Target infrastructure topology</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto;grid-column:1/-1">
+      <span class="tool-label">Worker (Injector) IPs</span>
+      <textarea name="workerIps" rows="2" spellcheck="false">{defaults.workerIps}</textarea>
+      <span class="tool-hint">Comma or space-separated IP addresses of remote engines</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">RMI Registry Port (server_port)</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="serverPort" min={limits.port.min} max={limits.port.max} value={defaults.serverPort} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">port</span>
+      </div>
+      <span class="tool-hint">Default 1099 for RMI registry</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Worker Engine Port (server.rmi.localport)</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="serverRmiLocalPort" min={limits.port.min} max={limits.port.max} value={defaults.serverRmiLocalPort} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">port</span>
+      </div>
+      <span class="tool-hint">Pinned port for worker engine object</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Controller Callback Port (client.rmi.localport)</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="clientRmiLocalPort" min={limits.port.min} max={limits.port.max} value={defaults.clientRmiLocalPort} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">port</span>
+      </div>
+      <span class="tool-hint">Pinned return callback for sample metrics</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Sample Transmission Mode</span>
+      <select name="mode">
+        {transmissionModes.map((m) => (
+          <option value={m} selected={m === defaults.mode}>{m}</option>
+        ))}
+      </select>
+      <span class="tool-hint">StrippedBatch minimizes network load</span>
+    </label>
+  </div>
+
+  <div class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+    <label class="tool-check">
+      <input type="checkbox" name="disableSsl" />
+      <span>Disable RMI SSL (<code>server.rmi.ssl.disable=true</code>, lab only)</span>
+    </label>
+  </div>
+
+  <div class="tool-results" aria-live="polite">
+    <div class="tool-card tool-card-primary">
+      <span class="tool-card-label">Total Nodes</span>
+      <span class="tool-card-value" data-total-nodes>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Workers</span>
+      <span class="tool-card-value" data-worker-count>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Pinned Ports</span>
+      <span class="tool-card-value tool-card-sm" data-pinned-ports>-</span>
+    </div>
+  </div>
+
+  <div class="tool-seg" role="tablist" aria-label="Planner Views" style="margin-top:1.5rem;margin-bottom:1rem">
+    <button type="button" class="tool-seg__btn is-active" data-view-btn="controller" role="tab" aria-selected="true">
+      Controller Setup
+    </button>
+    <button type="button" class="tool-seg__btn" data-view-btn="workers" role="tab" aria-selected="false">
+      Worker Setup
+    </button>
+    <button type="button" class="tool-seg__btn" data-view-btn="firewall" role="tab" aria-selected="false">
+      Firewall Rules
+    </button>
+    <button type="button" class="tool-seg__btn" data-view-btn="verification" role="tab" aria-selected="false">
+      Verify Ports
+    </button>
+    <button type="button" class="tool-seg__btn" data-view-btn="docker" role="tab" aria-selected="false">
+      Docker Compose
+    </button>
+  </div>
+
+  <div data-view-panel="controller">
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">Controller user.properties & Command</h4>
+    <pre class="tool-code" data-controller-output tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <div data-view-panel="workers" hidden>
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">Worker Daemon Commands</h4>
+    <pre class="tool-code" data-worker-output tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <div data-view-panel="firewall" hidden>
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">Inbound Security Group / Firewall Rules</h4>
+    <div style="overflow-x:auto">
+      <table class="tool-table" style="width:100%;border-collapse:collapse;font-size:0.85rem;margin-bottom:1rem">
+        <thead>
+          <tr style="border-bottom:1px solid var(--sl-color-hairline);text-align:left">
+            <th style="padding:0.5rem">Direction</th>
+            <th style="padding:0.5rem">Source</th>
+            <th style="padding:0.5rem">Destination</th>
+            <th style="padding:0.5rem">Protocol</th>
+            <th style="padding:0.5rem">Port</th>
+            <th style="padding:0.5rem">Purpose</th>
+          </tr>
+        </thead>
+        <tbody data-firewall-tbody></tbody>
+      </table>
+    </div>
+    <h4 style="margin:1rem 0 0.5rem;font-size:0.95rem">Environment Setup Commands</h4>
+    <pre class="tool-code" data-firewall-cli tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <div data-view-panel="verification" hidden>
+
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">Connectivity Diagnostic Commands (Netcat / PowerShell)</h4>
+    <pre class="tool-code" data-verification-output tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <div data-view-panel="docker" hidden>
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">Docker Compose Cluster Manifest</h4>
+    <pre class="tool-code" data-docker-output tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <ul class="tool-notes" data-notes></ul>
+
+  <div class="tool-actions tool-actions--wrap">
+    <button type="button" class="tool-btn" data-copy-active>Copy active snippet</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-link>Copy shareable link</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
+    <span class="tool-status" data-copy-status aria-live="polite" hidden></span>
+  </div>
+
+  <p class="tool-disclaimer">
+    All calculations run client-side. IP addresses are not stored or sent to any server.
+    {' '}See <a href="/user-manual/remote-test/">Remote Testing Manual</a>
+    {' '}and <a href="/topics/errors/rmi-connection-refused-remote-testing/">RMI Troubleshooting Guide</a>.
+  </p>
+</div>
+
+<script>
+  import { DISTRIBUTED_PLANNER } from '../../lib/tools-config.mjs';
+  import { copyText } from '../../lib/tools-utils.mjs';
+  import {
+    generateDistributedPlan,
+    parseDistributedPlannerParams,
+    serializeDistributedPlannerParams,
+  } from '../../lib/distributed-planner.mjs';
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const controllerIpInput = root.querySelector('input[name="controllerIp"]');
+    const workerIpsInput = root.querySelector('textarea[name="workerIps"]');
+    const serverPortInput = root.querySelector('input[name="serverPort"]');
+    const serverRmiLocalPortInput = root.querySelector('input[name="serverRmiLocalPort"]');
+    const clientRmiLocalPortInput = root.querySelector('input[name="clientRmiLocalPort"]');
+    const disableSslInput = root.querySelector('input[name="disableSsl"]');
+    const modeSelect = root.querySelector('select[name="mode"]');
+    const envSelect = root.querySelector('select[name="environment"]');
+
+    const totalNodesEl = root.querySelector('[data-total-nodes]');
+    const workerCountEl = root.querySelector('[data-worker-count]');
+    const pinnedPortsEl = root.querySelector('[data-pinned-ports]');
+
+    const controllerOut = root.querySelector('[data-controller-output]');
+    const workerOut = root.querySelector('[data-worker-output]');
+    const firewallTbody = root.querySelector('[data-firewall-tbody]');
+    const firewallCliOut = root.querySelector('[data-firewall-cli]');
+    const verificationOut = root.querySelector('[data-verification-output]');
+    const dockerOut = root.querySelector('[data-docker-output]');
+    const notesEl = root.querySelector('[data-notes]');
+    const status = root.querySelector('[data-copy-status]');
+
+    let currentPlan = null;
+    let activeView = 'controller';
+
+    function state() {
+      return {
+        controllerIp: controllerIpInput.value,
+        workerIps: workerIpsInput.value,
+        serverPort: Number(serverPortInput.value) || DISTRIBUTED_PLANNER.defaults.serverPort,
+        serverRmiLocalPort: Number(serverRmiLocalPortInput.value) || DISTRIBUTED_PLANNER.defaults.serverRmiLocalPort,
+        clientRmiLocalPort: Number(clientRmiLocalPortInput.value) || DISTRIBUTED_PLANNER.defaults.clientRmiLocalPort,
+        disableSsl: disableSslInput.checked,
+        mode: modeSelect.value,
+        environment: envSelect.value,
+      };
+    }
+
+    function showStatus(msg) {
+      if (!status) return;
+      status.hidden = !msg;
+      status.textContent = msg || '';
+      if (msg) setTimeout(() => showStatus(''), 1600);
+    }
+
+    function renderView() {
+      root.querySelectorAll('[data-view-panel]').forEach((p) => {
+        p.hidden = p.getAttribute('data-view-panel') !== activeView;
+      });
+      root.querySelectorAll('[data-view-btn]').forEach((btn) => {
+        const isCurrent = btn.getAttribute('data-view-btn') === activeView;
+        btn.classList.toggle('is-active', isCurrent);
+        btn.setAttribute('aria-selected', String(isCurrent));
+      });
+    }
+
+    function recompute() {
+      const s = state();
+      currentPlan = generateDistributedPlan(s);
+
+      if (totalNodesEl) totalNodesEl.textContent = String(currentPlan.summary.totalNodes);
+      if (workerCountEl) workerCountEl.textContent = String(currentPlan.summary.workerCount);
+      if (pinnedPortsEl) pinnedPortsEl.textContent = currentPlan.summary.pinnedPorts.join(', ');
+
+      if (controllerOut) {
+        controllerOut.textContent = `${currentPlan.controller.userProperties}\n\n# CLI Run Command:\n${currentPlan.controller.cliCommand}`;
+      }
+
+      if (workerOut) {
+        const cmdLines = currentPlan.worker.instances.map((inst, i) => `# Worker ${i + 1} (${inst.ip}):\n${inst.startupCommand}`).join('\n\n');
+        workerOut.textContent = `${currentPlan.worker.userProperties}\n\n${cmdLines}`;
+      }
+
+      if (firewallTbody) {
+        firewallTbody.innerHTML = currentPlan.firewallRules
+          .map(
+            (r) => `<tr style="border-bottom:1px solid var(--sl-color-hairline)">
+              <td style="padding:0.4rem 0.5rem;font-weight:600">${r.direction}</td>
+              <td style="padding:0.4rem 0.5rem"><code>${r.source}</code></td>
+              <td style="padding:0.4rem 0.5rem"><code>${r.destination}</code></td>
+              <td style="padding:0.4rem 0.5rem">${r.protocol}</td>
+              <td style="padding:0.4rem 0.5rem"><code>${r.port}</code></td>
+              <td style="padding:0.4rem 0.5rem">${r.purpose}</td>
+            </tr>`,
+          )
+          .join('');
+      }
+
+      if (firewallCliOut) {
+        firewallCliOut.textContent = currentPlan.envSnippet;
+      }
+
+      if (verificationOut) {
+        verificationOut.textContent = `${currentPlan.verification.bash}\n\n${currentPlan.verification.powershell}`;
+      }
+
+      if (dockerOut) {
+        dockerOut.textContent = currentPlan.dockerCompose;
+      }
+
+      if (notesEl) {
+        notesEl.innerHTML = currentPlan.notes.map((n) => `<li>${n}</li>`).join('');
+      }
+
+      root.dataset.shareQuery = serializeDistributedPlannerParams(currentPlan.state);
+    }
+
+    [controllerIpInput, workerIpsInput, serverPortInput, serverRmiLocalPortInput, clientRmiLocalPortInput].forEach((el) => {
+      el.addEventListener('input', recompute);
+    });
+
+    [disableSslInput, modeSelect, envSelect].forEach((el) => {
+      el.addEventListener('change', recompute);
+    });
+
+    root.querySelectorAll('[data-view-btn]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activeView = btn.getAttribute('data-view-btn') || 'controller';
+        renderView();
+      });
+    });
+
+    root.querySelector('[data-copy-active]')?.addEventListener('click', async () => {
+      let textToCopy = '';
+      if (activeView === 'controller') textToCopy = controllerOut?.textContent || '';
+      else if (activeView === 'workers') textToCopy = workerOut?.textContent || '';
+      else if (activeView === 'firewall') {
+        const rulesTable = currentPlan.firewallRules
+          .map((r) => `${r.direction} | ${r.protocol} | Port ${r.port} | From: ${r.source} -> To: ${r.destination} (${r.purpose})`)
+          .join('\n');
+        textToCopy = `${rulesTable}\n\n${currentPlan.envSnippet}`;
+      } else if (activeView === 'verification') textToCopy = verificationOut?.textContent || '';
+      else if (activeView === 'docker') textToCopy = dockerOut?.textContent || '';
+
+      try {
+
+        await copyText(textToCopy);
+        showStatus('Copied to clipboard');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector('[data-copy-link]')?.addEventListener('click', async () => {
+      const url = `${window.location.origin}${window.location.pathname}?${root.dataset.shareQuery || ''}`;
+      try {
+        await copyText(url);
+        history.replaceState(null, '', `?${root.dataset.shareQuery || ''}`);
+        showStatus('Link copied');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector('[data-reset]')?.addEventListener('click', () => {
+      const def = DISTRIBUTED_PLANNER.defaults;
+      controllerIpInput.value = def.controllerIp;
+      workerIpsInput.value = def.workerIps;
+      serverPortInput.value = String(def.serverPort);
+      serverRmiLocalPortInput.value = String(def.serverRmiLocalPort);
+      clientRmiLocalPortInput.value = String(def.clientRmiLocalPort);
+      disableSslInput.checked = def.disableSsl;
+      modeSelect.value = def.mode;
+      envSelect.value = def.environment;
+      recompute();
+      showStatus('Reset to defaults');
+    });
+
+    const params = parseDistributedPlannerParams(new URLSearchParams(window.location.search));
+    controllerIpInput.value = params.controllerIp;
+    workerIpsInput.value = params.workerIps;
+    serverPortInput.value = String(params.serverPort);
+    serverRmiLocalPortInput.value = String(params.serverRmiLocalPort);
+    clientRmiLocalPortInput.value = String(params.clientRmiLocalPort);
+    disableSslInput.checked = params.disableSsl;
+    modeSelect.value = params.mode;
+    envSelect.value = params.environment;
+
+    recompute();
+    renderView();
+  }
+
+  document.querySelectorAll('[data-distributed-planner]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll('[data-distributed-planner]').forEach(init);
+  });
+</script>

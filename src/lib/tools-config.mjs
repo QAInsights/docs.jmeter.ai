@@ -154,6 +154,36 @@ export const CLI_BUILDER = {
 };
 
 /**
+ * Distributed Testing Port & Firewall Planner bounds and defaults.
+ */
+export const DISTRIBUTED_PLANNER = {
+  limits: {
+    port: { min: 1024, max: 65535 },
+    maxWorkers: 100,
+    ipMaxLen: 64,
+  },
+  defaults: {
+    controllerIp: '10.0.0.5',
+    workerIps: '10.0.1.10, 10.0.1.11, 10.0.1.12',
+    serverPort: 1099,
+    serverRmiLocalPort: 50000,
+    clientRmiLocalPort: 60000,
+    disableSsl: false,
+    mode: 'StrippedBatch',
+    environment: 'aws',
+  },
+  transmissionModes: ['StrippedBatch', 'Statistical', 'Batch', 'Standard'],
+  environments: [
+    { id: 'aws', label: 'AWS VPC (Security Groups)' },
+    { id: 'azure', label: 'Azure VNet (NSG)' },
+    { id: 'gcp', label: 'GCP VPC (Cloud Firewall)' },
+    { id: 'linux', label: 'Linux (iptables / UFW)' },
+    { id: 'docker', label: 'Docker Compose' },
+    { id: 'k8s', label: 'Kubernetes' },
+  ],
+};
+
+/**
  * Build a case-insensitive exact-name regex from configurable key names.
  * @param {string[]} [names]
  * @returns {RegExp}
