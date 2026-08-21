@@ -1,0 +1,121 @@
+---
+title: "JMeter CSV Data Set Config & Parameterization"
+seoTitle: "JMeter CSV Data Set Config and Parameterization Guide"
+description: "Master data-driven testing in JMeter: CSV Data Set Config sharing modes (All threads vs Current thread group), EOF rules, and distributed CSV testing."
+keywords:
+  - CSV Data Set Config
+  - JMeter parameterization
+  - JMeter CSV sharing mode
+  - JMeter data driven testing
+  - CSV EOF JMeter
+difficulty: beginner
+guideType: how-to
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: csv-data-set-config-guide
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter CSV Data Set Config & Parameterization
+
+Data-driven testing ensures that virtual users execute requests using realistic, varied inputs (usernames, passwords, product IDs, search queries, payment tokens) rather than repeating identical static payloads. 
+
+The **CSV Data Set Config** element is Apache JMeter’s primary component for feeding external CSV data into test plans. This guide explains configuration parameters, **Sharing Modes**, End-of-File (EOF) behaviors, and best practices for distributed load testing.
+
+---
+
+## 1. Core Configuration Fields Reference
+
+| Parameter | Recommended Setting | Description |
+|---|---|---|
+| **Filename** | `users.csv` or `./data/users.csv` | Path to CSV file. Relative paths resolve from JMeter launch directory. |
+| **File encoding** | `UTF-8` | Encoding format. Avoid leaving blank if files contain international characters. |
+| **Variable Names** | `username,password,userRole` | Comma-separated variable names. If left blank, first row of CSV is read as headers. |
+| **Ignore first line** | `True` (if CSV has header row) | Prevents the header text row from being processed as actual test data. |
+| **Delimiter** | `,` (or `\t` for tab-separated) | Character separating values in each row. |
+| **Allow quoted data?** | `True` | Allows values containing commas wrapped in quotes (`"New York, NY"`). |
+| **Recycle on EOF?** | `True` or `False` | When the end of the file is reached, determines whether to loop back to top. |
+| **Stop thread on EOF?** | `True` or `False` | Stops the virtual user thread when the file runs out of records. |
+| **Sharing mode** | `All threads` / `Current thread group` | Controls how file cursors are shared across threads. |
+
+---
+
+## 2. Understanding Sharing Modes
+
+Sharing Mode defines which virtual users share the CSV file read cursor:
+
+### A. All Threads (Default & Most Common)
+- **Behavior**: All virtual users across all Thread Groups read from a single shared file cursor.
+- **Result**: Every row in the CSV file is read sequentially across the entire test. No two threads receive the same row on a given step.
+- **Best for**: Unique test credentials, single-use coupon codes, unique transaction IDs.
+
+### B. Current Thread Group
+- **Behavior**: Each Thread Group maintains its own independent file read cursor.
+- **Result**: Thread Group A and Thread Group B both start reading from row 1 of the file independently.
+- **Best for**: Multi-stage workflows where each group needs access to the same baseline pool of customer IDs.
+
+### C. Current Thread
+- **Behavior**: Every virtual user thread opens its own separate file cursor and reads from row 1.
+- **Result**: If you have 50 threads, each thread reads line 1 on iteration 1, line 2 on iteration 2.
+- **Best for**: Per-thread dedicated datasets or isolated user state files.
+
+### D. Identifier (Named Sharing Group)
+- Assign an arbitrary string (e.g., `group_checkout`). All CSV Data Set configs sharing that identifier string share the same cursor.
+
+---
+
+## 3. End-of-File (EOF) Behaviors
+
+| Recycle on EOF? | Stop thread on EOF? | Behavior when rows run out |
+|---|---|---|
+| **True** | **False** | **Infinite Loop**: Automatically wraps back to line 1 and continues indefinitely. |
+| **False** | **True** | **Graceful Shutdown**: The thread stops immediately upon exhausting data. |
+| **False** | **False** | **Default Value (`<EOF>`)**: Variables are assigned literal string `<EOF>` on subsequent reads. |
+
+---
+
+## 4. Multi-Slave & Distributed Testing Considerations
+
+When running JMeter in distributed master-slave mode (`jmeter -r`):
+
+:::caution[CSV Files Must Exist on Remote Injectors]
+JMeter does **not** automatically upload CSV data files to remote slave servers. You must copy the CSV file to the exact same relative directory path on every remote server before starting the test.
+:::
+
+### Strategy 1: Partitioning Data Files
+To ensure remote slaves do not use duplicate credentials:
+- Split `users.csv` into `users_slave1.csv` and `users_slave2.csv`.
+- In CSV Data Set Config, reference dynamic filename:
+```text
+users_\${__P(nodeId, 1)}.csv
+```
+
+### Strategy 2: Modular Offset Scripting
+Use the `__CSVRead` function with thread and host offsets for mathematical partitioning without physical file splits.
+
+---
+
+## 5. Parameterization Best Practices
+
+1. **Keep Paths Relative**: Always use `./data/users.csv` instead of absolute Windows paths (`C:\Users\...`) to ensure portability across developer machines, Docker containers, and CI/CD agents.
+2. **Always Set Variable Names Explicitly**: Defining `username,password` in the element rather than relying on header rows avoids subtle bugs if CSV header formatting changes.
+3. **Use Memory Buffers for Huge CSVs**: For datasets with millions of rows, ensure file storage has fast SSD read latency.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Audit your CSV Data Set Config elements: convert absolute paths to relative paths and verify that EOF settings match your test duration goals.
+</Fragment>
+<Fragment slot="related">
+- [Functions & Variables Guide](/topics/functions-and-variables/)
+- [CSV Data Set Errors Playbook](/topics/errors/csv-data-set-file-not-found-sharing/)
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+- [Best Practices Manual](/user-manual/best-practices/)
+</Fragment>
+<Fragment slot="mistakes">
+Using absolute file paths that break in CI/CD containers; leaving "Recycle on EOF" false with "Stop thread" false causing variables to be set to literal `<EOF>`.
+</Fragment>
+<Fragment slot="troubleshooting">
+If threads immediately terminate upon launch, check whether your CSV file is empty or missing from the working directory.
+</Fragment>
+</RelatedContent>

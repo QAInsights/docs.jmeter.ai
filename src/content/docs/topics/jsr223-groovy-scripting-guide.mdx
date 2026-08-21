@@ -1,0 +1,251 @@
+---
+title: "JMeter JSR223 Groovy Scripting Guide & Cookbook"
+seoTitle: "JMeter JSR223 Groovy Scripting Guide & Cookbook"
+description: "Master JMeter JSR223 Groovy scripting: implicit objects (vars, props, prev, ctx), JSON slurping, HMAC hashing, caching, and load-tested recipes."
+keywords:
+  - JMeter JSR223
+  - JMeter Groovy
+  - JMeter scripting
+  - vars props ctx prev
+  - JsonSlurper JMeter
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "14 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jsr223-groovy-scripting-guide
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter JSR223 Groovy Scripting Guide & Cookbook
+
+Apache JMeter provides JSR223 test elements (Samplers, PreProcessors, PostProcessors, Assertions, and Listeners) to execute custom logic during a test run. **Apache Groovy** is the standard scripting engine in JMeter: it compiles directly to Java bytecode, supports automatic script caching, and executes with near-native Java performance.
+
+This guide provides a comprehensive reference to implicit script objects, compilation caching rules, and production-tested Groovy recipes for real-world load testing.
+
+:::tip[Always Use Groovy with Compilation Caching]
+Always select **groovy** as the language in JSR223 elements and keep **"Cache compiled script if available"** enabled. Never use BeanShell or JavaScript for load paths—Groovy with caching is up to 50x faster and prevents JVM Metaspace exhaustion.
+:::
+
+## Implicit Objects Reference
+
+Every JSR223 test element automatically exposes several pre-configured objects in the script scope:
+
+| Object | Class / Type | Description & Primary Use Case |
+|---|---|---|
+| `vars` | `org.apache.jmeter.threads.JMeterVariables` | Thread-local variable store. Read and write variables for the current virtual user. |
+| `props` | `java.util.Properties` | Global properties shared across **all threads and thread groups** in the JMeter JVM instance. |
+| `prev` | `org.apache.jmeter.samplers.SampleResult` | Result of the **previous** sampler (PostProcessors, Assertions, Listeners). |
+| `sampler` | `org.apache.jmeter.samplers.Sampler` | The current sampler object being executed or prepared (PreProcessors, Samplers). |
+| `ctx` | `org.apache.jmeter.threads.JMeterContext` | Internal engine context: thread number, engine state, active thread count, and current sampler. |
+| `log` | `org.slf4j.Logger` | SLF4J logger instance writing to `jmeter.log` (e.g., `log.info("msg")`, `log.error("err")`). |
+| `OUT` | `java.io.PrintStream` | Standard system output (`System.out`). |
+| `args` | `String[]` | Array of script parameter tokens passed in the **Parameters** field. |
+
+---
+
+## 1. Thread Variables (`vars`)
+
+`vars` holds variables specific to the executing thread. Variables created here cannot be seen by other virtual users.
+
+```groovy
+// Read variable
+String token = vars.get("authToken")
+String defaultId = vars.get("userId") ?: "guest-1000"
+
+// Write variable
+vars.put("orderId", "ORD-98765")
+vars.put("isEligible", "true")
+
+// Store non-string objects (accessible only within the same thread)
+List<String> items = ["item_A", "item_B", "item_C"]
+vars.putObject("userCart", items)
+
+// Retrieve stored object
+List<String> cart = (List<String>) vars.getObject("userCart")
+```
+
+:::caution[Avoid String Interpolation Inside Cached Scripts]
+Never write `vars.get("\${varName}")` or `String id = "\${userId}"` inside a cached JSR223 script. When JMeter interpolates `\${...}` before compilation, the script text changes every iteration, destroying compilation cache and causing memory leaks. Always use `vars.get("userId")`.
+:::
+
+---
+
+## 2. Global Properties (`props`)
+
+`props` is a thread-safe `java.util.Properties` instance visible across all threads, Thread Groups, and setUp/tearDown Thread Groups.
+
+```groovy
+// Read property with a fallback default
+String apiHost = props.getProperty("app.host", "api.example.com")
+
+// Write a property across thread groups
+props.put("sharedAuthKey", "key-live-99212")
+
+// Synchronized counter / token rotation
+synchronized (props) {
+    int currentCounter = Integer.parseInt(props.getProperty("globalCounter", "0"))
+    props.put("globalCounter", String.valueOf(currentCounter + 1))
+}
+```
+
+---
+
+## 3. Previous Sample Result (`prev`)
+
+Available in **JSR223 PostProcessor**, **JSR223 Assertion**, and **JSR223 Listener** to inspect or modify response metadata:
+
+```groovy
+// Read response status and body
+int responseCode = prev.getResponseCode().toInteger()
+String responseBody = prev.getResponseDataAsString()
+long latencyMs = prev.getLatency()
+long responseTime = prev.getTime()
+
+// Modify sample result dynamically
+if (responseBody.contains("SESSION_EXPIRED")) {
+    prev.setSuccessful(false)
+    prev.setResponseCode("401")
+    prev.setResponseMessage("Session expired detected in payload")
+}
+
+// Ignore sampler from final dashboard / metrics if needed
+if (prev.getSampleLabel().startsWith("HealthCheck")) {
+    prev.setIgnore()
+}
+```
+
+---
+
+## 4. Groovy Cookbook & Practical Recipes
+
+### Recipe A: Parsing & Extracting JSON with JsonSlurper
+
+```groovy
+import groovy.json.JsonSlurper
+
+String response = prev.getResponseDataAsString()
+def json = new JsonSlurper().parseText(response)
+
+// Extract top-level or nested values
+String jwtToken = json.auth.access_token
+int totalOrders = json.data.orders.size()
+
+// Find items matching condition
+def activeOrder = json.data.orders.find { it.status == "ACTIVE" }
+if (activeOrder) {
+    vars.put("activeOrderId", activeOrder.id.toString())
+}
+
+vars.put("jwtToken", jwtToken)
+vars.put("totalOrders", totalOrders.toString())
+```
+
+### Recipe B: Generating JSON Request Payloads with JsonOutput
+
+```groovy
+import groovy.json.JsonOutput
+
+def payload = [
+    timestamp: System.currentTimeMillis(),
+    customerId: vars.get("customerId") ?: "cust-1",
+    actions: [
+        [action: "PAGE_VIEW", target: "/checkout"],
+        [action: "CLICK_BUTTON", target: "btn_place_order"]
+    ],
+    metadata: [
+        clientVersion: "v2.4.0",
+        platform: "web"
+    ]
+]
+
+String jsonString = JsonOutput.toJson(payload)
+vars.put("dynamicPayload", jsonString)
+```
+
+### Recipe C: Computing HMAC-SHA256 Signatures
+
+Used for signing requests to AWS, Stripe, or custom cryptographic APIs:
+
+```groovy
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+
+String secret = "mySuperSecretKey123"
+String dataToSign = vars.get("timestamp") + "." + vars.get("userId")
+
+Mac mac = Mac.getInstance("HmacSHA256")
+SecretKeySpec secretKey = new SecretKeySpec(secret.getBytes("UTF-8"), "HmacSHA256")
+mac.init(secretKey)
+
+byte[] rawHmac = mac.doFinal(dataToSign.getBytes("UTF-8"))
+String signature = rawHmac.encodeHex().toString()
+
+vars.put("apiSignature", signature)
+```
+
+### Recipe D: Date & Timestamp Calculations
+
+```groovy
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+
+// ISO-8601 UTC timestamp
+String isoNow = Instant.now().toString()
+
+// Future expiration timestamp (7 days from now)
+String expiresAt = Instant.now().plus(7, ChronoUnit.DAYS).toString()
+
+// Custom formatted date
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    .withZone(ZoneId.of("UTC"))
+String formattedDate = formatter.format(Instant.now())
+
+vars.put("isoNow", isoNow)
+vars.put("expiresAt", expiresAt)
+vars.put("formattedDate", formattedDate)
+```
+
+### Recipe E: Writing Error Payloads to a Debug File
+
+```groovy
+if (!prev.isSuccessful()) {
+    String logLine = "${new Date().format('yyyy-MM-dd HH:mm:ss')} | " +
+                     "Thread: ${ctx.getThreadNum()} | " +
+                     "URL: ${prev.getUrlAsString()} | " +
+                     "Code: ${prev.getResponseCode()} | " +
+                     "Body: ${prev.getResponseDataAsString()}\n"
+
+    new File("jmeter-failures.log") << logLine
+}
+```
+
+---
+
+## 5. Performance Best Practices
+
+1. **Enable Script Caching**: Check **"Cache compiled script if available"** on every JSR223 element.
+2. **Never interpolate variables into script text**: Write `vars.get("token")`, not `"\${token}"`.
+3. **Use SLF4J parameterized logging**: Write `log.debug("Processing user {}", userId)` instead of string concatenation `log.debug("Processing user " + userId)` to save memory when debug logging is disabled.
+4. **Avoid heavy file I/O**: Do not write file logs for every sampler during a high-throughput run. Guard disk operations with `if (!prev.isSuccessful())`.
+5. **Pre-instantiate expensive objects**: If reusable across runs, store pre-compiled formatters or cryptographic helpers in static fields or `props`.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Replace legacy BeanShell samplers with JSR223 Groovy and verify that "Cache compiled script" is checked across all test elements.
+</Fragment>
+<Fragment slot="related">
+- [Functions and Variables Guide](/topics/functions-and-variables/)
+- [JMeter Assertions Guide](/topics/jmeter-assertions-guide/)
+- [JSR223 Script Error Troubleshooting](/topics/errors/jsr223-groovy-script-errors/)
+- [Component Reference](/user-manual/component-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Using `\${var}` string interpolation inside JSR223 script bodies which destroys compilation caching; selecting BeanShell or JavaScript instead of Groovy; performing unbuffered disk writes inside high-frequency loops.
+</Fragment>
+<Fragment slot="troubleshooting">
+Check `jmeter.log` for compilation and runtime stack traces. Verify variable existence with `vars.get("varName") ?: "default"` to prevent `NullPointerException`.
+</Fragment>
+</RelatedContent>

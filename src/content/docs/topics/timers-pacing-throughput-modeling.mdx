@@ -1,0 +1,156 @@
+---
+title: "JMeter Timers, Think Time, and Pacing Guide"
+seoTitle: "JMeter Timers, Think Time, and Pacing Guide"
+description: "Master JMeter timers, think time, and pacing: Constant, Gaussian, Precise Throughput Timer, execution order, and calculating realistic TPS models."
+keywords:
+  - JMeter timers
+  - JMeter pacing
+  - Constant Throughput Timer
+  - Precise Throughput Timer
+  - JMeter think time
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "13 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: timers-pacing-throughput-modeling
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Timers, Think Time, and Pacing Guide
+
+In real-world traffic, human users and client applications do not hammer servers continuously with zero delay. Without timers, JMeter threads fire requests as fast as the network and CPU permit, creating unrealistic load spikes and artificial bottlenecks.
+
+This guide explains **Timer Execution Scoping**, how to implement realistic **Think Time**, how to configure **Throughput Pacing**, and how to model target transactions-per-second (TPS) accurately.
+
+:::important[Critical Rule: Timers Execute BEFORE Samplers]
+A common beginner mistake is assuming a timer delays *after* a request completes. In JMeter's execution order:
+
+`Timers` &rarr; `PreProcessors` &rarr; `Sampler` &rarr; `PostProcessors` &rarr; `Assertions` &rarr; `Listeners`
+
+A timer attached to a sampler pauses the thread **before** that sampler is dispatched.
+:::
+
+---
+
+## 1. Think Time vs Pacing: What is the Difference?
+
+| Concept | Definition | Goal | Recommended Element |
+|---|---|---|---|
+| **Think Time** | The pause a human user spends reading, typing, or deciding between steps. | Simulate human delay and realistic concurrency. | **Uniform Random Timer**, **Gaussian Random Timer**, **Flow Control Action** |
+| **Pacing** | Controlled delay added per iteration to ensure each virtual user maintains a fixed iteration rate. | Achieve consistent, predictable total TPS regardless of response time variations. | **Constant Throughput Timer**, **Precise Throughput Timer**, **Flow Control Action (Groovy)** |
+
+---
+
+## 2. Timer Types & Usage Patterns
+
+### A. Uniform Random Timer (Recommended for Human Simulation)
+Delivers a random delay uniformly distributed between a minimum and maximum offset.
+
+- **Formula**: `Delay = Constant Delay Offset + (Random Number * Random Delay Maximum)`
+- **Example**:
+  - `Constant Delay Offset`: `2000` (ms)
+  - `Random Delay Maximum`: `3000` (ms)
+  - **Result**: Pauses randomly between **2,000 ms and 5,000 ms** (2s to 5s).
+
+### B. Gaussian Random Timer
+Distributes delays along a bell curve (normal distribution) around a mean value, closely matching human behavioral variance.
+
+- `Constant Delay Offset`: `3000` ms (Mean / Average)
+- `Deviation`: `1000` ms (Standard deviation)
+- **Result**: ~68% of delays fall between 2s and 4s; ~95% fall between 1s and 5s.
+
+### C. Flow Control Action (Think Time Component)
+Instead of attaching timers to individual samplers, you can insert a standalone **Flow Control Action** sampler (formerly *Test Action*):
+- **Action**: `Pause`
+- **Duration**: `\${__Random(1000,3000)}` ms
+- **Advantage**: It visually appears as an explicit sequential step in your test tree.
+
+---
+
+## 3. Pacing & Target Throughput Modeling
+
+When your performance test SLA requires maintaining a fixed throughput (e.g., exactly **500 Requests Per Minute** or **100 TPS**), use throughput timers.
+
+### Constant Throughput Timer (CTT)
+Calculates delays to pace threads toward a global or per-thread target.
+
+- **Target Throughput (in samples per minute)**: Target rate (e.g., `6000` for 100 RPS).
+- **Calculate Throughput based on**:
+  - `this thread only`: Each thread paces independently to hit the target rate.
+  - `all active threads`: Threads coordinate to collectively hit the total target rate.
+  - `all active threads in current thread group`: Scoped to the enclosing group.
+
+:::caution[CTT Can Only DELAY Threads, Not Accelerate Them]
+If your application takes 2 seconds to respond and you only have 5 threads, the maximum throughput mathematically possible is `5 / 2s = 2.5 RPS`. A throughput timer cannot speed up slow threads—you must size your thread count to provide sufficient headroom.
+:::
+
+---
+
+## 4. Precise Throughput Timer (Next-Gen Open Model)
+
+Introduced in JMeter modern releases, the **Precise Throughput Timer (PTT)** uses Poisson arrival processes to generate independent, realistic arrival rates that avoid artificial lockstep synchronization.
+
+### Recommended PTT Configuration:
+- **Target Throughput**: `50` (samples per `second`)
+- **Duration**: `600` (seconds)
+- **Number of threads in the thread group**: Sized with sufficient buffer (e.g., 1.5x expected concurrency).
+- **Random seed**: Allows reproducible arrival schedules across regression runs.
+
+---
+
+## 5. Dynamic Pacing Calculation with JSR223 Groovy
+
+To enforce exact end-to-end iteration pacing (e.g., "Each virtual user iteration must take exactly 10 seconds regardless of how long API calls took"):
+
+1. Add a **JSR223 PreProcessor** at the start of the iteration:
+```groovy
+// Record iteration start time
+vars.putObject("iterationStartTime", System.currentTimeMillis())
+```
+
+2. Add a **Flow Control Action** + **JSR223 Timer** at the end of the iteration:
+```groovy
+long targetIterationDurationMs = 10000 // 10 seconds pacing
+long startTime = (Long) vars.getObject("iterationStartTime")
+long elapsedTime = System.currentTimeMillis() - startTime
+long sleepTime = targetIterationDurationMs - elapsedTime
+
+if (sleepTime > 0) {
+    return sleepTime
+} else {
+    log.warn("Iteration overrun by {} ms! Target was {} ms.", Math.abs(sleepTime), targetIterationDurationMs)
+    return 0
+}
+```
+
+---
+
+## 6. Common Pitfalls & Best Practices
+
+1. **Beware of Global Timers**: A timer placed at the root of a Thread Group pauses *before every single sampler* in that group. If you have 10 samplers and a 5-second timer, each iteration takes at least 50 seconds.
+2. **Combine with Thread Calculators**: Use the [Thread Calculator](/tools/thread-calculator/) to compute required thread concurrency given target RPS and expected latency:
+
+```text
+Threads = Target RPS * (Response Time in seconds + Think Time in seconds)
+```
+
+3. **Avoid Constant Timers for Humans**: Static constant delays (e.g., exactly 2000 ms) create unnatural lockstep requests where thousands of virtual users hit the backend simultaneously in synchronized waves.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Use the interactive Thread Calculator tool to calculate thread requirements before applying Constant or Precise Throughput Timers.
+</Fragment>
+<Fragment slot="related">
+- [Thread Calculator Tool](/tools/thread-calculator/)
+- [Workload Modeling & Thread Groups](/topics/thread-groups-workload-modeling/)
+- [JSR223 Groovy Scripting Guide](/topics/jsr223-groovy-scripting-guide/)
+- [Component Reference](/user-manual/component-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Placing timers at the root of a thread group unintentionally delaying every HTTP sampler; failing to allocate enough threads to achieve the target throughput specified in Constant Throughput Timer.
+</Fragment>
+<Fragment slot="troubleshooting">
+If throughput falls below the target configured in your timer, check thread CPU utilization and average response time—the system may be bottlenecked and unable to service more iterations.
+</Fragment>
+</RelatedContent>

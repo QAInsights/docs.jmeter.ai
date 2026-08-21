@@ -3,8 +3,8 @@
 > Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience. This is an independent community resource and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation. For official documentation, visit jmeter.apache.org.
 
 Site: https://docs.jmeter.ai
-Pages: 138
-Generated: 2026-08-19T17:22:39.928Z
+Pages: 148
+Generated: 2026-08-21T05:03:59.081Z
 ---
 Title: User's Manual: Getting Started
 URL: https://docs.jmeter.ai/getting-started/get-started/
@@ -6386,6 +6386,154 @@ Literal `\${accessToken}` means the extractor did not run or the path is wrong. 
 
 
 ---
+Title: JMeter Mutual TLS (mTLS) & Client Certificates
+URL: https://docs.jmeter.ai/topics/client-certificates-mtls-keystore/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Mutual TLS (mTLS) & Client Certificates
+
+**Mutual TLS (mTLS)**—also known as two-way SSL authentication—requires both the client and the server to verify each other’s cryptographic certificates during the TLS handshake. It is widely used in banking APIs, zero-trust enterprise microservices, B2B integrations, and healthcare systems.
+
+This guide explains how to configure client certificates in Apache JMeter using PKCS#12 / JKS keystores, assign unique certificates per virtual user using **KeyStore Configuration**, and troubleshoot SSL handshake errors.
+
+---
+
+## 1. Preparing the Keystore
+
+JMeter supports both standard **PKCS#12** (`.p12` / `.pfx`) and Java **JKS** (`.jks`) keystores.
+
+If you have a client certificate (`client.crt`) and private key (`client.key`):
+
+```bash
+# Convert PEM cert + key into PKCS12 format
+openssl pkcs12 -export \
+  -in client.crt \
+  -inkey client.key \
+  -out client-keystore.p12 \
+  -name "client_user_1" \
+  -password pass:secretPassword123
+```
+
+---
+
+## 2. Global Single-Certificate Setup (via System Properties)
+
+If all threads in your load test use the **same** client certificate, you can configure JMeter globally via `system.properties` or command-line parameters:
+
+### In `bin/system.properties` (or passed via `-D` in CLI):
+```properties
+javax.net.ssl.keyStore=/path/to/client-keystore.p12
+javax.net.ssl.keyStorePassword=secretPassword123
+javax.net.ssl.keyStoreType=PKCS12
+
+# If target server uses a private custom CA root:
+javax.net.ssl.trustStore=/path/to/custom-truststore.jks
+javax.net.ssl.trustStorePassword=trustSecret123
+```
+
+### In Non-GUI CLI Mode:
+```bash
+jmeter -n -t plan.jmx \
+  -Djavax.net.ssl.keyStore=./certs/client.p12 \
+  -Djavax.net.ssl.keyStorePassword=secretPassword123 \
+  -Djavax.net.ssl.keyStoreType=PKCS12 \
+  -l results.jtl
+```
+
+---
+
+## 3. Multiple Unique Certificates per Virtual User (KeyStore Configuration)
+
+In real-world testing (e.g., simulating 1,000 distinct banking customers), each virtual user requires their **own unique client certificate**.
+
+### Step 1: Create a Combined Multi-Certificate Keystore
+Import multiple certificates with sequential alias names (`cert_0`, `cert_1`, `cert_2`, ...):
+
+```bash
+# Import alias 1
+keytool -importkeystore \
+  -srckeystore user1.p12 -srcstoretype PKCS12 -srcstorepass pass1 \
+  -destkeystore multi-client.jks -deststoretype JKS -deststorepass masterPass \
+  -srcalias user1 -destalias cert_0
+
+# Import alias 2
+keytool -importkeystore \
+  -srckeystore user2.p12 -srcstoretype PKCS12 -srcstorepass pass2 \
+  -destkeystore multi-client.jks -deststoretype JKS -deststorepass masterPass \
+  -srcalias user2 -destalias cert_1
+```
+
+### Step 2: Configure `system.properties` for Dynamic Alias Support
+In `system.properties`:
+```properties
+https.use.cached.ssl.context=false
+```
+*(Setting `https.use.cached.ssl.context=false` is essential: it forces JMeter to evaluate the keystore context per thread rather than caching the first certificate across the entire JVM).*
+
+### Step 3: Add the KeyStore Configuration Element
+In your JMeter test plan:
+1. Add **Config Element &rarr; Keystore Configuration**.
+2. Configure fields:
+   - **Preload**: `True`
+   - **Variable name containing certificate alias**: `clientCertAlias`
+   - **Alias start index**: `0`
+   - **Alias end index**: `99` (for 100 certificates)
+
+### Step 4: Map Aliases to Virtual Users
+Add a **User Defined Variables** or **CSV Data Set Config** with `clientCertAlias` variable:
+- Thread 1 gets `cert_0`
+- Thread 2 gets `cert_1`
+- Or use `cert_\${__threadNum}` to auto-map by thread ID.
+
+---
+
+## 4. GUI SSL Manager (Interactive Testing)
+
+For quick interactive debugging in the GUI:
+1. Navigate to **Options &rarr; SSL Manager**.
+2. Select your `.p12` or `.jks` file.
+3. Enter the keystore password when prompted.
+
+---
+
+## 5. Troubleshooting & Debugging mTLS
+
+If requests fail with `javax.net.ssl.SSLHandshakeException: Received fatal alert: bad_certificate` or `handshake_failure`:
+
+1. **Enable TLS Handshake Debugging**:
+   Run JMeter with `-Djavax.net.debug=ssl:handshake` to output verbose TLS negotiation steps:
+   ```bash
+   jmeter -n -t plan.jmx -Djavax.net.debug=ssl:handshake -l results.jtl
+   ```
+2. **Verify Certificate Expiration & Key Usage**:
+   ```bash
+   keytool -list -v -keystore client-keystore.p12 -storetype PKCS12
+   ```
+3. **Verify Server CA Trust**:
+   Ensure the server's certificate chain is signed by a CA in your `trustStore` (or standard Java `cacerts`).
+
+<RelatedContent>
+<Fragment slot="next-step">
+Convert your client certificates into PKCS12 format and verify with a 1-thread GUI test using Options -> SSL Manager.
+</Fragment>
+<Fragment slot="related">
+- [JWT, OAuth & SSO Guide](/topics/jwt-oauth-sso/)
+- [SSL Handshake Error Playbook](/topics/errors/ssl-handshake-exception/)
+- [SSL Peer Unverified Playbook](/topics/errors/ssl-peer-unverified/)
+- [Properties Reference](/user-manual/properties-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Leaving `https.use.cached.ssl.context=true` when running multi-certificate tests (causing all threads to reuse the first thread's certificate); using expired certificates; failing to supply client private keys.
+</Fragment>
+<Fragment slot="troubleshooting">
+If the server rejects the certificate with "Certificate unknown" or "Bad Certificate", verify with OpenSSL CLI: `openssl s_client -connect host:443 -cert client.crt -key client.key`.
+</Fragment>
+</RelatedContent>
+
+
+---
 Title: JMeter Correlation and Dynamic Values
 URL: https://docs.jmeter.ai/topics/correlation-dynamic-values/
 ---
@@ -7288,6 +7436,1222 @@ Forgetting to escape commas; using variables when you need cross-thread properti
 </Fragment>
 <Fragment slot="troubleshooting">
 If values look like literal `\${…}`, check extractor scope, variable name spelling (case-sensitive), and that the sampler order places extractors before dependent requests.
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter CSV Data Set Config & Parameterization
+URL: https://docs.jmeter.ai/topics/csv-data-set-config-guide/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter CSV Data Set Config & Parameterization
+
+Data-driven testing ensures that virtual users execute requests using realistic, varied inputs (usernames, passwords, product IDs, search queries, payment tokens) rather than repeating identical static payloads. 
+
+The **CSV Data Set Config** element is Apache JMeter’s primary component for feeding external CSV data into test plans. This guide explains configuration parameters, **Sharing Modes**, End-of-File (EOF) behaviors, and best practices for distributed load testing.
+
+---
+
+## 1. Core Configuration Fields Reference
+
+| Parameter | Recommended Setting | Description |
+|---|---|---|
+| **Filename** | `users.csv` or `./data/users.csv` | Path to CSV file. Relative paths resolve from JMeter launch directory. |
+| **File encoding** | `UTF-8` | Encoding format. Avoid leaving blank if files contain international characters. |
+| **Variable Names** | `username,password,userRole` | Comma-separated variable names. If left blank, first row of CSV is read as headers. |
+| **Ignore first line** | `True` (if CSV has header row) | Prevents the header text row from being processed as actual test data. |
+| **Delimiter** | `,` (or `\t` for tab-separated) | Character separating values in each row. |
+| **Allow quoted data?** | `True` | Allows values containing commas wrapped in quotes (`"New York, NY"`). |
+| **Recycle on EOF?** | `True` or `False` | When the end of the file is reached, determines whether to loop back to top. |
+| **Stop thread on EOF?** | `True` or `False` | Stops the virtual user thread when the file runs out of records. |
+| **Sharing mode** | `All threads` / `Current thread group` | Controls how file cursors are shared across threads. |
+
+---
+
+## 2. Understanding Sharing Modes
+
+Sharing Mode defines which virtual users share the CSV file read cursor:
+
+### A. All Threads (Default & Most Common)
+- **Behavior**: All virtual users across all Thread Groups read from a single shared file cursor.
+- **Result**: Every row in the CSV file is read sequentially across the entire test. No two threads receive the same row on a given step.
+- **Best for**: Unique test credentials, single-use coupon codes, unique transaction IDs.
+
+### B. Current Thread Group
+- **Behavior**: Each Thread Group maintains its own independent file read cursor.
+- **Result**: Thread Group A and Thread Group B both start reading from row 1 of the file independently.
+- **Best for**: Multi-stage workflows where each group needs access to the same baseline pool of customer IDs.
+
+### C. Current Thread
+- **Behavior**: Every virtual user thread opens its own separate file cursor and reads from row 1.
+- **Result**: If you have 50 threads, each thread reads line 1 on iteration 1, line 2 on iteration 2.
+- **Best for**: Per-thread dedicated datasets or isolated user state files.
+
+### D. Identifier (Named Sharing Group)
+- Assign an arbitrary string (e.g., `group_checkout`). All CSV Data Set configs sharing that identifier string share the same cursor.
+
+---
+
+## 3. End-of-File (EOF) Behaviors
+
+| Recycle on EOF? | Stop thread on EOF? | Behavior when rows run out |
+|---|---|---|
+| **True** | **False** | **Infinite Loop**: Automatically wraps back to line 1 and continues indefinitely. |
+| **False** | **True** | **Graceful Shutdown**: The thread stops immediately upon exhausting data. |
+| **False** | **False** | **Default Value (`<EOF>`)**: Variables are assigned literal string `<EOF>` on subsequent reads. |
+
+---
+
+## 4. Multi-Slave & Distributed Testing Considerations
+
+When running JMeter in distributed master-slave mode (`jmeter -r`):
+
+:::caution[CSV Files Must Exist on Remote Injectors]
+JMeter does **not** automatically upload CSV data files to remote slave servers. You must copy the CSV file to the exact same relative directory path on every remote server before starting the test.
+:::
+
+### Strategy 1: Partitioning Data Files
+To ensure remote slaves do not use duplicate credentials:
+- Split `users.csv` into `users_slave1.csv` and `users_slave2.csv`.
+- In CSV Data Set Config, reference dynamic filename:
+```text
+users_\${__P(nodeId, 1)}.csv
+```
+
+### Strategy 2: Modular Offset Scripting
+Use the `__CSVRead` function with thread and host offsets for mathematical partitioning without physical file splits.
+
+---
+
+## 5. Parameterization Best Practices
+
+1. **Keep Paths Relative**: Always use `./data/users.csv` instead of absolute Windows paths (`C:\Users\...`) to ensure portability across developer machines, Docker containers, and CI/CD agents.
+2. **Always Set Variable Names Explicitly**: Defining `username,password` in the element rather than relying on header rows avoids subtle bugs if CSV header formatting changes.
+3. **Use Memory Buffers for Huge CSVs**: For datasets with millions of rows, ensure file storage has fast SSD read latency.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Audit your CSV Data Set Config elements: convert absolute paths to relative paths and verify that EOF settings match your test duration goals.
+</Fragment>
+<Fragment slot="related">
+- [Functions & Variables Guide](/topics/functions-and-variables/)
+- [CSV Data Set Errors Playbook](/topics/errors/csv-data-set-file-not-found-sharing/)
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+- [Best Practices Manual](/user-manual/best-practices/)
+</Fragment>
+<Fragment slot="mistakes">
+Using absolute file paths that break in CI/CD containers; leaving "Recycle on EOF" false with "Stop thread" false causing variables to be set to literal `<EOF>`.
+</Fragment>
+<Fragment slot="troubleshooting">
+If threads immediately terminate upon launch, check whether your CSV file is empty or missing from the working directory.
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter JSR223 Groovy Scripting Guide & Cookbook
+URL: https://docs.jmeter.ai/topics/jsr223-groovy-scripting-guide/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter JSR223 Groovy Scripting Guide & Cookbook
+
+Apache JMeter provides JSR223 test elements (Samplers, PreProcessors, PostProcessors, Assertions, and Listeners) to execute custom logic during a test run. **Apache Groovy** is the standard scripting engine in JMeter: it compiles directly to Java bytecode, supports automatic script caching, and executes with near-native Java performance.
+
+This guide provides a comprehensive reference to implicit script objects, compilation caching rules, and production-tested Groovy recipes for real-world load testing.
+
+:::tip[Always Use Groovy with Compilation Caching]
+Always select **groovy** as the language in JSR223 elements and keep **"Cache compiled script if available"** enabled. Never use BeanShell or JavaScript for load paths—Groovy with caching is up to 50x faster and prevents JVM Metaspace exhaustion.
+:::
+
+## Implicit Objects Reference
+
+Every JSR223 test element automatically exposes several pre-configured objects in the script scope:
+
+| Object | Class / Type | Description & Primary Use Case |
+|---|---|---|
+| `vars` | `org.apache.jmeter.threads.JMeterVariables` | Thread-local variable store. Read and write variables for the current virtual user. |
+| `props` | `java.util.Properties` | Global properties shared across **all threads and thread groups** in the JMeter JVM instance. |
+| `prev` | `org.apache.jmeter.samplers.SampleResult` | Result of the **previous** sampler (PostProcessors, Assertions, Listeners). |
+| `sampler` | `org.apache.jmeter.samplers.Sampler` | The current sampler object being executed or prepared (PreProcessors, Samplers). |
+| `ctx` | `org.apache.jmeter.threads.JMeterContext` | Internal engine context: thread number, engine state, active thread count, and current sampler. |
+| `log` | `org.slf4j.Logger` | SLF4J logger instance writing to `jmeter.log` (e.g., `log.info("msg")`, `log.error("err")`). |
+| `OUT` | `java.io.PrintStream` | Standard system output (`System.out`). |
+| `args` | `String[]` | Array of script parameter tokens passed in the **Parameters** field. |
+
+---
+
+## 1. Thread Variables (`vars`)
+
+`vars` holds variables specific to the executing thread. Variables created here cannot be seen by other virtual users.
+
+```groovy
+// Read variable
+String token = vars.get("authToken")
+String defaultId = vars.get("userId") ?: "guest-1000"
+
+// Write variable
+vars.put("orderId", "ORD-98765")
+vars.put("isEligible", "true")
+
+// Store non-string objects (accessible only within the same thread)
+List<String> items = ["item_A", "item_B", "item_C"]
+vars.putObject("userCart", items)
+
+// Retrieve stored object
+List<String> cart = (List<String>) vars.getObject("userCart")
+```
+
+:::caution[Avoid String Interpolation Inside Cached Scripts]
+Never write `vars.get("\${varName}")` or `String id = "\${userId}"` inside a cached JSR223 script. When JMeter interpolates `\${...}` before compilation, the script text changes every iteration, destroying compilation cache and causing memory leaks. Always use `vars.get("userId")`.
+:::
+
+---
+
+## 2. Global Properties (`props`)
+
+`props` is a thread-safe `java.util.Properties` instance visible across all threads, Thread Groups, and setUp/tearDown Thread Groups.
+
+```groovy
+// Read property with a fallback default
+String apiHost = props.getProperty("app.host", "api.example.com")
+
+// Write a property across thread groups
+props.put("sharedAuthKey", "key-live-99212")
+
+// Synchronized counter / token rotation
+synchronized (props) {
+    int currentCounter = Integer.parseInt(props.getProperty("globalCounter", "0"))
+    props.put("globalCounter", String.valueOf(currentCounter + 1))
+}
+```
+
+---
+
+## 3. Previous Sample Result (`prev`)
+
+Available in **JSR223 PostProcessor**, **JSR223 Assertion**, and **JSR223 Listener** to inspect or modify response metadata:
+
+```groovy
+// Read response status and body
+int responseCode = prev.getResponseCode().toInteger()
+String responseBody = prev.getResponseDataAsString()
+long latencyMs = prev.getLatency()
+long responseTime = prev.getTime()
+
+// Modify sample result dynamically
+if (responseBody.contains("SESSION_EXPIRED")) {
+    prev.setSuccessful(false)
+    prev.setResponseCode("401")
+    prev.setResponseMessage("Session expired detected in payload")
+}
+
+// Ignore sampler from final dashboard / metrics if needed
+if (prev.getSampleLabel().startsWith("HealthCheck")) {
+    prev.setIgnore()
+}
+```
+
+---
+
+## 4. Groovy Cookbook & Practical Recipes
+
+### Recipe A: Parsing & Extracting JSON with JsonSlurper
+
+```groovy
+import groovy.json.JsonSlurper
+
+String response = prev.getResponseDataAsString()
+def json = new JsonSlurper().parseText(response)
+
+// Extract top-level or nested values
+String jwtToken = json.auth.access_token
+int totalOrders = json.data.orders.size()
+
+// Find items matching condition
+def activeOrder = json.data.orders.find { it.status == "ACTIVE" }
+if (activeOrder) {
+    vars.put("activeOrderId", activeOrder.id.toString())
+}
+
+vars.put("jwtToken", jwtToken)
+vars.put("totalOrders", totalOrders.toString())
+```
+
+### Recipe B: Generating JSON Request Payloads with JsonOutput
+
+```groovy
+import groovy.json.JsonOutput
+
+def payload = [
+    timestamp: System.currentTimeMillis(),
+    customerId: vars.get("customerId") ?: "cust-1",
+    actions: [
+        [action: "PAGE_VIEW", target: "/checkout"],
+        [action: "CLICK_BUTTON", target: "btn_place_order"]
+    ],
+    metadata: [
+        clientVersion: "v2.4.0",
+        platform: "web"
+    ]
+]
+
+String jsonString = JsonOutput.toJson(payload)
+vars.put("dynamicPayload", jsonString)
+```
+
+### Recipe C: Computing HMAC-SHA256 Signatures
+
+Used for signing requests to AWS, Stripe, or custom cryptographic APIs:
+
+```groovy
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+
+String secret = "mySuperSecretKey123"
+String dataToSign = vars.get("timestamp") + "." + vars.get("userId")
+
+Mac mac = Mac.getInstance("HmacSHA256")
+SecretKeySpec secretKey = new SecretKeySpec(secret.getBytes("UTF-8"), "HmacSHA256")
+mac.init(secretKey)
+
+byte[] rawHmac = mac.doFinal(dataToSign.getBytes("UTF-8"))
+String signature = rawHmac.encodeHex().toString()
+
+vars.put("apiSignature", signature)
+```
+
+### Recipe D: Date & Timestamp Calculations
+
+```groovy
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+
+// ISO-8601 UTC timestamp
+String isoNow = Instant.now().toString()
+
+// Future expiration timestamp (7 days from now)
+String expiresAt = Instant.now().plus(7, ChronoUnit.DAYS).toString()
+
+// Custom formatted date
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    .withZone(ZoneId.of("UTC"))
+String formattedDate = formatter.format(Instant.now())
+
+vars.put("isoNow", isoNow)
+vars.put("expiresAt", expiresAt)
+vars.put("formattedDate", formattedDate)
+```
+
+### Recipe E: Writing Error Payloads to a Debug File
+
+```groovy
+if (!prev.isSuccessful()) {
+    String logLine = "${new Date().format('yyyy-MM-dd HH:mm:ss')} | " +
+                     "Thread: ${ctx.getThreadNum()} | " +
+                     "URL: ${prev.getUrlAsString()} | " +
+                     "Code: ${prev.getResponseCode()} | " +
+                     "Body: ${prev.getResponseDataAsString()}\n"
+
+    new File("jmeter-failures.log") << logLine
+}
+```
+
+---
+
+## 5. Performance Best Practices
+
+1. **Enable Script Caching**: Check **"Cache compiled script if available"** on every JSR223 element.
+2. **Never interpolate variables into script text**: Write `vars.get("token")`, not `"\${token}"`.
+3. **Use SLF4J parameterized logging**: Write `log.debug("Processing user {}", userId)` instead of string concatenation `log.debug("Processing user " + userId)` to save memory when debug logging is disabled.
+4. **Avoid heavy file I/O**: Do not write file logs for every sampler during a high-throughput run. Guard disk operations with `if (!prev.isSuccessful())`.
+5. **Pre-instantiate expensive objects**: If reusable across runs, store pre-compiled formatters or cryptographic helpers in static fields or `props`.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Replace legacy BeanShell samplers with JSR223 Groovy and verify that "Cache compiled script" is checked across all test elements.
+</Fragment>
+<Fragment slot="related">
+- [Functions and Variables Guide](/topics/functions-and-variables/)
+- [JMeter Assertions Guide](/topics/jmeter-assertions-guide/)
+- [JSR223 Script Error Troubleshooting](/topics/errors/jsr223-groovy-script-errors/)
+- [Component Reference](/user-manual/component-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Using `\${var}` string interpolation inside JSR223 script bodies which destroys compilation caching; selecting BeanShell or JavaScript instead of Groovy; performing unbuffered disk writes inside high-frequency loops.
+</Fragment>
+<Fragment slot="troubleshooting">
+Check `jmeter.log` for compilation and runtime stack traces. Verify variable existence with `vars.get("varName") ?: "default"` to prevent `NullPointerException`.
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter Assertions and SLA Validation Guide
+URL: https://docs.jmeter.ai/topics/jmeter-assertions-guide/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Assertions and SLA Validation Guide
+
+Assertions in Apache JMeter validate that responses received from the target server conform to expected status codes, response times, headers, and payload structures. When an assertion fails, JMeter marks the sample as failed (red), records the failure message, and triggers configured error handling rules.
+
+This guide covers assertion execution hierarchy, deep dives into the most critical assertion types, custom JSR223 assertions, and performance best practices under high concurrency.
+
+:::tip[Assertion Hierarchy & Scope]
+Assertions apply to all samplers at their hierarchical level and below. Placing an assertion directly under the **Thread Group** evaluates it against *every single request* in that group. To validate a single API call, always attach the assertion as a child of that specific sampler.
+:::
+
+---
+
+## 1. Core Assertion Types Overview
+
+| Assertion Type | Target | CPU / Memory Overhead | Best For |
+|---|---|---|---|
+| **Response Assertion** | Status code, headers, URL, body | **Lowest** (native string / regex) | HTTP 200, status messages, text matching |
+| **JSON Assertion** | REST JSON response payloads | **Low** (JSONPath evaluation) | Validating specific fields, arrays, or object properties |
+| **Duration Assertion** | Response time in milliseconds | **Negligible** (integer comparison) | Strict SLA latency enforcement |
+| **Size Assertion** | Byte size of response | **Negligible** (byte comparison) | Empty body or minimum payload length checks |
+| **XPath2 Assertion** | XML / SOAP responses | **Medium** (DOM / SAX parsing) | Complex XML tree validation |
+| **JSR223 Assertion** | Dynamic / multi-condition rules | **Low** (if Groovy cached) | Cross-field validation, database verification |
+
+---
+
+## 2. Response Assertion (The Workhorse)
+
+The Response Assertion tests fields of the response using substring, pattern matching, or equality.
+
+### Key Configuration Settings
+- **Field to Test**:
+  - `Text Response` (Response body)
+  - `Response Code` (HTTP status code, e.g., `200`, `201`)
+  - `Response Message` (e.g., `OK`, `Created`)
+  - `Response Headers` (e.g., `Content-Type: application/json`)
+  - `Request Headers` / `URL Sampled`
+- **Pattern Matching Rules**:
+  - **Contains**: Case-sensitive substring search anywhere in the target.
+  - **Matches**: Full regular expression match across the entire string (must match from start to end).
+  - **Equals**: Exact literal match of the full string.
+  - **Substring**: Fast literal substring matching (no regex compilation overhead).
+  - **Not**: Inverts the assertion logic (passes if pattern is *absent*).
+  - **Or**: Succeeds if *any* listed pattern matches.
+
+```text
+Field to Test: Response Code
+Pattern Matching Rule: Equals
+Patterns to Test: 200
+```
+
+---
+
+## 3. JSON Assertion & JSON Path Validation
+
+Used for REST APIs returning `application/json`. It evaluates expressions using JSONPath syntax.
+
+### Configuration Fields
+- **Assert JSON Path exists**: e.g., `$.data.user.id` or `$.items[?(@.price > 100)]`
+- **Additionally validate value**: Check if the extracted value matches an expected condition.
+- **Match as regular expression**: If checked, validates the value using regex.
+- **Expected Value**: The literal or regex string expected at the JSONPath location.
+- **Expect null**: Asserts that the targeted field explicitly equals `null`.
+- **Invert assertion**: Fails if the JSONPath exists or matches.
+
+### Common JSONPath Patterns
+| Pattern | Meaning | Example Match |
+|---|---|---|
+| `$.status` | Top-level property | `"SUCCESS"` |
+| `$.data.items.length()` | Array element count | `5` |
+| `$.items[0].id` | First item ID in array | `101` |
+| `$.users[*].email` | Array of all emails | `["a@b.com", "c@d.com"]` |
+| `$.orders[?(@.total > 500)]` | Filters orders with total > 500 | Non-empty array |
+
+---
+
+## 4. Duration & Size Assertions (SLA Validation)
+
+### Duration Assertion
+Enforces a hard maximum response time limit. If `prev.getTime() > Duration (ms)`, the sampler fails with:
+`The test took too long: 1240 ms, max allowed 1000 ms`.
+
+```text
+Duration in milliseconds: 1000
+```
+
+:::caution[Use Reporting Percentiles Over Heavy Duration Assertions]
+Avoid adding Duration Assertions to every sampler during high-volume soak tests if your goal is calculating p95/p99 percentiles. JMeter's HTML Dashboard and Backend Listener calculate percentiles automatically without failing samples artificially.
+:::
+
+### Size Assertion
+Validates response size in bytes:
+- **Size to compare**: Full response, body only, or headers only.
+- **Comparison Type**: `=`, `!=`, `>`, `<`, `>=`, `<=`.
+
+---
+
+## 5. Advanced Custom Assertions with JSR223 Groovy
+
+When built-in assertions cannot express complex business logic (e.g., verifying mathematical calculations, token expiration times, or cross-variable consistency), use a **JSR223 Assertion**.
+
+In a JSR223 Assertion, use `AssertionResult` to signal success or failure:
+
+```groovy
+import groovy.json.JsonSlurper
+
+// Parse response
+String response = prev.getResponseDataAsString()
+if (!response) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage("Response body was completely empty.")
+    return
+}
+
+try {
+    def json = new JsonSlurper().parseText(response)
+    
+    // Validate schema field
+    if (json.status != "ACTIVE") {
+        AssertionResult.setFailure(true)
+        AssertionResult.setFailureMessage("Expected status ACTIVE but got: ${json.status}")
+        return
+    }
+    
+    // Cross-validate with JMeter variable
+    String expectedUserId = vars.get("expectedUserId")
+    if (json.user?.id?.toString() != expectedUserId) {
+        AssertionResult.setFailure(true)
+        AssertionResult.setFailureMessage("User ID mismatch: expected ${expectedUserId}, got ${json.user?.id}")
+        return
+    }
+    
+    // SLA check combined with business validation
+    if (prev.getTime() > 2000) {
+        AssertionResult.setFailure(true)
+        AssertionResult.setFailureMessage("SLA breach: request took ${prev.getTime()}ms (limit 2000ms)")
+    }
+} catch (Exception e) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage("Invalid JSON format: " + e.getMessage())
+}
+```
+
+---
+
+## 6. Performance Optimization for Assertions
+
+1. **Prefer Substring over Matches**: In Response Assertion, select **Substring** instead of **Contains/Matches** when regex is unnecessary. Substring uses simple string index scanning and consumes minimal CPU.
+2. **Limit XML/XPath Assertions**: XPath assertions construct a full DOM tree in memory for every response. For XML under heavy load, use regular expression extractors or fast boundary extractors instead.
+3. **Keep Assertion Scope Narrow**: Place assertions directly as children of specific samplers, not at the Thread Group level unless globally required.
+4. **Always Check "Cache compiled script"**: If using JSR223 Assertions, enable caching and avoid `\${var}` interpolation.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Audit your test plan: replace global Thread-Group-level assertions with targeted child assertions, and change Response Assertion rules from "Matches" to "Substring".
+</Fragment>
+<Fragment slot="related">
+- [JSR223 Groovy Scripting Guide](/topics/jsr223-groovy-scripting-guide/)
+- [Correlation & Dynamic Values](/topics/correlation-dynamic-values/)
+- [APDEX, SLOs & Percentiles](/topics/apdex-slo-percentiles/)
+- [Component Reference](/user-manual/component-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Using heavy XPath/DOM assertions under thousands of virtual users; applying Duration Assertions when percentiles should be calculated post-run; forgetting that thread-level assertions run on every child request.
+</Fragment>
+<Fragment slot="troubleshooting">
+If assertions fail with `Assertion error: false`, review View Results Tree -> Assertion Results tab to inspect the exact failure message and expected vs received values.
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter Logic Controllers and Flow Control Guide
+URL: https://docs.jmeter.ai/topics/logic-controllers-flow-control/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Logic Controllers and Flow Control Guide
+
+**Logic Controllers** determine the order and conditions under which samplers in a test plan execute. They allow you to build realistic, branching, looping, and aggregated user flows—such as conditional checkouts, polling asynchronous tasks, looping through array responses, and calculating composite business transaction metrics.
+
+This guide provides a practical reference to the most critical logic controllers, condition syntax, and common orchestration patterns.
+
+---
+
+## 1. Controller Quick Reference
+
+| Controller | Purpose | Typical Scenario |
+|---|---|---|
+| **Transaction Controller** | Aggregates child samplers into one composite transaction metric | Measuring total checkout duration (3 API calls as 1 business transaction) |
+| **If Controller** | Executes child elements only if a condition evaluates to `true` | Conditional paths (e.g., execute payment only if `balance > 0`) |
+| **While Controller** | Loops child elements until a condition evaluates to `false` | Polling an asynchronous order or job status endpoint until `STATUS == READY` |
+| **ForEach Controller** | Iterates over an array of indexed JMeter variables (`item_1`, `item_2`) | Processing every item extracted by a JSON or RegEx extractor |
+| **Loop Controller** | Executes children a fixed number of times | Repeating a specific step within a thread iteration |
+| **Switch Controller** | Switches execution to one child based on a numeric index or name | Multi-branch routing based on user type (`ADMIN`, `CUSTOMER`, `GUEST`) |
+| **Once Only Controller** | Executes only during the first iteration of each thread | Login or token retrieval at thread startup |
+| **Runtime Controller** | Limits execution of child elements to a specified number of seconds | Time-boxing a specific test phase |
+
+---
+
+## 2. If Controller & Modern Groovy Conditions
+
+The **If Controller** controls conditional branching. 
+
+:::tip[Always Use Groovy Expressions in If Controllers]
+Uncheck **"Interpret Condition as Variable Expression?"** and use `\${__groovy(...)}` or a direct expression. This avoids JavaScript engine overhead and guarantees compiled execution.
+:::
+
+### Recommended If Controller Syntax:
+
+```groovy
+// Check string equality
+\${__groovy(vars.get("userType") == "PREMIUM")}
+
+// Check HTTP response code from previous request
+\${__groovy(vars.get("JMeterThread.last_sample_ok") == "true")}
+
+// Check numeric value
+\${__groovy(vars.get("cartTotal").toInteger() > 100)}
+
+// Check variable existence / not empty
+\${__groovy(vars.get("authToken") != null && !vars.get("authToken").isEmpty())}
+```
+
+- **Evaluate for all children**: If checked, JMeter re-evaluates the condition before executing *every child element*. If unchecked, it evaluates the condition once upon entering the controller.
+
+---
+
+## 3. While Controller (Async Polling & Retries)
+
+The **While Controller** loops until its condition evaluates to `false`.
+
+### Supported Conditions:
+- **Blank (empty)**: Exits when the last sampler in the loop fails.
+- **`LAST`**: Exits when the last sampler fails. If the sampler before the loop failed, the loop is not entered.
+- **Groovy Expression**: Custom condition string evaluating to `"false"` or `"true"`.
+
+### Pattern: Polling Asynchronous Status with Max Retries
+
+To poll an endpoint `/api/jobs/\${jobId}/status` until status is `COMPLETED` (with a max retry safety counter):
+
+1. **Before While Controller (JSR223 Sampler)**:
+```groovy
+vars.put("jobStatus", "PENDING")
+vars.put("pollCount", "0")
+```
+
+2. **While Controller Condition**:
+```groovy
+\${__groovy(vars.get("jobStatus") != "COMPLETED" && vars.get("pollCount").toInteger() < 10)}
+```
+
+3. **Inside While Controller**:
+   - HTTP Request: `GET /api/jobs/\${jobId}/status`
+   - JSON Extractor: extracts `jobStatus`
+   - Flow Control Action: 2-second think time
+   - JSR223 PostProcessor:
+```groovy
+int count = vars.get("pollCount").toInteger() + 1
+vars.put("pollCount", count.toString())
+```
+
+---
+
+## 4. ForEach Controller (Iterating Over Extracted Arrays)
+
+When a **JSON Extractor** extracts an array with match number `-1` (all matches), JMeter generates indexed variables:
+- `productId_matchNr` = `3`
+- `productId_1` = `prod-101`
+- `productId_2` = `prod-102`
+- `productId_3` = `prod-103`
+
+### ForEach Controller Configuration:
+- **Input variable prefix**: `productId`
+- **Start index for variable**: `0` (or `1`)
+- **End index for variable**: `\${productId_matchNr}`
+- **Output variable name**: `currentProductId`
+- **Add "_" before number**: Checked
+
+Inside the controller, simply reference `\${currentProductId}` on every iteration.
+
+---
+
+## 5. Transaction Controller (Composite Metrics)
+
+The **Transaction Controller** groups multiple HTTP requests into a single parent business transaction (e.g., *“Checkout Journey”* consisting of `/cart/validate`, `/payment/authorize`, and `/order/create`).
+
+### Key Settings:
+- **Generate parent sample**: 
+  - **Checked (Recommended)**: The dashboard report shows only the consolidated parent transaction line (*“Checkout Journey”*), keeping reports clean and summarizing total user-perceived latency.
+  - **Unchecked**: Outputs both individual child requests and the parent transaction line.
+- **Include duration of timer and pre-post processors in generated sample**:
+  - **Unchecked (Recommended)**: Measures pure server processing and network latency.
+  - **Checked**: Includes think times and client-side scripting delays in the overall transaction duration.
+
+---
+
+## 6. Switch & Runtime Controllers
+
+### Switch Controller
+Routes execution to one specific child element based on:
+- **Index**: `0` for 1st child, `1` for 2nd child.
+- **Name**: Value matching the exact name of a child sampler.
+- **Value**: `\${paymentType}` &rarr; routes dynamically to child sampler named `CREDIT_CARD` or `PAYPAL`.
+
+### Runtime Controller
+Enforces a hard time cap on child samplers:
+- **Runtime (seconds)**: `60` (threads run child loop continuously for 60 seconds, then exit).
+
+<RelatedContent>
+<Fragment slot="next-step">
+Encapsulate multi-step user workflows inside Transaction Controllers with "Generate parent sample" checked for cleaner dashboard reports.
+</Fragment>
+<Fragment slot="related">
+- [JSR223 Groovy Scripting Guide](/topics/jsr223-groovy-scripting-guide/)
+- [Correlation & Dynamic Values](/topics/correlation-dynamic-values/)
+- [Timers & Pacing Guide](/topics/timers-pacing-throughput-modeling/)
+- [Component Reference](/user-manual/component-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Writing JavaScript or raw unescaped variable strings in If Controllers instead of `\${__groovy(...)}`; omitting a maximum loop counter in While Controllers causing infinite loops on server failure.
+</Fragment>
+<Fragment slot="troubleshooting">
+If an If Controller never executes, log the condition output with `log.info("Condition result: " + vars.get("myVar"))` in a preceding JSR223 sampler.
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter Timers, Think Time, and Pacing Guide
+URL: https://docs.jmeter.ai/topics/timers-pacing-throughput-modeling/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Timers, Think Time, and Pacing Guide
+
+In real-world traffic, human users and client applications do not hammer servers continuously with zero delay. Without timers, JMeter threads fire requests as fast as the network and CPU permit, creating unrealistic load spikes and artificial bottlenecks.
+
+This guide explains **Timer Execution Scoping**, how to implement realistic **Think Time**, how to configure **Throughput Pacing**, and how to model target transactions-per-second (TPS) accurately.
+
+:::important[Critical Rule: Timers Execute BEFORE Samplers]
+A common beginner mistake is assuming a timer delays *after* a request completes. In JMeter's execution order:
+
+`Timers` &rarr; `PreProcessors` &rarr; `Sampler` &rarr; `PostProcessors` &rarr; `Assertions` &rarr; `Listeners`
+
+A timer attached to a sampler pauses the thread **before** that sampler is dispatched.
+:::
+
+---
+
+## 1. Think Time vs Pacing: What is the Difference?
+
+| Concept | Definition | Goal | Recommended Element |
+|---|---|---|---|
+| **Think Time** | The pause a human user spends reading, typing, or deciding between steps. | Simulate human delay and realistic concurrency. | **Uniform Random Timer**, **Gaussian Random Timer**, **Flow Control Action** |
+| **Pacing** | Controlled delay added per iteration to ensure each virtual user maintains a fixed iteration rate. | Achieve consistent, predictable total TPS regardless of response time variations. | **Constant Throughput Timer**, **Precise Throughput Timer**, **Flow Control Action (Groovy)** |
+
+---
+
+## 2. Timer Types & Usage Patterns
+
+### A. Uniform Random Timer (Recommended for Human Simulation)
+Delivers a random delay uniformly distributed between a minimum and maximum offset.
+
+- **Formula**: `Delay = Constant Delay Offset + (Random Number * Random Delay Maximum)`
+- **Example**:
+  - `Constant Delay Offset`: `2000` (ms)
+  - `Random Delay Maximum`: `3000` (ms)
+  - **Result**: Pauses randomly between **2,000 ms and 5,000 ms** (2s to 5s).
+
+### B. Gaussian Random Timer
+Distributes delays along a bell curve (normal distribution) around a mean value, closely matching human behavioral variance.
+
+- `Constant Delay Offset`: `3000` ms (Mean / Average)
+- `Deviation`: `1000` ms (Standard deviation)
+- **Result**: ~68% of delays fall between 2s and 4s; ~95% fall between 1s and 5s.
+
+### C. Flow Control Action (Think Time Component)
+Instead of attaching timers to individual samplers, you can insert a standalone **Flow Control Action** sampler (formerly *Test Action*):
+- **Action**: `Pause`
+- **Duration**: `\${__Random(1000,3000)}` ms
+- **Advantage**: It visually appears as an explicit sequential step in your test tree.
+
+---
+
+## 3. Pacing & Target Throughput Modeling
+
+When your performance test SLA requires maintaining a fixed throughput (e.g., exactly **500 Requests Per Minute** or **100 TPS**), use throughput timers.
+
+### Constant Throughput Timer (CTT)
+Calculates delays to pace threads toward a global or per-thread target.
+
+- **Target Throughput (in samples per minute)**: Target rate (e.g., `6000` for 100 RPS).
+- **Calculate Throughput based on**:
+  - `this thread only`: Each thread paces independently to hit the target rate.
+  - `all active threads`: Threads coordinate to collectively hit the total target rate.
+  - `all active threads in current thread group`: Scoped to the enclosing group.
+
+:::caution[CTT Can Only DELAY Threads, Not Accelerate Them]
+If your application takes 2 seconds to respond and you only have 5 threads, the maximum throughput mathematically possible is `5 / 2s = 2.5 RPS`. A throughput timer cannot speed up slow threads—you must size your thread count to provide sufficient headroom.
+:::
+
+---
+
+## 4. Precise Throughput Timer (Next-Gen Open Model)
+
+Introduced in JMeter modern releases, the **Precise Throughput Timer (PTT)** uses Poisson arrival processes to generate independent, realistic arrival rates that avoid artificial lockstep synchronization.
+
+### Recommended PTT Configuration:
+- **Target Throughput**: `50` (samples per `second`)
+- **Duration**: `600` (seconds)
+- **Number of threads in the thread group**: Sized with sufficient buffer (e.g., 1.5x expected concurrency).
+- **Random seed**: Allows reproducible arrival schedules across regression runs.
+
+---
+
+## 5. Dynamic Pacing Calculation with JSR223 Groovy
+
+To enforce exact end-to-end iteration pacing (e.g., "Each virtual user iteration must take exactly 10 seconds regardless of how long API calls took"):
+
+1. Add a **JSR223 PreProcessor** at the start of the iteration:
+```groovy
+// Record iteration start time
+vars.putObject("iterationStartTime", System.currentTimeMillis())
+```
+
+2. Add a **Flow Control Action** + **JSR223 Timer** at the end of the iteration:
+```groovy
+long targetIterationDurationMs = 10000 // 10 seconds pacing
+long startTime = (Long) vars.getObject("iterationStartTime")
+long elapsedTime = System.currentTimeMillis() - startTime
+long sleepTime = targetIterationDurationMs - elapsedTime
+
+if (sleepTime > 0) {
+    return sleepTime
+} else {
+    log.warn("Iteration overrun by {} ms! Target was {} ms.", Math.abs(sleepTime), targetIterationDurationMs)
+    return 0
+}
+```
+
+---
+
+## 6. Common Pitfalls & Best Practices
+
+1. **Beware of Global Timers**: A timer placed at the root of a Thread Group pauses *before every single sampler* in that group. If you have 10 samplers and a 5-second timer, each iteration takes at least 50 seconds.
+2. **Combine with Thread Calculators**: Use the [Thread Calculator](/tools/thread-calculator/) to compute required thread concurrency given target RPS and expected latency:
+
+```text
+Threads = Target RPS * (Response Time in seconds + Think Time in seconds)
+```
+
+3. **Avoid Constant Timers for Humans**: Static constant delays (e.g., exactly 2000 ms) create unnatural lockstep requests where thousands of virtual users hit the backend simultaneously in synchronized waves.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Use the interactive Thread Calculator tool to calculate thread requirements before applying Constant or Precise Throughput Timers.
+</Fragment>
+<Fragment slot="related">
+- [Thread Calculator Tool](/tools/thread-calculator/)
+- [Workload Modeling & Thread Groups](/topics/thread-groups-workload-modeling/)
+- [JSR223 Groovy Scripting Guide](/topics/jsr223-groovy-scripting-guide/)
+- [Component Reference](/user-manual/component-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Placing timers at the root of a thread group unintentionally delaying every HTTP sampler; failing to allocate enough threads to achieve the target throughput specified in Constant Throughput Timer.
+</Fragment>
+<Fragment slot="troubleshooting">
+If throughput falls below the target configured in your timer, check thread CPU utilization and average response time—the system may be bottlenecked and unable to service more iterations.
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter Thread Groups & Workload Modeling
+URL: https://docs.jmeter.ai/topics/thread-groups-workload-modeling/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Thread Groups & Workload Modeling
+
+A **Thread Group** is the execution engine of any Apache JMeter test plan. It defines how many virtual users (threads) execute the test, how fast they spin up (ramp-up), how long the test runs (duration), and how the workload progresses over time.
+
+This guide explores both core JMeter thread groups and custom plugin thread groups, explaining how to model the 5 major performance testing types: **Baseline**, **Step-Up (Load/Stress)**, **Spike**, **Soak (Endurance)**, and **Breakpoint**.
+
+---
+
+## 1. Thread Group Types Comparison
+
+| Thread Group | Source | Key Advantage | Best Testing Scenario |
+|---|---|---|---|
+| **Standard Thread Group** | Built-in | Zero plugins required; simple ramp-up and duration controls | Baseline, smoke, and simple steady-state load tests |
+| **setUp Thread Group** | Built-in | Runs strictly *before* main load starts | Test data creation, admin login, pre-warming cache |
+| **tearDown Thread Group** | Built-in | Runs strictly *after* main load finishes | Test data deletion, database cleanup, report notifications |
+| **Concurrency Thread Group** | JMeter Plugins | Dynamic thread adjustments, step ramp-ups without thread restart | Step-up load tests, target RPS shaping with Throughput Timer |
+| **Ultimate Thread Group** | JMeter Plugins | Complete control over multi-stage schedules (staggered ramp, hold, shutdown) | Complex multi-wave schedules and spike testing |
+| **Arrivals Thread Group** | JMeter Plugins | Open workload model: schedules *arrival rate* (iterations/sec) instead of fixed users | Modern cloud APIs where user arrivals are independent of system latency |
+
+---
+
+## 2. The 5 Major Workload Test Models
+
+### Model 1: Baseline / Smoke Test
+- **Goal**: Verify script correctness, correlation integrity, and initial server health under minimal load.
+- **Config**: 1 to 5 threads, 10-second ramp-up, 1-2 iterations.
+
+### Model 2: Steady-State Load Test
+- **Goal**: Measure response times, throughput, and resource utilization at expected production peak load.
+- **Config**: Ramp up to target users (e.g., 200 users over 5 minutes), hold steady for 30–60 minutes, ramp down gracefully.
+
+### Model 3: Step-Up (Stress / Scalability) Test
+- **Goal**: Identify capacity limits, latency degradation inflection points, and auto-scaling triggers.
+- **Config (using Concurrency Thread Group)**:
+  - Target Concurrency: `500`
+  - Ramp Up Time: `20 minutes`
+  - Ramp-Up Steps: `5` (Increments of 100 users every 4 minutes)
+  - Hold Target Rate: `10 minutes`
+
+### Model 4: Spike Test
+- **Goal**: Observe system behavior when traffic spikes dramatically (e.g., flash sales, breaking news).
+- **Config (using Ultimate Thread Group)**:
+  - Base load: 50 threads for 10 minutes.
+  - Spike: Instant surge to 1,000 threads for 2 minutes.
+  - Recovery: Drop back to 50 threads to observe if the system auto-recovers or crashes.
+
+### Model 5: Soak (Endurance) Test
+- **Goal**: Detect memory leaks, unclosed database connection pools, disk buffer exhaustion, and GC degradation over time.
+- **Config**: 70% of peak load sustained for 4 to 24 hours.
+
+---
+
+## 3. Configuring Standard Thread Group
+
+```text
+Action to be taken after a Sampler error: Continue (or Start Next Thread Loop)
+Number of Threads (users): \${__P(threads, 50)}
+Ramp-up period (seconds): \${__P(rampup, 60)}
+Loop Count: Infinite (checked)
+Specify Thread Lifetime: Checked
+Duration (seconds): \${__P(duration, 1800)}
+Startup delay (seconds): 0
+```
+
+:::tip[Parameterize with __P for CI/CD]
+Always use `\${__P(threads, 50)}` and `\${__P(duration, 300)}` in your thread groups so you can dynamically override parameters from the CLI without editing the `.jmx` file:
+`jmeter -n -t plan.jmx -Jthreads=200 -Jduration=1200 -l results.jtl`
+:::
+
+---
+
+## 4. Concurrency Thread Group + Throughput Shaping Timer
+
+For advanced step-up tests, combine the **Concurrency Thread Group** with the **Throughput Shaping Timer** (via JMeter Plugins):
+
+1. **Concurrency Thread Group**: Manages virtual user concurrency automatically.
+2. **Throughput Shaping Timer**: Sets the exact target RPS schedule (e.g., Step 1: 50 RPS for 5m &rarr; Step 2: 100 RPS for 5m).
+3. Connect the two using a **Feedback Loop**: Set `Thread Schedule` in the Thread Group to link with the Throughput Shaping Timer.
+
+---
+
+## 5. Closed vs Open Workload Models
+
+- **Closed Workload Model** (Standard Thread Group): Virtual users finish an iteration, wait for think time, and immediately start another. If the server slows down, throughput drops automatically because threads are blocked waiting for responses.
+- **Open Workload Model** (Arrivals Thread Group / Precise Throughput Timer): New user arrivals occur at fixed intervals regardless of how fast or slow the server is responding. This accurately reflects open internet traffic where incoming requests do not slow down just because your backend is saturated.
+
+---
+
+## 6. Sizing Ramp-Up & Thread Lifecycles
+
+1. **Never Ramp Up Instantly to Thousands of Users**: Instant ramp-up (e.g., 1,000 users in 0 seconds) causes an artificial TCP handshake storm, overwhelming load balancers with SSL handshakes before tests even begin.
+2. **Ramp-Up Formula Rule of Thumb**:
+```text
+Ramp-up (seconds) >= Target Threads / (5 to 10)
+```
+*(e.g., for 500 threads, ramp up over at least 50 to 100 seconds).*
+3. **Choose "Start Next Thread Loop" on Error**: For multi-step business journeys, when step 1 (login) fails, starting the next loop avoids cascading 404/401 errors on subsequent steps.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Choose the appropriate workload model for your test objectives and parameterize thread counts using properties (`\${__P(threads,10)}`).
+</Fragment>
+<Fragment slot="related">
+- [Timers, Think Time & Pacing Guide](/topics/timers-pacing-throughput-modeling/)
+- [JMeter Memory & JVM Tuning](/topics/jmeter-performance-tuning-guide/)
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+- [Plugins Essentials](/topics/plugins-essentials/)
+</Fragment>
+<Fragment slot="mistakes">
+Ramping up hundreds of threads in 0 seconds causing instant connection timeouts; running infinite loops without a duration timeout; relying on closed workload models when testing open APIs.
+</Fragment>
+<Fragment slot="troubleshooting">
+If thread counts spike but throughput remains flat, inspect server CPU and JMeter heap metrics for resource starvation.
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter JDBC Database Load Testing Guide
+URL: https://docs.jmeter.ai/topics/jdbc-database-load-testing/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter JDBC Database Load Testing Guide
+
+Apache JMeter enables direct load testing and performance benchmarking of relational databases (PostgreSQL, MySQL, Oracle, MS SQL Server, MariaDB) using JDBC. This allows performance engineers to isolate database query latency, test connection pool limits, benchmark stored procedures, and validate database performance independently of the application layer.
+
+This guide walks through driver installation, connection pool sizing, parameterized queries, and extracting result sets into JMeter variables.
+
+---
+
+## 1. Installing the JDBC Driver
+
+JMeter does not bundle proprietary database drivers. You must download the appropriate JDBC driver `.jar` file and place it in JMeter’s `lib/` directory, then restart JMeter:
+
+| Database | Driver Class Name | Maven / JAR Artifact | Example Database URL |
+|---|---|---|---|
+| **PostgreSQL** | `org.postgresql.Driver` | `postgresql-42.x.jar` | `jdbc:postgresql://localhost:5432/testdb` |
+| **MySQL / MariaDB** | `com.mysql.cj.jdbc.Driver` | `mysql-connector-j-8.x.jar` | `jdbc:mysql://localhost:3306/testdb?useSSL=false` |
+| **Oracle DB** | `oracle.jdbc.OracleDriver` | `ojdbc8.jar` / `ojdbc11.jar` | `jdbc:oracle:thin:@//localhost:1521/XEPDB1` |
+| **MS SQL Server** | `com.microsoft.sqlserver.jdbc.SQLServerDriver` | `mssql-jdbc-12.x.jar` | `jdbc:sqlserver://localhost:1433;databaseName=testdb;encrypt=true;trustServerCertificate=true` |
+
+---
+
+## 2. Configuring JDBC Connection Configuration
+
+The **JDBC Connection Configuration** config element defines the connection pool.
+
+### Core Settings:
+- **Variable Name Bound to Pool**: e.g., `db_pool_main` *(Must match the Variable Name in your JDBC Request samplers)*.
+- **Max Number of Connections**: Maximum concurrent database connections (e.g., `50`).
+- **Pool Timeout**: `10000` (ms) — how long a thread waits if all pool connections are occupied before throwing an error.
+- **Idle Timeout**: `60000` (ms).
+- **Validation Query**: Simple query to check connection health before borrowing:
+  - PostgreSQL / MySQL: `SELECT 1`
+  - Oracle: `SELECT 1 FROM DUAL`
+- **Transaction Isolation**: `DEFAULT` (or `TRANSACTION_READ_COMMITTED`).
+
+---
+
+## 3. Writing JDBC Requests
+
+Add **Sampler &rarr; JDBC Request** under your Thread Group:
+
+### Key Settings:
+- **Variable Name of Pool**: `db_pool_main`
+- **Query Type**:
+  - `Select Statement`: Standard read queries.
+  - `Prepared Select Statement`: Parameterized read query (prevents SQL injection and improves DB execution plan caching).
+  - `Prepared Update Statement`: `INSERT`, `UPDATE`, `DELETE` operations.
+  - `Callable Statement`: Stored procedure execution.
+
+### Example A: Parameterized Prepared Select Statement
+```sql
+SELECT user_id, email, status, created_at 
+FROM users 
+WHERE status = ? AND country = ?
+ORDER BY created_at DESC 
+LIMIT 10;
+```
+- **Parameter values**: `ACTIVE, \${userCountry}`
+- **Parameter types**: `VARCHAR, VARCHAR`
+- **Variable names**: `userId, userEmail, userStatus, userCreatedAt`
+
+---
+
+## 4. Extracting & Using SQL Result Sets
+
+When you specify variable names in the **Variable names** field (e.g., `userId, userEmail`), JMeter automatically parses the result set into indexed variables:
+
+- `userId_#`: Total number of returned rows (e.g., `10`).
+- `userId_1`: First row's `user_id`.
+- `userId_2`: Second row's `user_id`.
+- `userId_n`: nth row's `user_id`.
+
+### Iterating Over SQL Results with ForEach Controller:
+1. Set **Input variable prefix**: `userId`
+2. **End index**: `\${userId_#}`
+3. **Output variable name**: `currentUserId`
+4. Inside the ForEach loop, make subsequent HTTP calls to `/api/users/\${currentUserId}`.
+
+---
+
+## 5. Benchmark Stored Procedures (Callable Statement)
+
+```sql
+{call process_monthly_invoice(?, ?, ?)}
+```
+- **Parameter values**: `\${accountId}, \${billingCycle}, INOUT`
+- **Parameter types**: `INTEGER, VARCHAR, OUT VARCHAR`
+
+---
+
+## 6. JDBC Load Testing Best Practices
+
+1. **Size Pool Connections Appropriately**: Set `Max Number of Connections` equal to or greater than the number of active concurrent threads in the Thread Group to prevent threads from blocking on pool locks.
+2. **Use Prepared Statements**: Always prefer *Prepared Select/Update* statements over raw SQL strings to allow the database engine to reuse execution plans and avoid parse overhead.
+3. **Clean Up Generated Test Data**: Use a **tearDown Thread Group** with a dedicated cleanup query to delete records inserted during test execution.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Download your database vendor's JDBC JAR, drop it into JMeter's `lib/` directory, and run a 1-thread smoke test to verify connectivity.
+</Fragment>
+<Fragment slot="related">
+- [JDBC Pool Errors Playbook](/topics/errors/jdbc-connection-pool-errors/)
+- [ClassNotFound & Missing JARs](/topics/errors/class-not-found-noclassdeffound/)
+- [Database Test Plan Manual](/user-manual/build-db-test-plan/)
+- [Properties Reference](/user-manual/properties-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Forgetting to place the JDBC driver JAR in JMeter's `lib/` directory; mismatched pool variable names between config and samplers; setting connection pool size too low for high thread counts.
+</Fragment>
+<Fragment slot="troubleshooting">
+If connections fail, verify firewall access to DB port (5432/3306/1433) and check `jmeter.log` for `Cannot create PoolableConnectionFactory`.
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: JMeter JVM, Memory & Operating System Tuning
+URL: https://docs.jmeter.ai/topics/jmeter-performance-tuning-guide/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter JVM, Memory & Operating System Tuning
+
+When running high-volume performance tests (thousands of virtual users or tens of thousands of requests per second), the bottleneck is frequently the **load generator itself** rather than the target application. Un-tuned JMeter injectors suffer from heap exhaustion (`OutOfMemoryError`), excessive Garbage Collection (GC) pauses, port exhaustion, and CPU throttling.
+
+This guide provides end-to-end instructions for tuning JMeter's JVM heap, Garbage Collector, operating system TCP parameters, and test plan efficiency.
+
+---
+
+## 1. JVM Heap Sizing (`setenv.sh` / `setenv.bat`)
+
+By default, Apache JMeter ships with a conservative heap allocation (often 1 GB). For production load generation, allocate 50% to 70% of available system RAM to the JVM heap.
+
+Create a `setenv.sh` (Linux/macOS) or `setenv.bat` (Windows) file in JMeter’s `bin/` directory:
+
+### Linux / macOS (`bin/setenv.sh`):
+```bash
+#!/bin/sh
+# Allocate 8GB min and max heap with G1GC
+export HEAP="-Xms8g -Xmx8g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m"
+export GC_ALGO="-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:G1ReservePercent=15"
+export JVM_ARGS="-XX:+AlwaysPreTouch -Djava.awt.headless=true"
+```
+
+### Windows (`bin/setenv.bat`):
+```bat
+@echo off
+set HEAP=-Xms8g -Xmx8g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m
+set GC_ALGO=-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:G1ReservePercent=15
+set JVM_ARGS=-XX:+AlwaysPreTouch -Djava.awt.headless=true
+```
+
+:::tip[Keep -Xms equal to -Xmx]
+Setting the initial heap (`-Xms`) equal to the maximum heap (`-Xmx`) eliminates JVM memory resizing overhead during test execution and guarantees that heap memory is pre-allocated upon startup (`-XX:+AlwaysPreTouch`).
+:::
+
+---
+
+## 2. Garbage Collection (GC) Optimization
+
+Use the **G1 Garbage Collector** (default on modern Java versions). Key flags:
+- `-XX:+UseG1GC`: Low-latency concurrent collector optimized for multi-gigabyte heaps.
+- `-XX:MaxGCPauseMillis=100`: Target maximum pause time goal.
+- `-XX:InitiatingHeapOccupancyPercent=45`: Initiates concurrent marking before memory gets dangerously full.
+- `-XX:G1ReservePercent=15`: Prevents allocation failures during concurrent cycles.
+
+To log garbage collection events for analysis:
+```bash
+-Xlog:gc*,gc+phases=debug:file=jmeter_gc.log:time,uptime,pid:filecount=5,filesize=50M
+```
+
+---
+
+## 3. Operating System & Kernel TCP Tuning (Linux)
+
+Under high RPS, JMeter opens and closes thousands of TCP sockets per minute. Without kernel tuning, you will encounter `java.net.BindException: Address already in use` or `Too many open files`.
+
+### A. Increase File Descriptor Limits (`/etc/security/limits.conf`)
+```text
+* soft nofile 655350
+* hard nofile 655350
+* soft nproc  655350
+* hard nproc  655350
+```
+
+### B. Optimize TCP Sockets in `/etc/sysctl.conf`
+Apply with `sudo sysctl -p`:
+```ini
+# Enable fast recycling of TIME_WAIT sockets
+net.ipv4.tcp_tw_reuse = 1
+
+# Expand ephemeral port range
+net.ipv4.ip_local_port_range = 1024 65535
+
+# Reduce TIME_WAIT timeout to 30 seconds
+net.ipv4.tcp_fin_timeout = 15
+
+# Increase network connection backlog queue
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 65535
+net.core.netdev_max_backlog = 100000
+
+# Increase socket memory buffers
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+```
+
+---
+
+## 4. Test Plan & Execution Architecture Best Practices
+
+| Anti-Pattern (High Overhead) | Tuned Best Practice (Maximum Throughput) |
+|---|---|
+| Running test via GUI | **Always use CLI (`jmeter -n -t plan.jmx`)** |
+| Active View Results Tree or Summary Report | **Disable all GUI listeners during load runs** |
+| Saving full response data in JTL log | **Save only minimal CSV metrics (`jmeter.save.saveservice.*`)** |
+| BeanShell / JavaScript scripts | **JSR223 Groovy with "Cache compiled script" checked** |
+| Dynamic `\${var}` inside cached scripts | **`vars.get("var")` inside script body** |
+| Heavy DOM XPath extractors | **Boundary Extractor or JSON Extractor** |
+
+---
+
+## 5. Network Interface & DNS Caching
+
+By default, Java caches DNS lookups forever. If load testing microservices behind an AWS ALB or round-robin DNS:
+1. In `system.properties`, set DNS cache TTL:
+```properties
+networkaddress.cache.ttl=10
+networkaddress.cache.negative.ttl=0
+```
+2. In HTTP Request Defaults, check **Use MD5 checksum** only if verifying large file download integrity.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Create a `bin/setenv.sh` or `bin/setenv.bat` file in your JMeter directory with `-Xms4g -Xmx4g` and verify with the interactive Heap Estimator tool.
+</Fragment>
+<Fragment slot="related">
+- [Heap Estimator Tool](/tools/heap-estimator/)
+- [OutOfMemoryError Heap Playbook](/topics/errors/out-of-memory-heap/)
+- [Too Many Open Files (ulimit)](/topics/errors/too-many-open-files-ulimit/)
+- [Thread Calculator Tool](/tools/thread-calculator/)
+</Fragment>
+<Fragment slot="mistakes">
+Allocating more than 80% of total physical RAM to JMeter heap (causing OS kernel page swapping); keeping View Results Tree enabled in headless CLI runs.
+</Fragment>
+<Fragment slot="troubleshooting">
+If the test freezes or pauses periodically, inspect GC logs (`jmeter_gc.log`) to verify whether Full GC stop-the-world pauses are occurring.
 </Fragment>
 </RelatedContent>
 
@@ -8228,6 +9592,134 @@ Write one SLO in percentile + error form, map it to a sampler label, and configu
 - [Dashboard report](/user-manual/generating-dashboard/)
 - [Glossary](/user-manual/glossary/)
 - [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+</Fragment>
+</RelatedContent>
+
+
+---
+Title: Customizing JMeter HTML Dashboard Reports
+URL: https://docs.jmeter.ai/topics/html-dashboard-report-customization/
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# Customizing JMeter HTML Dashboard Reports
+
+Apache JMeter includes a built-in **HTML Dashboard Generator** that transforms raw JTL/CSV execution logs into responsive, interactive web dashboards featuring APDEX ratings, response time percentiles, throughput curves, and error breakdowns.
+
+While the default report is functional, performance engineers can customize APDEX satisfaction thresholds per transaction, filter internal samplers, adjust percentile granularities (p90, p95, p99), and customize report titles.
+
+This guide explains how to customize your HTML dashboard generator via `user.properties` and CLI arguments.
+
+---
+
+## 1. Generating the Dashboard (CLI Quick Reference)
+
+### Option A: Generate Automatically at the End of a Test
+```bash
+jmeter -n -t plan.jmx -l results.jtl -e -o ./report/
+```
+*(The output folder `./report/` must be completely empty or non-existent).*
+
+### Option B: Generate from an Existing JTL File
+```bash
+jmeter -g results.jtl -o ./report/
+```
+
+---
+
+## 2. Customizing APDEX Thresholds per Transaction
+
+By default, JMeter uses a global APDEX satisfied threshold (T) of 500 ms and tolerated threshold (F) of 1500 ms:
+- **Satisfied**: Response time `≤ T`
+- **Tolerating**: Response time between T and F (`T < response time ≤ F`)
+- **Frustrated**: Response time `> F` or the request failed
+
+In real applications, lightweight static requests should have T = 100 ms, while heavy database reports may tolerate T = 3000 ms.
+
+In `bin/user.properties` (or passed via `-J`):
+
+```properties
+# Global default APDEX thresholds (in milliseconds)
+jmeter.reportgenerator.apdex_satisfied_threshold=500
+jmeter.reportgenerator.apdex_tolerated_threshold=1500
+
+# Per-Transaction custom APDEX override (using regex sample name matching)
+jmeter.reportgenerator.apdex_per_transaction=^(Login|AuthToken)$:200,600;\
+                                            ^(Checkout_Payment)$:1000,3000;\
+                                            ^(Download_Report)$:5000,15000
+```
+
+---
+
+## 3. Filtering Samplers with Regex
+
+If your test plan contains health checks, debug requests, or token preparation calls that should not skew executive reporting metrics, filter them using regular expressions:
+
+```properties
+# Include only samplers matching pattern
+jmeter.reportgenerator.exporter.html.series_filter=^(TC_|API_).*
+
+# Exclude specific internal steps
+jmeter.reportgenerator.exporter.html.series_filter=^(?!Debug_|Health_).*$
+```
+
+---
+
+## 4. Adjusting Response Time Percentiles
+
+By default, the dashboard displays 90th, 95th, and 99th percentiles in summary tables and charts. You can adjust these buckets in `user.properties`:
+
+```properties
+# Custom percentile values (e.g. 50th, 90th, 99.9th)
+jmeter.reportgenerator.statistic.percentiles=50,90,95,99,99.9
+
+# Custom graph granulatity (in milliseconds) - default is 60000ms (1 minute)
+jmeter.reportgenerator.overall_granularity=10000
+```
+*(Setting granularity to `10000` (10 seconds) provides higher-resolution time-series response time and throughput graphs).*
+
+---
+
+## 5. Customizing Dashboard Title & Branding
+
+You can change the header title displayed on the generated web report:
+
+```properties
+# Custom report title in top navigation bar
+jmeter.reportgenerator.report_title=Acme Core Banking API - Performance Benchmark
+```
+
+### Passing Custom Report Properties on the CLI:
+```bash
+jmeter -n -t plan.jmx -l results.jtl -e -o ./report/ \
+  -Jjmeter.reportgenerator.report_title="Nightly Build Regression Report" \
+  -Jjmeter.reportgenerator.overall_granularity=15000
+```
+
+---
+
+## 6. Dashboard Generator Best Practices
+
+1. **Keep Transaction Names Clean**: Avoid dynamic URL parameters in sampler names (e.g., use `/api/users/{id}` instead of `/api/users/12345`). Dynamic names create thousands of distinct rows in the dashboard table, bloating HTML file size.
+2. **Never Run with Full XML Logging**: Ensure results are saved as CSV format (`jmeter.save.saveservice.output_format=csv`) to allow fast parsing by the report generator.
+3. **Use Transaction Controllers**: Check **"Generate parent sample"** so composite business transactions appear as single unified rows in APDEX and summary tables.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Configure custom APDEX thresholds in `user.properties` and generate an updated HTML dashboard report with `jmeter -g results.jtl -o ./report/`.
+</Fragment>
+<Fragment slot="related">
+- [APDEX, SLOs & Percentiles](/topics/apdex-slo-percentiles/)
+- [Dashboard Generation Manual](/user-manual/generating-dashboard/)
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+- [Grafana / Influx / Backend Listener](/topics/grafana-influx-backend-listener/)
+</Fragment>
+<Fragment slot="mistakes">
+Attempting to output to an existing, non-empty directory (JMeter will throw an exception and abort); generating reports from XML log files instead of CSV.
+</Fragment>
+<Fragment slot="troubleshooting">
+If report generation fails with `File results.jtl is empty`, verify that tests executed samplers and that saveservice properties conform to standard CSV columns.
 </Fragment>
 </RelatedContent>
 

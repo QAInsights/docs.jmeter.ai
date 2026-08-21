@@ -1,0 +1,134 @@
+---
+title: "JMeter Thread Groups & Workload Modeling"
+seoTitle: "JMeter Thread Groups & Workload Modeling Guide"
+description: "Design robust load models in JMeter: Standard, Concurrency, Stepping, and Ultimate Thread Groups for spike, stress, soak, and step-up tests."
+keywords:
+  - JMeter thread group
+  - Concurrency Thread Group
+  - Ultimate Thread Group
+  - workload modeling
+  - spike load test
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "14 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: thread-groups-workload-modeling
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Thread Groups & Workload Modeling
+
+A **Thread Group** is the execution engine of any Apache JMeter test plan. It defines how many virtual users (threads) execute the test, how fast they spin up (ramp-up), how long the test runs (duration), and how the workload progresses over time.
+
+This guide explores both core JMeter thread groups and custom plugin thread groups, explaining how to model the 5 major performance testing types: **Baseline**, **Step-Up (Load/Stress)**, **Spike**, **Soak (Endurance)**, and **Breakpoint**.
+
+---
+
+## 1. Thread Group Types Comparison
+
+| Thread Group | Source | Key Advantage | Best Testing Scenario |
+|---|---|---|---|
+| **Standard Thread Group** | Built-in | Zero plugins required; simple ramp-up and duration controls | Baseline, smoke, and simple steady-state load tests |
+| **setUp Thread Group** | Built-in | Runs strictly *before* main load starts | Test data creation, admin login, pre-warming cache |
+| **tearDown Thread Group** | Built-in | Runs strictly *after* main load finishes | Test data deletion, database cleanup, report notifications |
+| **Concurrency Thread Group** | JMeter Plugins | Dynamic thread adjustments, step ramp-ups without thread restart | Step-up load tests, target RPS shaping with Throughput Timer |
+| **Ultimate Thread Group** | JMeter Plugins | Complete control over multi-stage schedules (staggered ramp, hold, shutdown) | Complex multi-wave schedules and spike testing |
+| **Arrivals Thread Group** | JMeter Plugins | Open workload model: schedules *arrival rate* (iterations/sec) instead of fixed users | Modern cloud APIs where user arrivals are independent of system latency |
+
+---
+
+## 2. The 5 Major Workload Test Models
+
+### Model 1: Baseline / Smoke Test
+- **Goal**: Verify script correctness, correlation integrity, and initial server health under minimal load.
+- **Config**: 1 to 5 threads, 10-second ramp-up, 1-2 iterations.
+
+### Model 2: Steady-State Load Test
+- **Goal**: Measure response times, throughput, and resource utilization at expected production peak load.
+- **Config**: Ramp up to target users (e.g., 200 users over 5 minutes), hold steady for 30–60 minutes, ramp down gracefully.
+
+### Model 3: Step-Up (Stress / Scalability) Test
+- **Goal**: Identify capacity limits, latency degradation inflection points, and auto-scaling triggers.
+- **Config (using Concurrency Thread Group)**:
+  - Target Concurrency: `500`
+  - Ramp Up Time: `20 minutes`
+  - Ramp-Up Steps: `5` (Increments of 100 users every 4 minutes)
+  - Hold Target Rate: `10 minutes`
+
+### Model 4: Spike Test
+- **Goal**: Observe system behavior when traffic spikes dramatically (e.g., flash sales, breaking news).
+- **Config (using Ultimate Thread Group)**:
+  - Base load: 50 threads for 10 minutes.
+  - Spike: Instant surge to 1,000 threads for 2 minutes.
+  - Recovery: Drop back to 50 threads to observe if the system auto-recovers or crashes.
+
+### Model 5: Soak (Endurance) Test
+- **Goal**: Detect memory leaks, unclosed database connection pools, disk buffer exhaustion, and GC degradation over time.
+- **Config**: 70% of peak load sustained for 4 to 24 hours.
+
+---
+
+## 3. Configuring Standard Thread Group
+
+```text
+Action to be taken after a Sampler error: Continue (or Start Next Thread Loop)
+Number of Threads (users): \${__P(threads, 50)}
+Ramp-up period (seconds): \${__P(rampup, 60)}
+Loop Count: Infinite (checked)
+Specify Thread Lifetime: Checked
+Duration (seconds): \${__P(duration, 1800)}
+Startup delay (seconds): 0
+```
+
+:::tip[Parameterize with __P for CI/CD]
+Always use `\${__P(threads, 50)}` and `\${__P(duration, 300)}` in your thread groups so you can dynamically override parameters from the CLI without editing the `.jmx` file:
+`jmeter -n -t plan.jmx -Jthreads=200 -Jduration=1200 -l results.jtl`
+:::
+
+---
+
+## 4. Concurrency Thread Group + Throughput Shaping Timer
+
+For advanced step-up tests, combine the **Concurrency Thread Group** with the **Throughput Shaping Timer** (via JMeter Plugins):
+
+1. **Concurrency Thread Group**: Manages virtual user concurrency automatically.
+2. **Throughput Shaping Timer**: Sets the exact target RPS schedule (e.g., Step 1: 50 RPS for 5m &rarr; Step 2: 100 RPS for 5m).
+3. Connect the two using a **Feedback Loop**: Set `Thread Schedule` in the Thread Group to link with the Throughput Shaping Timer.
+
+---
+
+## 5. Closed vs Open Workload Models
+
+- **Closed Workload Model** (Standard Thread Group): Virtual users finish an iteration, wait for think time, and immediately start another. If the server slows down, throughput drops automatically because threads are blocked waiting for responses.
+- **Open Workload Model** (Arrivals Thread Group / Precise Throughput Timer): New user arrivals occur at fixed intervals regardless of how fast or slow the server is responding. This accurately reflects open internet traffic where incoming requests do not slow down just because your backend is saturated.
+
+---
+
+## 6. Sizing Ramp-Up & Thread Lifecycles
+
+1. **Never Ramp Up Instantly to Thousands of Users**: Instant ramp-up (e.g., 1,000 users in 0 seconds) causes an artificial TCP handshake storm, overwhelming load balancers with SSL handshakes before tests even begin.
+2. **Ramp-Up Formula Rule of Thumb**:
+```text
+Ramp-up (seconds) >= Target Threads / (5 to 10)
+```
+*(e.g., for 500 threads, ramp up over at least 50 to 100 seconds).*
+3. **Choose "Start Next Thread Loop" on Error**: For multi-step business journeys, when step 1 (login) fails, starting the next loop avoids cascading 404/401 errors on subsequent steps.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Choose the appropriate workload model for your test objectives and parameterize thread counts using properties (`\${__P(threads,10)}`).
+</Fragment>
+<Fragment slot="related">
+- [Timers, Think Time & Pacing Guide](/topics/timers-pacing-throughput-modeling/)
+- [JMeter Memory & JVM Tuning](/topics/jmeter-performance-tuning-guide/)
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+- [Plugins Essentials](/topics/plugins-essentials/)
+</Fragment>
+<Fragment slot="mistakes">
+Ramping up hundreds of threads in 0 seconds causing instant connection timeouts; running infinite loops without a duration timeout; relying on closed workload models when testing open APIs.
+</Fragment>
+<Fragment slot="troubleshooting">
+If thread counts spike but throughput remains flat, inspect server CPU and JMeter heap metrics for resource starvation.
+</Fragment>
+</RelatedContent>

@@ -1,0 +1,132 @@
+---
+title: "JMeter JDBC Database Load Testing Guide"
+seoTitle: "JMeter JDBC Database Performance Testing Guide"
+description: "Benchmark database performance with JMeter JDBC: connection pool tuning, prepared statements, callable queries, variable mapping, and latency assertions."
+keywords:
+  - JMeter JDBC
+  - JMeter database testing
+  - JDBC Connection Configuration
+  - SQL load testing
+  - JMeter PostgreSQL MySQL
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "13 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jdbc-database-load-testing
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter JDBC Database Load Testing Guide
+
+Apache JMeter enables direct load testing and performance benchmarking of relational databases (PostgreSQL, MySQL, Oracle, MS SQL Server, MariaDB) using JDBC. This allows performance engineers to isolate database query latency, test connection pool limits, benchmark stored procedures, and validate database performance independently of the application layer.
+
+This guide walks through driver installation, connection pool sizing, parameterized queries, and extracting result sets into JMeter variables.
+
+---
+
+## 1. Installing the JDBC Driver
+
+JMeter does not bundle proprietary database drivers. You must download the appropriate JDBC driver `.jar` file and place it in JMeter’s `lib/` directory, then restart JMeter:
+
+| Database | Driver Class Name | Maven / JAR Artifact | Example Database URL |
+|---|---|---|---|
+| **PostgreSQL** | `org.postgresql.Driver` | `postgresql-42.x.jar` | `jdbc:postgresql://localhost:5432/testdb` |
+| **MySQL / MariaDB** | `com.mysql.cj.jdbc.Driver` | `mysql-connector-j-8.x.jar` | `jdbc:mysql://localhost:3306/testdb?useSSL=false` |
+| **Oracle DB** | `oracle.jdbc.OracleDriver` | `ojdbc8.jar` / `ojdbc11.jar` | `jdbc:oracle:thin:@//localhost:1521/XEPDB1` |
+| **MS SQL Server** | `com.microsoft.sqlserver.jdbc.SQLServerDriver` | `mssql-jdbc-12.x.jar` | `jdbc:sqlserver://localhost:1433;databaseName=testdb;encrypt=true;trustServerCertificate=true` |
+
+---
+
+## 2. Configuring JDBC Connection Configuration
+
+The **JDBC Connection Configuration** config element defines the connection pool.
+
+### Core Settings:
+- **Variable Name Bound to Pool**: e.g., `db_pool_main` *(Must match the Variable Name in your JDBC Request samplers)*.
+- **Max Number of Connections**: Maximum concurrent database connections (e.g., `50`).
+- **Pool Timeout**: `10000` (ms) — how long a thread waits if all pool connections are occupied before throwing an error.
+- **Idle Timeout**: `60000` (ms).
+- **Validation Query**: Simple query to check connection health before borrowing:
+  - PostgreSQL / MySQL: `SELECT 1`
+  - Oracle: `SELECT 1 FROM DUAL`
+- **Transaction Isolation**: `DEFAULT` (or `TRANSACTION_READ_COMMITTED`).
+
+---
+
+## 3. Writing JDBC Requests
+
+Add **Sampler &rarr; JDBC Request** under your Thread Group:
+
+### Key Settings:
+- **Variable Name of Pool**: `db_pool_main`
+- **Query Type**:
+  - `Select Statement`: Standard read queries.
+  - `Prepared Select Statement`: Parameterized read query (prevents SQL injection and improves DB execution plan caching).
+  - `Prepared Update Statement`: `INSERT`, `UPDATE`, `DELETE` operations.
+  - `Callable Statement`: Stored procedure execution.
+
+### Example A: Parameterized Prepared Select Statement
+```sql
+SELECT user_id, email, status, created_at 
+FROM users 
+WHERE status = ? AND country = ?
+ORDER BY created_at DESC 
+LIMIT 10;
+```
+- **Parameter values**: `ACTIVE, \${userCountry}`
+- **Parameter types**: `VARCHAR, VARCHAR`
+- **Variable names**: `userId, userEmail, userStatus, userCreatedAt`
+
+---
+
+## 4. Extracting & Using SQL Result Sets
+
+When you specify variable names in the **Variable names** field (e.g., `userId, userEmail`), JMeter automatically parses the result set into indexed variables:
+
+- `userId_#`: Total number of returned rows (e.g., `10`).
+- `userId_1`: First row's `user_id`.
+- `userId_2`: Second row's `user_id`.
+- `userId_n`: nth row's `user_id`.
+
+### Iterating Over SQL Results with ForEach Controller:
+1. Set **Input variable prefix**: `userId`
+2. **End index**: `\${userId_#}`
+3. **Output variable name**: `currentUserId`
+4. Inside the ForEach loop, make subsequent HTTP calls to `/api/users/\${currentUserId}`.
+
+---
+
+## 5. Benchmark Stored Procedures (Callable Statement)
+
+```sql
+{call process_monthly_invoice(?, ?, ?)}
+```
+- **Parameter values**: `\${accountId}, \${billingCycle}, INOUT`
+- **Parameter types**: `INTEGER, VARCHAR, OUT VARCHAR`
+
+---
+
+## 6. JDBC Load Testing Best Practices
+
+1. **Size Pool Connections Appropriately**: Set `Max Number of Connections` equal to or greater than the number of active concurrent threads in the Thread Group to prevent threads from blocking on pool locks.
+2. **Use Prepared Statements**: Always prefer *Prepared Select/Update* statements over raw SQL strings to allow the database engine to reuse execution plans and avoid parse overhead.
+3. **Clean Up Generated Test Data**: Use a **tearDown Thread Group** with a dedicated cleanup query to delete records inserted during test execution.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Download your database vendor's JDBC JAR, drop it into JMeter's `lib/` directory, and run a 1-thread smoke test to verify connectivity.
+</Fragment>
+<Fragment slot="related">
+- [JDBC Pool Errors Playbook](/topics/errors/jdbc-connection-pool-errors/)
+- [ClassNotFound & Missing JARs](/topics/errors/class-not-found-noclassdeffound/)
+- [Database Test Plan Manual](/user-manual/build-db-test-plan/)
+- [Properties Reference](/user-manual/properties-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Forgetting to place the JDBC driver JAR in JMeter's `lib/` directory; mismatched pool variable names between config and samplers; setting connection pool size too low for high thread counts.
+</Fragment>
+<Fragment slot="troubleshooting">
+If connections fail, verify firewall access to DB port (5432/3306/1433) and check `jmeter.log` for `Cannot create PoolableConnectionFactory`.
+</Fragment>
+</RelatedContent>

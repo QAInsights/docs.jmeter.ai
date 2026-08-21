@@ -1,0 +1,187 @@
+---
+title: "JMeter Assertions and SLA Validation Guide"
+seoTitle: "JMeter Assertions and SLA Validation Complete Guide"
+description: "Comprehensive guide to JMeter assertions: Response, JSON Path, Duration, Size, XPath2, and JSR223 assertions with performance and SLA best practices."
+keywords:
+  - JMeter assertions
+  - JSON assertion JMeter
+  - Response Assertion
+  - JMeter SLA validation
+  - JSR223 assertion
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "13 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: jmeter-assertions-guide
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Assertions and SLA Validation Guide
+
+Assertions in Apache JMeter validate that responses received from the target server conform to expected status codes, response times, headers, and payload structures. When an assertion fails, JMeter marks the sample as failed (red), records the failure message, and triggers configured error handling rules.
+
+This guide covers assertion execution hierarchy, deep dives into the most critical assertion types, custom JSR223 assertions, and performance best practices under high concurrency.
+
+:::tip[Assertion Hierarchy & Scope]
+Assertions apply to all samplers at their hierarchical level and below. Placing an assertion directly under the **Thread Group** evaluates it against *every single request* in that group. To validate a single API call, always attach the assertion as a child of that specific sampler.
+:::
+
+---
+
+## 1. Core Assertion Types Overview
+
+| Assertion Type | Target | CPU / Memory Overhead | Best For |
+|---|---|---|---|
+| **Response Assertion** | Status code, headers, URL, body | **Lowest** (native string / regex) | HTTP 200, status messages, text matching |
+| **JSON Assertion** | REST JSON response payloads | **Low** (JSONPath evaluation) | Validating specific fields, arrays, or object properties |
+| **Duration Assertion** | Response time in milliseconds | **Negligible** (integer comparison) | Strict SLA latency enforcement |
+| **Size Assertion** | Byte size of response | **Negligible** (byte comparison) | Empty body or minimum payload length checks |
+| **XPath2 Assertion** | XML / SOAP responses | **Medium** (DOM / SAX parsing) | Complex XML tree validation |
+| **JSR223 Assertion** | Dynamic / multi-condition rules | **Low** (if Groovy cached) | Cross-field validation, database verification |
+
+---
+
+## 2. Response Assertion (The Workhorse)
+
+The Response Assertion tests fields of the response using substring, pattern matching, or equality.
+
+### Key Configuration Settings
+- **Field to Test**:
+  - `Text Response` (Response body)
+  - `Response Code` (HTTP status code, e.g., `200`, `201`)
+  - `Response Message` (e.g., `OK`, `Created`)
+  - `Response Headers` (e.g., `Content-Type: application/json`)
+  - `Request Headers` / `URL Sampled`
+- **Pattern Matching Rules**:
+  - **Contains**: Case-sensitive substring search anywhere in the target.
+  - **Matches**: Full regular expression match across the entire string (must match from start to end).
+  - **Equals**: Exact literal match of the full string.
+  - **Substring**: Fast literal substring matching (no regex compilation overhead).
+  - **Not**: Inverts the assertion logic (passes if pattern is *absent*).
+  - **Or**: Succeeds if *any* listed pattern matches.
+
+```text
+Field to Test: Response Code
+Pattern Matching Rule: Equals
+Patterns to Test: 200
+```
+
+---
+
+## 3. JSON Assertion & JSON Path Validation
+
+Used for REST APIs returning `application/json`. It evaluates expressions using JSONPath syntax.
+
+### Configuration Fields
+- **Assert JSON Path exists**: e.g., `$.data.user.id` or `$.items[?(@.price > 100)]`
+- **Additionally validate value**: Check if the extracted value matches an expected condition.
+- **Match as regular expression**: If checked, validates the value using regex.
+- **Expected Value**: The literal or regex string expected at the JSONPath location.
+- **Expect null**: Asserts that the targeted field explicitly equals `null`.
+- **Invert assertion**: Fails if the JSONPath exists or matches.
+
+### Common JSONPath Patterns
+| Pattern | Meaning | Example Match |
+|---|---|---|
+| `$.status` | Top-level property | `"SUCCESS"` |
+| `$.data.items.length()` | Array element count | `5` |
+| `$.items[0].id` | First item ID in array | `101` |
+| `$.users[*].email` | Array of all emails | `["a@b.com", "c@d.com"]` |
+| `$.orders[?(@.total > 500)]` | Filters orders with total > 500 | Non-empty array |
+
+---
+
+## 4. Duration & Size Assertions (SLA Validation)
+
+### Duration Assertion
+Enforces a hard maximum response time limit. If `prev.getTime() > Duration (ms)`, the sampler fails with:
+`The test took too long: 1240 ms, max allowed 1000 ms`.
+
+```text
+Duration in milliseconds: 1000
+```
+
+:::caution[Use Reporting Percentiles Over Heavy Duration Assertions]
+Avoid adding Duration Assertions to every sampler during high-volume soak tests if your goal is calculating p95/p99 percentiles. JMeter's HTML Dashboard and Backend Listener calculate percentiles automatically without failing samples artificially.
+:::
+
+### Size Assertion
+Validates response size in bytes:
+- **Size to compare**: Full response, body only, or headers only.
+- **Comparison Type**: `=`, `!=`, `>`, `<`, `>=`, `<=`.
+
+---
+
+## 5. Advanced Custom Assertions with JSR223 Groovy
+
+When built-in assertions cannot express complex business logic (e.g., verifying mathematical calculations, token expiration times, or cross-variable consistency), use a **JSR223 Assertion**.
+
+In a JSR223 Assertion, use `AssertionResult` to signal success or failure:
+
+```groovy
+import groovy.json.JsonSlurper
+
+// Parse response
+String response = prev.getResponseDataAsString()
+if (!response) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage("Response body was completely empty.")
+    return
+}
+
+try {
+    def json = new JsonSlurper().parseText(response)
+    
+    // Validate schema field
+    if (json.status != "ACTIVE") {
+        AssertionResult.setFailure(true)
+        AssertionResult.setFailureMessage("Expected status ACTIVE but got: ${json.status}")
+        return
+    }
+    
+    // Cross-validate with JMeter variable
+    String expectedUserId = vars.get("expectedUserId")
+    if (json.user?.id?.toString() != expectedUserId) {
+        AssertionResult.setFailure(true)
+        AssertionResult.setFailureMessage("User ID mismatch: expected ${expectedUserId}, got ${json.user?.id}")
+        return
+    }
+    
+    // SLA check combined with business validation
+    if (prev.getTime() > 2000) {
+        AssertionResult.setFailure(true)
+        AssertionResult.setFailureMessage("SLA breach: request took ${prev.getTime()}ms (limit 2000ms)")
+    }
+} catch (Exception e) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage("Invalid JSON format: " + e.getMessage())
+}
+```
+
+---
+
+## 6. Performance Optimization for Assertions
+
+1. **Prefer Substring over Matches**: In Response Assertion, select **Substring** instead of **Contains/Matches** when regex is unnecessary. Substring uses simple string index scanning and consumes minimal CPU.
+2. **Limit XML/XPath Assertions**: XPath assertions construct a full DOM tree in memory for every response. For XML under heavy load, use regular expression extractors or fast boundary extractors instead.
+3. **Keep Assertion Scope Narrow**: Place assertions directly as children of specific samplers, not at the Thread Group level unless globally required.
+4. **Always Check "Cache compiled script"**: If using JSR223 Assertions, enable caching and avoid `\${var}` interpolation.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Audit your test plan: replace global Thread-Group-level assertions with targeted child assertions, and change Response Assertion rules from "Matches" to "Substring".
+</Fragment>
+<Fragment slot="related">
+- [JSR223 Groovy Scripting Guide](/topics/jsr223-groovy-scripting-guide/)
+- [Correlation & Dynamic Values](/topics/correlation-dynamic-values/)
+- [APDEX, SLOs & Percentiles](/topics/apdex-slo-percentiles/)
+- [Component Reference](/user-manual/component-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Using heavy XPath/DOM assertions under thousands of virtual users; applying Duration Assertions when percentiles should be calculated post-run; forgetting that thread-level assertions run on every child request.
+</Fragment>
+<Fragment slot="troubleshooting">
+If assertions fail with `Assertion error: false`, review View Results Tree -> Assertion Results tab to inspect the exact failure message and expected vs received values.
+</Fragment>
+</RelatedContent>

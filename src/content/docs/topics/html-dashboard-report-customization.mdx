@@ -1,0 +1,138 @@
+---
+title: "Customizing JMeter HTML Dashboard Reports"
+seoTitle: "Customizing JMeter HTML Dashboard Reports and APDEX"
+description: "Customize JMeter HTML Dashboard reports: configure APDEX thresholds per transaction, filter samplers, adjust percentiles, and add custom branding."
+keywords:
+  - JMeter HTML report
+  - JMeter dashboard customization
+  - JMeter APDEX configuration
+  - user.properties report
+  - JMeter percentiles
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "12 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: html-dashboard-report-customization
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# Customizing JMeter HTML Dashboard Reports
+
+Apache JMeter includes a built-in **HTML Dashboard Generator** that transforms raw JTL/CSV execution logs into responsive, interactive web dashboards featuring APDEX ratings, response time percentiles, throughput curves, and error breakdowns.
+
+While the default report is functional, performance engineers can customize APDEX satisfaction thresholds per transaction, filter internal samplers, adjust percentile granularities (p90, p95, p99), and customize report titles.
+
+This guide explains how to customize your HTML dashboard generator via `user.properties` and CLI arguments.
+
+---
+
+## 1. Generating the Dashboard (CLI Quick Reference)
+
+### Option A: Generate Automatically at the End of a Test
+```bash
+jmeter -n -t plan.jmx -l results.jtl -e -o ./report/
+```
+*(The output folder `./report/` must be completely empty or non-existent).*
+
+### Option B: Generate from an Existing JTL File
+```bash
+jmeter -g results.jtl -o ./report/
+```
+
+---
+
+## 2. Customizing APDEX Thresholds per Transaction
+
+By default, JMeter uses a global APDEX satisfied threshold (T) of 500 ms and tolerated threshold (F) of 1500 ms:
+- **Satisfied**: Response time `≤ T`
+- **Tolerating**: Response time between T and F (`T < response time ≤ F`)
+- **Frustrated**: Response time `> F` or the request failed
+
+In real applications, lightweight static requests should have T = 100 ms, while heavy database reports may tolerate T = 3000 ms.
+
+In `bin/user.properties` (or passed via `-J`):
+
+```properties
+# Global default APDEX thresholds (in milliseconds)
+jmeter.reportgenerator.apdex_satisfied_threshold=500
+jmeter.reportgenerator.apdex_tolerated_threshold=1500
+
+# Per-Transaction custom APDEX override (using regex sample name matching)
+jmeter.reportgenerator.apdex_per_transaction=^(Login|AuthToken)$:200,600;\
+                                            ^(Checkout_Payment)$:1000,3000;\
+                                            ^(Download_Report)$:5000,15000
+```
+
+---
+
+## 3. Filtering Samplers with Regex
+
+If your test plan contains health checks, debug requests, or token preparation calls that should not skew executive reporting metrics, filter them using regular expressions:
+
+```properties
+# Include only samplers matching pattern
+jmeter.reportgenerator.exporter.html.series_filter=^(TC_|API_).*
+
+# Exclude specific internal steps
+jmeter.reportgenerator.exporter.html.series_filter=^(?!Debug_|Health_).*$
+```
+
+---
+
+## 4. Adjusting Response Time Percentiles
+
+By default, the dashboard displays 90th, 95th, and 99th percentiles in summary tables and charts. You can adjust these buckets in `user.properties`:
+
+```properties
+# Custom percentile values (e.g. 50th, 90th, 99.9th)
+jmeter.reportgenerator.statistic.percentiles=50,90,95,99,99.9
+
+# Custom graph granulatity (in milliseconds) - default is 60000ms (1 minute)
+jmeter.reportgenerator.overall_granularity=10000
+```
+*(Setting granularity to `10000` (10 seconds) provides higher-resolution time-series response time and throughput graphs).*
+
+---
+
+## 5. Customizing Dashboard Title & Branding
+
+You can change the header title displayed on the generated web report:
+
+```properties
+# Custom report title in top navigation bar
+jmeter.reportgenerator.report_title=Acme Core Banking API - Performance Benchmark
+```
+
+### Passing Custom Report Properties on the CLI:
+```bash
+jmeter -n -t plan.jmx -l results.jtl -e -o ./report/ \
+  -Jjmeter.reportgenerator.report_title="Nightly Build Regression Report" \
+  -Jjmeter.reportgenerator.overall_granularity=15000
+```
+
+---
+
+## 6. Dashboard Generator Best Practices
+
+1. **Keep Transaction Names Clean**: Avoid dynamic URL parameters in sampler names (e.g., use `/api/users/{id}` instead of `/api/users/12345`). Dynamic names create thousands of distinct rows in the dashboard table, bloating HTML file size.
+2. **Never Run with Full XML Logging**: Ensure results are saved as CSV format (`jmeter.save.saveservice.output_format=csv`) to allow fast parsing by the report generator.
+3. **Use Transaction Controllers**: Check **"Generate parent sample"** so composite business transactions appear as single unified rows in APDEX and summary tables.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Configure custom APDEX thresholds in `user.properties` and generate an updated HTML dashboard report with `jmeter -g results.jtl -o ./report/`.
+</Fragment>
+<Fragment slot="related">
+- [APDEX, SLOs & Percentiles](/topics/apdex-slo-percentiles/)
+- [Dashboard Generation Manual](/user-manual/generating-dashboard/)
+- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+- [Grafana / Influx / Backend Listener](/topics/grafana-influx-backend-listener/)
+</Fragment>
+<Fragment slot="mistakes">
+Attempting to output to an existing, non-empty directory (JMeter will throw an exception and abort); generating reports from XML log files instead of CSV.
+</Fragment>
+<Fragment slot="troubleshooting">
+If report generation fails with `File results.jtl is empty`, verify that tests executed samplers and that saveservice properties conform to standard CSV columns.
+</Fragment>
+</RelatedContent>

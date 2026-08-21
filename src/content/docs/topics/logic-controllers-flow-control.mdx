@@ -1,0 +1,168 @@
+---
+title: "JMeter Logic Controllers and Flow Control Guide"
+seoTitle: "JMeter Logic Controllers and Flow Control Guide"
+description: "Master JMeter flow control: If, While, Loop, ForEach, Switch, and Transaction Controllers with Groovy condition syntax and transaction metrics."
+keywords:
+  - JMeter logic controllers
+  - JMeter If Controller
+  - JMeter While Controller
+  - Transaction Controller
+  - JMeter loop
+difficulty: intermediate
+guideType: how-to
+estimatedReadTime: "13 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: logic-controllers-flow-control
+---
+
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+# JMeter Logic Controllers and Flow Control Guide
+
+**Logic Controllers** determine the order and conditions under which samplers in a test plan execute. They allow you to build realistic, branching, looping, and aggregated user flows—such as conditional checkouts, polling asynchronous tasks, looping through array responses, and calculating composite business transaction metrics.
+
+This guide provides a practical reference to the most critical logic controllers, condition syntax, and common orchestration patterns.
+
+---
+
+## 1. Controller Quick Reference
+
+| Controller | Purpose | Typical Scenario |
+|---|---|---|
+| **Transaction Controller** | Aggregates child samplers into one composite transaction metric | Measuring total checkout duration (3 API calls as 1 business transaction) |
+| **If Controller** | Executes child elements only if a condition evaluates to `true` | Conditional paths (e.g., execute payment only if `balance > 0`) |
+| **While Controller** | Loops child elements until a condition evaluates to `false` | Polling an asynchronous order or job status endpoint until `STATUS == READY` |
+| **ForEach Controller** | Iterates over an array of indexed JMeter variables (`item_1`, `item_2`) | Processing every item extracted by a JSON or RegEx extractor |
+| **Loop Controller** | Executes children a fixed number of times | Repeating a specific step within a thread iteration |
+| **Switch Controller** | Switches execution to one child based on a numeric index or name | Multi-branch routing based on user type (`ADMIN`, `CUSTOMER`, `GUEST`) |
+| **Once Only Controller** | Executes only during the first iteration of each thread | Login or token retrieval at thread startup |
+| **Runtime Controller** | Limits execution of child elements to a specified number of seconds | Time-boxing a specific test phase |
+
+---
+
+## 2. If Controller & Modern Groovy Conditions
+
+The **If Controller** controls conditional branching. 
+
+:::tip[Always Use Groovy Expressions in If Controllers]
+Uncheck **"Interpret Condition as Variable Expression?"** and use `\${__groovy(...)}` or a direct expression. This avoids JavaScript engine overhead and guarantees compiled execution.
+:::
+
+### Recommended If Controller Syntax:
+
+```groovy
+// Check string equality
+\${__groovy(vars.get("userType") == "PREMIUM")}
+
+// Check HTTP response code from previous request
+\${__groovy(vars.get("JMeterThread.last_sample_ok") == "true")}
+
+// Check numeric value
+\${__groovy(vars.get("cartTotal").toInteger() > 100)}
+
+// Check variable existence / not empty
+\${__groovy(vars.get("authToken") != null && !vars.get("authToken").isEmpty())}
+```
+
+- **Evaluate for all children**: If checked, JMeter re-evaluates the condition before executing *every child element*. If unchecked, it evaluates the condition once upon entering the controller.
+
+---
+
+## 3. While Controller (Async Polling & Retries)
+
+The **While Controller** loops until its condition evaluates to `false`.
+
+### Supported Conditions:
+- **Blank (empty)**: Exits when the last sampler in the loop fails.
+- **`LAST`**: Exits when the last sampler fails. If the sampler before the loop failed, the loop is not entered.
+- **Groovy Expression**: Custom condition string evaluating to `"false"` or `"true"`.
+
+### Pattern: Polling Asynchronous Status with Max Retries
+
+To poll an endpoint `/api/jobs/\${jobId}/status` until status is `COMPLETED` (with a max retry safety counter):
+
+1. **Before While Controller (JSR223 Sampler)**:
+```groovy
+vars.put("jobStatus", "PENDING")
+vars.put("pollCount", "0")
+```
+
+2. **While Controller Condition**:
+```groovy
+\${__groovy(vars.get("jobStatus") != "COMPLETED" && vars.get("pollCount").toInteger() < 10)}
+```
+
+3. **Inside While Controller**:
+   - HTTP Request: `GET /api/jobs/\${jobId}/status`
+   - JSON Extractor: extracts `jobStatus`
+   - Flow Control Action: 2-second think time
+   - JSR223 PostProcessor:
+```groovy
+int count = vars.get("pollCount").toInteger() + 1
+vars.put("pollCount", count.toString())
+```
+
+---
+
+## 4. ForEach Controller (Iterating Over Extracted Arrays)
+
+When a **JSON Extractor** extracts an array with match number `-1` (all matches), JMeter generates indexed variables:
+- `productId_matchNr` = `3`
+- `productId_1` = `prod-101`
+- `productId_2` = `prod-102`
+- `productId_3` = `prod-103`
+
+### ForEach Controller Configuration:
+- **Input variable prefix**: `productId`
+- **Start index for variable**: `0` (or `1`)
+- **End index for variable**: `\${productId_matchNr}`
+- **Output variable name**: `currentProductId`
+- **Add "_" before number**: Checked
+
+Inside the controller, simply reference `\${currentProductId}` on every iteration.
+
+---
+
+## 5. Transaction Controller (Composite Metrics)
+
+The **Transaction Controller** groups multiple HTTP requests into a single parent business transaction (e.g., *“Checkout Journey”* consisting of `/cart/validate`, `/payment/authorize`, and `/order/create`).
+
+### Key Settings:
+- **Generate parent sample**: 
+  - **Checked (Recommended)**: The dashboard report shows only the consolidated parent transaction line (*“Checkout Journey”*), keeping reports clean and summarizing total user-perceived latency.
+  - **Unchecked**: Outputs both individual child requests and the parent transaction line.
+- **Include duration of timer and pre-post processors in generated sample**:
+  - **Unchecked (Recommended)**: Measures pure server processing and network latency.
+  - **Checked**: Includes think times and client-side scripting delays in the overall transaction duration.
+
+---
+
+## 6. Switch & Runtime Controllers
+
+### Switch Controller
+Routes execution to one specific child element based on:
+- **Index**: `0` for 1st child, `1` for 2nd child.
+- **Name**: Value matching the exact name of a child sampler.
+- **Value**: `\${paymentType}` &rarr; routes dynamically to child sampler named `CREDIT_CARD` or `PAYPAL`.
+
+### Runtime Controller
+Enforces a hard time cap on child samplers:
+- **Runtime (seconds)**: `60` (threads run child loop continuously for 60 seconds, then exit).
+
+<RelatedContent>
+<Fragment slot="next-step">
+Encapsulate multi-step user workflows inside Transaction Controllers with "Generate parent sample" checked for cleaner dashboard reports.
+</Fragment>
+<Fragment slot="related">
+- [JSR223 Groovy Scripting Guide](/topics/jsr223-groovy-scripting-guide/)
+- [Correlation & Dynamic Values](/topics/correlation-dynamic-values/)
+- [Timers & Pacing Guide](/topics/timers-pacing-throughput-modeling/)
+- [Component Reference](/user-manual/component-reference/)
+</Fragment>
+<Fragment slot="mistakes">
+Writing JavaScript or raw unescaped variable strings in If Controllers instead of `\${__groovy(...)}`; omitting a maximum loop counter in While Controllers causing infinite loops on server failure.
+</Fragment>
+<Fragment slot="troubleshooting">
+If an If Controller never executes, log the condition output with `log.info("Condition result: " + vars.get("myVar"))` in a preceding JSR223 sampler.
+</Fragment>
+</RelatedContent>
