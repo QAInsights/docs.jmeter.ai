@@ -29,6 +29,7 @@ Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.
 | [`lint_jmx_snippet`](#lint_jmx_snippet) | Diagnostics | Scan JMX XML for anti-patterns (GUI listeners, BeanShell, missing timeouts) |
 | [`calculate_workload_model`](#calculate_workload_model) | Calculator | Little's Law concurrency, pacing, ramp-up schedules, and JVM heap sizing |
 | [`plan_distributed_testing`](#plan_distributed_testing) | Topology | Pinned RMI ports, `user.properties`, firewall rules, and Docker manifests |
+| [`tune_linux_os`](#tune_linux_os) | System | Linux `sysctl.conf`, `limits.conf`, systemd, and Docker tuning parameters |
 | [`lookup_jmeter_property`](#lookup_jmeter_property) | Reference | Search curated tuning properties with defaults and config locations |
 | [`get_jsr223_recipe`](#get_jsr223_recipe) | Code | Production Groovy recipes (JWT decoding, HMAC signing, dynamic headers) |
 | [`lookup_error_playbook`](#lookup_error_playbook) | Diagnostics | Instant remediation and OS/JVM fixes for common runtime exceptions |
@@ -76,6 +77,20 @@ Generate Master-Worker RMI port assignments, `user.properties`, CLI commands, fi
   "serverPort": 1099,
   "serverRmiLocalPort": 50000,
   "clientRmiLocalPort": 60000
+}
+```
+
+### tune_linux_os
+
+Generate Linux kernel (`sysctl.conf`), file descriptor (`limits.conf`), `systemd`, and Docker/K8s configurations tuned for high-concurrency JMeter load testing.
+
+```json
+{
+  "concurrency": 25000,
+  "ramGb": 32,
+  "trafficType": "http_churn",
+  "targetDistro": "ubuntu_debian",
+  "role": "injector"
 }
 ```
 

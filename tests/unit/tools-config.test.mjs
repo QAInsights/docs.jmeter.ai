@@ -112,3 +112,18 @@ describe('distributed planner config', () => {
   });
 });
 
+describe('os tuning config', () => {
+  it('exposes concurrency and RAM limits with presets', async () => {
+    const { OS_TUNING } = await import('../../src/lib/tools-config.mjs');
+    expect(OS_TUNING.limits.concurrency.min).toBe(100);
+    expect(OS_TUNING.limits.concurrency.max).toBe(500_000);
+    expect(OS_TUNING.limits.ramGb.min).toBe(2);
+    expect(OS_TUNING.limits.ramGb.max).toBe(512);
+    expect(OS_TUNING.concurrencyPresets.length).toBeGreaterThanOrEqual(4);
+    expect(OS_TUNING.ramOptions.length).toBe(8);
+    expect(OS_TUNING.ramOptions.some((r) => r.value === 512)).toBe(true);
+    expect(OS_TUNING.trafficTypes.length).toBe(3);
+    expect(OS_TUNING.targetDistros.length).toBeGreaterThanOrEqual(4);
+  });
+});
+

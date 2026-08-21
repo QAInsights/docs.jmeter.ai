@@ -1,0 +1,345 @@
+---
+/**
+ * Interactive Linux Kernel / OS Tuning Configurator (client-side).
+ * Generates production sysctl.conf, limits.conf, systemd, and Docker/K8s configs for JMeter.
+ */
+import { OS_TUNING } from '../../lib/tools-config.mjs';
+
+const { defaults, limits, concurrencyPresets, ramOptions, trafficTypes, targetDistros, roles } = OS_TUNING;
+---
+
+<div class="tool" data-os-tuning data-view="sysctl">
+  <div class="tool-grid tool-grid--2">
+    <div class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Target Concurrency (Threads / Connections)</span>
+      <div class="tool-input-wrap">
+        <input
+          type="number"
+          name="concurrency"
+          min={limits.concurrency.min}
+          max={limits.concurrency.max}
+          value={defaults.concurrency}
+          inputmode="numeric"
+        />
+        <span class="tool-suffix" aria-hidden="true">conns</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem">
+        {concurrencyPresets.map((p) => (
+          <button
+            type="button"
+            class="tool-btn tool-btn-ghost"
+            style="font-size:0.75rem;padding:0.15rem 0.45rem;min-height:unset;height:1.5rem"
+            data-preset-concurrency={p.value}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Host System Memory (RAM)</span>
+      <select name="ramGb">
+        {ramOptions.map((r) => (
+          <option value={r.value} selected={r.value === defaults.ramGb}>{r.label}</option>
+        ))}
+      </select>
+      <span class="tool-hint">Determines TCP buffer vector (tcp_mem)</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Traffic Profile</span>
+      <select name="trafficType">
+        {trafficTypes.map((t) => (
+          <option value={t.id} selected={t.id === defaults.trafficType}>{t.label}</option>
+        ))}
+      </select>
+      <span class="tool-hint">Short-lived churn requires faster TIME_WAIT recycling</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Target Environment / Distro</span>
+      <select name="targetDistro">
+        {targetDistros.map((d) => (
+          <option value={d.id} selected={d.id === defaults.targetDistro}>{d.label}</option>
+        ))}
+      </select>
+      <span class="tool-hint">Determines config file locations and syntax</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto;grid-column:1/-1">
+      <span class="tool-label">Node Role</span>
+      <select name="role">
+        {roles.map((r) => (
+          <option value={r.id} selected={r.id === defaults.role}>{r.label}</option>
+        ))}
+      </select>
+      <span class="tool-hint">Load generators need swappiness=1 to protect JVM GC pauses</span>
+    </label>
+  </div>
+
+  <div class="tool-results" aria-live="polite">
+    <div class="tool-card tool-card-primary">
+      <span class="tool-card-label">Max Open Files (nofile)</span>
+      <span class="tool-card-value" data-max-nofile>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Ephemeral Ports</span>
+      <span class="tool-card-value" data-ephemeral-ports>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Listen Queue Backlog</span>
+      <span class="tool-card-value" data-listen-queue>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">VM Swappiness</span>
+      <span class="tool-card-value" data-swappiness>-</span>
+    </div>
+  </div>
+
+  <div class="tool-seg tool-seg--5" role="tablist" aria-label="Tuning Views" style="margin-top:1.5rem;margin-bottom:1rem">
+    <button type="button" class="tool-seg__btn is-active" data-view-btn="sysctl" role="tab" aria-selected="true">
+      sysctl.conf
+    </button>
+    <button type="button" class="tool-seg__btn" data-view-btn="limits" role="tab" aria-selected="false">
+      limits.conf
+    </button>
+    <button type="button" class="tool-seg__btn" data-view-btn="systemd" role="tab" aria-selected="false">
+      systemd / Services
+    </button>
+    <button type="button" class="tool-seg__btn" data-view-btn="docker" role="tab" aria-selected="false">
+      Docker & K8s
+    </button>
+    <button type="button" class="tool-seg__btn" data-view-btn="verify" role="tab" aria-selected="false">
+      Verify Script
+    </button>
+  </div>
+
+  <div data-view-panel="sysctl">
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">/etc/sysctl.d/99-jmeter-tuning.conf</h4>
+    <pre class="tool-code" data-sysctl-output tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <div data-view-panel="limits" hidden>
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">/etc/security/limits.d/99-jmeter.conf</h4>
+    <pre class="tool-code" data-limits-output tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <div data-view-panel="systemd" hidden>
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">systemd Manager & Service Unit Limits</h4>
+    <pre class="tool-code" data-systemd-output tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <div data-view-panel="docker" hidden>
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">Docker CLI Flags & Kubernetes Pod Manifest</h4>
+    <pre class="tool-code" data-docker-output tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <div data-view-panel="verify" hidden>
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">Kernel State Verification Shell Script</h4>
+    <pre class="tool-code" data-verify-output tabindex="0" aria-live="polite"></pre>
+  </div>
+
+  <ul class="tool-notes" data-notes></ul>
+
+  <div class="tool-actions tool-actions--wrap">
+    <button type="button" class="tool-btn" data-copy-active>Copy active snippet</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-link>Copy shareable link</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
+    <span class="tool-status" data-copy-status aria-live="polite" hidden></span>
+  </div>
+
+  <p class="tool-disclaimer">
+    All calculations run client-side in your browser.
+    {' '}See <a href="/topics/jmeter-performance-tuning-guide/">Performance Tuning Guide</a>
+    {' '}and <a href="/topics/errors/too-many-open-files-ulimit/">Too Many Open Files (ulimit) Guide</a>.
+  </p>
+</div>
+
+<script>
+  import { OS_TUNING } from '../../lib/tools-config.mjs';
+  import { copyText } from '../../lib/tools-utils.mjs';
+  import {
+    generateOsTuningPlan,
+    parseOsTuningParams,
+    serializeOsTuningParams,
+  } from '../../lib/os-tuning.mjs';
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const concurrencyInput = root.querySelector('input[name="concurrency"]');
+    const ramSelect = root.querySelector('select[name="ramGb"]');
+    const trafficSelect = root.querySelector('select[name="trafficType"]');
+    const distroSelect = root.querySelector('select[name="targetDistro"]');
+    const roleSelect = root.querySelector('select[name="role"]');
+
+    const maxNofileEl = root.querySelector('[data-max-nofile]');
+    const ephemeralPortsEl = root.querySelector('[data-ephemeral-ports]');
+    const listenQueueEl = root.querySelector('[data-listen-queue]');
+    const swappinessEl = root.querySelector('[data-swappiness]');
+
+    const sysctlOut = root.querySelector('[data-sysctl-output]');
+    const limitsOut = root.querySelector('[data-limits-output]');
+    const systemdOut = root.querySelector('[data-systemd-output]');
+    const dockerOut = root.querySelector('[data-docker-output]');
+    const verifyOut = root.querySelector('[data-verify-output]');
+    const notesEl = root.querySelector('[data-notes]');
+    const status = root.querySelector('[data-copy-status]');
+
+    let currentPlan = null;
+    let activeView = 'sysctl';
+
+    function state() {
+      return {
+        concurrency: Number(concurrencyInput?.value) || OS_TUNING.defaults.concurrency,
+        ramGb: Number(ramSelect?.value) || OS_TUNING.defaults.ramGb,
+        trafficType: trafficSelect?.value || OS_TUNING.defaults.trafficType,
+        targetDistro: distroSelect?.value || OS_TUNING.defaults.targetDistro,
+        role: roleSelect?.value || OS_TUNING.defaults.role,
+      };
+    }
+
+    function showStatus(msg) {
+      if (!status) return;
+      status.hidden = !msg;
+      status.textContent = msg || '';
+      if (msg) setTimeout(() => showStatus(''), 1600);
+    }
+
+    function renderView() {
+      root.querySelectorAll('[data-view-panel]').forEach((p) => {
+        p.hidden = p.getAttribute('data-view-panel') !== activeView;
+      });
+      root.querySelectorAll('[data-view-btn]').forEach((btn) => {
+        const isCurrent = btn.getAttribute('data-view-btn') === activeView;
+        btn.classList.toggle('is-active', isCurrent);
+        btn.setAttribute('aria-selected', String(isCurrent));
+      });
+    }
+
+    function recompute() {
+      const s = state();
+      currentPlan = generateOsTuningPlan(s);
+
+      if (maxNofileEl) maxNofileEl.textContent = currentPlan.summary.maxOpenFiles;
+      if (ephemeralPortsEl) ephemeralPortsEl.textContent = currentPlan.summary.availablePorts;
+      if (listenQueueEl) listenQueueEl.textContent = currentPlan.summary.listenQueue;
+      if (swappinessEl) swappinessEl.textContent = String(currentPlan.summary.swappiness);
+
+      if (sysctlOut) sysctlOut.textContent = currentPlan.sysctl;
+      if (limitsOut) limitsOut.textContent = currentPlan.limits;
+      if (systemdOut) systemdOut.textContent = currentPlan.systemd;
+      if (dockerOut) dockerOut.textContent = currentPlan.dockerK8s;
+      if (verifyOut) verifyOut.textContent = currentPlan.verification;
+
+      if (notesEl) {
+        notesEl.innerHTML = '';
+        currentPlan.notes.forEach((n) => {
+          const li = document.createElement('li');
+          li.textContent = n;
+          notesEl.appendChild(li);
+        });
+      }
+    }
+
+    function applyState(s) {
+      if (concurrencyInput) concurrencyInput.value = String(s.concurrency);
+      if (ramSelect) {
+        const valStr = String(s.ramGb);
+        const exists = Array.from(ramSelect.options).some((o) => o.value === valStr);
+        if (!exists && s.ramGb) {
+          const opt = document.createElement('option');
+          opt.value = valStr;
+          opt.textContent = `${s.ramGb} GB (Custom)`;
+          ramSelect.appendChild(opt);
+        }
+        ramSelect.value = valStr;
+      }
+      if (trafficSelect) trafficSelect.value = s.trafficType;
+      if (distroSelect) distroSelect.value = s.targetDistro;
+      if (roleSelect) roleSelect.value = s.role;
+      recompute();
+    }
+
+    // Event listeners
+    [concurrencyInput, ramSelect, trafficSelect, distroSelect, roleSelect].forEach((el) => {
+      el?.addEventListener('input', recompute);
+      el?.addEventListener('change', recompute);
+    });
+
+    root.querySelectorAll('[data-preset-concurrency]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const val = btn.getAttribute('data-preset-concurrency');
+        if (concurrencyInput && val) {
+          concurrencyInput.value = val;
+          recompute();
+        }
+      });
+    });
+
+    root.querySelectorAll('[data-view-btn]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activeView = btn.getAttribute('data-view-btn') || 'sysctl';
+        renderView();
+      });
+    });
+
+    root.querySelector('[data-copy-active]')?.addEventListener('click', async () => {
+      if (!currentPlan) return;
+      let textToCopy = currentPlan.sysctl;
+      if (activeView === 'limits') textToCopy = currentPlan.limits;
+      else if (activeView === 'systemd') textToCopy = currentPlan.systemd;
+      else if (activeView === 'docker') textToCopy = currentPlan.dockerK8s;
+      else if (activeView === 'verify') textToCopy = currentPlan.verification;
+
+      try {
+        await copyText(textToCopy);
+        showStatus('Snippet copied!');
+      } catch (err) {
+        showStatus('Failed to copy');
+      }
+    });
+
+    root.querySelector('[data-copy-link]')?.addEventListener('click', async () => {
+      const s = state();
+      const qs = serializeOsTuningParams(s);
+      const url = `${window.location.origin}${window.location.pathname}?${qs}`;
+      try {
+        await copyText(url);
+        history.replaceState(null, '', `?${qs}`);
+        showStatus('Shareable link copied!');
+      } catch (err) {
+        showStatus('Failed to copy');
+      }
+    });
+
+    root.querySelector('[data-reset]')?.addEventListener('click', () => {
+      applyState(OS_TUNING.defaults);
+      activeView = 'sysctl';
+      renderView();
+      if (window.location.search) {
+        history.replaceState(null, '', window.location.pathname);
+      }
+      showStatus('Reset to defaults');
+    });
+
+    // Initialize from URL search params if present
+    if (typeof window !== 'undefined' && window.location.search) {
+      const parsed = parseOsTuningParams(new URLSearchParams(window.location.search));
+      applyState(parsed);
+    } else {
+      recompute();
+    }
+    renderView();
+  }
+
+  // Initialize on load and Astro page transitions
+  const el = document.querySelector('[data-os-tuning]');
+  if (el) init(el);
+  document.addEventListener('astro:page-load', () => {
+    const root = document.querySelector('[data-os-tuning]');
+    if (root) init(root);
+  });
+</script>

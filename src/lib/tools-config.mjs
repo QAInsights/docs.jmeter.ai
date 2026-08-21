@@ -184,6 +184,54 @@ export const DISTRIBUTED_PLANNER = {
 };
 
 /**
+ * Linux Kernel / OS Tuning Configurator bounds and defaults.
+ */
+export const OS_TUNING = {
+  limits: {
+    concurrency: { min: 100, max: 500_000 },
+    ramGb: { min: 2, max: 512 },
+  },
+  defaults: {
+    concurrency: 10_000,
+    ramGb: 16,
+    trafficType: 'http_churn',
+    targetDistro: 'ubuntu_debian',
+    role: 'injector',
+  },
+  concurrencyPresets: [
+    { label: '5,000 (Standard)', value: 5000 },
+    { label: '20,000 (High Scale)', value: 20000 },
+    { label: '50,000 (Extreme)', value: 50000 },
+    { label: '100,000 (Mega Load)', value: 100000 },
+  ],
+  ramOptions: [
+    { label: '4 GB (Small VM / Agent)', value: 4 },
+    { label: '8 GB (Standard VM)', value: 8 },
+    { label: '16 GB (Recommended Load Injector)', value: 16 },
+    { label: '32 GB (High Performance)', value: 32 },
+    { label: '64 GB (Bare Metal / Enterprise)', value: 64 },
+    { label: '128 GB (Multi-Engine Node)', value: 128 },
+    { label: '256 GB (High-Memory Node)', value: 256 },
+    { label: '512 GB (Ultra-Scale Cluster / Bare Metal)', value: 512 },
+  ],
+  trafficTypes: [
+    { id: 'http_churn', label: 'HTTP/1.1 Short-Lived (High Connection Churn)' },
+    { id: 'http_keepalive', label: 'HTTP/1.1 Keep-Alive / Standard REST API' },
+    { id: 'streaming_ws_grpc', label: 'WebSockets / gRPC / HTTP/2 (Persistent Streams)' },
+  ],
+  targetDistros: [
+    { id: 'ubuntu_debian', label: 'Ubuntu / Debian' },
+    { id: 'rhel_rocky', label: 'RHEL / Rocky Linux / CentOS' },
+    { id: 'amazon_linux', label: 'Amazon Linux 2023 / AL2' },
+    { id: 'docker_k8s', label: 'Docker / Kubernetes Pod' },
+  ],
+  roles: [
+    { id: 'injector', label: 'JMeter Load Generator (Client Injector)' },
+    { id: 'target_sut', label: 'Target System Under Test (SUT Server)' },
+  ],
+};
+
+/**
  * Build a case-insensitive exact-name regex from configurable key names.
  * @param {string[]} [names]
  * @returns {RegExp}

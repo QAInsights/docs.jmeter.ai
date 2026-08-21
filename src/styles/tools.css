@@ -43,6 +43,30 @@
   grid-template-columns: 1fr 1fr 1fr;
 }
 
+.tool-seg--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@container tool (max-width: 48rem) {
+  .tool-seg--5 {
+    display: flex;
+    flex-wrap: wrap;
+    border-radius: var(--tool-radius);
+  }
+
+  .tool-seg--5 .tool-seg__btn {
+    flex: 1 1 30%;
+    min-width: 100px;
+    border-radius: calc(var(--tool-radius) - 0.25rem);
+  }
+}
+
+@container tool (max-width: 28rem) {
+  .tool-seg--5 .tool-seg__btn {
+    flex: 1 1 100%;
+  }
+}
+
 .tool-seg__btn {
   appearance: none;
   box-sizing: border-box;

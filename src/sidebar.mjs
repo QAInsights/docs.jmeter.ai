@@ -97,6 +97,7 @@ export const sidebar = [
       { label: 'Heap Estimator', link: '/tools/heap-estimator' },
       { label: 'CLI Command Builder', link: '/tools/cli-builder' },
       { label: 'Distributed Testing Planner', link: '/tools/distributed-planner' },
+      { label: 'Linux OS & Kernel Tuning', link: '/tools/os-tuning' },
       { label: 'Coordinated Omission', link: '/tools/coordinated-omission' },
       { label: 'Properties Cheat Sheet', link: '/tools/properties-cheatsheet' },
       { label: 'Regex Extractor Builder', link: '/tools/regex-tester' },

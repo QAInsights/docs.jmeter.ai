@@ -1,0 +1,118 @@
+---
+title: "Linux Kernel & OS Tuning Configurator"
+seoTitle: "Linux Kernel & OS Tuning Configurator (sysctl.conf & limits.conf)"
+description: "Generate production sysctl.conf, limits.conf, systemd, and Docker configs for high-concurrency JMeter load generators. Fix port exhaustion and ulimit errors."
+keywords:
+  - Linux sysctl JMeter
+  - sysctl.conf load testing
+  - JMeter ulimit nofile
+  - JMeter port exhaustion
+  - tcp_tw_reuse JMeter
+  - somaxconn JMeter tuning
+  - JMeter performance tuning Linux
+difficulty: advanced
+guideType: how-to
+estimatedReadTime: "5 min read"
+lastVerified: "JMeter 5.6"
+---
+
+import OsTuningConfigurator from '../../../components/tools/OsTuningConfigurator.astro';
+import RelatedContent from '../../../components/RelatedContent.astro';
+
+When simulating thousands of concurrent virtual users or pushing high throughput, default Linux operating system settings bottleneck load injectors before JMeter reaches its hardware capacity.
+
+Use this interactive configurator to generate tuned `/etc/sysctl.d/99-jmeter-tuning.conf`, `/etc/security/limits.d/99-jmeter.conf`, systemd overrides, and Docker/Kubernetes parameters tailored to your target scale and system RAM.
+
+<OsTuningConfigurator />
+
+---
+
+## Why Default Linux Limits Fail Under Load
+
+Linux out-of-the-box is configured for balanced desktop and general-purpose server workloads. High-volume load generators stress the TCP stack and operating system kernel in distinct ways:
+
+### 1. File Descriptor Limits (`Too many open files`)
+Every outbound TCP socket connection, active JTL results writer, and loaded JAR library consumes a file descriptor.
+- **Default limit**: `ulimit -n` is typically `1024` on standard distributions.
+- **Under load**: A test running 2,000 threads opening connections simultaneously will crash with `java.io.IOException: Too many open files`.
+- **Solution**: Set `nofile` to `524,288` or `1,048,576` in `limits.conf` and `systemd` manager configs.
+
+### 2. Ephemeral Port Exhaustion (`BindException: Address already in use`)
+When JMeter opens outbound HTTP/1.1 connections without keep-alive or with rapid connection cycling, closed sockets sit in the `TIME_WAIT` state for 60 seconds to ensure lingering network packets are drained.
+- **Default range**: `net.ipv4.ip_local_port_range` defaults to `32768 60999` (~28,231 ports).
+- **Under load**: Generating 1,000 new connections per second exhausts all 28k ports in less than 30 seconds, throwing `java.net.BindException: Address already in use`.
+- **Solution**: Expand the range to `1024 65535` (64,512 ports), enable `net.ipv4.tcp_tw_reuse = 1`, and reduce `net.ipv4.tcp_fin_timeout = 15`.
+
+> [!WARNING]
+> **Never enable `net.ipv4.tcp_tw_recycle`**: This legacy parameter was deprecated in Linux 4.10 and removed in 4.12 because it dropped valid SYN packets from clients or load injectors operating behind NAT / load balancers. Always use `net.ipv4.tcp_tw_reuse = 1` instead.
+
+### 3. SYN & Listen Queue Backlog Overflows
+During rapid test ramp-up or surge testing, connection requests queue up in the kernel socket listen queue.
+- **Default backlog**: `net.core.somaxconn` defaults to `128` or `1024`.
+- **Under load**: Bursts overflow the queue, causing silent SYN drops and artificial connection timeouts.
+- **Solution**: Increase `net.core.somaxconn = 65535` and `net.ipv4.tcp_max_syn_backlog = 65535`.
+
+### 4. Swapping Protection (`vm.swappiness = 1`)
+The Linux kernel aggressively pages memory to swap space when RAM usage increases.
+- **Default swappiness**: `60` (very prone to paging).
+- **Under load**: If inactive JVM heap memory is paged out to disk, the next Garbage Collection cycle must read pages back from storage, freezing threads and creating catastrophic **100ms–2000ms latency spikes**.
+- **Solution**: Set `vm.swappiness = 1` to ensure the kernel only swaps under critical out-of-memory emergency pressure.
+
+---
+
+## How to Apply These Settings
+
+### 1. Apply Sysctl Kernel Parameters
+Create a dedicated file in `/etc/sysctl.d/`:
+
+```bash
+sudo nano /etc/sysctl.d/99-jmeter-tuning.conf
+# Paste the generated sysctl.conf snippet
+sudo sysctl --system
+```
+
+### 2. Apply File Descriptor Limits
+Place user limits in `/etc/security/limits.d/`:
+
+```bash
+sudo nano /etc/security/limits.d/99-jmeter.conf
+# Paste the generated limits.conf snippet
+```
+
+> [!NOTE]
+> For `limits.conf` changes to take effect on interactive sessions, log out and log back in, then verify with `ulimit -n`. For background services managed by **systemd**, configure `DefaultLimitNOFILE` in `/etc/systemd/system.conf` and reload systemd with `sudo systemctl daemon-reexec`.
+
+### 3. Verify Active Settings
+Run this quick diagnostic to confirm your kernel accepted the values:
+
+```bash
+ulimit -n
+sysctl net.ipv4.ip_local_port_range net.ipv4.tcp_tw_reuse net.core.somaxconn vm.swappiness
+ss -s
+```
+
+---
+
+## Related Guides & Error Playbooks
+
+- [JMeter Performance Tuning Guide](/topics/jmeter-performance-tuning-guide/)
+- [Too Many Open Files (ulimit) Playbook](/topics/errors/too-many-open-files-ulimit/)
+- [BindException / Port Exhaustion Playbook](/topics/errors/bind-exception-address-in-use/)
+- [Heap / JVM Sizing Estimator](/tools/heap-estimator/)
+- [Distributed Testing Planner](/tools/distributed-planner/)
+- [CLI Command Builder](/tools/cli-builder/)
+
+<RelatedContent>
+  <Fragment slot="next-step">
+    Size your JVM heap with the [Heap Estimator](/tools/heap-estimator/) and build CLI run flags with the [CLI Builder](/tools/cli-builder/).
+  </Fragment>
+  <Fragment slot="related">
+    [Distributed Testing Planner](/tools/distributed-planner/) · [Performance Tuning Guide](/topics/jmeter-performance-tuning-guide/)
+  </Fragment>
+  <Fragment slot="mistakes">
+    Enabling deprecated tcp_tw_recycle, or forgetting that systemd services ignore /etc/security/limits.conf.
+  </Fragment>
+  <Fragment slot="troubleshooting">
+    Still seeing BindException? Check if JMeter HTTP Request Defaults has "Use KeepAlive" enabled to reduce connection churn.
+  </Fragment>
+</RelatedContent>

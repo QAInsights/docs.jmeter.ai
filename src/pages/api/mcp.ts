@@ -27,13 +27,14 @@ import { propertiesCheatsheet, filterProperties } from '../../lib/properties-dat
 import { getJsr223Recipes } from '../../lib/mcp/jsr223-recipes.mjs';
 import { lookupErrorPlaybook } from '../../lib/mcp/error-playbooks.mjs';
 import { generateDistributedPlan } from '../../lib/distributed-planner.mjs';
+import { generateOsTuningPlan } from '../../lib/os-tuning.mjs';
 
 export { normalizeDocPath, findChunkByPath, createServer };
 
 export const prerender = false;
 
 const SERVER_NAME = 'jmeter-docs';
-const SERVER_VERSION = '1.2.0';
+const SERVER_VERSION = '1.3.0';
 const SNIPPET_CHARS = 500;
 const MAX_PAGE_CHARS = 24000;
 
@@ -43,6 +44,7 @@ const SERVER_INSTRUCTIONS = [
   'Use lint_jmx_snippet to validate JMX test plan snippets against performance best practices.',
   'Use calculate_workload_model to compute Little\'s Law concurrency, pacing, ramp-up, and JVM heap sizing.',
   'Use plan_distributed_testing to configure Master-Worker RMI ports, user.properties, firewall rules, and Docker manifests.',
+  'Use tune_linux_os to generate sysctl.conf, limits.conf, and systemd tuning parameters for high-concurrency injectors.',
   'Use lookup_jmeter_property, get_jsr223_recipe, and lookup_error_playbook for precise configuration and troubleshooting guidance.',
   'Always cite the docs.jmeter.ai URL you used when answering.',
 ].join(' ');
@@ -342,6 +344,47 @@ function createServer(): McpServer {
     },
   );
 
+  server.registerTool(
+    'tune_linux_os',
+    {
+      title: 'Linux Kernel & OS Tuning for Load Injectors',
+      description:
+        'Generate production sysctl.conf, limits.conf, systemd overrides, and Docker/K8s configs tuned for high-concurrency JMeter load testing (fixing ulimit nofile, BindException port exhaustion, somaxconn backlog, and JVM swappiness).',
+      inputSchema: {
+        concurrency: z.number().int().min(100).max(500000).optional().describe('Target concurrent connections/threads (default: 10000).'),
+        ramGb: z.number().int().min(2).max(512).optional().describe('Host machine RAM in GB for TCP buffer sizing (default: 16).'),
+        trafficType: z.enum(['http_churn', 'http_keepalive', 'streaming_ws_grpc']).optional().describe('Traffic profile (default: "http_churn").'),
+        targetDistro: z.enum(['ubuntu_debian', 'rhel_rocky', 'amazon_linux', 'docker_k8s']).optional().describe('Linux distro or container target (default: "ubuntu_debian").'),
+        role: z.enum(['injector', 'target_sut']).optional().describe('Machine role: "injector" (JMeter client) or "target_sut" (default: "injector").'),
+      },
+    },
+    async (params) => {
+      try {
+        const plan = generateOsTuningPlan({
+          concurrency: params.concurrency,
+          ramGb: params.ramGb,
+          trafficType: params.trafficType,
+          targetDistro: params.targetDistro,
+          role: params.role,
+        });
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(plan, null, 2),
+            },
+          ],
+        };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: 'text' as const, text: `OS tuning error: ${message}` }],
+          isError: true,
+        };
+      }
+    },
+  );
+
   return server;
 }
 
@@ -403,6 +446,7 @@ export async function GET() {
           'lint_jmx_snippet',
           'calculate_workload_model',
           'plan_distributed_testing',
+          'tune_linux_os',
           'lookup_jmeter_property',
           'get_jsr223_recipe',
           'lookup_error_playbook',
