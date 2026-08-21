@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeDocPath, findChunkByPath } from '../../src/pages/api/mcp.ts';
+import { normalizeDocPath, findChunkByPath, GET } from '../../src/pages/api/mcp.ts';
 import { INDEX } from '../../src/lib/rag.mjs';
 
 describe('normalizeDocPath', () => {
@@ -54,3 +54,21 @@ describe('findChunkByPath', () => {
     }
   });
 });
+
+describe('GET /api/mcp endpoint discovery', () => {
+  it('advertises all 7 MCP tools and streamable HTTP metadata', async () => {
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.name).toBe('jmeter-docs');
+    expect(body.transport).toBe('streamable-http');
+    expect(body.tools).toContain('search_jmeter_docs');
+    expect(body.tools).toContain('get_jmeter_page');
+    expect(body.tools).toContain('lint_jmx_snippet');
+    expect(body.tools).toContain('calculate_workload_model');
+    expect(body.tools).toContain('lookup_jmeter_property');
+    expect(body.tools).toContain('get_jsr223_recipe');
+    expect(body.tools).toContain('lookup_error_playbook');
+  });
+});
+

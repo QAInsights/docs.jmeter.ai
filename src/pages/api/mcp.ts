@@ -21,19 +21,27 @@ import { z } from 'zod';
 import { retrieve, normalizeDocPath, findChunkByPath } from '../../lib/rag.mjs';
 import { checkMcpRateLimit } from '../../lib/mcp-rate-limit.mjs';
 import { getClientIp } from '../../lib/session.mjs';
+import { lintJmx } from '../../lib/mcp/jmx-linter.mjs';
+import { calculateWorkloadModel } from '../../lib/mcp/workload-calculator.mjs';
+import { propertiesCheatsheet, filterProperties } from '../../lib/properties-data.mjs';
+import { getJsr223Recipes } from '../../lib/mcp/jsr223-recipes.mjs';
+import { lookupErrorPlaybook } from '../../lib/mcp/error-playbooks.mjs';
 
-export { normalizeDocPath, findChunkByPath };
+export { normalizeDocPath, findChunkByPath, createServer };
 
 export const prerender = false;
 
 const SERVER_NAME = 'jmeter-docs';
-const SERVER_VERSION = '1.0.0';
+const SERVER_VERSION = '1.1.0';
 const SNIPPET_CHARS = 500;
 const MAX_PAGE_CHARS = 24000;
 
 const SERVER_INSTRUCTIONS = [
-  'You have access to the Apache JMeter community documentation at https://docs.jmeter.ai.',
-  'Use search_jmeter_docs to find relevant pages, then get_jmeter_page to read one in full.',
+  'You have access to the Apache JMeter community documentation at https://docs.jmeter.ai and built-in JMeter diagnostic/calculation tools.',
+  'Use search_jmeter_docs to find documentation pages, and get_jmeter_page to read pages in full.',
+  'Use lint_jmx_snippet to validate JMX test plan snippets against performance best practices.',
+  'Use calculate_workload_model to compute Little\'s Law concurrency, pacing, ramp-up, and JVM heap sizing.',
+  'Use lookup_jmeter_property, get_jsr223_recipe, and lookup_error_playbook for precise configuration and troubleshooting guidance.',
   'Always cite the docs.jmeter.ai URL you used when answering.',
 ].join(' ');
 
@@ -134,6 +142,164 @@ function createServer(): McpServer {
     },
   );
 
+  server.registerTool(
+    'lint_jmx_snippet',
+    {
+      title: 'Lint JMX Test Plan Snippet',
+      description:
+        'Validate a JMeter test plan XML string or snippet against best practices and performance anti-patterns (e.g., active GUI listeners, legacy BeanShell, uncompiled JSR223, missing timeouts, zero ramp-up, Thread.sleep in scripts).',
+      inputSchema: {
+        jmxContent: z.string().min(1).describe('JMX XML string or test plan snippet to analyze.'),
+      },
+    },
+    async ({ jmxContent }) => {
+      const report = lintJmx(jmxContent);
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(report, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    'calculate_workload_model',
+    {
+      title: 'Calculate Workload Model & Little\'s Law Sizing',
+      description:
+        'Compute required thread concurrency, pacing delays, ramp-up schedules, and JVM heap recommendations based on target RPS/TPS and SLA response times using Little\'s Law.',
+      inputSchema: {
+        targetRps: z.number().positive().describe('Target throughput in requests / transactions per second (RPS/TPS).'),
+        avgResponseTimeMs: z.number().positive().describe('Expected average response time in milliseconds.'),
+        thinkTimeMs: z.number().nonnegative().optional().describe('Think time / user pause between requests in milliseconds (default: 0).'),
+        testDurationMinutes: z.number().positive().optional().describe('Steady-state test duration in minutes (default: 10).'),
+        safetyFactor: z.number().min(1.0).optional().describe('Headroom safety buffer multiplier (default: 1.25 = 25% buffer).'),
+      },
+    },
+    async (params) => {
+      try {
+        const result = calculateWorkloadModel(params);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: 'text' as const, text: `Calculation error: ${message}` }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    'lookup_jmeter_property',
+    {
+      title: 'Lookup JMeter Tuning Property',
+      description:
+        'Search or lookup curated JMeter properties (e.g. "httpclient4.idletimeout", "jmeter.save.saveservice.*", "remote_hosts", "summariser"). Returns category, defaults, and recommendations.',
+      inputSchema: {
+        query: z.string().describe('Property name or keyword to search (e.g. "ssl", "timeout", "jtl", "influxdb").'),
+      },
+    },
+    async ({ query }) => {
+      const matches = filterProperties(propertiesCheatsheet, query);
+      if (matches.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `No curated JMeter properties matched "${query}". Refer to the full reference at https://docs.jmeter.ai/tools/properties-cheatsheet/ or search the user manual using search_jmeter_docs.`,
+            },
+          ],
+        };
+      }
+      const capped = matches.slice(0, 15);
+      const note =
+        matches.length > 15
+          ? `\n\n(Showing top 15 of ${matches.length} matching properties. For the full list, see https://docs.jmeter.ai/tools/properties-cheatsheet/)`
+          : '';
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(capped, null, 2) + note,
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    'get_jsr223_recipe',
+    {
+      title: 'Get Verified JSR223 Groovy Recipe',
+      description:
+        'Fetch production-ready, performant Groovy scripts for JMeter JSR223 samplers, preprocessors, and postprocessors (e.g., JWT parsing & expiration, HMAC-SHA256 signing, dynamic header injection, nested JSON array extraction, custom CSV failure logging).',
+      inputSchema: {
+        query: z.string().optional().describe('Filter by keyword or topic (e.g. "jwt", "hmac", "header", "json", "csv", "logging"). If omitted, returns all recipes.'),
+      },
+    },
+    async ({ query }) => {
+      const recipes = getJsr223Recipes(query);
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(recipes, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    'lookup_error_playbook',
+    {
+      title: 'Lookup Error & Exception Diagnostic Playbook',
+      description:
+        'Get immediate root causes, OS/JVM config fixes, and remediation steps for common JMeter exceptions (e.g. "BindException", "SocketTimeoutException", "OutOfMemoryError", "NoHttpResponseException", "SSLHandshakeException", "401/403 after recording").',
+      inputSchema: {
+        query: z.string().describe('Error message, exception name, or status (e.g. "bindexception", "heap", "timeout", "401").'),
+      },
+    },
+    async ({ query }) => {
+      const playbooks = lookupErrorPlaybook(query);
+      if (playbooks.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `No specific playbook matched "${query}". Search general error guides with search_jmeter_docs or see https://docs.jmeter.ai/topics/errors/.`,
+            },
+          ],
+        };
+      }
+      const capped = playbooks.slice(0, 10);
+      const note =
+        playbooks.length > 10
+          ? `\n\n(Showing top 10 of ${playbooks.length} matching playbooks. See https://docs.jmeter.ai/topics/errors/)`
+          : '';
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(capped, null, 2) + note,
+          },
+        ],
+      };
+    },
+
+  );
+
   return server;
 }
 
@@ -185,11 +351,19 @@ export async function GET() {
         name: SERVER_NAME,
         version: SERVER_VERSION,
         description:
-          'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, the user manual, error playbooks, and release notes.',
+          'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, lint JMX test plans, calculate workload sizing, query tuning properties, fetch Groovy recipes, and lookup diagnostic error playbooks.',
         transport: 'streamable-http',
         endpoint: 'https://docs.jmeter.ai/api/mcp',
         auth: 'none',
-        tools: ['search_jmeter_docs', 'get_jmeter_page'],
+        tools: [
+          'search_jmeter_docs',
+          'get_jmeter_page',
+          'lint_jmx_snippet',
+          'calculate_workload_model',
+          'lookup_jmeter_property',
+          'get_jsr223_recipe',
+          'lookup_error_playbook',
+        ],
         docs: 'https://docs.jmeter.ai/mcp/',
       },
       null,
@@ -206,3 +380,4 @@ export function DELETE() {
     headers: { 'Content-Type': 'application/json', Allow: 'GET, POST' },
   });
 }
+

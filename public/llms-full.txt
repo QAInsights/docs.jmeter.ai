@@ -4,7 +4,7 @@
 
 Site: https://docs.jmeter.ai
 Pages: 148
-Generated: 2026-08-21T05:03:59.081Z
+Generated: 2026-08-21T05:19:43.103Z
 ---
 Title: User's Manual: Getting Started
 URL: https://docs.jmeter.ai/getting-started/get-started/
@@ -28529,6 +28529,47 @@ Read one page in full markdown. Accepts the complete URL or a bare path like `to
 ```json
 { "url": "topics/api-load-testing" }
 ```
+
+### lint_jmx_snippet
+
+Validate a JMX XML snippet or test plan configuration against performance best practices and anti-patterns (active GUI listeners, legacy BeanShell, uncompiled JSR223, missing timeouts, zero ramp-up).
+
+```json
+{ "jmxContent": "<HTTPSamplerProxy testclass=\"HTTPSamplerProxy\" ...>" }
+```
+
+### calculate_workload_model
+
+Compute required thread concurrency, pacing delays, ramp-up schedules, and JVM heap recommendations based on target RPS/TPS and SLA response times using Little's Law.
+
+```json
+{ "targetRps": 500, "avgResponseTimeMs": 250, "safetyFactor": 1.25 }
+```
+
+### lookup_jmeter_property
+
+Search or inspect curated JMeter tuning properties (HTTP client pool, distributed testing RMI ports, InfluxDB backend listener, result formatting, engine settings).
+
+```json
+{ "query": "httpclient4.idletimeout" }
+```
+
+### get_jsr223_recipe
+
+Fetch production-ready, performant Groovy scripts for JMeter JSR223 elements (JWT decoding & expiry, HMAC-SHA256 signing, dynamic header injection, nested JSON parsing, thread-safe CSV logging).
+
+```json
+{ "query": "jwt" }
+```
+
+### lookup_error_playbook
+
+Get instant root cause analysis, OS/JVM tuning parameters, and step-by-step remediation for common JMeter and JVM exceptions (`BindException`, `SocketTimeoutException`, `OutOfMemoryError`, `NoHttpResponseException`, etc.).
+
+```json
+{ "query": "bindexception" }
+```
+
 
 ## Connect your agent
 

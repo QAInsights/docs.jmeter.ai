@@ -44,3 +44,7 @@ preview.log
 .tmp/
 .vercel
 .env*
+
+# Untracked project planning & roadmap files
+ROADMAP*.md
+TODO*.md
