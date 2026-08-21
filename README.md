@@ -14,6 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/QAInsights/docs.jmeter.ai/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/QAInsights/docs.jmeter.ai/sync-upstream.yml?branch=main&label=sync" /></a>
+  <a href="https://smithery.ai/servers/qainsights/jmeter"><img alt="smithery badge" src="https://smithery.ai/badge/qainsights/jmeter" /></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" /></a>
   <a href="https://astro.build"><img alt="Astro" src="https://img.shields.io/badge/built%20with-Astro%207-orange.svg" /></a>
 </p>
