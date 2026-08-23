@@ -1,0 +1,468 @@
+---
+/**
+ * Interactive cURL & HAR to Apache JMeter (.jmx) Converter (client-side).
+ * Converts single/batch cURL commands and HAR 1.2 archives into valid JMeter test plans.
+ */
+import { CURL_TO_JMX } from '../../lib/tools-config.mjs';
+
+const { defaults, limits, samples } = CURL_TO_JMX;
+---
+
+<div class="tool" data-curl-to-jmx>
+  <div class="tool-presets" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem">
+    <span class="tool-label" style="align-self:center;margin-right:0.25rem;font-size:0.85rem">Presets:</span>
+    <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-preset="queryMethod">
+      HTTP QUERY (RFC 9838)
+    </button>
+    <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-preset="restAuth">
+      POST Login + Bearer Auth
+    </button>
+    <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-preset="crudSequence">
+      Multi-Step Flow (CRUD)
+    </button>
+  </div>
+
+  <div class="tool-grid tool-grid--2">
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto;grid-column:1/-1">
+      <span class="tool-label">Input: cURL Command(s) or HAR 1.2 JSON</span>
+      <textarea
+        name="input"
+        rows="8"
+        spellcheck="false"
+        placeholder="Paste one or more curl commands (or HAR JSON) here..."
+        style="font-family:var(--font-mono, monospace);font-size:0.85rem;line-height:1.4"
+      >{samples.queryMethod}</textarea>
+      <span class="tool-hint">
+        Supports all HTTP methods (<code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>DELETE</code>, <code>PATCH</code>, <code>QUERY</code>), headers, cookies, JSON bodies, and multi-step batch scripts.
+      </span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Virtual Users (Threads)</span>
+      <div class="tool-input-wrap">
+        <input
+          type="number"
+          name="threads"
+          min={limits.threads.min}
+          max={limits.threads.max}
+          value={defaults.threads}
+          inputmode="numeric"
+        />
+        <span class="tool-suffix" aria-hidden="true">users</span>
+      </div>
+      <span class="tool-hint">Target concurrency for Thread Group</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Ramp-Up Time</span>
+      <div class="tool-input-wrap">
+        <input
+          type="number"
+          name="rampUpSeconds"
+          min={limits.rampUp.min}
+          max={limits.rampUp.max}
+          value={defaults.rampUp}
+          inputmode="numeric"
+        />
+        <span class="tool-suffix" aria-hidden="true">sec</span>
+      </div>
+      <span class="tool-hint">Time to spawn all threads</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Duration</span>
+      <div class="tool-input-wrap">
+        <input
+          type="number"
+          name="durationSeconds"
+          min={limits.duration.min}
+          max={limits.duration.max}
+          value={defaults.duration}
+          inputmode="numeric"
+        />
+        <span class="tool-suffix" aria-hidden="true">sec</span>
+      </div>
+      <span class="tool-hint">0 = run loop count only; &gt; 0 enables scheduler</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Loop Count</span>
+      <div class="tool-input-wrap">
+        <input
+          type="number"
+          name="loopCount"
+          min={limits.loopCount.min}
+          max={limits.loopCount.max}
+          value={defaults.loopCount}
+          inputmode="numeric"
+        />
+        <span class="tool-suffix" aria-hidden="true">loops</span>
+      </div>
+      <span class="tool-hint">Set -1 for infinite execution</span>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto;grid-column:1/-1">
+      <span class="tool-label">Test Plan Name</span>
+      <input type="text" name="testPlanName" value="cURL Converted Test Plan" spellcheck="false" />
+      <span class="tool-hint">Root Test Plan label in JMeter tree</span>
+    </label>
+  </div>
+
+  <div class="tool-checks" style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.5rem;margin-bottom:1rem">
+    <label class="tool-check">
+      <input type="checkbox" name="parameterizeHost" checked={defaults.parameterizeHost} />
+      <span>Extract Host to <code>${`{BASE_URL}`}</code> &amp; HTTP Defaults</span>
+    </label>
+
+    <label class="tool-check">
+      <input type="checkbox" name="parameterizeAuth" checked={defaults.parameterizeAuth} />
+      <span>Parameterize Bearer Tokens (<code>${`{AUTH_TOKEN}`}</code>)</span>
+    </label>
+
+    <label class="tool-check">
+      <input type="checkbox" name="includeAssertions" checked={defaults.includeAssertions} />
+      <span>Add HTTP 200/201/204 Response Code Assertions</span>
+    </label>
+
+    <label class="tool-check">
+      <input type="checkbox" name="includeCookieManager" checked={defaults.includeCookieManager} />
+      <span>Include HTTP Cookie Manager</span>
+    </label>
+
+    <label class="tool-check">
+      <input type="checkbox" name="filterStaticAssets" checked={defaults.filterStaticAssets} />
+      <span>Filter Static Media / Fonts in HAR</span>
+    </label>
+  </div>
+
+  <div class="tool-results" aria-live="polite">
+    <div class="tool-card tool-card-primary">
+      <span class="tool-card-label">HTTP Samplers</span>
+      <span class="tool-card-value" data-request-count>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Format Detected</span>
+      <span class="tool-card-value" data-input-format>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Target Hosts</span>
+      <span class="tool-card-value tool-card-sm" data-detected-domains>-</span>
+    </div>
+  </div>
+
+  <div data-warnings-container style="margin-top:1rem;display:none">
+    <div style="padding:0.75rem 1rem;border-radius:6px;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);color:#facc15;font-size:0.85rem">
+      <strong style="display:block;margin-bottom:0.25rem">⚠️ Notice / Warnings:</strong>
+      <ul data-warnings-list style="margin:0;padding-left:1.25rem"></ul>
+    </div>
+  </div>
+
+  <div style="margin-top:1.5rem">
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">Parsed Endpoints</h4>
+    <div data-endpoint-list style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1rem;max-height:160px;overflow-y:auto;padding-right:0.25rem"></div>
+  </div>
+
+  <div style="margin-top:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+      <h4 style="margin:0;font-size:0.95rem">Generated Apache JMeter JMX XML</h4>
+      <span class="tool-badge" data-jmx-badge style="font-size:0.75rem">JMeter 5.6.3 Valid</span>
+    </div>
+    <pre class="tool-code" data-jmx-output tabindex="0" aria-live="polite" style="max-height:360px;overflow-y:auto"></pre>
+  </div>
+
+  <div class="tool-actions tool-actions--wrap" style="margin-top:1.25rem">
+    <button type="button" class="tool-btn" data-download-jmx>Download test-plan.jmx</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-jmx>Copy JMX XML</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
+    <span class="tool-status" data-status aria-live="polite" hidden></span>
+  </div>
+
+  <div style="margin-top:1.5rem;padding:1rem;border:1px solid var(--sl-color-hairline, #333);border-radius:8px;background:var(--sl-color-bg-inline-code, rgba(255,255,255,0.03))">
+    <h4 style="margin:0 0 0.4rem;font-size:0.9rem;display:flex;align-items:center;gap:0.4rem">
+      <span>🤖</span> Add this conversion tool to your AI Agent (MCP)
+    </h4>
+    <p style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--sl-color-text-accent)">
+      Claude Code, Cursor, Windsurf, and other agents can call <code>convert_curl_or_har_to_jmx</code> directly over Model Context Protocol:
+    </p>
+    <pre class="tool-code" style="margin:0;padding:0.5rem 0.75rem;font-size:0.8rem"><code>claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http</code></pre>
+  </div>
+
+  <p class="tool-disclaimer" style="margin-top:1rem">
+    <strong>Client-side Browser Security:</strong> All on-page conversions run 100% locally in your browser. When using the hosted MCP endpoint (<code>/api/mcp</code>), ensure sensitive production passwords and API keys are redacted.
+    {' '}See <a href="/user-manual/component-reference/#HTTP_Request">HTTP Request Sampler Manual</a>
+    {' '}and <a href="/mcp/">JMeter MCP Reference</a>.
+  </p>
+</div>
+
+<script>
+  import { CURL_TO_JMX } from '../../lib/tools-config.mjs';
+  import { copyText, clampToRange } from '../../lib/tools-utils.mjs';
+  import { convertCurlOrHarToJmx } from '../../lib/mcp/curl-har-to-jmx.mjs';
+
+  interface ConversionResult {
+    jmxXml: string;
+    requestCount: number;
+    inputFormat: 'curl' | 'har' | 'empty';
+    requests: Array<{ method: string; url: string; domain: string; path: string; headersCount: number; bodyType: string }>;
+    detectedDomains: string[];
+    hasBearerToken: boolean;
+    hasUnresolvedFiles: boolean;
+    hasUnresolvedFileBody: boolean;
+    blockingErrors: string[];
+    isValid: boolean;
+    warnings: string[];
+    summary: string;
+  }
+
+  function init(root: HTMLElement) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const inputArea = root.querySelector('textarea[name="input"]') as HTMLTextAreaElement | null;
+    const threadsInput = root.querySelector('input[name="threads"]') as HTMLInputElement | null;
+    const rampUpInput = root.querySelector('input[name="rampUpSeconds"]') as HTMLInputElement | null;
+    const durationInput = root.querySelector('input[name="durationSeconds"]') as HTMLInputElement | null;
+    const loopCountInput = root.querySelector('input[name="loopCount"]') as HTMLInputElement | null;
+    const testPlanNameInput = root.querySelector('input[name="testPlanName"]') as HTMLInputElement | null;
+
+    const paramHostCheck = root.querySelector('input[name="parameterizeHost"]') as HTMLInputElement | null;
+    const paramAuthCheck = root.querySelector('input[name="parameterizeAuth"]') as HTMLInputElement | null;
+    const assertionsCheck = root.querySelector('input[name="includeAssertions"]') as HTMLInputElement | null;
+    const cookieCheck = root.querySelector('input[name="includeCookieManager"]') as HTMLInputElement | null;
+    const staticFilterCheck = root.querySelector('input[name="filterStaticAssets"]') as HTMLInputElement | null;
+
+    const requestCountEl = root.querySelector('[data-request-count]') as HTMLElement | null;
+    const inputFormatEl = root.querySelector('[data-input-format]') as HTMLElement | null;
+    const detectedDomainsEl = root.querySelector('[data-detected-domains]') as HTMLElement | null;
+    const endpointListEl = root.querySelector('[data-endpoint-list]') as HTMLElement | null;
+    const warningsContainer = root.querySelector('[data-warnings-container]') as HTMLElement | null;
+    const warningsListEl = root.querySelector('[data-warnings-list]') as HTMLElement | null;
+    const jmxOutputEl = root.querySelector('[data-jmx-output]') as HTMLElement | null;
+    const jmxBadgeEl = root.querySelector('[data-jmx-badge]') as HTMLElement | null;
+    const downloadBtn = root.querySelector('[data-download-jmx]') as HTMLButtonElement | null;
+    const copyBtn = root.querySelector('[data-copy-jmx]') as HTMLButtonElement | null;
+    const statusEl = root.querySelector('[data-status]') as HTMLElement | null;
+
+    let currentResult: ConversionResult | null = null;
+
+    function showStatus(msg: string) {
+      if (!statusEl) return;
+      statusEl.hidden = !msg;
+      statusEl.textContent = msg || '';
+      if (msg) setTimeout(() => showStatus(''), 1800);
+    }
+
+    function parseInteger(val: unknown, fallback: number): number {
+      const trimmed = String(val ?? '').trim();
+      if (trimmed === '') return fallback;
+      const n = Number(trimmed);
+      return Number.isFinite(n) ? Math.round(n) : fallback;
+    }
+
+    function getMethodBadgeStyle(method: string): string {
+      switch (method.toUpperCase()) {
+        case 'GET':
+          return 'background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3)';
+        case 'POST':
+          return 'background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3)';
+        case 'QUERY':
+          return 'background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.3)';
+        case 'PUT':
+        case 'PATCH':
+          return 'background:rgba(234,179,8,0.15);color:#facc15;border:1px solid rgba(234,179,8,0.3)';
+        case 'DELETE':
+          return 'background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)';
+        default:
+          return 'background:rgba(156,163,175,0.15);color:#d1d5db;border:1px solid rgba(156,163,175,0.3)';
+      }
+    }
+
+    function recompute() {
+      if (!inputArea) return;
+      const parsedThreads = parseInteger(threadsInput?.value, CURL_TO_JMX.defaults.threads);
+      const parsedRampUp = parseInteger(rampUpInput?.value, CURL_TO_JMX.defaults.rampUp);
+      const parsedDuration = parseInteger(durationInput?.value, CURL_TO_JMX.defaults.duration);
+      const parsedLoopCount = parseInteger(loopCountInput?.value, CURL_TO_JMX.defaults.loopCount);
+
+      const options = {
+        input: inputArea.value,
+        threads: clampToRange(parsedThreads, CURL_TO_JMX.limits.threads, CURL_TO_JMX.defaults.threads),
+        rampUpSeconds: clampToRange(parsedRampUp, CURL_TO_JMX.limits.rampUp, CURL_TO_JMX.defaults.rampUp),
+        durationSeconds: clampToRange(parsedDuration, CURL_TO_JMX.limits.duration, CURL_TO_JMX.defaults.duration),
+        loopCount: clampToRange(parsedLoopCount, CURL_TO_JMX.limits.loopCount, CURL_TO_JMX.defaults.loopCount),
+        testPlanName: testPlanNameInput?.value || 'cURL Converted Test Plan',
+        parameterizeHost: paramHostCheck?.checked ?? true,
+        parameterizeAuth: paramAuthCheck?.checked ?? true,
+        includeAssertions: assertionsCheck?.checked ?? true,
+        includeCookieManager: cookieCheck?.checked ?? true,
+        filterStaticAssets: staticFilterCheck?.checked ?? true,
+      };
+
+      try {
+        currentResult = convertCurlOrHarToJmx(options) as ConversionResult;
+      } catch (err: unknown) {
+        currentResult = {
+          jmxXml: '',
+          requestCount: 0,
+          inputFormat: 'empty',
+          requests: [],
+          detectedDomains: [],
+          hasBearerToken: false,
+          hasUnresolvedFiles: false,
+          hasUnresolvedFileBody: false,
+          blockingErrors: [err instanceof Error ? err.message : String(err)],
+          isValid: false,
+          warnings: [err instanceof Error ? err.message : String(err)],
+          summary: 'Conversion failed.',
+        };
+      }
+
+      if (requestCountEl) requestCountEl.textContent = String(currentResult.requestCount);
+      if (inputFormatEl) inputFormatEl.textContent = currentResult.inputFormat.toUpperCase();
+      if (detectedDomainsEl) {
+        detectedDomainsEl.textContent =
+          currentResult.detectedDomains.length > 0 ? currentResult.detectedDomains.join(', ') : '-';
+      }
+
+      // Render warnings safely via textContent (prevents DOM XSS)
+      if (warningsContainer && warningsListEl) {
+        warningsListEl.textContent = '';
+        if (currentResult.warnings && currentResult.warnings.length > 0) {
+          warningsContainer.style.display = 'block';
+          currentResult.warnings.forEach((w) => {
+            const li = document.createElement('li');
+            li.textContent = String(w);
+            warningsListEl.appendChild(li);
+          });
+        } else {
+          warningsContainer.style.display = 'none';
+        }
+      }
+
+      // Endpoints list
+      if (endpointListEl) {
+        endpointListEl.textContent = '';
+        if (currentResult.requests.length === 0) {
+          const emptyDiv = document.createElement('div');
+          emptyDiv.style.cssText = 'font-size:0.85rem;color:var(--sl-color-gray-3)';
+          emptyDiv.textContent = 'No endpoints parsed. Paste a valid cURL command or HAR file.';
+          endpointListEl.appendChild(emptyDiv);
+        } else {
+          currentResult.requests.forEach((req) => {
+            const row = document.createElement('div');
+            row.style.cssText =
+              'display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;padding:0.35rem 0.5rem;background:var(--sl-color-bg-inline-code, rgba(255,255,255,0.03));border-radius:4px;border:1px solid var(--sl-color-hairline, #333)';
+
+            const badge = document.createElement('span');
+            badge.style.cssText = `font-family:var(--font-mono, monospace);font-size:0.75rem;font-weight:600;padding:0.15rem 0.4rem;border-radius:3px;${getMethodBadgeStyle(req.method)}`;
+            badge.textContent = req.method;
+
+            const pathSpan = document.createElement('span');
+            pathSpan.style.cssText = 'flex:1;font-family:var(--font-mono, monospace);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+            pathSpan.textContent = `${req.domain || ''}${req.path || '/'}`;
+
+            const metaSpan = document.createElement('span');
+            metaSpan.style.cssText = 'font-size:0.75rem;color:var(--sl-color-gray-3);white-space:nowrap';
+            metaSpan.textContent = `${req.headersCount} header(s) • body: ${req.bodyType}`;
+
+            row.appendChild(badge);
+            row.appendChild(pathSpan);
+            row.appendChild(metaSpan);
+            endpointListEl.appendChild(row);
+          });
+        }
+      }
+
+      if (jmxOutputEl) {
+        jmxOutputEl.textContent = currentResult.jmxXml || '<!-- No XML generated -->';
+      }
+
+      const isValid = currentResult.isValid === true;
+      if (jmxBadgeEl) {
+        if (currentResult.blockingErrors.length > 0) {
+          jmxBadgeEl.textContent = 'Incomplete — Export Disabled';
+          jmxBadgeEl.style.color = '#f87171';
+        } else {
+          jmxBadgeEl.textContent = isValid ? 'JMeter 5.6.3 Valid' : 'No Valid Requests';
+          jmxBadgeEl.style.color = isValid ? '#4ade80' : '#f87171';
+        }
+      }
+
+      if (downloadBtn) downloadBtn.disabled = !isValid;
+      if (copyBtn) copyBtn.disabled = !isValid;
+    }
+
+    // Attach input listeners
+    [inputArea, threadsInput, rampUpInput, durationInput, loopCountInput, testPlanNameInput].forEach((el) => {
+      el?.addEventListener('input', recompute);
+    });
+
+    [paramHostCheck, paramAuthCheck, assertionsCheck, cookieCheck, staticFilterCheck].forEach((el) => {
+      el?.addEventListener('change', recompute);
+    });
+
+    // Preset buttons
+    root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const presetKey = btn.getAttribute('data-preset') as keyof typeof CURL_TO_JMX.samples;
+        if (presetKey && CURL_TO_JMX.samples[presetKey] && inputArea) {
+          inputArea.value = CURL_TO_JMX.samples[presetKey];
+          recompute();
+          showStatus(`Loaded "${btn.textContent?.trim() || ''}" preset`);
+        }
+      });
+    });
+
+    // Download JMX
+    downloadBtn?.addEventListener('click', () => {
+      if (!currentResult?.isValid || !currentResult.jmxXml) return;
+      const blob = new Blob([currentResult.jmxXml], { type: 'application/xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(testPlanNameInput?.value || 'test-plan').toLowerCase().replace(/[^a-z0-9_-]/g, '_')}.jmx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showStatus('Downloaded .jmx file');
+    });
+
+    // Copy JMX
+    copyBtn?.addEventListener('click', async () => {
+      if (!currentResult?.isValid || !currentResult.jmxXml) return;
+      try {
+        await copyText(currentResult.jmxXml);
+        showStatus('Copied JMX XML to clipboard');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    // Reset
+    const resetBtn = root.querySelector('[data-reset]') as HTMLButtonElement | null;
+    resetBtn?.addEventListener('click', () => {
+      if (inputArea) inputArea.value = CURL_TO_JMX.samples.queryMethod;
+      if (threadsInput) threadsInput.value = String(CURL_TO_JMX.defaults.threads);
+      if (rampUpInput) rampUpInput.value = String(CURL_TO_JMX.defaults.rampUp);
+      if (durationInput) durationInput.value = String(CURL_TO_JMX.defaults.duration);
+      if (loopCountInput) loopCountInput.value = String(CURL_TO_JMX.defaults.loopCount);
+      if (testPlanNameInput) testPlanNameInput.value = 'cURL Converted Test Plan';
+      if (paramHostCheck) paramHostCheck.checked = CURL_TO_JMX.defaults.parameterizeHost;
+      if (paramAuthCheck) paramAuthCheck.checked = CURL_TO_JMX.defaults.parameterizeAuth;
+      if (assertionsCheck) assertionsCheck.checked = CURL_TO_JMX.defaults.includeAssertions;
+      if (cookieCheck) cookieCheck.checked = CURL_TO_JMX.defaults.includeCookieManager;
+      if (staticFilterCheck) staticFilterCheck.checked = CURL_TO_JMX.defaults.filterStaticAssets;
+      recompute();
+      showStatus('Reset to defaults');
+    });
+
+    // Initial computation
+    recompute();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-curl-to-jmx]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLElement>('[data-curl-to-jmx]').forEach(init);
+  });
+</script>

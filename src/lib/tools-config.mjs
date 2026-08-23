@@ -232,6 +232,57 @@ export const OS_TUNING = {
 };
 
 /**
+ * cURL & HAR to JMX Converter bounds, defaults, and samples.
+ */
+export const CURL_TO_JMX = {
+  limits: {
+    threads: { min: 1, max: 50_000 },
+    rampUp: { min: 0, max: 3_600 },
+    duration: { min: 0, max: 86_400 },
+    loopCount: { min: -1, max: 1_000_000 },
+  },
+  defaults: {
+    threads: 10,
+    rampUp: 5,
+    duration: 0,
+    loopCount: 1,
+    parameterizeHost: true,
+    parameterizeAuth: true,
+    includeAssertions: true,
+    includeCookieManager: true,
+    filterStaticAssets: true,
+  },
+  samples: {
+    queryMethod: `curl -X QUERY "https://api.example.com/v1/catalog/search" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer sample-jwt-token-xyz" \\
+  -d '{
+    "filter": {
+      "status": "in_stock",
+      "price": { "lte": 150 }
+    },
+    "sort": "price:asc",
+    "limit": 20
+  }'`,
+    restAuth: `curl -X POST "https://api.example.com/v1/auth/login" \\
+  -H "Content-Type: application/json" \\
+  -d '{"username": "load_test_user", "password": "SecretPassword123!"}'`,
+    crudSequence: `curl -X POST "https://api.example.com/v1/orders" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer eyJhbGciOi..." \\
+  -d '{"itemId": "SKU-9921", "quantity": 2}'
+
+curl -X GET "https://api.example.com/v1/orders/10293" \\
+  -H "Authorization: Bearer eyJhbGciOi..."
+
+curl -X QUERY "https://api.example.com/v1/orders/search" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer eyJhbGciOi..." \\
+  -d '{"status": "processing"}'`,
+  },
+};
+
+/**
  * Build a case-insensitive exact-name regex from configurable key names.
  * @param {string[]} [names]
  * @returns {RegExp}

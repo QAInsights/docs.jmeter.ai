@@ -127,3 +127,15 @@ describe('os tuning config', () => {
   });
 });
 
+describe('curl to jmx config', () => {
+  it('exposes thread limits and sample presets including QUERY method', async () => {
+    const { CURL_TO_JMX } = await import('../../src/lib/tools-config.mjs');
+    expect(CURL_TO_JMX.limits.threads.min).toBe(1);
+    expect(CURL_TO_JMX.limits.threads.max).toBe(50_000);
+    expect(CURL_TO_JMX.defaults.parameterizeHost).toBe(true);
+    expect(CURL_TO_JMX.defaults.includeAssertions).toBe(true);
+    expect(CURL_TO_JMX.samples.queryMethod).toContain('-X QUERY');
+    expect(CURL_TO_JMX.samples.restAuth).toContain('-X POST');
+  });
+});
+

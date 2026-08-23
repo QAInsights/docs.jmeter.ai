@@ -28,19 +28,21 @@ import { getJsr223Recipes } from '../../lib/mcp/jsr223-recipes.mjs';
 import { lookupErrorPlaybook } from '../../lib/mcp/error-playbooks.mjs';
 import { generateDistributedPlan } from '../../lib/distributed-planner.mjs';
 import { generateOsTuningPlan } from '../../lib/os-tuning.mjs';
+import { convertCurlOrHarToJmx } from '../../lib/mcp/curl-har-to-jmx.mjs';
 
 export { normalizeDocPath, findChunkByPath, createServer };
 
 export const prerender = false;
 
 const SERVER_NAME = 'jmeter-docs';
-const SERVER_VERSION = '1.3.0';
+const SERVER_VERSION = '1.4.0';
 const SNIPPET_CHARS = 500;
 const MAX_PAGE_CHARS = 24000;
 
 const SERVER_INSTRUCTIONS = [
   'You have access to the Apache JMeter community documentation at https://docs.jmeter.ai and built-in JMeter diagnostic/calculation tools.',
   'Use search_jmeter_docs to find documentation pages, and get_jmeter_page to read pages in full.',
+  'Use convert_curl_or_har_to_jmx to convert one or more cURL commands or HAR JSON traces into valid Apache JMeter .jmx test plan XML (supporting GET, POST, PUT, DELETE, PATCH, and RFC 9838 QUERY methods).',
   'Use lint_jmx_snippet to validate JMX test plan snippets against performance best practices.',
   'Use calculate_workload_model to compute Little\'s Law concurrency, pacing, ramp-up, and JVM heap sizing.',
   'Use plan_distributed_testing to configure Master-Worker RMI ports, user.properties, firewall rules, and Docker manifests.',
@@ -48,6 +50,47 @@ const SERVER_INSTRUCTIONS = [
   'Use lookup_jmeter_property, get_jsr223_recipe, and lookup_error_playbook for precise configuration and troubleshooting guidance.',
   'Always cite the docs.jmeter.ai URL you used when answering.',
 ].join(' ');
+
+/**
+ * Execute the converter with the same blocking policy used by the public MCP
+ * tool. Exported for endpoint-level regression tests without starting a
+ * transport.
+ */
+export function runCurlHarConversionTool(
+  params: Parameters<typeof convertCurlOrHarToJmx>[0],
+) {
+  try {
+    const result = convertCurlOrHarToJmx(params);
+    if (!result.isValid) {
+      const reason = result.blockingErrors.length > 0
+        ? result.blockingErrors.join(' ')
+        : 'No valid HTTP requests were parsed.';
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Conversion blocked: ${reason}\n\n${JSON.stringify(result, null, 2)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      content: [{ type: 'text' as const, text: `Conversion error: ${message}` }],
+      isError: true,
+    };
+  }
+}
 
 /** Strip markdown noise so search snippets stay readable. */
 function snippet(body: string): string {
@@ -385,6 +428,31 @@ function createServer(): McpServer {
     },
   );
 
+  server.registerTool(
+    'convert_curl_or_har_to_jmx',
+    {
+      title: 'Convert cURL or HAR to JMeter JMX Test Plan',
+      description:
+        'Convert one or more cURL commands or HAR (HTTP Archive 1.2) JSON traces into a valid, production-ready Apache JMeter .jmx test plan XML with HTTP Request Defaults, Header Managers, Cookie Managers, timeouts, and assertions. Supports GET, POST, PUT, DELETE, PATCH, and RFC 9838 QUERY methods.',
+      inputSchema: {
+        input: z.string().min(1).max(1_000_000).describe('cURL command string (single, multiline, or batch) or HAR 1.2 JSON text (max 1MB).'),
+        testPlanName: z.string().max(200).optional().describe('Name of the JMeter Test Plan (default: "cURL Converted Plan").'),
+        threads: z.number().int().min(1).max(50000).optional().describe('Thread concurrency / virtual users (default: 1).'),
+        rampUpSeconds: z.number().int().min(0).max(3600).optional().describe('Ramp-up time in seconds (default: 1).'),
+        durationSeconds: z.number().int().min(0).max(86400).optional().describe('Test duration in seconds (0 = disabled, default: 0).'),
+        loopCount: z.number().int().min(-1).max(1_000_000).optional().describe('Loop count (-1 for infinite, default: 1).'),
+        parameterizeHost: z.boolean().optional().describe('Extract common host into HTTP Request Defaults and ${BASE_URL} (default: true).'),
+        parameterizeAuth: z.boolean().optional().describe('Extract Bearer token into ${AUTH_TOKEN} variable (default: true).'),
+        includeAssertions: z.boolean().optional().describe('Add HTTP 200/201/204 Response Code assertions (default: true).'),
+        includeCookieManager: z.boolean().optional().describe('Include HTTP Cookie Manager (default: true).'),
+        filterStaticAssets: z.boolean().optional().describe('Filter out images/css/fonts when parsing HAR (default: true).'),
+      },
+    },
+    async (params) => {
+      return runCurlHarConversionTool(params);
+    },
+  );
+
   return server;
 }
 
@@ -436,13 +504,14 @@ export async function GET() {
         name: SERVER_NAME,
         version: SERVER_VERSION,
         description:
-          'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, lint JMX test plans, calculate workload sizing, plan distributed clusters, query tuning properties, fetch Groovy recipes, and lookup diagnostic error playbooks.',
+          'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, convert cURL/HAR to JMX, lint JMX test plans, calculate workload sizing, plan distributed clusters, query tuning properties, fetch Groovy recipes, and lookup diagnostic error playbooks.',
         transport: 'streamable-http',
         endpoint: 'https://docs.jmeter.ai/api/mcp',
         auth: 'none',
         tools: [
           'search_jmeter_docs',
           'get_jmeter_page',
+          'convert_curl_or_har_to_jmx',
           'lint_jmx_snippet',
           'calculate_workload_model',
           'plan_distributed_testing',

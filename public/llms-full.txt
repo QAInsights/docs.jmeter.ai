@@ -3,8 +3,8 @@
 > Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience. This is an independent community resource and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation. For official documentation, visit jmeter.apache.org.
 
 Site: https://docs.jmeter.ai
-Pages: 150
-Generated: 2026-08-21T21:58:51.485Z
+Pages: 151
+Generated: 2026-08-23T03:15:58.701Z
 ---
 Title: User's Manual: Getting Started
 URL: https://docs.jmeter.ai/getting-started/get-started/
@@ -5117,6 +5117,7 @@ Interactive helpers for common load-testing decisions. All tools run **in your b
 
 | Tool | Use it when you need to… |
 |------|--------------------------|
+| [cURL & HAR to JMX Converter](/tools/curl-to-jmx/) | Convert cURL commands and HAR files into valid JMX test plans (supports GET, POST, QUERY, etc.) |
 | [Thread Calculator](/tools/thread-calculator/) | Estimate concurrent threads / RPS, think time, and ramp-up |
 | [Heap Estimator](/tools/heap-estimator/) | Pick a starting `-Xmx` for injectors |
 | [CLI Command Builder](/tools/cli-builder/) | Assemble `jmeter -n -t` with report, HEAP, and `-J` flags |
@@ -5137,6 +5138,93 @@ Docs alone rank for "what is…", but practitioners search for calculators and c
 - [Properties Reference](/user-manual/properties-reference/)
 - [Regular Expressions](/user-manual/regular-expressions/)
 - [Remote Testing](/user-manual/remote-test/)
+
+
+---
+Title: cURL & HAR to JMeter JMX Converter
+URL: https://docs.jmeter.ai/tools/curl-to-jmx/
+---
+
+import CurlToJmx from '../../../components/tools/CurlToJmx.astro';
+
+<CurlToJmx />
+
+## How the Converter Works
+
+Creating JMeter test plans manually for dozens of API endpoints is slow and error-prone. This converter takes raw **cURL commands** (from Swagger, Postman, browser DevTools, or terminal history) and **HAR 1.2 network captures**, automatically structuring them into a production-grade Apache JMeter 5.6.3 `.jmx` test plan.
+
+### What Gets Automatically Generated?
+
+1. **HTTP Request Defaults (`ConfigTestElement`)**: Detects the dominant target domain across your requests and parameterizes it into `${BASE_URL}`, making environment switching (Dev $\to$ Staging $\to$ Prod) effortless.
+2. **HTTP Header Manager (`HeaderManager`)**: Preserves required custom headers (`Content-Type`, `Accept`, `X-Api-Key`), while stripping transport-level noise (`Content-Length`) that JMeter calculates dynamically.
+3. **HTTP Cookie Manager (`CookieManager`)**: Auto-injected to manage session cookies and cross-request state across iterations.
+4. **Auth Parameterization**: Automatically detects `Authorization: Bearer <token>` and parameterizes it as `${AUTH_TOKEN}` in User Defined Variables.
+5. **Robust Timeouts**: Connect timeout is preset to `5000ms` and response timeout to `15000ms` on every sampler to prevent thread pool lockup during load spikes.
+6. **Response Code Assertions**: Generates baseline `ResponseAssertion` elements validating HTTP 200, 201, and 204 status codes.
+
+---
+
+## Full HTTP Method Support (Including `QUERY` RFC 9838)
+
+The converter supports all standard and modern HTTP methods:
+
+| Method | JMeter Implementation | Use Case |
+| :--- | :--- | :--- |
+| `GET` | `HTTPSamplerProxy` (Query Params in Arguments or Path) | Fetching resources and reading data |
+| `POST` | `HTTPSamplerProxy` (`postBodyRaw="true"` or Form fields) | Creating resources / authentication |
+| `QUERY` | `HTTPSamplerProxy` (`postBodyRaw="true"`, Method=`QUERY`) | Safe, idempotent complex queries with JSON payload bodies (Elasticsearch, GraphQL, modern REST) |
+| `PUT` | `HTTPSamplerProxy` (`postBodyRaw="true"`) | Full resource replacement |
+| `PATCH` | `HTTPSamplerProxy` (`postBodyRaw="true"`) | Partial resource modification |
+| `DELETE` | `HTTPSamplerProxy` | Removing resources |
+| `HEAD` / `OPTIONS` | `HTTPSamplerProxy` | Health checks and CORS preflight |
+
+### Example: HTTP `QUERY` Method in cURL
+
+```bash
+curl -X QUERY "https://api.example.com/v1/catalog/search" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sample-jwt-token-xyz" \
+  -d '{
+    "filter": { "status": "in_stock", "price": { "lte": 150 } },
+    "sort": "price:asc"
+  }'
+```
+
+The converter translates this into a valid JMeter HTTP Sampler with the `QUERY` method and raw payload body configured without requiring custom plugins.
+
+---
+
+## Running the Generated JMX in CLI Mode
+
+Once you download the `.jmx` file, run it in non-GUI mode from your terminal:
+
+```bash
+jmeter -n -t test-plan.jmx -l results.jtl -e -o ./report
+```
+
+You can override virtual users dynamically at runtime:
+
+```bash
+jmeter -n -t test-plan.jmx -Jthreads=100 -l results.jtl -e -o ./report
+```
+
+To run for a fixed duration, set **Duration** to a value greater than zero before downloading the plan. This enables JMeter's scheduler and generates the required infinite-loop behavior; adding `-Jduration` to a plan converted with Duration `0` does not enable the scheduler.
+
+---
+
+## Use via AI Agent (MCP Tool)
+
+You can call this converter directly inside **Claude Code, Cursor, Windsurf, Qwen Code, and Copilot** via our free Model Context Protocol server:
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --scope user
+```
+
+Prompt your AI agent:
+
+> *"Convert this cURL command into a JMeter test plan with 50 threads and 10s rampup: `curl -X QUERY https://api.example.com/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"loadtest\"}'`"*
+
+Your agent calls `convert_curl_or_har_to_jmx` and outputs schema-valid XML ready for execution.
 
 
 ---
@@ -28713,6 +28801,7 @@ Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.
 | :--- | :--- | :--- |
 | [`search_jmeter_docs`](#search_jmeter_docs) | Knowledge | BM25 semantic search across documentation, user manual, and guides |
 | [`get_jmeter_page`](#get_jmeter_page) | Knowledge | Fetch full markdown text of any documentation page |
+| [`convert_curl_or_har_to_jmx`](#convert_curl_or_har_to_jmx) | Generator | Convert cURL commands and HAR files to valid JMX XML (GET, POST, QUERY, etc.) |
 | [`lint_jmx_snippet`](#lint_jmx_snippet) | Diagnostics | Scan JMX XML for anti-patterns (GUI listeners, BeanShell, missing timeouts) |
 | [`calculate_workload_model`](#calculate_workload_model) | Calculator | Little's Law concurrency, pacing, ramp-up schedules, and JVM heap sizing |
 | [`plan_distributed_testing`](#plan_distributed_testing) | Topology | Pinned RMI ports, `user.properties`, firewall rules, and Docker manifests |
@@ -28735,6 +28824,20 @@ Read one page in full markdown. Accepts the complete URL or a bare path like `to
 
 ```json
 { "url": "topics/api-load-testing" }
+```
+
+### convert_curl_or_har_to_jmx
+
+Convert one or more cURL commands or HAR (HTTP Archive 1.2) JSON files into a schema-valid, ready-to-run Apache JMeter 5.6.3 `.jmx` XML test plan. Supports all standard HTTP verbs plus RFC 9838 `QUERY` method with body payloads, Bearer token extraction, and timeouts.
+
+```json
+{
+  "input": "curl -X QUERY https://api.example.com/v1/search -H 'Content-Type: application/json' -H 'Authorization: Bearer my-jwt' -d '{\"query\":\"loadtest\"}'",
+  "threads": 50,
+  "rampUpSeconds": 10,
+  "parameterizeHost": true,
+  "parameterizeAuth": true
+}
 ```
 
 ### lint_jmx_snippet
@@ -28774,9 +28877,9 @@ Generate Linux kernel (`sysctl.conf`), file descriptor (`limits.conf`), `systemd
 ```json
 {
   "concurrency": 25000,
-  "ram_gb": 32,
-  "traffic_type": "http_churn",
-  "target_distro": "ubuntu_debian",
+  "ramGb": 32,
+  "trafficType": "http_churn",
+  "targetDistro": "ubuntu_debian",
   "role": "injector"
 }
 ```

@@ -26,6 +26,7 @@ Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.
 | :--- | :--- | :--- |
 | [`search_jmeter_docs`](#search_jmeter_docs) | Knowledge | BM25 semantic search across documentation, user manual, and guides |
 | [`get_jmeter_page`](#get_jmeter_page) | Knowledge | Fetch full markdown text of any documentation page |
+| [`convert_curl_or_har_to_jmx`](#convert_curl_or_har_to_jmx) | Generator | Convert cURL commands and HAR files to valid JMX XML (GET, POST, QUERY, etc.) |
 | [`lint_jmx_snippet`](#lint_jmx_snippet) | Diagnostics | Scan JMX XML for anti-patterns (GUI listeners, BeanShell, missing timeouts) |
 | [`calculate_workload_model`](#calculate_workload_model) | Calculator | Little's Law concurrency, pacing, ramp-up schedules, and JVM heap sizing |
 | [`plan_distributed_testing`](#plan_distributed_testing) | Topology | Pinned RMI ports, `user.properties`, firewall rules, and Docker manifests |
@@ -48,6 +49,20 @@ Read one page in full markdown. Accepts the complete URL or a bare path like `to
 
 ```json
 { "url": "topics/api-load-testing" }
+```
+
+### convert_curl_or_har_to_jmx
+
+Convert one or more cURL commands or HAR (HTTP Archive 1.2) JSON files into a schema-valid, ready-to-run Apache JMeter 5.6.3 `.jmx` XML test plan. Supports all standard HTTP verbs plus RFC 9838 `QUERY` method with body payloads, Bearer token extraction, and timeouts.
+
+```json
+{
+  "input": "curl -X QUERY https://api.example.com/v1/search -H 'Content-Type: application/json' -H 'Authorization: Bearer my-jwt' -d '{\"query\":\"loadtest\"}'",
+  "threads": 50,
+  "rampUpSeconds": 10,
+  "parameterizeHost": true,
+  "parameterizeAuth": true
+}
 ```
 
 ### lint_jmx_snippet

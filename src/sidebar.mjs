@@ -93,6 +93,7 @@ export const sidebar = [
     collapsed: true,
     items: [
       { label: 'Tools Hub', link: '/tools' },
+      { label: 'cURL & HAR to JMX', link: '/tools/curl-to-jmx' },
       { label: 'Thread Calculator', link: '/tools/thread-calculator' },
       { label: 'Heap Estimator', link: '/tools/heap-estimator' },
       { label: 'CLI Command Builder', link: '/tools/cli-builder' },
