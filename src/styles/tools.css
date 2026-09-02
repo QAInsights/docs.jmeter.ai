@@ -583,6 +583,31 @@
   border-color: var(--sl-color-gray-5);
 }
 
+.tool-btn-sm {
+  width: auto;
+  height: auto;
+  min-height: 2rem;
+  max-height: none;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.tool-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.sl-markdown-content .tool .tool-presets .tool-btn {
+  width: auto;
+  max-width: none;
+}
+
 .tool-btn:focus-visible {
   outline: 2px solid var(--sl-color-accent);
   outline-offset: 2px;
