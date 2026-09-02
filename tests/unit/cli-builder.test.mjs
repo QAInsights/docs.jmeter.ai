@@ -60,6 +60,18 @@ describe('buildJmeterArgs / buildCliCommand', () => {
     expect(args).toEqual(['-n', '-t', 'plan.jmx', '-l', 'results.jtl', '-e', '-o', 'report']);
   });
 
+  it('omits -X without remote hosts and explains why', () => {
+    const built = buildCliCommand({
+      plan: 'plan.jmx',
+      results: 'results.jtl',
+      generateReport: false,
+      exitRemote: true,
+      shell: 'bash',
+    });
+    expect(built.args).not.toContain('-X');
+    expect(built.notes).toContainEqual(expect.stringContaining('-X only applies'));
+  });
+
   it('adds HEAP, -J, remotes, and -f when requested', () => {
     const built = buildCliCommand({
       plan: 'plan.jmx',
