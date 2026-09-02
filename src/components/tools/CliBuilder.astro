@@ -71,7 +71,8 @@ const { defaults } = CLI_BUILDER;
   <div class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
     <label class="tool-check"><input type="checkbox" name="reportOn" checked={defaults.generateReport} /> <span>Generate HTML dashboard (-e -o)</span></label>
     <label class="tool-check"><input type="checkbox" name="force" /> <span>Overwrite existing results and report (-f)</span></label>
-    <label class="tool-check"><input type="checkbox" name="exit" /> <span>Exit remote servers when the test ends (-X)</span></label>
+    <label class="tool-check"><input type="checkbox" name="exit" disabled /> <span>Exit remote servers when the test ends (-X)</span></label>
+    <span class="tool-hint" data-exit-hint>Requires remote hosts (-R) above</span>
   </div>
 
   <pre class="tool-code" data-command tabindex="0" aria-live="polite"></pre>
@@ -123,6 +124,7 @@ const { defaults } = CLI_BUILDER;
     const exitInput = root.querySelector('input[name="exit"]');
     const commandEl = root.querySelector('[data-command]');
     const notesEl = root.querySelector('[data-notes]');
+    const exitHint = root.querySelector('[data-exit-hint]');
     const status = root.querySelector('[data-copy-status]');
     const shellButtons = root.querySelectorAll('.tool-seg__btn[data-shell]');
 
@@ -164,6 +166,9 @@ const { defaults } = CLI_BUILDER;
     function recompute() {
       const s = state();
       const built = buildCliCommand(s);
+      const hasHosts = built.state.remoteHosts !== '';
+      exitInput.disabled = !hasHosts;
+      if (exitHint) exitHint.style.display = hasHosts ? 'none' : '';
       if (commandEl) commandEl.textContent = built.command;
       if (notesEl) {
         notesEl.innerHTML = built.notes.map((n) => `<li>${n}</li>`).join('');

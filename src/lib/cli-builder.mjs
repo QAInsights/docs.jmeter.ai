@@ -236,6 +236,8 @@ export function buildCliCommand(raw = {}, config = CLI_BUILDER) {
   }
   if (state.remoteHosts) {
     notes.push('Start jmeter-server on each remote host before using -R.');
+  } else if (state.exitRemote) {
+    notes.push('-X only applies to distributed runs; add remote hosts to emit it.');
   }
   return { state, args, command, heap, notes };
 }
