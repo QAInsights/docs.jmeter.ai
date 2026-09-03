@@ -1,55 +1,50 @@
 ---
 const endpoint = 'https://docs.jmeter.ai/api/mcp';
 
-const jsonConfig = `{
-  "mcpServers": { "jmeter-docs": { "url": "${endpoint}" } }
-}`;
+const jsonConfig = `{ "mcpServers": { "jmeter-docs": { "url": "${endpoint}" } } }`;
 
 const clients = [
   {
     id: 'claude',
     label: 'Claude Code',
-    step: 'Run in your terminal',
-    lang: 'bash',
+    step: 'Install with Claude Code',
     code: `claude mcp add jmeter-docs ${endpoint} --transport http --scope user`,
-    hint: 'Restart Claude Code, then verify with /mcp.',
   },
   {
     id: 'cursor',
     label: 'Cursor',
     step: 'Add to .cursor/mcp.json',
-    lang: 'json',
     code: jsonConfig,
-    hint: 'Reload Cursor to pick up the new server.',
   },
   {
     id: 'qwen',
     label: 'Qwen Code',
     step: 'Add to your MCP settings',
-    lang: 'json',
     code: jsonConfig,
-    hint: 'Works with any MCP client that accepts a URL.',
+  },
+  {
+    id: 'other',
+    label: 'Other MCP clients',
+    step: 'Add to your MCP config',
+    code: jsonConfig,
   },
   {
     id: 'curl',
     label: 'cURL',
     step: 'Try the endpoint',
-    lang: 'bash',
-    code: `curl -X POST ${endpoint} \\
-  -H "Content-Type: application/json" \\
-  -H "Accept: application/json, text/event-stream" \\
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`,
-    hint: 'Lists the tools the server exposes.',
+    code: `curl -X POST ${endpoint} -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`,
   },
 ];
+
+const highlight = (code: string) =>
+  code.split(endpoint).flatMap((part, i, arr) =>
+    i < arr.length - 1 ? [part, null] : [part]
+  );
 ---
 
-<div class="terminal agent-connect not-content" data-agent-connect>
-  <div class="terminal-bar agent-connect-bar">
-    <div class="agent-connect-heading">
-      <span class="agent-connect-eyebrow">MCP · no API key</span>
-      <span class="agent-connect-title">Connect your agent</span>
-    </div>
+<div class="agent-connect not-content" data-agent-connect role="region" aria-labelledby="agent-connect-title">
+  <div class="agent-connect-head">
+    <h2 id="agent-connect-title" class="agent-connect-title">Connect your AI agent to JMeter docs</h2>
     <div class="agent-tabs" role="tablist" aria-label="MCP client">
       {clients.map((c, i) => (
         <button
@@ -65,28 +60,32 @@ const clients = [
       ))}
     </div>
   </div>
-  <div class="terminal-body agent-connect-body">
+
+  <div class="agent-connect-body">
+    <div class="agent-col agent-col--guide">
+      <p class="agent-step"><span class="agent-step-num">1</span>No API key needed</p>
+      <a class="agent-guide-btn" href="/mcp/">Read the MCP guide</a>
+    </div>
+
     {clients.map((c, i) => (
       <div
-        class="agent-panel"
+        class="agent-col agent-col--install"
         id={`agent-panel-${c.id}`}
         role="tabpanel"
         aria-labelledby={`agent-tab-${c.id}`}
         data-agent-panel={c.id}
         hidden={i !== 0}
       >
-        <div class="agent-steps">
-          <span class="agent-step"><span class="agent-step-num">1</span>{c.step}</span>
-          <span class="agent-step"><span class="agent-step-num">2</span>Ask about JMeter, get sourced answers</span>
-        </div>
+        <p class="agent-step"><span class="agent-step-num">2</span>{c.step}</p>
         <div class="agent-code">
-          <pre class={`agent-pre lang-${c.lang}`}><code>{c.code}</code></pre>
+          <pre class="agent-pre"><code>{highlight(c.code).map((part) => (
+            part === null ? <span class="agent-endpoint">{endpoint}</span> : part
+          ))}</code></pre>
           <button type="button" class="agent-copy" data-agent-copy aria-label="Copy to clipboard" title="Copy">
-            <svg class="agent-copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            <svg class="agent-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="agent-copy-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M6 15H5.5A2.5 2.5 0 0 1 3 12.5v-7A2.5 2.5 0 0 1 5.5 3h7A2.5 2.5 0 0 1 15 5.5V6"/></svg>
+            <svg class="agent-check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
           </button>
         </div>
-        <p class="agent-hint">{c.hint} <a href="/mcp/">Full setup guide →</a></p>
       </div>
     ))}
   </div>
