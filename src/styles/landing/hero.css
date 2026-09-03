@@ -7,8 +7,9 @@
   padding-top: 2.5rem;
   padding-bottom: 1.5rem;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 2.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: 3rem;
 }
 
 .hero-section .hero-text {
@@ -135,7 +136,7 @@
   --ac-text: #f5f5f4;
   --ac-muted: #a8a29e;
   width: 100%;
-  padding: 1.75rem 2rem 2rem;
+  padding: 1.5rem 1.5rem 1.65rem;
   border-radius: 1.25rem;
   background:
     radial-gradient(120% 140% at 100% 0%, rgba(234, 88, 12, 0.14), transparent 55%),
@@ -156,17 +157,16 @@
 
 .agent-connect-head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem 2rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
   padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--ac-border);
 }
 
 .agent-connect-title {
   margin: 0;
-  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  font-size: clamp(1.2rem, 1.7vw, 1.45rem);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -184,8 +184,7 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
 }
 
 .agent-tabs::-webkit-scrollbar {
@@ -199,10 +198,10 @@
   background: transparent;
   color: var(--ac-muted);
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   line-height: 1;
-  padding: 0.6rem 1.05rem;
+  padding: 0.55rem 0.9rem;
   cursor: pointer;
   white-space: nowrap;
   transition: color 150ms var(--mx-ease), background-color 150ms var(--mx-ease), box-shadow 150ms var(--mx-ease);
@@ -225,9 +224,9 @@
 
 .agent-connect-body {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 1.5rem 2rem;
-  padding-top: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.35rem;
+  padding-top: 1.25rem;
 }
 
 .agent-col {
@@ -269,8 +268,8 @@
   align-items: center;
   justify-content: center;
   align-self: flex-start;
-  height: 3.25rem;
-  padding: 0 1.4rem;
+  height: 2.9rem;
+  padding: 0 1.3rem;
   border-radius: 0.8rem;
   background: var(--sl-color-accent);
   color: #fff;
@@ -366,10 +365,6 @@
   .agent-connect {
     padding: 1.25rem 1.25rem 1.5rem;
     border-radius: 1rem;
-  }
-
-  .agent-connect-body {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .agent-guide-btn {
