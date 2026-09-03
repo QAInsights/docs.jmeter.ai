@@ -1,11 +1,9 @@
 ---
 const endpoint = 'https://docs.jmeter.ai/api/mcp';
 
-const jsonConfig = JSON.stringify(
-  { mcpServers: { 'jmeter-docs': { url: endpoint } } },
-  null,
-  2
-);
+const jsonConfig = `{
+  "mcpServers": { "jmeter-docs": { "url": "${endpoint}" } }
+}`;
 
 const clients = [
   {
@@ -46,7 +44,7 @@ const clients = [
 ];
 ---
 
-<div class="terminal agent-connect" data-agent-connect>
+<div class="terminal agent-connect not-content" data-agent-connect>
   <div class="terminal-bar agent-connect-bar">
     <div class="agent-connect-heading">
       <span class="agent-connect-eyebrow">MCP · no API key</span>
@@ -79,7 +77,7 @@ const clients = [
       >
         <div class="agent-steps">
           <span class="agent-step"><span class="agent-step-num">1</span>{c.step}</span>
-          <span class="agent-step"><span class="agent-step-num">2</span>Ask about JMeter, get grounded answers with a source link</span>
+          <span class="agent-step"><span class="agent-step-num">2</span>Ask about JMeter, get sourced answers</span>
         </div>
         <div class="agent-code">
           <pre class={`agent-pre lang-${c.lang}`}><code>{c.code}</code></pre>
