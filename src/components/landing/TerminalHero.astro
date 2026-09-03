@@ -1,40 +1,134 @@
 ---
-const now = new Date();
-const formattedDate = now.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric'
-}) + ' ' + now.toLocaleTimeString('en-US', {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit'
-});
+const endpoint = 'https://docs.jmeter.ai/api/mcp';
 
-const lines = [
-  { text: '$ jmeter -n -t test-plan.jmx -l results.jtl', cls: 'cmd' },
-  { text: 'Creating summariser <main>' },
-  { text: 'Created the tree successfully' },
-  { text: `Starting the test @ ${formattedDate}` },
-  { text: 'summary +   1247 in 00:00:12 =  103.9/s  Avg:   245  Min:    12  Max:  1823  Err:     0 (0.00%)', cls: 'ok' },
-  { text: 'summary =   1247 in 00:00:12 =  103.9/s  Avg:   245  Min:    12  Max:  1823  Err:     0 (0.00%)', cls: 'ok' },
+const jsonConfig = `{ "mcpServers": { "jmeter-docs": { "url": "${endpoint}" } } }`;
+
+const clients = [
+  {
+    id: 'claude',
+    label: 'Claude Code',
+    step: 'Install with Claude Code',
+    code: `claude mcp add jmeter-docs ${endpoint} --transport http --scope user`,
+  },
+  {
+    id: 'cursor',
+    label: 'Cursor',
+    step: 'Add to .cursor/mcp.json',
+    code: jsonConfig,
+  },
+  {
+    id: 'qwen',
+    label: 'Qwen Code',
+    step: 'Add to your MCP settings',
+    code: jsonConfig,
+  },
+  {
+    id: 'other',
+    label: 'Other',
+    step: 'Add to your MCP config',
+    code: jsonConfig,
+  },
+  {
+    id: 'curl',
+    label: 'cURL',
+    step: 'Try the endpoint',
+    code: `curl -X POST ${endpoint} -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`,
+  },
 ];
+
+const highlight = (code: string) =>
+  code.split(endpoint).flatMap((part, i, arr) =>
+    i < arr.length - 1 ? [part, null] : [part]
+  );
 ---
 
-<div class="terminal">
-  <div class="terminal-bar">
-    <span class="dot dot-red"></span>
-    <span class="dot dot-yellow"></span>
-    <span class="dot dot-green"></span>
-    <span class="terminal-title">jmeter - bash</span>
-  </div>
-  <div class="terminal-body">
-    {lines.map((line, i) => (
-      <div class="term-line" style={`--line-delay: ${i * 0.35}s`} class:list={['term-line', line.cls]}>
-        <span class="term-text">{line.text}</span>
-      </div>
-    ))}
-    <div class="term-line term-cursor" style={`--line-delay: ${lines.length * 0.35}s`}>
-      <span class="term-text">$ <span class="blink">▋</span></span>
+<div class="agent-connect not-content" data-agent-connect role="region" aria-labelledby="agent-connect-title">
+  <div class="agent-connect-head">
+    <h2 id="agent-connect-title" class="agent-connect-title">Connect your AI agent to JMeter docs</h2>
+    <div class="agent-tabs" role="tablist" aria-label="MCP client">
+      {clients.map((c, i) => (
+        <button
+          type="button"
+          role="tab"
+          class="agent-tab"
+          id={`agent-tab-${c.id}`}
+          aria-controls={`agent-panel-${c.id}`}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          tabindex={i === 0 ? 0 : -1}
+          data-agent-tab={c.id}
+        >{c.label}</button>
+      ))}
     </div>
   </div>
+
+  <div class="agent-connect-body">
+    <div class="agent-col agent-col--guide">
+      <p class="agent-step"><span class="agent-step-num">1</span>No API key needed<a class="agent-guide-link" href="/mcp/">Read the MCP guide &rarr;</a></p>
+    </div>
+
+    {clients.map((c, i) => (
+      <div
+        class="agent-col agent-col--install"
+        id={`agent-panel-${c.id}`}
+        role="tabpanel"
+        aria-labelledby={`agent-tab-${c.id}`}
+        data-agent-panel={c.id}
+        hidden={i !== 0}
+      >
+        <p class="agent-step"><span class="agent-step-num">2</span>{c.step}</p>
+        <div class="agent-code">
+          <pre class="agent-pre"><code>{highlight(c.code).map((part) => (
+            part === null ? <span class="agent-endpoint">{endpoint}</span> : part
+          ))}</code></pre>
+          <button type="button" class="agent-copy" data-agent-copy aria-label="Copy to clipboard" title="Copy">
+            <svg class="agent-copy-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M6 15H5.5A2.5 2.5 0 0 1 3 12.5v-7A2.5 2.5 0 0 1 5.5 3h7A2.5 2.5 0 0 1 15 5.5V6"/></svg>
+            <svg class="agent-check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
 </div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-agent-connect]');
+  if (root) {
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-agent-tab]'));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-agent-panel]'));
+
+    const select = (id: string) => {
+      tabs.forEach((t) => {
+        const on = t.dataset.agentTab === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+      });
+      panels.forEach((p) => {
+        p.hidden = p.dataset.agentPanel !== id;
+      });
+    };
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(tab.dataset.agentTab!));
+      tab.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        select(next.dataset.agentTab!);
+        next.focus();
+      });
+    });
+
+    root.querySelectorAll<HTMLButtonElement>('[data-agent-copy]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const code = btn.parentElement?.querySelector('code')?.textContent ?? '';
+        try {
+          await navigator.clipboard.writeText(code);
+          btn.classList.add('is-copied');
+          setTimeout(() => btn.classList.remove('is-copied'), 1600);
+        } catch {
+          /* clipboard unavailable */
+        }
+      });
+    });
+  }
+</script>

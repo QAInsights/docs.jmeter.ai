@@ -66,14 +66,6 @@
     grid-column: span 1;
   }
 
-  .terminal {
-    font-size: 0.72rem;
-  }
-
-  .terminal-body {
-    padding: 1rem;
-  }
-
   .docs-graph-viewport {
     min-height: 280px;
     max-height: 360px;
