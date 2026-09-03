@@ -243,6 +243,7 @@
 .agent-step {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin: 0;
   font-size: 1rem;
@@ -263,27 +264,20 @@
   box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.18);
 }
 
-.agent-guide-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: flex-start;
-  height: 2.9rem;
-  padding: 0 1.3rem;
-  border-radius: 0.8rem;
-  background: var(--sl-color-accent);
-  color: #fff;
-  font-size: 0.95rem;
+.agent-guide-link {
+  margin-left: auto;
+  font-size: 0.875rem;
   font-weight: 600;
+  color: #fb923c;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 150ms var(--mx-ease), transform 150ms var(--mx-ease), box-shadow 150ms var(--mx-ease);
+  transition: color 150ms var(--mx-ease);
 }
 
-.agent-guide-btn:hover {
-  background: var(--sl-color-accent-high);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px -8px rgba(234, 88, 12, 0.6);
+.agent-guide-link:hover {
+  color: #fdba74;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .agent-code {
@@ -365,9 +359,5 @@
   .agent-connect {
     padding: 1.25rem 1.25rem 1.5rem;
     border-radius: 1rem;
-  }
-
-  .agent-guide-btn {
-    align-self: stretch;
   }
 }
