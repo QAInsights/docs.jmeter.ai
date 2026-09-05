@@ -136,6 +136,7 @@
   --ac-text: #f5f5f4;
   --ac-muted: #a8a29e;
   width: 100%;
+  min-width: 0;
   padding: 1.5rem 1.5rem 1.65rem;
   border-radius: 1.25rem;
   background:
@@ -236,8 +237,20 @@
   min-width: 0;
 }
 
+.agent-col--install {
+  grid-area: 2 / 1;
+}
+
+/* Keep every panel in the same grid cell so the tallest command reserves
+   space at each viewport width. Inactive panels stay invisible and unfocusable. */
 .agent-col--install[hidden] {
-  display: none;
+  display: flex;
+  visibility: hidden;
+}
+
+.agent-col--install .agent-code {
+  flex: 1;
+  align-items: flex-start;
 }
 
 .agent-step {
@@ -292,6 +305,7 @@
 
 .agent-pre {
   flex: 1;
+  min-width: 0;
   margin: 0;
   padding: 0.85rem 3.25rem 0.85rem 1rem;
   font-family: var(--sl-font-system-mono);
