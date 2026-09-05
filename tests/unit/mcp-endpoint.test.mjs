@@ -57,8 +57,13 @@ describe('findChunkByPath', () => {
 
 describe('GET /api/mcp endpoint discovery', () => {
   it('advertises all 10 MCP tools and streamable HTTP metadata', async () => {
-    const res = await GET();
+    const request = new Request('https://docs.jmeter.ai/api/mcp', {
+      headers: { Accept: 'application/json' },
+    });
+    const res = await GET({ request });
     expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toContain('s-maxage=86400');
+    expect(res.headers.get('vary')).toBe('Accept');
     const body = await res.json();
     expect(body.name).toBe('jmeter-docs');
     expect(body.transport).toBe('streamable-http');
@@ -73,6 +78,23 @@ describe('GET /api/mcp endpoint discovery', () => {
     expect(body.tools).toContain('get_jsr223_recipe');
     expect(body.tools).toContain('lookup_error_playbook');
     expect(body.tools).toHaveLength(10);
+  });
+
+  it('returns 405 instead of starting a reconnect loop for an SSE listener GET', async () => {
+    const request = new Request('https://docs.jmeter.ai/api/mcp', {
+      headers: { Accept: 'text/event-stream' },
+    });
+    const res = await GET({ request });
+    expect(res.status).toBe(405);
+    expect(res.headers.get('allow')).toBe('GET, POST');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('recognizes an event-stream media type with parameters', async () => {
+    const request = new Request('https://docs.jmeter.ai/api/mcp', {
+      headers: { Accept: 'application/json, text/event-stream; charset=utf-8' },
+    });
+    expect((await GET({ request })).status).toBe(405);
   });
 });
 

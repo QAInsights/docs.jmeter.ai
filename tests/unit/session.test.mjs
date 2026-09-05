@@ -5,6 +5,7 @@ import {
   createSessionCookie,
   verifySessionCookie,
   parseCookies,
+  getClientIp,
 } from '../../src/lib/session.mjs';
 
 const KEY = 'test-signing-key';
@@ -72,5 +73,35 @@ describe('parseCookies', () => {
   it('handles empty and null headers', () => {
     expect(parseCookies('')).toEqual({});
     expect(parseCookies(null)).toEqual({});
+  });
+});
+
+describe('getClientIp', () => {
+  it('prefers Cloudflare\'s authenticated connecting IP header', () => {
+    const request = new Request('https://docs.jmeter.ai/api/mcp', {
+      headers: {
+        'cf-connecting-ip': '203.0.113.7',
+        'x-forwarded-for': '198.51.100.2, 198.51.100.3',
+      },
+    });
+    Object.defineProperty(request, 'cf', { value: { colo: 'IAD' } });
+    expect(getClientIp(request)).toBe('203.0.113.7');
+  });
+
+  it('ignores a spoofed connecting IP header off Cloudflare', () => {
+    const request = new Request('https://docs.jmeter.ai/api/mcp', {
+      headers: {
+        'cf-connecting-ip': '203.0.113.7',
+        'x-forwarded-for': '198.51.100.2, 198.51.100.3',
+      },
+    });
+    expect(getClientIp(request)).toBe('198.51.100.2');
+  });
+
+  it('falls back to the first forwarded IP off Cloudflare', () => {
+    const request = new Request('https://docs.jmeter.ai/api/mcp', {
+      headers: { 'x-forwarded-for': '198.51.100.2, 198.51.100.3' },
+    });
+    expect(getClientIp(request)).toBe('198.51.100.2');
   });
 });

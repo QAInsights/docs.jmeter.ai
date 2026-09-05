@@ -1,70 +1,49 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   checkMcpRateLimit,
-  MCP_RATE_MAX,
-  MCP_RATE_WINDOW_SECONDS,
+  MCP_RETRY_AFTER_SECONDS,
 } from '../../src/lib/mcp-rate-limit.mjs';
 
-// In-memory Redis substitute matching the share-store test pattern.
-function makeFakeRedis() {
-  const store = new Map();
+function makeFakeLimiter(success = true) {
   return {
-    store,
-    async incr(key) {
-      const next = (typeof store.get(key) === 'number' ? store.get(key) : 0) + 1;
-      store.set(key, next);
-      return next;
-    },
-    async expire(key, seconds) {
-      store.set(`${key}:ttl`, seconds);
-      return 1;
+    keys: [],
+    async limit({ key }) {
+      this.keys.push(key);
+      return { success };
     },
   };
 }
 
 describe('checkMcpRateLimit', () => {
-  let redis;
+  let limiter;
   beforeEach(() => {
-    redis = makeFakeRedis();
+    limiter = makeFakeLimiter();
   });
 
-  it(`allows ${MCP_RATE_MAX} requests per IP per window, then blocks`, async () => {
-    for (let i = 0; i < MCP_RATE_MAX; i++) {
-      const res = await checkMcpRateLimit('203.0.113.7', redis);
-      expect(res.allowed).toBe(true);
-    }
-    const blocked = await checkMcpRateLimit('203.0.113.7', redis);
-    expect(blocked.allowed).toBe(false);
-    expect(blocked.retryAfter).toBe(MCP_RATE_WINDOW_SECONDS);
+  it('maps an allowed binding result', async () => {
+    expect(await checkMcpRateLimit('203.0.113.7', limiter)).toEqual({ allowed: true });
+    expect(limiter.keys).toEqual(['mcp:203.0.113.7']);
   });
 
-  it('sets the window TTL on the first request of a window', async () => {
-    await checkMcpRateLimit('203.0.113.7', redis);
-    const key = [...redis.store.keys()].find((k) => k.startsWith('mcp:rate:'));
-    expect(redis.store.get(`${key}:ttl`)).toBe(MCP_RATE_WINDOW_SECONDS);
+  it('maps a denied binding result to the production retry policy', async () => {
+    const deniedLimiter = makeFakeLimiter(false);
+    expect(await checkMcpRateLimit('203.0.113.7', deniedLimiter)).toEqual({
+      allowed: false,
+      retryAfter: MCP_RETRY_AFTER_SECONDS,
+    });
+    expect(deniedLimiter.keys).toEqual(['mcp:203.0.113.7']);
   });
 
-  it('tracks IPs independently', async () => {
-    for (let i = 0; i < MCP_RATE_MAX; i++) {
-      await checkMcpRateLimit('203.0.113.7', redis);
-    }
-    const other = await checkMcpRateLimit('198.51.100.9', redis);
-    expect(other.allowed).toBe(true);
+  it('fails open when the binding throws', async () => {
+    const brokenLimiter = {
+      async limit() { throw new Error('binding unavailable'); },
+    };
+    expect(await checkMcpRateLimit('203.0.113.7', brokenLimiter)).toEqual({ allowed: true });
   });
 
-  it('sanitizes hostile IPs in the Redis key', async () => {
-    await checkMcpRateLimit('1.2.3.4"; DROP TABLE--', redis);
-    const key = [...redis.store.keys()].find((k) => k.startsWith('mcp:rate:'));
-    expect(key).toMatch(/^mcp:rate:[a-zA-Z0-9.:_-]+$/);
-  });
-
-  it('returns null when Redis is unavailable (fail open)', async () => {
-    expect(await checkMcpRateLimit('203.0.113.7', null)).toBeNull();
-  });
-
-  it('returns null when Redis throws (fail open)', async () => {
-    const broken = { async incr() { throw new Error('redis down'); } };
-    expect(await checkMcpRateLimit('203.0.113.7', broken)).toBeNull();
+  it('sanitizes hostile IPs in the binding key', async () => {
+    await checkMcpRateLimit('1.2.3.4"; DROP TABLE--', limiter);
+    expect(limiter.keys[0]).toMatch(/^mcp:[a-zA-Z0-9.:_-]+$/);
   });
 });
 
@@ -94,8 +73,6 @@ describe('/api/mcp POST rate limiting', () => {
     });
   }
 
-  // 15s timeout: dynamic import with mocked rate-limiter requires full module
-  // re-compilation/transformation in Vitest on cold start on Windows environments.
   it('returns 429 with Retry-After when the limiter blocks', async () => {
     vi.doMock('../../src/lib/mcp-rate-limit.mjs', () => ({
       checkMcpRateLimit: async () => ({ allowed: false, retryAfter: 60 }),
@@ -109,15 +86,30 @@ describe('/api/mcp POST rate limiting', () => {
     vi.doUnmock('../../src/lib/mcp-rate-limit.mjs');
   }, 15000);
 
-  it('passes through when the limiter allows (incl. fail-open null)', async () => {
+  it('passes through when the limiter allows, including fail-open results', async () => {
     vi.doMock('../../src/lib/mcp-rate-limit.mjs', () => ({
-      checkMcpRateLimit: async () => null,
+      checkMcpRateLimit: async () => ({ allowed: true }),
     }));
     const { POST } = await import('../../src/pages/api/mcp.ts');
     const res = await POST({ request: makeMcpRequest() });
     expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toBe('no-store');
     const body = await res.json();
     expect(body.result.serverInfo.name).toBe('jmeter-docs');
+    vi.doUnmock('../../src/lib/mcp-rate-limit.mjs');
+  }, 15000);
+
+  it('applies the same limiter to GET requests', async () => {
+    vi.doMock('../../src/lib/mcp-rate-limit.mjs', () => ({
+      checkMcpRateLimit: async () => ({ allowed: false, retryAfter: 60 }),
+    }));
+    const { GET } = await import('../../src/pages/api/mcp.ts');
+    const request = new Request('https://docs.jmeter.ai/api/mcp', {
+      headers: { Accept: 'text/event-stream' },
+    });
+    const res = await GET({ request });
+    expect(res.status).toBe(429);
+    expect(res.headers.get('retry-after')).toBe('60');
     vi.doUnmock('../../src/lib/mcp-rate-limit.mjs');
   }, 15000);
 });

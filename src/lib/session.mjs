@@ -117,7 +117,11 @@ export async function verifyTurnstileToken(token, secret, remoteip) {
  */
 export function getClientIp(request) {
   const headers = request.headers;
+  const isCloudflareRequest = Boolean(
+    /** @type {Request & { cf?: object }} */ (request).cf,
+  );
   return (
+    (isCloudflareRequest ? headers.get('cf-connecting-ip') : null) ||
     headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     headers.get('x-real-ip') ||
     'unknown'

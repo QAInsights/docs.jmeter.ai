@@ -9,6 +9,16 @@
     "binding": "ASSETS"
   },
   "kv_namespaces": [{ "binding": "SESSION", "id": "1a5790178b7e43958a9e4718665575ed" }],
+  // Fast, per-location application backstop for runaway MCP clients. An edge
+  // WAF rate-limit rule is still needed to stop excess requests before they
+  // count as Worker invocations.
+  "ratelimits": [
+    {
+      "name": "MCP_RATE_LIMITER",
+      "namespace_id": "2395166299",
+      "simple": { "limit": 120, "period": 60 }
+    }
+  ],
   // Workers Logs + traces in the dashboard (free). Watch for CPU-limit
   // errors (1102) and free-tier request-cap errors (1027) after cutover.
   "observability": {

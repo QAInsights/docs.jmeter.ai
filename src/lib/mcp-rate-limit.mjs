@@ -4,40 +4,32 @@
  * The MCP endpoint is unauthenticated and advertised to AI agents, so a
  * runaway client (retry loop, misconfigured agent) can burn the monthly
  * function-invocation quota single-handedly. This caps each client IP at
- * MCP_RATE_MAX requests per fixed window; the hard cap lives at the Vercel
- * firewall layer, this is the portable application-level backstop.
- *
- * Follows the share-store.mjs pattern: fixed window via INCR + EXPIRE,
- * fails open (returns null) when Redis is unavailable so an Upstash
- * outage never takes the endpoint down with it.
+ * the limit configured in wrangler.jsonc per Cloudflare location. Tests can
+ * inject the same small `{ limit() }` port.
  */
 
-import { getRedisClient } from './redis.mjs';
+import { env } from 'cloudflare:workers';
 
-/** Rate-limit window: one minute, fixed. */
-export const MCP_RATE_WINDOW_SECONDS = 60;
-
-/** Max MCP requests per client IP per window. A normal agent session (initialize + a handful of tool calls per user question) stays far below this. */
-export const MCP_RATE_MAX = 120;
+/** Client backoff hint; enforcement remains canonical in wrangler.jsonc. */
+export const MCP_RETRY_AFTER_SECONDS = 60;
 
 /**
- * Fixed-window MCP request counter per client IP.
+ * Cloudflare-native MCP request counter per client IP.
  *
  * @param {string} ip client address (sanitized into the key)
- * @param {object | null} [client] Redis client; defaults to the shared client
- * @returns {Promise<{ allowed: true } | { allowed: false, retryAfter: number } | null>}
- *   null when Redis is unavailable, so the caller should allow the request.
+ * @param {RateLimit} [limiter]
+ *   Rate limiter port; defaults to the generated Cloudflare binding.
+ * @returns {Promise<{ allowed: true } | { allowed: false, retryAfter: number }>}
+ *   Binding failures allow the request so legitimate MCP traffic stays online.
  */
-export async function checkMcpRateLimit(ip, client = getRedisClient()) {
-  if (!client) return null;
-  const key = `mcp:rate:${String(ip).replace(/[^a-zA-Z0-9.:_-]/g, '_').slice(0, 64)}`;
+export async function checkMcpRateLimit(ip, limiter = env.MCP_RATE_LIMITER) {
+  const safeIp = String(ip).replace(/[^a-zA-Z0-9.:_-]/g, '_').slice(0, 64);
   try {
-    const count = await client.incr(key);
-    if (count === 1) await client.expire(key, MCP_RATE_WINDOW_SECONDS);
-    return count <= MCP_RATE_MAX
+    const { success } = await limiter.limit({ key: `mcp:${safeIp}` });
+    return success
       ? { allowed: true }
-      : { allowed: false, retryAfter: MCP_RATE_WINDOW_SECONDS };
+      : { allowed: false, retryAfter: MCP_RETRY_AFTER_SECONDS };
   } catch {
-    return null;
+    return { allowed: true };
   }
 }

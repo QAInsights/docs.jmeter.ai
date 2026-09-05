@@ -11,6 +11,8 @@
     "dev": "astro dev",
     "build": "pnpm run lint && node scripts/generate-release-pages.mjs && node scripts/generate-llms-full.mjs && node scripts/generate-llms-chunks.mjs && node scripts/generate-og-images.mjs && astro build",
     "preview": "astro preview",
+    "cf-typegen": "wrangler types worker-configuration.d.ts --include-runtime false",
+    "cf-typegen:check": "wrangler types worker-configuration.d.ts --include-runtime false --check",
     "deploy:cloudflare": "node scripts/deploy-cloudflare.mjs",
     "deploy:cloudflare:full": "node scripts/deploy-cloudflare.mjs --deploy",
     "astro": "astro",
@@ -46,6 +48,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260905.1",
     "@vitest/coverage-v8": "^4.1.9",
     "fast-xml-parser": "^5.2.3",
     "jsdom": "^29.1.1",

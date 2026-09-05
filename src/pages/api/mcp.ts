@@ -457,27 +457,9 @@ function createServer(): McpServer {
 }
 
 export async function POST({ request }: { request: Request }) {
-  const rate = await checkMcpRateLimit(getClientIp(request));
-  if (rate && !rate.allowed) {
-    // JSON-RPC-shaped error so MCP clients surface a meaningful message.
-    return new Response(
-      JSON.stringify({
-        jsonrpc: '2.0',
-        id: null,
-        error: {
-          code: -32000,
-          message: `Rate limit exceeded: max 120 requests/min per IP. Retry after ${rate.retryAfter}s.`,
-        },
-      }),
-      {
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Retry-After': String(rate.retryAfter),
-        },
-      },
-    );
-  }
+  const limited = await mcpRateLimitResponse(request);
+  if (limited) return limited;
+
   try {
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless: no session headers, Vercel-safe
@@ -485,19 +467,48 @@ export async function POST({ request }: { request: Request }) {
     });
     const server = createServer();
     await server.connect(transport);
-    return await transport.handleRequest(request);
+    const response = await transport.handleRequest(request);
+    const headers = new Headers(response.headers);
+    headers.set('Cache-Control', 'no-store');
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[api/mcp] error:', message);
     return new Response(JSON.stringify({ error: 'MCP request failed: ' + message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   }
 }
 
-/** GET advertises the server for humans and directory crawlers. */
-export async function GET() {
+/**
+ * Reject the optional Streamable HTTP listening stream because this server is
+ * stateless and has no server-initiated messages. Other GETs advertise the
+ * server for humans and directory crawlers.
+ */
+export async function GET({ request }: { request: Request }) {
+  const limited = await mcpRateLimitResponse(request);
+  if (limited) return limited;
+
+  if (acceptsEventStream(request)) {
+    return new Response(
+      JSON.stringify({ error: 'This stateless MCP endpoint does not offer an SSE listening stream.' }),
+      {
+        status: 405,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+          Allow: 'GET, POST',
+          Vary: 'Accept',
+        },
+      },
+    );
+  }
+
   return new Response(
     JSON.stringify(
       {
@@ -525,14 +536,56 @@ export async function GET() {
       null,
       2,
     ),
-    { status: 200, headers: { 'Content-Type': 'application/json' } },
+    {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+        Vary: 'Accept',
+      },
+    },
   );
+}
+
+async function mcpRateLimitResponse(request: Request): Promise<Response | null> {
+  const rate = await checkMcpRateLimit(getClientIp(request));
+  if (rate.allowed) return null;
+
+  // JSON-RPC-shaped error so MCP clients surface a meaningful message.
+  return new Response(
+    JSON.stringify({
+      jsonrpc: '2.0',
+      id: null,
+      error: {
+        code: -32000,
+        message: `Rate limit exceeded. Retry after ${rate.retryAfter}s.`,
+      },
+    }),
+    {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'Retry-After': String(rate.retryAfter),
+      },
+    },
+  );
+}
+
+function acceptsEventStream(request: Request): boolean {
+  return (request.headers.get('accept') || '')
+    .split(',')
+    .some((mediaType) => mediaType.trim().split(';', 1)[0] === 'text/event-stream');
 }
 
 /** Stateless server: there are no sessions to terminate. */
 export function DELETE() {
   return new Response(JSON.stringify({ error: 'Stateless MCP server: no sessions to delete.' }), {
     status: 405,
-    headers: { 'Content-Type': 'application/json', Allow: 'GET, POST' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+      Allow: 'GET, POST',
+    },
   });
 }
