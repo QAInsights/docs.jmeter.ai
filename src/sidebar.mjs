@@ -15,6 +15,15 @@ export const sidebar = [
   {
     label: 'Getting Started',
     items: [
+      {
+        label: 'Docs MCP',
+        link: '/mcp',
+        attrs: {
+          class: 'docs-mcp-link',
+          'data-description': 'Connect your AI agent',
+          'aria-label': 'Docs MCP — Connect your AI agent',
+        },
+      },
       { label: 'Get Started', link: '/getting-started/get-started' },
     ],
   },
@@ -192,7 +201,6 @@ export const sidebar = [
     label: 'Reference',
     items: [
       { label: 'Release Notes', link: '/releases' },
-      { label: 'MCP Server', link: '/mcp' },
       { label: 'Changes', link: '/user-manual/changes' },
       { label: 'Changes History', link: '/user-manual/changes-history' },
       { label: 'History & Future', link: '/user-manual/history-future' },
