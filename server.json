@@ -1,0 +1,25 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.QAInsights/jmeter-docs",
+  "title": "JMeter Docs",
+  "description": "Apache JMeter community documentation, conversion tools, linters, and calculators for AI agents.",
+  "version": "1.4.0",
+  "websiteUrl": "https://docs.jmeter.ai/",
+  "repository": {
+    "url": "https://github.com/QAInsights/docs.jmeter.ai",
+    "source": "github"
+  },
+  "icons": [
+    {
+      "src": "https://docs.jmeter.ai/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://docs.jmeter.ai/api/mcp"
+    }
+  ]
+}
