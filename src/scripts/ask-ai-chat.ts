@@ -7,13 +7,15 @@
  *     conversation survives page navigation and reloads (full persistence).
  *   - Send messages to /api/chat and stream the Gemini response back, with
  *     a typing indicator, a stop control, and live markdown rendering.
- *   - Render retrieved source citations from the X-Sources response header.
+ *   - Render source citations from X-Sources (legacy) and from markdown
+ *     links to docs.jmeter.ai that the model emits after MCP tool use.
  *   - Lazy-load `marked` and `highlight.js` only when first needed.
  *
- * The endpoint is a Vercel serverless function (src/pages/api/chat.ts) that
- * performs BM25 retrieval over llms-chunks.json and streams via the Vercel
- * AI SDK text stream protocol.
+ * The endpoint (src/pages/api/chat.ts) dogfoods the public MCP tools
+ * in-process and streams via the Vercel AI SDK text stream protocol.
  */
+
+import { extractDocSources, mergeDocSources } from '../lib/chat-sources.mjs';
 
 type Role = 'user' | 'assistant';
 
@@ -56,6 +58,9 @@ const API_ENDPOINT = '/api/chat';
 const CHAT_COUNT_ENDPOINT = '/api/chat-count';
 const SHARE_ENDPOINT = '/api/share';
 const MAX_CONVERSATIONS = 10; // 10 user+assistant pairs per thread
+const DEFAULT_STATUS = 'Answers are AI-generated and grounded in JMeter Docs.';
+const EMPTY_ANSWER_FALLBACK =
+  'I looked up the docs but could not produce an answer. Please try rephrasing.';
 const TEXTAREA_MAX_HEIGHT = 192; // px — auto-resize cap for the input (matches CSS max-block-size upper bound of 12rem)
 const ERROR_PREVIEW_LENGTH = 300; // chars — truncate server error details
 
@@ -607,6 +612,7 @@ async function send(text: string) {
   showTyping(bubble);
   scrollToBottom(true);
   setStreaming(true);
+  if (statusEl) statusEl.textContent = 'Looking up docs…';
 
   // Reset Turnstile after capturing the token (tokens are single-use).
   // Only needed for the first message before the session cookie is set.
@@ -648,18 +654,17 @@ async function send(text: string) {
       throw new Error(msg);
     }
 
-    // Sources travel in a response header (URL-encoded, comma-separated "title|url").
-    // X-Grounded indicates whether the answer came from doc context (RAG) or
-    // general Gemini knowledge (fallback when no docs matched).
     // X-Chat-Count carries the incremented global counter from Upstash.
-    const grounded = res.headers.get('X-Grounded') !== 'false';
+    // Citations: keep X-Sources if present (legacy), and always merge
+    // docs.jmeter.ai links from the finished markdown so MCP-tool answers
+    // still show source chips after the stream (headers cannot wait for tools).
     const sourcesHeader = res.headers.get('X-Sources') || '';
     const chatCountHeader = res.headers.get('X-Chat-Count');
     if (chatCountHeader) {
       const n = Number(chatCountHeader);
       if (Number.isFinite(n) && n > 0) renderCount(n);
     }
-    const sources = sourcesHeader
+    const headerSources = sourcesHeader
       ? parseSourcesHeader(decodeURIComponent(sourcesHeader))
       : [];
 
@@ -668,25 +673,30 @@ async function send(text: string) {
     // First successful response means the server accepted our Turnstile
     // token and set a session cookie. Subsequent sends skip Turnstile.
     sessionVerified = true;
-    // Hide the Turnstile widget — no longer needed for this session.
+    // Hide the Turnstile widget; no longer needed for this session.
     turnstileContainer?.classList.remove('ask-ai-turnstile--visible');
 
     // Finalize: persist the answer and enable Share before the slower
     // markdown/highlight pass so the control is usable as soon as text exists.
-    const finalText = pendingAssistantText;
+    const finalText = pendingAssistantText.trim() || EMPTY_ANSWER_FALLBACK;
+    const sources = finalText === EMPTY_ANSWER_FALLBACK
+      ? []
+      : mergeDocSources(headerSources, extractDocSources(finalText));
     assistantMsg.content = finalText;
     assistantMsg.sources = sources;
     saveState();
     setStreaming(false);
-    await renderMarkdownInto(bubble, finalText, true);
     if (sources.length) {
       el.appendChild(buildSourcesEl(sources));
     }
+    await renderMarkdownInto(bubble, finalText, true);
     if (statusEl) {
-      if (grounded && sources.length) {
+      if (finalText === EMPTY_ANSWER_FALLBACK) {
+        statusEl.textContent = DEFAULT_STATUS;
+      } else if (sources.length) {
         statusEl.textContent = `Based on ${sources.length} doc page${sources.length > 1 ? 's' : ''}. AI-generated, verify important steps.`;
       } else {
-        statusEl.textContent = 'Not from docs. Answered from general knowledge. Try rephrasing with JMeter terms.';
+        statusEl.textContent = 'AI-generated from JMeter Docs tools. Verify important steps.';
       }
     }
   } catch (err) {
@@ -695,13 +705,14 @@ async function send(text: string) {
       assistantMsg.content = pendingAssistantText || '(stopped)';
       saveState();
       setStreaming(false);
+      if (statusEl) statusEl.textContent = 'Stopped.';
       if (pendingAssistantEl) {
         await renderMarkdownInto(pendingAssistantEl, assistantMsg.content, true);
       }
     } else {
       // Server error (403 bot check, 429 rate limit, 500, etc.).
       // Roll back the user message and empty assistant bubble so the
-      // chat state stays clean — the user can retry after fixing the issue.
+      // chat state stays clean; the user can retry after fixing the issue.
       showError((err as Error).message || 'Something went wrong. Please try again.');
       state.messages = state.messages.filter(
         (m) => m.id !== userMsg.id && m.id !== assistantMsg.id,
@@ -709,6 +720,7 @@ async function send(text: string) {
       saveState();
       renderAll();
       resetTurnstile();
+      if (statusEl) statusEl.textContent = DEFAULT_STATUS;
     }
   } finally {
     setStreaming(false);
@@ -779,7 +791,7 @@ function showTyping(bubble: HTMLElement) {
     '<circle class="ask-ai-typing__pivot" cx="12" cy="18" r="1.5" stroke="none" />' +
     '</svg>' +
     '</span>' +
-    '<span class="ask-ai-typing__label">Thinking</span>' +
+    '<span class="ask-ai-typing__label">Looking up docs</span>' +
     '</span>';
 }
 

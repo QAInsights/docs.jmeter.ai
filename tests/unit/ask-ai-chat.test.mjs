@@ -20,6 +20,7 @@ function installChatDom() {
       <textarea id="ask-ai-input"></textarea>
       <button id="ask-ai-send"></button>
       <div id="ask-ai-error"></div>
+      <span id="ask-ai-status">Answers are AI-generated and grounded in JMeter Docs.</span>
     </section>
   `;
   document.querySelector('#ask-ai-body').scrollTo = vi.fn();
@@ -150,6 +151,130 @@ describe('Ask AI share button state', () => {
     const chatCall = global.fetch.mock.calls.find((call) => call[0] === '/api/chat');
     const payload = JSON.parse(chatCall[1].body);
     expect(payload.pagePath).toBe('/user-manual/best-practices');
+  });
+
+  it('collects source citations from markdown links when X-Sources is absent', async () => {
+    global.fetch = vi.fn(async (url) => {
+      if (url === '/api/chat-count') {
+        return new Response(JSON.stringify({ count: 0 }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (url !== '/api/chat') throw new Error(`Unexpected fetch: ${url}`);
+      const body = new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            new TextEncoder().encode(
+              'See the [Thread Group](https://docs.jmeter.ai/user-manual/build-test-plan/) page.',
+            ),
+          );
+          controller.close();
+        },
+      });
+      return new Response(body, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Grounded': 'true',
+        },
+      });
+    });
+
+    await import('../../src/scripts/ask-ai-chat.ts');
+
+    const input = document.querySelector('#ask-ai-input');
+    const send = document.querySelector('#ask-ai-send');
+    input.value = 'What is a Thread Group?';
+    input.dispatchEvent(new Event('input'));
+    send.click();
+
+    await vi.waitFor(() => {
+      const chip = document.querySelector('.ask-ai-source');
+      expect(chip).toBeTruthy();
+      expect(chip.getAttribute('href')).toContain('build-test-plan');
+    });
+  });
+
+  it('clears Looking up docs status when the user stops generation', async () => {
+    global.fetch = vi.fn((url, opts) => {
+      if (url === '/api/chat-count') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ count: 0 }), {
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
+      return new Promise((_, reject) => {
+        opts?.signal?.addEventListener('abort', () => {
+          const err = new Error('Aborted');
+          err.name = 'AbortError';
+          reject(err);
+        });
+      });
+    });
+
+    await import('../../src/scripts/ask-ai-chat.ts');
+    const input = document.querySelector('#ask-ai-input');
+    const send = document.querySelector('#ask-ai-send');
+    const status = document.querySelector('#ask-ai-status');
+    input.value = 'How do I size a thread group?';
+    input.dispatchEvent(new Event('input'));
+    send.click();
+    await vi.waitFor(() => expect(status.textContent).toContain('Looking up docs'));
+    send.click();
+    await vi.waitFor(() => expect(status.textContent).toBe('Stopped.'));
+  });
+
+  it('restores the default status after a server error', async () => {
+    global.fetch = vi.fn(async (url) => {
+      if (url === '/api/chat-count') {
+        return new Response(JSON.stringify({ count: 0 }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ error: 'boom' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    await import('../../src/scripts/ask-ai-chat.ts');
+    const input = document.querySelector('#ask-ai-input');
+    const send = document.querySelector('#ask-ai-send');
+    const status = document.querySelector('#ask-ai-status');
+    input.value = 'How do I size a thread group?';
+    input.dispatchEvent(new Event('input'));
+    send.click();
+    await vi.waitFor(() =>
+      expect(status.textContent).toBe('Answers are AI-generated and grounded in JMeter Docs.'),
+    );
+  });
+
+  it('does not persist an empty assistant bubble as a successful tool answer', async () => {
+    global.fetch = vi.fn(async (url) => {
+      if (url === '/api/chat-count') {
+        return new Response(JSON.stringify({ count: 0 }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response('', {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Grounded': 'true' },
+      });
+    });
+
+    await import('../../src/scripts/ask-ai-chat.ts');
+    const input = document.querySelector('#ask-ai-input');
+    const send = document.querySelector('#ask-ai-send');
+    const status = document.querySelector('#ask-ai-status');
+    input.value = 'How do I size a thread group?';
+    input.dispatchEvent(new Event('input'));
+    send.click();
+    await vi.waitFor(() => {
+      expect(document.querySelector('.ask-ai-msg--assistant .ask-ai-msg__bubble')?.textContent).toContain(
+        'could not produce an answer',
+      );
+      expect(status.textContent).toBe('Answers are AI-generated and grounded in JMeter Docs.');
+      expect(document.querySelector('.ask-ai-source')).toBeNull();
+    });
   });
 });
 

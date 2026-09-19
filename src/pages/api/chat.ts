@@ -2,25 +2,20 @@
  * /api/chat — serverless chat endpoint for the "Ask AI" assistant.
  *
  * Architecture:
- *   - Client sends `{ messages, turnstileToken }`.
+ *   - Client sends `{ messages, turnstileToken, pagePath }`.
  *   - Cloudflare Turnstile validates the token server-side to block
  *     curl/bot abuse. After the first successful verification, a signed
  *     HttpOnly cookie (30 min) allows subsequent messages without
  *     re-verification. If no Turnstile secret is configured (dev mode),
  *     validation is skipped entirely.
- *   - The last user message is used as a retrieval query against a
- *     pre-built per-page chunk index (src/lib/llms-chunks.json). BM25
- *     scores pick the top-8 most relevant JMeter docs pages.
- *   - If pages are found: they are injected into the system prompt as
- *     grounding context (RAG). The model is told to answer ONLY from
- *     the docs.
- *   - If no pages are found: an ungrounded system prompt is used instead,
- *     allowing the model to answer from general JMeter knowledge. The
- *     response includes an `X-Grounded: false` header so the UI can show
- *     a "not from docs" notice.
+ *   - Gemini is given the same MCP tools as /api/mcp (in-process via
+ *     InMemoryTransport — no HTTP hop). The model searches, reads pages,
+ *     lints JMX, sizes workloads, etc. instead of stuffing BM25 chunks
+ *     into the system prompt.
  *   - Vercel AI SDK `streamText` calls Google Gemini (free tier) and the
- *     response is streamed back as plain text chunks. Source URLs are
- *     exposed in an `X-Sources` header (URL-encoded).
+ *     response is streamed back as plain text chunks. Citations are
+ *     markdown links in the answer (the client extracts docs.jmeter.ai
+ *     URLs). `X-Grounded` stays true for tool-loop turns.
  *
  * Env vars:
  *   - GOOGLE_GENERATIVE_AI_API_KEY — Google Gemini API key (required)
@@ -33,8 +28,13 @@ import {
   toTextStream,
   createTextStreamResponse,
   type ModelMessage,
+  type ToolSet,
 } from 'ai';
-import { retrieve, buildSystemPrompt, buildUngroundedPrompt, findChunkByPath } from '../../lib/rag.mjs';
+import {
+  createMcpChatSession,
+  buildChatSystemPrompt,
+  mcpChatStreamBindings,
+} from '../../lib/mcp-chat-tools.mjs';
 import { incrementChatCount } from '../../lib/counter.mjs';
 import {
   SESSION_COOKIE_NAME,
@@ -197,22 +197,20 @@ export async function POST({ request }: { request: Request }) {
     }
   }
 
-  // --- RAG retrieval + prompt building ------------------------------------
-  const query = lastUserText(messages);
-  const sources = retrieve(query, { pagePath });
-  const isGrounded = sources.length > 0;
-  const currentPage = pagePath ? findChunkByPath(pagePath) : undefined;
-  const system = isGrounded
-    ? buildSystemPrompt(sources, { currentPageUrl: currentPage?.url })
-    : buildUngroundedPrompt();
-
+  const system = buildChatSystemPrompt({ pagePath });
   const google = createGoogleGenerativeAI({ apiKey: GEMINI_API_KEY });
 
+  let session: Awaited<ReturnType<typeof createMcpChatSession>> | undefined;
   try {
+    session = await createMcpChatSession();
+    const bindings = mcpChatStreamBindings(session);
     const result = streamText({
       model: google(MODEL),
       system,
       messages,
+      abortSignal: request.signal,
+      ...bindings,
+      tools: bindings.tools as ToolSet,
     });
 
     // Increment the global chat counter. A single REST INCR is ~50ms; we
@@ -223,15 +221,10 @@ export async function POST({ request }: { request: Request }) {
 
     const headers: Record<string, string> = {
       'X-Model': MODEL,
-      'X-Grounded': String(isGrounded),
+      'X-Grounded': 'true',
     };
     if (newCount !== null) {
       headers['X-Chat-Count'] = String(newCount);
-    }
-    if (isGrounded) {
-      headers['X-Sources'] = encodeURIComponent(
-        sources.map((s) => `${s.title}|${s.url}`).join(','),
-      );
     }
 
     // Set the session cookie after a successful Turnstile verification so
@@ -248,6 +241,7 @@ export async function POST({ request }: { request: Request }) {
       headers,
     });
   } catch (err: unknown) {
+    await session?.close();
     const message = err instanceof Error ? err.message : String(err);
     console.error('[api/chat] streamText error:', message);
     return new Response(

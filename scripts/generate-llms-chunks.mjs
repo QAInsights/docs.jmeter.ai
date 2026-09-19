@@ -1,8 +1,8 @@
 /**
- * Generate src/lib/llms-chunks.json — a structured, per-page breakdown of
+ * Generate src/lib/llms-chunks.json, a structured per-page breakdown of
  * public/llms-full.txt. Each chunk is one documentation page, kept in
- * sidebar order. The /api/chat serverless route imports this file to do
- * lightweight BM25 retrieval and feed grounded context to Gemini.
+ * sidebar order. search_jmeter_docs (MCP + Ask AI) uses the index for BM25.
+ * Also writes src/lib/doc-paths.json, the citation allowlist.
  *
  * Wired into `npm run build` (after generate-llms-full) so it stays in sync.
  */
@@ -16,6 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const INPUT = path.join(ROOT, 'public/llms-full.txt');
 const OUTPUT = path.join(ROOT, 'src/lib/llms-chunks.json');
+const PATHS_OUTPUT = path.join(ROOT, 'src/lib/doc-paths.json');
 
 /**
  * Split llms-full.txt into page blocks. Each block is delimited by a
@@ -76,7 +77,20 @@ function main() {
     chunks: index,
   };
   fs.writeFileSync(OUTPUT, JSON.stringify(out), 'utf8');
+  const paths = [
+    ...new Set(
+      index.map((c) => {
+        try {
+          return new URL(c.url).pathname.replace(/^\/+|\/+$/g, '').replace(/\.(mdx|html?)$/i, '');
+        } catch {
+          return '';
+        }
+      }).filter(Boolean),
+    ),
+  ].sort();
+  fs.writeFileSync(PATHS_OUTPUT, JSON.stringify(paths) + '\n', 'utf8');
   console.log(`[llms-chunks] wrote ${path.relative(ROOT, OUTPUT)} — ${index.length} chunks`);
+  console.log(`[llms-chunks] wrote ${path.relative(ROOT, PATHS_OUTPUT)} — ${paths.length} paths`);
 }
 
 const invoked = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

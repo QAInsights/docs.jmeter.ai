@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   tokenize,
   retrieve,
-  buildSystemPrompt,
-  buildUngroundedPrompt,
   findChunkByPath,
   normalizeDocPath,
   INDEX,
@@ -115,49 +113,5 @@ describe('rag: retrieve', () => {
     // most relevant page — the build-web-test-plan page.
     expect(results.length).toBeGreaterThan(0);
     expect(results[0].url).toContain('build-web-test-plan');
-  });
-});
-
-describe('rag: buildSystemPrompt', () => {
-  it('includes the assistant identity and grounding instructions', () => {
-    const prompt = buildSystemPrompt([]);
-    expect(prompt).toContain('JMeter Docs AI assistant');
-    expect(prompt).toContain('ONLY the documentation context');
-  });
-
-  it('mentions the current page when provided', () => {
-    const prompt = buildSystemPrompt([], { currentPageUrl: 'https://docs.jmeter.ai/tools/cli-builder/' });
-    expect(prompt).toContain('currently reading https://docs.jmeter.ai/tools/cli-builder/');
-  });
-
-  it('embeds retrieved chunk titles, urls, and bodies', () => {
-    const [chunk] = retrieve('regular expressions');
-    if (!chunk) return; // skip if nothing retrieved
-    const prompt = buildSystemPrompt([chunk]);
-    expect(prompt).toContain(chunk.title);
-    expect(prompt).toContain(chunk.url);
-    expect(prompt).toContain(chunk.body.slice(0, 80));
-  });
-
-  it('falls back to a no-context note when nothing is retrieved', () => {
-    const prompt = buildSystemPrompt([]);
-    expect(prompt).toContain('DOCUMENTATION CONTEXT');
-    // With no chunks, the context section should be empty (the ungrounded
-    // fallback is handled by buildUngroundedPrompt, not buildSystemPrompt).
-    expect(prompt).not.toContain('Source:');
-  });
-});
-
-describe('rag: buildUngroundedPrompt', () => {
-  it('includes the assistant identity and general knowledge instructions', () => {
-    const prompt = buildUngroundedPrompt();
-    expect(prompt).toContain('JMeter Docs AI assistant');
-    expect(prompt).toContain('general knowledge');
-    expect(prompt).toContain('jmeter.apache.org');
-  });
-
-  it('does not include a documentation context section', () => {
-    const prompt = buildUngroundedPrompt();
-    expect(prompt).not.toContain('DOCUMENTATION CONTEXT');
   });
 });
