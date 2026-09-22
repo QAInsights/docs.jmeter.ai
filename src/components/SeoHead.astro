@@ -190,6 +190,20 @@ gtag('config', 'G-MVZN6CMXYQ');`,
     });
   }
 
+  // Markdown alternate link on docs routes — lets LLM agents discover
+  // the pregenerated index.md twin of this page.
+  if (route?.entry && !isHome && !hasTag('link', 'type', 'text/markdown')) {
+    route.head.push({
+      tag: 'link',
+      attrs: {
+        rel: 'alternate',
+        type: 'text/markdown',
+        href: `${canonicalUrl}index.md`,
+        title: 'Markdown',
+      },
+    });
+  }
+
   // Satoshi typeface from Fontshare (variable weight)
   if (!hasTag('link', 'data-font', 'satoshi')) {
     route.head.unshift({

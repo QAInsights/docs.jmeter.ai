@@ -2,6 +2,10 @@
 
 > Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience. This is an independent community resource and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation. For official documentation, visit jmeter.apache.org.
 
+## Markdown access
+
+Every documentation page except the homepage is available as Markdown: append `index.md` to a page URL (e.g. https://docs.jmeter.ai/user-manual/best-practices/index.md) or request the page with an `Accept: text/markdown` header. The full corpus is at https://docs.jmeter.ai/llms-full.txt.
+
 ## Tools
 
 - [Tools Hub](https://docs.jmeter.ai/tools/): Interactive free JMeter utilities (calculators and helpers)

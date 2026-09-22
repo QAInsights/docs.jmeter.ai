@@ -64,8 +64,19 @@ export function htmlToMarkdown(root) {
       tag === 'script' ||
       tag === 'style' ||
       tag === 'noscript' ||
+      tag === 'svg' ||
+      tag === 'button' ||
+      tag === 'form' ||
+      tag === 'select' ||
+      tag === 'option' ||
+      tag === 'input' ||
+      tag === 'textarea' ||
+      tag === 'label' ||
       el.hasAttribute('data-doc-actions') ||
-      el.classList?.contains('faq-section')
+      el.classList?.contains('faq-section') ||
+      el.classList?.contains('heading-copy-link') ||
+      el.classList?.contains('sl-anchor-link') ||
+      el.classList?.contains('tool')
     ) {
       return '';
     }
@@ -103,12 +114,35 @@ export function htmlToMarkdown(root) {
       case 'pre': {
         const code = el.querySelector('code');
         const lang =
+          el.getAttribute('data-language') ||
           Array.from(code?.classList || [])
             .find((c) => c.startsWith('language-'))
-            ?.replace('language-', '') || '';
-        const body = (code?.textContent || el.textContent || '').replace(/\n$/, '');
-        return `\n\n\`\`\`${lang}\n${body}\n\`\`\`\n\n`;
+            ?.replace('language-', '') ||
+          '';
+        // Expressive Code renders each source line as a <div class="ec-line">;
+        // plain textContent would lose the line breaks.
+        const ecLines = Array.from(code?.children || []).filter((c) =>
+          c.classList?.contains('ec-line'),
+        );
+        const body = (
+          ecLines.length
+            ? ecLines.map((line) => line.textContent || '').join('\n')
+            : code?.textContent || el.textContent || ''
+        ).replace(/\n$/, '');
+        if (!body.trim()) return '';
+        // Terminal frames carry only an sr-only "Terminal window" label in
+        // the figcaption — the real filename lives in span.title.
+        const caption =
+          el.closest('figure')
+            ?.querySelector('figcaption .title')
+            ?.textContent?.trim() || '';
+        const title = caption ? `**${caption}**\n` : '';
+        return `\n\n${title}\`\`\`${lang}\n${body}\n\`\`\`\n\n`;
       }
+      case 'figcaption':
+        // Expressive Code frame headers are re-emitted as **title** by the
+        // pre case; skip the stray text here.
+        return '';
       case 'a': {
         const href = el.getAttribute('href') || '';
         const label = children().trim() || href;
@@ -146,13 +180,82 @@ export function htmlToMarkdown(root) {
           '\n\n'
         );
       case 'table': {
-        // Flatten tables to readable lines
-        const rows = Array.from(el.querySelectorAll('tr')).map((tr) =>
-          Array.from(tr.querySelectorAll('th,td'))
-            .map((cell) => (cell.textContent || '').trim())
-            .join(' | '),
+        // GFM pipe table: thead row (or first row) becomes the header.
+        // :scope keeps nested tables' rows/cells out of the outer table.
+        const cellText = (cell) => {
+          const raw = cell.querySelector('pre,table,ul,ol,figure,blockquote')
+            ? (cell.textContent || '').replace(/\s+/g, ' ')
+            : walk(cell).replace(/\s*\n\s*/g, ' ');
+          return raw.replace(/\|/g, '\\|').trim();
+        };
+        const thead = el.querySelector(':scope > thead');
+        const rows = Array.from(
+          el.querySelectorAll(
+            ':scope > thead > tr, :scope > tbody > tr, :scope > tfoot > tr, :scope > tr',
+          ),
         );
-        return rows.length ? `\n\n${rows.join('\n')}\n\n` : '';
+        const headerRow = thead ? thead.querySelector(':scope > tr') : rows[0];
+        const headerCells = headerRow
+          ? Array.from(headerRow.querySelectorAll(':scope > th, :scope > td'))
+          : [];
+        if (!headerCells.length) return '';
+        const bodyRows = rows.filter(
+          (tr) => tr !== headerRow && !(thead && thead.contains(tr)),
+        );
+        const lines = [
+          `| ${headerCells.map(cellText).join(' | ')} |`,
+          `| ${headerCells.map(() => '---').join(' | ')} |`,
+          ...bodyRows.map(
+            (tr) =>
+              `| ${Array.from(tr.querySelectorAll(':scope > th, :scope > td'))
+                .map(cellText)
+                .join(' | ')} |`,
+          ),
+        ];
+        return `\n\n${lines.join('\n')}\n\n`;
+      }
+      case 'aside': {
+        if (!el.classList?.contains('starlight-aside')) return children();
+        const titleEl = el.querySelector('.starlight-aside__title');
+        const title = titleEl
+          ? Array.from(titleEl.childNodes)
+              .filter(
+                (n) => !(n.nodeType === 1 && n.tagName?.toLowerCase() === 'svg'),
+              )
+              .map((n) => n.textContent || '')
+              .join('')
+              .trim()
+          : el.getAttribute('aria-label') || '';
+        const body = collapseWhitespace(
+          Array.from(el.childNodes)
+            .filter(
+              (n) =>
+                !(
+                  n.nodeType === 1 &&
+                  n.classList?.contains('starlight-aside__title')
+                ),
+            )
+            .map(walk)
+            .join(''),
+        );
+        const lines = title ? [`> **${title}**`] : [];
+        for (const line of body.split('\n')) {
+          lines.push(line.trim() ? `> ${line}` : '>');
+        }
+        return lines.length ? `\n\n${lines.join('\n')}\n\n` : '';
+      }
+      case 'starlight-tabs': {
+        const tablist = el.querySelector('[role="tablist"]') || el;
+        const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+        const panels = Array.from(el.querySelectorAll('[role="tabpanel"]'));
+        const parts = panels.map((panel, i) => {
+          const label = tabs[i]?.textContent?.trim();
+          const content = collapseWhitespace(walk(panel));
+          return [label ? `**${label}**` : '', content]
+            .filter(Boolean)
+            .join('\n\n');
+        });
+        return parts.length ? `\n\n${parts.join('\n\n')}\n\n` : '';
       }
       case 'img': {
         const alt = el.getAttribute('alt') || 'image';

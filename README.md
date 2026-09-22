@@ -76,6 +76,32 @@ npm run preview
 | `npm run convert`            | Convert upstream JMeter docs to Starlight format |
 | `npm run generate-llms-full` | Generate LLM-friendly text export                |
 
+## Markdown for AI agents
+
+Every prerendered docs page (everything except the site homepage) has a
+Markdown twin: append `index.md` to a page URL
+(e.g. `https://docs.jmeter.ai/user-manual/best-practices/index.md`), or
+request the page URL with an `Accept: text/markdown` header and the CDN
+rewrites the request to the `.md` file. Browsers are unaffected — the
+rule only fires when `Accept` lacks `text/html`.
+
+The `index.md` files are generated at build time by
+`scripts/generate-page-markdown.mjs` (part of `pnpm build`), served with
+`Content-Type: text/markdown` via `public/_headers`, and the
+`Accept: text/markdown` mapping is a Cloudflare zone URL Rewrite Rule
+provisioned once with:
+
+```bash
+pnpm setup-markdown-rule   # needs CLOUDFLARE_API_TOKEN + CLOUDFLARE_ZONE_ID
+```
+
+The `index.md` files are produced by the `build` script — the production
+build command must run `pnpm run build` (not a bare `astro build`),
+otherwise the Markdown links 404; the generator exits non-zero if it
+writes nothing.
+
+See `scripts/setup-markdown-rule.mjs` and `public/llms.txt` for details.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

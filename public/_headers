@@ -1,0 +1,31 @@
+# Markdown alternates for LLM agents (see scripts/setup-markdown-rule.mjs)
+/*.md
+  Content-Type: text/markdown; charset=utf-8
+  X-Robots-Tag: noindex
+
+/user-manual/*
+  Vary: Accept
+
+/getting-started/*
+  Vary: Accept
+
+/extending/*
+  Vary: Accept
+
+/reference/*
+  Vary: Accept
+
+/releases/*
+  Vary: Accept
+
+/topics/*
+  Vary: Accept
+
+/tools/*
+  Vary: Accept
+
+/legal/*
+  Vary: Accept
+
+/mcp/*
+  Vary: Accept
