@@ -13,7 +13,6 @@ const vscodeConfig = JSON.stringify({ name: SERVER_NAME, type: 'http', url: ENDP
 const cursorConfig = JSON.stringify({ url: ENDPOINT });
 
 const vscodeUrl = `vscode:mcp/install?${encodeURIComponent(vscodeConfig)}`;
-const vscodeInsidersUrl = `vscode-insiders:mcp/install?${encodeURIComponent(vscodeConfig)}`;
 const cursorUrl = `cursor://anysphere.cursor-deeplink/mcp/install?name=${SERVER_NAME}&config=${Buffer.from(cursorConfig).toString('base64')}`;
 const mcpJson = JSON.stringify({ mcpServers: { [SERVER_NAME]: { url: ENDPOINT } } }, null, 2);
 ---
@@ -23,10 +22,6 @@ const mcpJson = JSON.stringify({ mcpServers: { [SERVER_NAME]: { url: ENDPOINT } 
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.583 2.057a1.6 1.6 0 0 0-.77.136L7.72 7.63a.8.8 0 0 0-.364.539L4.7 18.5a.8.8 0 0 0 1.444.572l2.19-2.92a.8.8 0 0 0 .093-.149l8.39-6.292a.8.8 0 0 1 .97.046l3.04 2.433a.8.8 0 0 0 1.283-.63V3.47a.8.8 0 0 0-.933-.79l-3.594-.623zM8.5 9.438 16.15 3.7l3.33.579-9.814 7.36L8.5 9.438zM6.9 16.86l2.03-2.706 1.355 2.033-2.61 3.48-.775-2.807z"/></svg>
     Add to VS Code
   </a>
-  <a href={vscodeInsidersUrl} class="mcp-install-btn" data-mcp-deeplink="vscode-insiders">
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.583 2.057a1.6 1.6 0 0 0-.77.136L7.72 7.63a.8.8 0 0 0-.364.539L4.7 18.5a.8.8 0 0 0 1.444.572l2.19-2.92a.8.8 0 0 0 .093-.149l8.39-6.292a.8.8 0 0 1 .97.046l3.04 2.433a.8.8 0 0 0 1.283-.63V3.47a.8.8 0 0 0-.933-.79l-3.594-.623zM8.5 9.438 16.15 3.7l3.33.579-9.814 7.36L8.5 9.438zM6.9 16.86l2.03-2.706 1.355 2.033-2.61 3.48-.775-2.807z"/></svg>
-    Add to VS Code Insiders
-  </a>
   <a href={cursorUrl} class="mcp-install-btn" data-mcp-deeplink="cursor">
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 2h12l4 4v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm12 1.5V7h3.5L16 3.5zM8 10h8v1.5H8V10zm0 4h8v1.5H8V14z"/></svg>
     Add to Cursor
@@ -35,6 +30,35 @@ const mcpJson = JSON.stringify({ mcpServers: { [SERVER_NAME]: { url: ENDPOINT } 
     type="button"
     class="mcp-install-btn"
     data-mcp-copy-config
+    data-mcp-target="antigravity"
+    data-mcp-config={mcpJson}
+    title="Copy config for Antigravity mcp_config.json"
+    aria-label="Copy MCP config for Antigravity"
+  >
+    <svg data-copy-icon viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm-1-13v5.59l4.24 4.24 1.42-1.42-3.66-3.65V7z"/></svg>
+    <svg data-check-icon hidden viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+    <span data-copy-text>Copy for Antigravity</span>
+    <span class="sr-only" aria-live="polite" data-copy-status></span>
+  </button>
+  <button
+    type="button"
+    class="mcp-install-btn"
+    data-mcp-copy-config
+    data-mcp-target="devin"
+    data-mcp-config={mcpJson}
+    title="Copy MCP config for Devin"
+    aria-label="Copy MCP config for Devin"
+  >
+    <svg data-copy-icon viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3 4 14h6l-1 7 9-11h-6l1-7z"/></svg>
+    <svg data-check-icon hidden viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+    <span data-copy-text>Copy for Devin</span>
+    <span class="sr-only" aria-live="polite" data-copy-status></span>
+  </button>
+  <button
+    type="button"
+    class="mcp-install-btn"
+    data-mcp-copy-config
+    data-mcp-target="mcp_json"
     data-mcp-config={mcpJson}
     aria-label="Copy mcp.json configuration"
   >
@@ -68,20 +92,23 @@ const mcpJson = JSON.stringify({ mcpServers: { [SERVER_NAME]: { url: ENDPOINT } 
       const copyBtn = target.closest('[data-mcp-copy-config]');
       if (copyBtn) {
         const text = copyBtn.querySelector('[data-copy-text]');
+        const defaultLabel = text?.textContent || 'Copy';
         const status = copyBtn.querySelector('[data-copy-status]');
         const copyIcon = copyBtn.querySelector('[data-copy-icon]');
         const checkIcon = copyBtn.querySelector('[data-check-icon]');
         try {
           await navigator.clipboard.writeText(copyBtn.getAttribute('data-mcp-config') || '');
           if (text) text.textContent = 'Copied';
-          if (status) status.textContent = 'Copied mcp.json config';
+          if (status) status.textContent = 'Copied MCP config';
           if (copyIcon) copyIcon.hidden = true;
           if (checkIcon) checkIcon.hidden = false;
           try {
-            window.gtag?.('event', 'mcp_copy', { copy_target: 'mcp_json' });
+            window.gtag?.('event', 'mcp_copy', {
+              copy_target: copyBtn.getAttribute('data-mcp-target') || 'mcp_json',
+            });
           } catch { /* analytics only */ }
           window.setTimeout(() => {
-            if (text) text.textContent = 'Copy mcp.json';
+            if (text) text.textContent = defaultLabel;
             if (status) status.textContent = '';
             if (copyIcon) copyIcon.hidden = false;
             if (checkIcon) checkIcon.hidden = true;
@@ -98,23 +125,32 @@ const mcpJson = JSON.stringify({ mcpServers: { [SERVER_NAME]: { url: ENDPOINT } 
   .mcp-install {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
     margin: 1rem 0;
   }
 
   .mcp-install-btn {
+    appearance: none;
+    -webkit-appearance: none;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.45rem;
-    padding: 0.5rem 0.9rem;
+    box-sizing: border-box;
+    min-height: 2.2rem;
+    padding: 0.5rem 0.95rem;
     border-radius: 9999px;
     border: 1px solid var(--sl-color-gray-5);
     background: transparent;
     color: var(--sl-color-gray-2);
     font: inherit;
+    font-family: inherit;
     font-size: 0.85rem;
     font-weight: 600;
     line-height: 1;
+    letter-spacing: 0;
+    text-align: center;
     text-decoration: none;
     cursor: pointer;
     transition: color 150ms, border-color 150ms, background-color 150ms;
