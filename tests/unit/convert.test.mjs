@@ -345,16 +345,16 @@ describe('convertOrderedNode', () => {
     expect(convertOrderedNode(node)).toContain('#### Example');
   });
 
-  it('converts <complink> to component reference link', () => {
+  it('converts <complink> to the split component reference page', () => {
     const node = el('complink', [], { name: 'HTTP Request' });
-    expect(convertOrderedNode(node)).toBe('[HTTP Request](/user-manual/component-reference/#HTTP_Request)');
+    expect(convertOrderedNode(node)).toBe('[HTTP Request](/components/http-request/)');
   });
 
-  it('converts <funclink> to function reference link', () => {
+  it('converts <funclink> to the split function reference page', () => {
     const node = el('funclink', [], { name: '__time()' });
     const result = convertOrderedNode(node);
     expect(result).toContain('[__time()]');
-    expect(result).toContain('/user-manual/functions/#');
+    expect(result).toContain('/functions/time/');
   });
 
   it('converts <apilink> to external API link', () => {

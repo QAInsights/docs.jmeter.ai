@@ -70,6 +70,7 @@ export function buildChatSystemPrompt(opts = {}) {
     'For Groovy/JSR223: call get_jsr223_recipe.',
     'For master/worker RMI or firewall setup: call plan_distributed_testing.',
     'For Linux ulimit/sysctl injector tuning: call tune_linux_os.',
+    'For a specific component (e.g. "HTTP Request") or function (e.g. "__time"): call lookup_component or lookup_function for its dedicated reference page.',
     'Always cite docs.jmeter.ai URLs as Markdown links with the page title as the link text. Only cite URLs you actually read or searched.',
     'Be concise, practical, and directly useful. Prefer step-by-step instructions when the user asks "how to".',
     'Use GitHub-flavored Markdown. Use fenced code blocks with a language tag for code, properties, or shell commands.',

@@ -53,6 +53,9 @@ jobs:
       - name: Regenerate release notes pages
         run: node scripts/generate-release-pages.mjs
 
+      - name: Regenerate component/function reference pages
+        run: node scripts/generate-reference-pages.mjs
+
       - name: Copy NOTICE file
         run: |
           cp .tmp/jmeter/NOTICE public/NOTICE

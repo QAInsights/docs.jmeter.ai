@@ -2,6 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import fs from 'fs';
 import path from 'path';
 import { SYNCED_MANUAL_MAPPINGS } from '../src/lib/internal-linking.mjs';
+import { componentPath, functionPath } from '../src/lib/reference-slug.mjs';
 
 function buildDefaultCustomFooter(destRel) {
   const cleanRoute = '/' + destRel.replace(/\\/g, '/').replace(/\.mdx$/, '');
@@ -319,14 +320,12 @@ function convertOrderedNode(node, ctx = {}) {
 
     case 'complink': {
       const name = attrs.name || '';
-      const anchor = name.replace(/[^a-zA-Z0-9]/g, '_');
-      return `[${name}](/user-manual/component-reference/#${anchor})`;
+      return `[${name}](${componentPath(name)})`;
     }
 
     case 'funclink': {
       const name = attrs.name || '';
-      const anchor = name.replace(/[()]/g, '_').replace(/__/, '__');
-      return `[${name}](/user-manual/functions/#${anchor})`;
+      return `[${name}](${functionPath(name)})`;
     }
 
     case 'apilink': {

@@ -7,6 +7,61 @@
  *   - group: { label, collapsed?, items: [...] }
  */
 
+import referenceIndex from './lib/reference-index.json' with { type: 'json' };
+
+/**
+ * Build the "Components" (grouped by category) and "Functions" sidebar
+ * groups from the generated reference index
+ * (scripts/generate-reference-pages.mjs). Like llms-chunks.json and
+ * doc-paths.json, reference-index.json is committed to the repo so a
+ * fresh checkout doesn't need a build step before `astro dev` works;
+ * re-running the generator refreshes it after an upstream sync.
+ */
+function buildReferenceGroups(entries) {
+  const components = entries.filter((e) => e.kind === 'component');
+  const functions = entries.filter((e) => e.kind === 'function');
+
+  const byCategory = new Map();
+  for (const c of components) {
+    if (!byCategory.has(c.category)) byCategory.set(c.category, []);
+    byCategory.get(c.category).push(c);
+  }
+
+  // Sidebar links follow this file's existing convention (no trailing
+  // slash); reference-index.json paths keep the trailing slash for MCP
+  // and llms.txt consumers, so strip it here.
+  const noTrailingSlash = (link) => link.replace(/\/$/, '');
+
+  const componentGroup = {
+    label: 'Components',
+    collapsed: true,
+    items: [
+      // Trailing slash avoids an ID collision in docs-graph-data.mjs, whose
+      // page-node IDs (from the link path) would otherwise equal this
+      // group's own ID ("components") for both label-derived IDs.
+      { label: 'All Components', link: '/components/' },
+      ...[...byCategory.entries()].map(([category, items]) => ({
+        label: category,
+        collapsed: true,
+        items: items.map((c) => ({ label: c.name, link: noTrailingSlash(c.path) })),
+      })),
+    ],
+  };
+
+  const functionGroup = {
+    label: 'Functions',
+    collapsed: true,
+    items: [
+      { label: 'All Functions', link: '/functions/' },
+      ...functions.map((f) => ({ label: f.name, link: noTrailingSlash(f.path) })),
+    ],
+  };
+
+  return [componentGroup, functionGroup];
+}
+
+const [componentsGroup, functionsGroup] = buildReferenceGroups(referenceIndex);
+
 export const sidebar = [
   {
     label: 'Overview',
@@ -113,6 +168,8 @@ export const sidebar = [
       { label: 'Regex Extractor Builder', link: '/tools/regex-tester' },
     ],
   },
+  componentsGroup,
+  functionsGroup,
 
   {
     label: 'Topic Guides',

@@ -38,6 +38,8 @@ Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.
 | [`lookup_jmeter_property`](#lookup_jmeter_property) | Reference | Search curated tuning properties with defaults and config locations |
 | [`get_jsr223_recipe`](#get_jsr223_recipe) | Code | Production Groovy recipes (JWT decoding, HMAC signing, dynamic headers) |
 | [`lookup_error_playbook`](#lookup_error_playbook) | Diagnostics | Instant remediation and OS/JVM fixes for common runtime exceptions |
+| [`lookup_component`](#lookup_component) | Reference | Dedicated reference page for one JMeter component (properties, defaults, related guides) |
+| [`lookup_function`](#lookup_function) | Reference | Dedicated reference page for one built-in JMeter function (syntax, parameters, examples) |
 
 ### search_jmeter_docs
 
@@ -136,6 +138,22 @@ Get instant root cause analysis, OS/JVM tuning parameters, and step-by-step reme
 
 ```json
 { "query": "bindexception" }
+```
+
+### lookup_component
+
+Find the dedicated reference page for one JMeter test plan component and return its full markdown (properties, defaults, related guides).
+
+```json
+{ "name": "HTTP Request" }
+```
+
+### lookup_function
+
+Find the dedicated reference page for one built-in JMeter function and return its full markdown (syntax, parameters, examples).
+
+```json
+{ "name": "__time" }
 ```
 
 

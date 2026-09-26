@@ -16,6 +16,7 @@ import { generateDistributedPlan } from '../distributed-planner.mjs';
 import { generateOsTuningPlan } from '../os-tuning.mjs';
 import { convertCurlOrHarToJmx } from './curl-har-to-jmx.mjs';
 import { withUtm } from '../path-utils.mjs';
+import referenceIndex from '../reference-index.json' with { type: 'json' };
 
 export const SERVER_NAME = 'jmeter-docs';
 export const SERVER_VERSION = '1.4.0';
@@ -31,7 +32,25 @@ export const MCP_TOOL_NAMES = [
   'lookup_jmeter_property',
   'get_jsr223_recipe',
   'lookup_error_playbook',
+  'lookup_component',
+  'lookup_function',
 ];
+
+/**
+ * Fuzzy-match a component/function name against the generated reference
+ * index (scripts/generate-reference-pages.mjs). Exact (case-insensitive)
+ * matches win; otherwise falls back to a substring match on the name.
+ * @param {'component'|'function'} kind
+ * @param {string} query
+ */
+function matchReferenceEntries(kind, query) {
+  const entries = referenceIndex.filter((e) => e.kind === kind);
+  const needle = String(query || '').trim().toLowerCase();
+  if (!needle) return [];
+  const exact = entries.filter((e) => e.name.toLowerCase() === needle || e.slug === needle);
+  if (exact.length > 0) return exact;
+  return entries.filter((e) => e.name.toLowerCase().includes(needle));
+}
 
 const SNIPPET_CHARS = 500;
 const MAX_PAGE_CHARS = 24000;
@@ -45,6 +64,7 @@ export const SERVER_INSTRUCTIONS = [
   'Use plan_distributed_testing to configure Master-Worker RMI ports, user.properties, firewall rules, and Docker manifests.',
   'Use tune_linux_os to generate sysctl.conf, limits.conf, and systemd tuning parameters for high-concurrency injectors.',
   'Use lookup_jmeter_property, get_jsr223_recipe, and lookup_error_playbook for precise configuration and troubleshooting guidance.',
+  'Use lookup_component and lookup_function for the dedicated reference page of a specific test plan component (e.g. "HTTP Request") or built-in function (e.g. "__time").',
   'Always cite the docs.jmeter.ai URL you used when answering.',
 ].join(' ');
 
@@ -314,6 +334,86 @@ export function createServer() {
           : '';
       return {
         content: [{ type: 'text', text: JSON.stringify(capped, null, 2) + note }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'lookup_component',
+    {
+      title: 'Lookup JMeter Component Reference Page',
+      description:
+        'Find the dedicated reference page for a JMeter test plan component (e.g. "HTTP Request", "JSON Extractor", "Thread Group") and return its full markdown content with properties, defaults, and related guides.',
+      inputSchema: {
+        name: z.string().min(1).describe('Component name, exact or partial (e.g. "HTTP Request", "JSON Extractor", "CSV Data Set").'),
+      },
+    },
+    async ({ name }) => {
+      const matches = matchReferenceEntries('component', name);
+      if (matches.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `No component named "${name}" was found. Browse the full list at ${withUtm('https://docs.jmeter.ai/components/', 'mcp')} or use search_jmeter_docs.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+      const entry = matches[0];
+      const chunk = findChunkByPath(entry.path);
+      const extra = matches.length > 1
+        ? `\n\n(Matched "${entry.name}" first among ${matches.length} results for "${name}": ${matches.map((m) => m.name).join(', ')})`
+        : '';
+      const body = chunk ? chunk.body.trim() : `See ${withUtm(entry.path, 'mcp')} for the ${entry.name} reference.`;
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# ${entry.name}\nCategory: ${entry.category}\nSource: ${withUtm(entry.path, 'mcp')}\n\n${body}${extra}`,
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    'lookup_function',
+    {
+      title: 'Lookup JMeter Function Reference Page',
+      description:
+        'Find the dedicated reference page for a built-in JMeter function (e.g. "__time", "__Random", "__P") and return its full markdown content with syntax, parameters, and examples.',
+      inputSchema: {
+        name: z.string().min(1).describe('Function name, with or without leading underscores (e.g. "__time", "time", "__RandomString").'),
+      },
+    },
+    async ({ name }) => {
+      const matches = matchReferenceEntries('function', name);
+      if (matches.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `No function named "${name}" was found. Browse the full list at ${withUtm('https://docs.jmeter.ai/functions/', 'mcp')} or use search_jmeter_docs.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+      const entry = matches[0];
+      const chunk = findChunkByPath(entry.path);
+      const extra = matches.length > 1
+        ? `\n\n(Matched "${entry.name}" first among ${matches.length} results for "${name}": ${matches.map((m) => m.name).join(', ')})`
+        : '';
+      const body = chunk ? chunk.body.trim() : `See ${withUtm(entry.path, 'mcp')} for the ${entry.name} reference.`;
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# ${entry.name}\nSource: ${withUtm(entry.path, 'mcp')}\n\n${body}${extra}`,
+          },
+        ],
       };
     },
   );

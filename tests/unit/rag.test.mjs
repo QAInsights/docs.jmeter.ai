@@ -109,9 +109,12 @@ describe('rag: retrieve', () => {
 
   it('returns chunks in descending score order (best first)', () => {
     const results = retrieve('build a web test plan');
-    // We can't read scores back, but the first result should be the
-    // most relevant page — the build-web-test-plan page.
+    // We can't read scores back, but the first result should be one of
+    // the two directly-relevant "build a web test plan" pages, not an
+    // unrelated page. Which of the two wins can shift slightly as the
+    // corpus grows (BM25's length normalization is corpus-relative), so
+    // this doesn't pin down a single exact winner between them.
     expect(results.length).toBeGreaterThan(0);
-    expect(results[0].url).toContain('build-web-test-plan');
+    expect(results[0].url).toMatch(/build-(adv-)?web-test-plan/);
   });
 });

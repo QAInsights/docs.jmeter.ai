@@ -106,15 +106,24 @@ export function pagePathFor(relHtmlPath) {
  * converts to nothing) — those pages get no index.md.
  */
 export function convertPageHtml(html, pagePath) {
-  const document = new JSDOM(html).window.document;
-  const root = document.querySelector('.sl-markdown-content');
-  if (!root) return null;
-  // Starlight renders the page title h1 outside .sl-markdown-content;
-  // MDX bodies often repeat it — drop a leading H1 so the twin doesn't
-  // have two (the frontmatter title is emitted as the single H1).
-  const body = htmlToMarkdown(root).replace(/^\s*#\s+[^\n]*\n+/, '');
-  if (!body) return null;
-  return buildPageMarkdown({ ...extractPageMetadata(document, pagePath), body });
+  // jsdom's window (timers, globals, DOM tree) is not freed by GC alone -
+  // explicitly close() it, or memory accumulates across every page in the
+  // build and the process eventually OOMs once there are a few hundred
+  // pages (this used to go unnoticed at ~150 pages).
+  const dom = new JSDOM(html);
+  try {
+    const document = dom.window.document;
+    const root = document.querySelector('.sl-markdown-content');
+    if (!root) return null;
+    // Starlight renders the page title h1 outside .sl-markdown-content;
+    // MDX bodies often repeat it — drop a leading H1 so the twin doesn't
+    // have two (the frontmatter title is emitted as the single H1).
+    const body = htmlToMarkdown(root).replace(/^\s*#\s+[^\n]*\n+/, '');
+    if (!body) return null;
+    return buildPageMarkdown({ ...extractPageMetadata(document, pagePath), body });
+  } finally {
+    dom.window.close();
+  }
 }
 
 function main() {

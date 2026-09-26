@@ -47,6 +47,23 @@ const proficiencyMap: Record<string, string> = {
 
 // TechArticle JSON-LD for doc pages
 const isDocPage = Astro.url.pathname !== '/' && !Astro.url.pathname.startsWith('/404');
+
+// Split component/function reference pages (scripts/generate-reference-pages.mjs)
+// get a more specific `about` entity than the generic "Apache JMeter" blob:
+// a Thing for one component, a DefinedTerm for one function (the page title
+// is always the exact component/function name for these generated pages).
+const isComponentPage = /^\/components\/[^/]+\/?$/.test(Astro.url.pathname);
+const isFunctionPage = /^\/functions\/[^/]+\/?$/.test(Astro.url.pathname);
+const referenceAbout = isComponentPage
+  ? { '@type': 'Thing', name: rawTitle, isPartOf: { '@type': 'Thing', name: 'Apache JMeter' } }
+  : isFunctionPage
+    ? {
+        '@type': 'DefinedTerm',
+        name: rawTitle,
+        inDefinedTermSet: 'https://docs.jmeter.ai/functions/',
+      }
+    : null;
+
 const jsonLd = isDocPage ? {
   '@context': 'https://schema.org',
   '@type': 'TechArticle',
@@ -68,7 +85,7 @@ const jsonLd = isDocPage ? {
     '@id': canonicalUrl,
   },
   ...(seoDifficulty && proficiencyMap[seoDifficulty] ? { proficiencyLevel: proficiencyMap[seoDifficulty] } : {}),
-  about: {
+  about: referenceAbout || {
     '@type': 'SoftwareApplication',
     name: 'Apache JMeter',
     applicationCategory: 'DeveloperApplication',

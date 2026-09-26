@@ -1,0 +1,1248 @@
+[
+  {
+    "kind": "component",
+    "slug": "ftp-request",
+    "name": "FTP Request",
+    "category": "Samplers",
+    "path": "/components/ftp-request/"
+  },
+  {
+    "kind": "component",
+    "slug": "http-request",
+    "name": "HTTP Request",
+    "category": "Samplers",
+    "path": "/components/http-request/"
+  },
+  {
+    "kind": "component",
+    "slug": "jdbc-request",
+    "name": "JDBC Request",
+    "category": "Samplers",
+    "path": "/components/jdbc-request/"
+  },
+  {
+    "kind": "component",
+    "slug": "java-request",
+    "name": "Java Request",
+    "category": "Samplers",
+    "path": "/components/java-request/"
+  },
+  {
+    "kind": "component",
+    "slug": "ldap-request",
+    "name": "LDAP Request",
+    "category": "Samplers",
+    "path": "/components/ldap-request/"
+  },
+  {
+    "kind": "component",
+    "slug": "ldap-extended-request",
+    "name": "LDAP Extended Request",
+    "category": "Samplers",
+    "path": "/components/ldap-extended-request/"
+  },
+  {
+    "kind": "component",
+    "slug": "access-log-sampler",
+    "name": "Access Log Sampler",
+    "category": "Samplers",
+    "path": "/components/access-log-sampler/"
+  },
+  {
+    "kind": "component",
+    "slug": "beanshell-sampler",
+    "name": "BeanShell Sampler",
+    "category": "Samplers",
+    "path": "/components/beanshell-sampler/"
+  },
+  {
+    "kind": "component",
+    "slug": "jsr223-sampler",
+    "name": "JSR223 Sampler",
+    "category": "Samplers",
+    "path": "/components/jsr223-sampler/"
+  },
+  {
+    "kind": "component",
+    "slug": "tcp-sampler",
+    "name": "TCP Sampler",
+    "category": "Samplers",
+    "path": "/components/tcp-sampler/"
+  },
+  {
+    "kind": "component",
+    "slug": "jms-publisher",
+    "name": "JMS Publisher",
+    "category": "Samplers",
+    "path": "/components/jms-publisher/"
+  },
+  {
+    "kind": "component",
+    "slug": "jms-subscriber",
+    "name": "JMS Subscriber",
+    "category": "Samplers",
+    "path": "/components/jms-subscriber/"
+  },
+  {
+    "kind": "component",
+    "slug": "jms-point-to-point",
+    "name": "JMS Point-to-Point",
+    "category": "Samplers",
+    "path": "/components/jms-point-to-point/"
+  },
+  {
+    "kind": "component",
+    "slug": "junit-request",
+    "name": "JUnit Request",
+    "category": "Samplers",
+    "path": "/components/junit-request/"
+  },
+  {
+    "kind": "component",
+    "slug": "mail-reader-sampler",
+    "name": "Mail Reader Sampler",
+    "category": "Samplers",
+    "path": "/components/mail-reader-sampler/"
+  },
+  {
+    "kind": "component",
+    "slug": "flow-control-action",
+    "name": "Flow Control Action",
+    "category": "Samplers",
+    "path": "/components/flow-control-action/"
+  },
+  {
+    "kind": "component",
+    "slug": "smtp-sampler",
+    "name": "SMTP Sampler",
+    "category": "Samplers",
+    "path": "/components/smtp-sampler/"
+  },
+  {
+    "kind": "component",
+    "slug": "os-process-sampler",
+    "name": "OS Process Sampler",
+    "category": "Samplers",
+    "path": "/components/os-process-sampler/"
+  },
+  {
+    "kind": "component",
+    "slug": "bolt-request",
+    "name": "Bolt Request",
+    "category": "Samplers",
+    "path": "/components/bolt-request/"
+  },
+  {
+    "kind": "component",
+    "slug": "simple-controller",
+    "name": "Simple Controller",
+    "category": "Logic Controllers",
+    "path": "/components/simple-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "loop-controller",
+    "name": "Loop Controller",
+    "category": "Logic Controllers",
+    "path": "/components/loop-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "once-only-controller",
+    "name": "Once Only Controller",
+    "category": "Logic Controllers",
+    "path": "/components/once-only-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "interleave-controller",
+    "name": "Interleave Controller",
+    "category": "Logic Controllers",
+    "path": "/components/interleave-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "random-controller",
+    "name": "Random Controller",
+    "category": "Logic Controllers",
+    "path": "/components/random-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "random-order-controller",
+    "name": "Random Order Controller",
+    "category": "Logic Controllers",
+    "path": "/components/random-order-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "throughput-controller",
+    "name": "Throughput Controller",
+    "category": "Logic Controllers",
+    "path": "/components/throughput-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "runtime-controller",
+    "name": "Runtime Controller",
+    "category": "Logic Controllers",
+    "path": "/components/runtime-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "if-controller",
+    "name": "If Controller",
+    "category": "Logic Controllers",
+    "path": "/components/if-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "while-controller",
+    "name": "While Controller",
+    "category": "Logic Controllers",
+    "path": "/components/while-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "switch-controller",
+    "name": "Switch Controller",
+    "category": "Logic Controllers",
+    "path": "/components/switch-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "foreach-controller",
+    "name": "ForEach Controller",
+    "category": "Logic Controllers",
+    "path": "/components/foreach-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "module-controller",
+    "name": "Module Controller",
+    "category": "Logic Controllers",
+    "path": "/components/module-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "include-controller",
+    "name": "Include Controller",
+    "category": "Logic Controllers",
+    "path": "/components/include-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "transaction-controller",
+    "name": "Transaction Controller",
+    "category": "Logic Controllers",
+    "path": "/components/transaction-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "recording-controller",
+    "name": "Recording Controller",
+    "category": "Logic Controllers",
+    "path": "/components/recording-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "critical-section-controller",
+    "name": "Critical Section Controller",
+    "category": "Logic Controllers",
+    "path": "/components/critical-section-controller/"
+  },
+  {
+    "kind": "component",
+    "slug": "sample-result-save-configuration",
+    "name": "Sample Result Save Configuration",
+    "category": "Listeners",
+    "path": "/components/sample-result-save-configuration/"
+  },
+  {
+    "kind": "component",
+    "slug": "graph-results",
+    "name": "Graph Results",
+    "category": "Listeners",
+    "path": "/components/graph-results/"
+  },
+  {
+    "kind": "component",
+    "slug": "assertion-results",
+    "name": "Assertion Results",
+    "category": "Listeners",
+    "path": "/components/assertion-results/"
+  },
+  {
+    "kind": "component",
+    "slug": "view-results-tree",
+    "name": "View Results Tree",
+    "category": "Listeners",
+    "path": "/components/view-results-tree/"
+  },
+  {
+    "kind": "component",
+    "slug": "aggregate-report",
+    "name": "Aggregate Report",
+    "category": "Listeners",
+    "path": "/components/aggregate-report/"
+  },
+  {
+    "kind": "component",
+    "slug": "view-results-in-table",
+    "name": "View Results in Table",
+    "category": "Listeners",
+    "path": "/components/view-results-in-table/"
+  },
+  {
+    "kind": "component",
+    "slug": "simple-data-writer",
+    "name": "Simple Data Writer",
+    "category": "Listeners",
+    "path": "/components/simple-data-writer/"
+  },
+  {
+    "kind": "component",
+    "slug": "aggregate-graph",
+    "name": "Aggregate Graph",
+    "category": "Listeners",
+    "path": "/components/aggregate-graph/"
+  },
+  {
+    "kind": "component",
+    "slug": "response-time-graph",
+    "name": "Response Time Graph",
+    "category": "Listeners",
+    "path": "/components/response-time-graph/"
+  },
+  {
+    "kind": "component",
+    "slug": "mailer-visualizer",
+    "name": "Mailer Visualizer",
+    "category": "Listeners",
+    "path": "/components/mailer-visualizer/"
+  },
+  {
+    "kind": "component",
+    "slug": "beanshell-listener",
+    "name": "BeanShell Listener",
+    "category": "Listeners",
+    "path": "/components/beanshell-listener/"
+  },
+  {
+    "kind": "component",
+    "slug": "summary-report",
+    "name": "Summary Report",
+    "category": "Listeners",
+    "path": "/components/summary-report/"
+  },
+  {
+    "kind": "component",
+    "slug": "save-responses-to-a-file",
+    "name": "Save Responses to a file",
+    "category": "Listeners",
+    "path": "/components/save-responses-to-a-file/"
+  },
+  {
+    "kind": "component",
+    "slug": "jsr223-listener",
+    "name": "JSR223 Listener",
+    "category": "Listeners",
+    "path": "/components/jsr223-listener/"
+  },
+  {
+    "kind": "component",
+    "slug": "generate-summary-results",
+    "name": "Generate Summary Results",
+    "category": "Listeners",
+    "path": "/components/generate-summary-results/"
+  },
+  {
+    "kind": "component",
+    "slug": "comparison-assertion-visualizer",
+    "name": "Comparison Assertion Visualizer",
+    "category": "Listeners",
+    "path": "/components/comparison-assertion-visualizer/"
+  },
+  {
+    "kind": "component",
+    "slug": "backend-listener",
+    "name": "Backend Listener",
+    "category": "Listeners",
+    "path": "/components/backend-listener/"
+  },
+  {
+    "kind": "component",
+    "slug": "csv-data-set-config",
+    "name": "CSV Data Set Config",
+    "category": "Configuration Elements",
+    "path": "/components/csv-data-set-config/"
+  },
+  {
+    "kind": "component",
+    "slug": "ftp-request-defaults",
+    "name": "FTP Request Defaults",
+    "category": "Configuration Elements",
+    "path": "/components/ftp-request-defaults/"
+  },
+  {
+    "kind": "component",
+    "slug": "dns-cache-manager",
+    "name": "DNS Cache Manager",
+    "category": "Configuration Elements",
+    "path": "/components/dns-cache-manager/"
+  },
+  {
+    "kind": "component",
+    "slug": "http-authorization-manager",
+    "name": "HTTP Authorization Manager",
+    "category": "Configuration Elements",
+    "path": "/components/http-authorization-manager/"
+  },
+  {
+    "kind": "component",
+    "slug": "http-cache-manager",
+    "name": "HTTP Cache Manager",
+    "category": "Configuration Elements",
+    "path": "/components/http-cache-manager/"
+  },
+  {
+    "kind": "component",
+    "slug": "http-cookie-manager",
+    "name": "HTTP Cookie Manager",
+    "category": "Configuration Elements",
+    "path": "/components/http-cookie-manager/"
+  },
+  {
+    "kind": "component",
+    "slug": "http-request-defaults",
+    "name": "HTTP Request Defaults",
+    "category": "Configuration Elements",
+    "path": "/components/http-request-defaults/"
+  },
+  {
+    "kind": "component",
+    "slug": "http-header-manager",
+    "name": "HTTP Header Manager",
+    "category": "Configuration Elements",
+    "path": "/components/http-header-manager/"
+  },
+  {
+    "kind": "component",
+    "slug": "java-request-defaults",
+    "name": "Java Request Defaults",
+    "category": "Configuration Elements",
+    "path": "/components/java-request-defaults/"
+  },
+  {
+    "kind": "component",
+    "slug": "jdbc-connection-configuration",
+    "name": "JDBC Connection Configuration",
+    "category": "Configuration Elements",
+    "path": "/components/jdbc-connection-configuration/"
+  },
+  {
+    "kind": "component",
+    "slug": "keystore-configuration",
+    "name": "Keystore Configuration",
+    "category": "Configuration Elements",
+    "path": "/components/keystore-configuration/"
+  },
+  {
+    "kind": "component",
+    "slug": "login-config-element",
+    "name": "Login Config Element",
+    "category": "Configuration Elements",
+    "path": "/components/login-config-element/"
+  },
+  {
+    "kind": "component",
+    "slug": "ldap-request-defaults",
+    "name": "LDAP Request Defaults",
+    "category": "Configuration Elements",
+    "path": "/components/ldap-request-defaults/"
+  },
+  {
+    "kind": "component",
+    "slug": "ldap-extended-request-defaults",
+    "name": "LDAP Extended Request Defaults",
+    "category": "Configuration Elements",
+    "path": "/components/ldap-extended-request-defaults/"
+  },
+  {
+    "kind": "component",
+    "slug": "tcp-sampler-config",
+    "name": "TCP Sampler Config",
+    "category": "Configuration Elements",
+    "path": "/components/tcp-sampler-config/"
+  },
+  {
+    "kind": "component",
+    "slug": "user-defined-variables",
+    "name": "User Defined Variables",
+    "category": "Configuration Elements",
+    "path": "/components/user-defined-variables/"
+  },
+  {
+    "kind": "component",
+    "slug": "random-variable",
+    "name": "Random Variable",
+    "category": "Configuration Elements",
+    "path": "/components/random-variable/"
+  },
+  {
+    "kind": "component",
+    "slug": "counter",
+    "name": "Counter",
+    "category": "Configuration Elements",
+    "path": "/components/counter/"
+  },
+  {
+    "kind": "component",
+    "slug": "simple-config-element",
+    "name": "Simple Config Element",
+    "category": "Configuration Elements",
+    "path": "/components/simple-config-element/"
+  },
+  {
+    "kind": "component",
+    "slug": "bolt-connection-configuration",
+    "name": "Bolt Connection Configuration",
+    "category": "Configuration Elements",
+    "path": "/components/bolt-connection-configuration/"
+  },
+  {
+    "kind": "component",
+    "slug": "response-assertion",
+    "name": "Response Assertion",
+    "category": "Assertions",
+    "path": "/components/response-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "duration-assertion",
+    "name": "Duration Assertion",
+    "category": "Assertions",
+    "path": "/components/duration-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "size-assertion",
+    "name": "Size Assertion",
+    "category": "Assertions",
+    "path": "/components/size-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "xml-assertion",
+    "name": "XML Assertion",
+    "category": "Assertions",
+    "path": "/components/xml-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "beanshell-assertion",
+    "name": "BeanShell Assertion",
+    "category": "Assertions",
+    "path": "/components/beanshell-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "md5hex-assertion",
+    "name": "MD5Hex Assertion",
+    "category": "Assertions",
+    "path": "/components/md5hex-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "html-assertion",
+    "name": "HTML Assertion",
+    "category": "Assertions",
+    "path": "/components/html-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "xpath-assertion",
+    "name": "XPath Assertion",
+    "category": "Assertions",
+    "path": "/components/xpath-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "xpath2-assertion",
+    "name": "XPath2 Assertion",
+    "category": "Assertions",
+    "path": "/components/xpath2-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "xml-schema-assertion",
+    "name": "XML Schema Assertion",
+    "category": "Assertions",
+    "path": "/components/xml-schema-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "jsr223-assertion",
+    "name": "JSR223 Assertion",
+    "category": "Assertions",
+    "path": "/components/jsr223-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "compare-assertion",
+    "name": "Compare Assertion",
+    "category": "Assertions",
+    "path": "/components/compare-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "smime-assertion",
+    "name": "SMIME Assertion",
+    "category": "Assertions",
+    "path": "/components/smime-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "json-assertion",
+    "name": "JSON Assertion",
+    "category": "Assertions",
+    "path": "/components/json-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "json-jmespath-assertion",
+    "name": "JSON JMESPath Assertion",
+    "category": "Assertions",
+    "path": "/components/json-jmespath-assertion/"
+  },
+  {
+    "kind": "component",
+    "slug": "constant-timer",
+    "name": "Constant Timer",
+    "category": "Timers",
+    "path": "/components/constant-timer/"
+  },
+  {
+    "kind": "component",
+    "slug": "gaussian-random-timer",
+    "name": "Gaussian Random Timer",
+    "category": "Timers",
+    "path": "/components/gaussian-random-timer/"
+  },
+  {
+    "kind": "component",
+    "slug": "uniform-random-timer",
+    "name": "Uniform Random Timer",
+    "category": "Timers",
+    "path": "/components/uniform-random-timer/"
+  },
+  {
+    "kind": "component",
+    "slug": "constant-throughput-timer",
+    "name": "Constant Throughput Timer",
+    "category": "Timers",
+    "path": "/components/constant-throughput-timer/"
+  },
+  {
+    "kind": "component",
+    "slug": "precise-throughput-timer",
+    "name": "Precise Throughput Timer",
+    "category": "Timers",
+    "path": "/components/precise-throughput-timer/"
+  },
+  {
+    "kind": "component",
+    "slug": "synchronizing-timer",
+    "name": "Synchronizing Timer",
+    "category": "Timers",
+    "path": "/components/synchronizing-timer/"
+  },
+  {
+    "kind": "component",
+    "slug": "beanshell-timer",
+    "name": "BeanShell Timer",
+    "category": "Timers",
+    "path": "/components/beanshell-timer/"
+  },
+  {
+    "kind": "component",
+    "slug": "jsr223-timer",
+    "name": "JSR223 Timer",
+    "category": "Timers",
+    "path": "/components/jsr223-timer/"
+  },
+  {
+    "kind": "component",
+    "slug": "poisson-random-timer",
+    "name": "Poisson Random Timer",
+    "category": "Timers",
+    "path": "/components/poisson-random-timer/"
+  },
+  {
+    "kind": "component",
+    "slug": "html-link-parser",
+    "name": "HTML Link Parser",
+    "category": "Pre Processors",
+    "path": "/components/html-link-parser/"
+  },
+  {
+    "kind": "component",
+    "slug": "http-url-re-writing-modifier",
+    "name": "HTTP URL Re-writing Modifier",
+    "category": "Pre Processors",
+    "path": "/components/http-url-re-writing-modifier/"
+  },
+  {
+    "kind": "component",
+    "slug": "user-parameters",
+    "name": "User Parameters",
+    "category": "Pre Processors",
+    "path": "/components/user-parameters/"
+  },
+  {
+    "kind": "component",
+    "slug": "beanshell-preprocessor",
+    "name": "BeanShell PreProcessor",
+    "category": "Pre Processors",
+    "path": "/components/beanshell-preprocessor/"
+  },
+  {
+    "kind": "component",
+    "slug": "jsr223-preprocessor",
+    "name": "JSR223 PreProcessor",
+    "category": "Pre Processors",
+    "path": "/components/jsr223-preprocessor/"
+  },
+  {
+    "kind": "component",
+    "slug": "jdbc-preprocessor",
+    "name": "JDBC PreProcessor",
+    "category": "Pre Processors",
+    "path": "/components/jdbc-preprocessor/"
+  },
+  {
+    "kind": "component",
+    "slug": "regex-user-parameters",
+    "name": "RegEx User Parameters",
+    "category": "Pre Processors",
+    "path": "/components/regex-user-parameters/"
+  },
+  {
+    "kind": "component",
+    "slug": "sample-timeout",
+    "name": "Sample Timeout",
+    "category": "Pre Processors",
+    "path": "/components/sample-timeout/"
+  },
+  {
+    "kind": "component",
+    "slug": "regular-expression-extractor",
+    "name": "Regular Expression Extractor",
+    "category": "Post-Processors",
+    "path": "/components/regular-expression-extractor/"
+  },
+  {
+    "kind": "component",
+    "slug": "css-selector-extractor",
+    "name": "CSS Selector Extractor",
+    "category": "Post-Processors",
+    "path": "/components/css-selector-extractor/"
+  },
+  {
+    "kind": "component",
+    "slug": "xpath2-extractor",
+    "name": "XPath2 Extractor",
+    "category": "Post-Processors",
+    "path": "/components/xpath2-extractor/"
+  },
+  {
+    "kind": "component",
+    "slug": "xpath-extractor",
+    "name": "XPath Extractor",
+    "category": "Post-Processors",
+    "path": "/components/xpath-extractor/"
+  },
+  {
+    "kind": "component",
+    "slug": "json-jmespath-extractor",
+    "name": "JSON JMESPath Extractor",
+    "category": "Post-Processors",
+    "path": "/components/json-jmespath-extractor/"
+  },
+  {
+    "kind": "component",
+    "slug": "result-status-action-handler",
+    "name": "Result Status Action Handler",
+    "category": "Post-Processors",
+    "path": "/components/result-status-action-handler/"
+  },
+  {
+    "kind": "component",
+    "slug": "beanshell-postprocessor",
+    "name": "BeanShell PostProcessor",
+    "category": "Post-Processors",
+    "path": "/components/beanshell-postprocessor/"
+  },
+  {
+    "kind": "component",
+    "slug": "jsr223-postprocessor",
+    "name": "JSR223 PostProcessor",
+    "category": "Post-Processors",
+    "path": "/components/jsr223-postprocessor/"
+  },
+  {
+    "kind": "component",
+    "slug": "jdbc-postprocessor",
+    "name": "JDBC PostProcessor",
+    "category": "Post-Processors",
+    "path": "/components/jdbc-postprocessor/"
+  },
+  {
+    "kind": "component",
+    "slug": "json-extractor",
+    "name": "JSON Extractor",
+    "category": "Post-Processors",
+    "path": "/components/json-extractor/"
+  },
+  {
+    "kind": "component",
+    "slug": "boundary-extractor",
+    "name": "Boundary Extractor",
+    "category": "Post-Processors",
+    "path": "/components/boundary-extractor/"
+  },
+  {
+    "kind": "component",
+    "slug": "test-plan",
+    "name": "Test Plan",
+    "category": "Miscellaneous Features",
+    "path": "/components/test-plan/"
+  },
+  {
+    "kind": "component",
+    "slug": "open-model-thread-group",
+    "name": "Open Model Thread Group",
+    "category": "Miscellaneous Features",
+    "path": "/components/open-model-thread-group/"
+  },
+  {
+    "kind": "component",
+    "slug": "thread-group",
+    "name": "Thread Group",
+    "category": "Miscellaneous Features",
+    "path": "/components/thread-group/"
+  },
+  {
+    "kind": "component",
+    "slug": "workbench",
+    "name": "WorkBench",
+    "category": "Miscellaneous Features",
+    "path": "/components/workbench/"
+  },
+  {
+    "kind": "component",
+    "slug": "ssl-manager",
+    "name": "SSL Manager",
+    "category": "Miscellaneous Features",
+    "path": "/components/ssl-manager/"
+  },
+  {
+    "kind": "component",
+    "slug": "http-s-test-script-recorder",
+    "name": "HTTP(S) Test Script Recorder",
+    "category": "Miscellaneous Features",
+    "path": "/components/http-s-test-script-recorder/"
+  },
+  {
+    "kind": "component",
+    "slug": "http-mirror-server",
+    "name": "HTTP Mirror Server",
+    "category": "Miscellaneous Features",
+    "path": "/components/http-mirror-server/"
+  },
+  {
+    "kind": "component",
+    "slug": "property-display",
+    "name": "Property Display",
+    "category": "Miscellaneous Features",
+    "path": "/components/property-display/"
+  },
+  {
+    "kind": "component",
+    "slug": "debug-sampler",
+    "name": "Debug Sampler",
+    "category": "Miscellaneous Features",
+    "path": "/components/debug-sampler/"
+  },
+  {
+    "kind": "component",
+    "slug": "debug-postprocessor",
+    "name": "Debug PostProcessor",
+    "category": "Miscellaneous Features",
+    "path": "/components/debug-postprocessor/"
+  },
+  {
+    "kind": "component",
+    "slug": "test-fragment",
+    "name": "Test Fragment",
+    "category": "Miscellaneous Features",
+    "path": "/components/test-fragment/"
+  },
+  {
+    "kind": "component",
+    "slug": "setup-thread-group",
+    "name": "setUp Thread Group",
+    "category": "Miscellaneous Features",
+    "path": "/components/setup-thread-group/"
+  },
+  {
+    "kind": "component",
+    "slug": "teardown-thread-group",
+    "name": "tearDown Thread Group",
+    "category": "Miscellaneous Features",
+    "path": "/components/teardown-thread-group/"
+  },
+  {
+    "kind": "function",
+    "slug": "regexfunction",
+    "name": "__regexFunction",
+    "category": "Functions",
+    "path": "/functions/regexfunction/"
+  },
+  {
+    "kind": "function",
+    "slug": "counter",
+    "name": "__counter",
+    "category": "Functions",
+    "path": "/functions/counter/"
+  },
+  {
+    "kind": "function",
+    "slug": "threadnum",
+    "name": "__threadNum",
+    "category": "Functions",
+    "path": "/functions/threadnum/"
+  },
+  {
+    "kind": "function",
+    "slug": "threadgroupname",
+    "name": "__threadGroupName",
+    "category": "Functions",
+    "path": "/functions/threadgroupname/"
+  },
+  {
+    "kind": "function",
+    "slug": "intsum",
+    "name": "__intSum",
+    "category": "Functions",
+    "path": "/functions/intsum/"
+  },
+  {
+    "kind": "function",
+    "slug": "longsum",
+    "name": "__longSum",
+    "category": "Functions",
+    "path": "/functions/longsum/"
+  },
+  {
+    "kind": "function",
+    "slug": "stringfromfile",
+    "name": "__StringFromFile",
+    "category": "Functions",
+    "path": "/functions/stringfromfile/"
+  },
+  {
+    "kind": "function",
+    "slug": "machinename",
+    "name": "__machineName",
+    "category": "Functions",
+    "path": "/functions/machinename/"
+  },
+  {
+    "kind": "function",
+    "slug": "machineip",
+    "name": "__machineIP",
+    "category": "Functions",
+    "path": "/functions/machineip/"
+  },
+  {
+    "kind": "function",
+    "slug": "javascript",
+    "name": "__javaScript",
+    "category": "Functions",
+    "path": "/functions/javascript/"
+  },
+  {
+    "kind": "function",
+    "slug": "random",
+    "name": "__Random",
+    "category": "Functions",
+    "path": "/functions/random/"
+  },
+  {
+    "kind": "function",
+    "slug": "randomdate",
+    "name": "__RandomDate",
+    "category": "Functions",
+    "path": "/functions/randomdate/"
+  },
+  {
+    "kind": "function",
+    "slug": "randomstring",
+    "name": "__RandomString",
+    "category": "Functions",
+    "path": "/functions/randomstring/"
+  },
+  {
+    "kind": "function",
+    "slug": "randomfrommultiplevars",
+    "name": "__RandomFromMultipleVars",
+    "category": "Functions",
+    "path": "/functions/randomfrommultiplevars/"
+  },
+  {
+    "kind": "function",
+    "slug": "uuid",
+    "name": "__UUID",
+    "category": "Functions",
+    "path": "/functions/uuid/"
+  },
+  {
+    "kind": "function",
+    "slug": "csvread",
+    "name": "__CSVRead",
+    "category": "Functions",
+    "path": "/functions/csvread/"
+  },
+  {
+    "kind": "function",
+    "slug": "property",
+    "name": "__property",
+    "category": "Functions",
+    "path": "/functions/property/"
+  },
+  {
+    "kind": "function",
+    "slug": "p",
+    "name": "__P",
+    "category": "Functions",
+    "path": "/functions/p/"
+  },
+  {
+    "kind": "function",
+    "slug": "log",
+    "name": "__log",
+    "category": "Functions",
+    "path": "/functions/log/"
+  },
+  {
+    "kind": "function",
+    "slug": "logn",
+    "name": "__logn",
+    "category": "Functions",
+    "path": "/functions/logn/"
+  },
+  {
+    "kind": "function",
+    "slug": "beanshell",
+    "name": "__BeanShell",
+    "category": "Functions",
+    "path": "/functions/beanshell/"
+  },
+  {
+    "kind": "function",
+    "slug": "groovy",
+    "name": "__groovy",
+    "category": "Functions",
+    "path": "/functions/groovy/"
+  },
+  {
+    "kind": "function",
+    "slug": "split",
+    "name": "__split",
+    "category": "Functions",
+    "path": "/functions/split/"
+  },
+  {
+    "kind": "function",
+    "slug": "xpath",
+    "name": "__XPath",
+    "category": "Functions",
+    "path": "/functions/xpath/"
+  },
+  {
+    "kind": "function",
+    "slug": "setproperty",
+    "name": "__setProperty",
+    "category": "Functions",
+    "path": "/functions/setproperty/"
+  },
+  {
+    "kind": "function",
+    "slug": "time",
+    "name": "__time",
+    "category": "Functions",
+    "path": "/functions/time/"
+  },
+  {
+    "kind": "function",
+    "slug": "jexl2",
+    "name": "__jexl2",
+    "category": "Functions",
+    "path": "/functions/jexl2/"
+  },
+  {
+    "kind": "function",
+    "slug": "jexl3",
+    "name": "__jexl3",
+    "category": "Functions",
+    "path": "/functions/jexl3/"
+  },
+  {
+    "kind": "function",
+    "slug": "v",
+    "name": "__V",
+    "category": "Functions",
+    "path": "/functions/v/"
+  },
+  {
+    "kind": "function",
+    "slug": "evalvar",
+    "name": "__evalVar",
+    "category": "Functions",
+    "path": "/functions/evalvar/"
+  },
+  {
+    "kind": "function",
+    "slug": "eval",
+    "name": "__eval",
+    "category": "Functions",
+    "path": "/functions/eval/"
+  },
+  {
+    "kind": "function",
+    "slug": "char",
+    "name": "__char",
+    "category": "Functions",
+    "path": "/functions/char/"
+  },
+  {
+    "kind": "function",
+    "slug": "unescape",
+    "name": "__unescape",
+    "category": "Functions",
+    "path": "/functions/unescape/"
+  },
+  {
+    "kind": "function",
+    "slug": "unescapehtml",
+    "name": "__unescapeHtml",
+    "category": "Functions",
+    "path": "/functions/unescapehtml/"
+  },
+  {
+    "kind": "function",
+    "slug": "escapehtml",
+    "name": "__escapeHtml",
+    "category": "Functions",
+    "path": "/functions/escapehtml/"
+  },
+  {
+    "kind": "function",
+    "slug": "urldecode",
+    "name": "__urldecode",
+    "category": "Functions",
+    "path": "/functions/urldecode/"
+  },
+  {
+    "kind": "function",
+    "slug": "urlencode",
+    "name": "__urlencode",
+    "category": "Functions",
+    "path": "/functions/urlencode/"
+  },
+  {
+    "kind": "function",
+    "slug": "filetostring",
+    "name": "__FileToString",
+    "category": "Functions",
+    "path": "/functions/filetostring/"
+  },
+  {
+    "kind": "function",
+    "slug": "samplername",
+    "name": "__samplerName",
+    "category": "Functions",
+    "path": "/functions/samplername/"
+  },
+  {
+    "kind": "function",
+    "slug": "testplanname",
+    "name": "__TestPlanName",
+    "category": "Functions",
+    "path": "/functions/testplanname/"
+  },
+  {
+    "kind": "function",
+    "slug": "escapeororegexpchars",
+    "name": "__escapeOroRegexpChars",
+    "category": "Functions",
+    "path": "/functions/escapeororegexpchars/"
+  },
+  {
+    "kind": "function",
+    "slug": "escapexml",
+    "name": "__escapeXml",
+    "category": "Functions",
+    "path": "/functions/escapexml/"
+  },
+  {
+    "kind": "function",
+    "slug": "timeshift",
+    "name": "__timeShift",
+    "category": "Functions",
+    "path": "/functions/timeshift/"
+  },
+  {
+    "kind": "function",
+    "slug": "digest",
+    "name": "__digest",
+    "category": "Functions",
+    "path": "/functions/digest/"
+  },
+  {
+    "kind": "function",
+    "slug": "datetimeconvert",
+    "name": "__dateTimeConvert",
+    "category": "Functions",
+    "path": "/functions/datetimeconvert/"
+  },
+  {
+    "kind": "function",
+    "slug": "ispropdefined",
+    "name": "__isPropDefined",
+    "category": "Functions",
+    "path": "/functions/ispropdefined/"
+  },
+  {
+    "kind": "function",
+    "slug": "isvardefined",
+    "name": "__isVarDefined",
+    "category": "Functions",
+    "path": "/functions/isvardefined/"
+  },
+  {
+    "kind": "function",
+    "slug": "changecase",
+    "name": "__changeCase",
+    "category": "Functions",
+    "path": "/functions/changecase/"
+  },
+  {
+    "kind": "function",
+    "slug": "stringtofile",
+    "name": "__StringToFile",
+    "category": "Functions",
+    "path": "/functions/stringtofile/"
+  }
+]

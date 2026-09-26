@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "pnpm run lint && node scripts/generate-release-pages.mjs && node scripts/generate-llms-full.mjs && node scripts/generate-llms-chunks.mjs && node scripts/generate-og-images.mjs && astro build && node scripts/generate-page-markdown.mjs",
+    "build": "pnpm run lint && node scripts/generate-release-pages.mjs && node scripts/generate-reference-pages.mjs && node scripts/generate-llms-full.mjs && node scripts/generate-llms-chunks.mjs && node scripts/generate-og-images.mjs && astro build && node scripts/generate-page-markdown.mjs",
     "preview": "astro preview",
     "cf-typegen": "wrangler types worker-configuration.d.ts --include-runtime false",
     "cf-typegen:check": "wrangler types worker-configuration.d.ts --include-runtime false --check",
@@ -19,6 +19,7 @@
     "convert": "node tools/convert.mjs",
     "generate-sidebar": "node scripts/generate-sidebar.mjs",
     "generate-release-pages": "node scripts/generate-release-pages.mjs",
+    "generate-reference-pages": "node scripts/generate-reference-pages.mjs",
     "generate-llms-full": "node scripts/generate-llms-full.mjs",
     "generate-llms-chunks": "node scripts/generate-llms-chunks.mjs",
     "generate-page-markdown": "node scripts/generate-page-markdown.mjs",

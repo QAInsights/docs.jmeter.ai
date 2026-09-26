@@ -56,7 +56,7 @@ describe('findChunkByPath', () => {
 });
 
 describe('GET /api/mcp endpoint discovery', () => {
-  it('advertises all 10 MCP tools and streamable HTTP metadata', async () => {
+  it('advertises all 12 MCP tools and streamable HTTP metadata', async () => {
     const request = new Request('https://docs.jmeter.ai/api/mcp', {
       headers: { Accept: 'application/json' },
     });
@@ -77,7 +77,9 @@ describe('GET /api/mcp endpoint discovery', () => {
     expect(body.tools).toContain('lookup_jmeter_property');
     expect(body.tools).toContain('get_jsr223_recipe');
     expect(body.tools).toContain('lookup_error_playbook');
-    expect(body.tools).toHaveLength(10);
+    expect(body.tools).toContain('lookup_component');
+    expect(body.tools).toContain('lookup_function');
+    expect(body.tools).toHaveLength(12);
   });
 
   it('returns 405 instead of starting a reconnect loop for an SSE listener GET', async () => {
@@ -156,6 +158,72 @@ describe('POST /api/mcp — Cloudflare locals compatibility', () => {
   it('responds successfully when locals has neither runtime nor cfContext', async () => {
     const res = await POST({ request: makeToolCallRequest(), locals: {} });
     expect(res.status).toBe(200);
+  }, 15000);
+});
+
+describe('POST /api/mcp — lookup_component and lookup_function tools', () => {
+  function makeLookupRequest(toolName, args) {
+    return new Request('https://docs.jmeter.ai/api/mcp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name: toolName, arguments: args },
+      }),
+    });
+  }
+
+  async function callTool(toolName, args) {
+    const res = await POST({ request: makeLookupRequest(toolName, args) });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    return body.result;
+  }
+
+  it('lookup_component returns the real page body for an exact name match', async () => {
+    const result = await callTool('lookup_component', { name: 'HTTP Request' });
+    expect(result.isError).toBeUndefined();
+    const text = result.content[0].text;
+    expect(text).toContain('# HTTP Request');
+    expect(text).toContain('Category: Samplers');
+    expect(text).toContain('https://docs.jmeter.ai/components/http-request/');
+    // Content actually came from the indexed page body (rag.mjs), not a stub.
+    expect(text).toContain('myServlet');
+  }, 15000);
+
+  it('lookup_component resolves a partial/case-insensitive name', async () => {
+    const result = await callTool('lookup_component', { name: 'json extractor' });
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toContain('# JSON Extractor');
+  }, 15000);
+
+  it('lookup_component reports no match instead of fabricating a page', async () => {
+    const result = await callTool('lookup_component', { name: 'Not A Real Component XYZ' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('No component named');
+  }, 15000);
+
+  it('lookup_function returns the real page body for an exact name match, with or without underscores', async () => {
+    const result = await callTool('lookup_function', { name: '__time' });
+    expect(result.isError).toBeUndefined();
+    const text = result.content[0].text;
+    expect(text).toContain('# __time');
+    expect(text).toContain('https://docs.jmeter.ai/functions/time/');
+    expect(text).toContain('DateTimeFormatter');
+
+    const bare = await callTool('lookup_function', { name: 'time' });
+    expect(bare.content[0].text).toBe(text);
+  }, 15000);
+
+  it('lookup_function reports no match instead of fabricating a page', async () => {
+    const result = await callTool('lookup_function', { name: '__notRealFunction' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('No function named');
   }, 15000);
 });
 

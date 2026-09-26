@@ -14,13 +14,18 @@ Every documentation page except the homepage is available as Markdown: append `i
 - [Properties Cheat Sheet](https://docs.jmeter.ai/tools/properties-cheatsheet/): Filterable high-impact jmeter.properties / user.properties
 - [Regex Extractor Builder](https://docs.jmeter.ai/tools/regex-tester/): Paste a response body (max 1 MB, browser-only) to detect dynamic values and copy Regular Expression Extractor fields
 
+## Components and Functions
+
+- [Components](https://docs.jmeter.ai/components/): Every JMeter test plan component (samplers, controllers, listeners, timers, assertions, processors) on its own page with properties, defaults, and related guides
+- [Functions](https://docs.jmeter.ai/functions/): Every built-in JMeter `${__function()}` on its own page with syntax, parameters, and examples
+
 ## User Manual
 
 - [Getting Started](https://docs.jmeter.ai/getting-started/get-started/): Installation, configuration, and first steps with JMeter
 - [Building a Test Plan](https://docs.jmeter.ai/user-manual/build-test-plan/): How to create and structure a JMeter test plan
 - [Elements of a Test Plan](https://docs.jmeter.ai/user-manual/test-plan/): Thread groups, samplers, controllers, listeners, and other core elements
-- [Component Reference](https://docs.jmeter.ai/user-manual/component-reference/): Detailed reference for all JMeter components including samplers, controllers, listeners, timers, and assertions
-- [Functions and Variables](https://docs.jmeter.ai/user-manual/functions/): Built-in functions for dynamic values, property access, and scripting
+- [Component Reference](https://docs.jmeter.ai/user-manual/component-reference/): Detailed reference for all JMeter components including samplers, controllers, listeners, timers, and assertions (single-page view; see Components above for one page per component)
+- [Functions and Variables](https://docs.jmeter.ai/user-manual/functions/): Built-in functions for dynamic values, property access, and scripting (single-page view; see Functions above for one page per function)
 - [Properties Reference](https://docs.jmeter.ai/user-manual/properties-reference/): Complete reference for jmeter.properties configuration options
 - [Best Practices](https://docs.jmeter.ai/user-manual/best-practices/): Guidelines for efficient, maintainable, and scalable test plans
 - [Listeners](https://docs.jmeter.ai/user-manual/listeners/): Configuring and using JMeter listeners for result collection and visualization
