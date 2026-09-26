@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeDocPath, findChunkByPath, GET, runCurlHarConversionTool } from '../../src/pages/api/mcp.ts';
+import { normalizeDocPath, findChunkByPath, GET, POST, runCurlHarConversionTool } from '../../src/pages/api/mcp.ts';
 import { INDEX } from '../../src/lib/rag.mjs';
 
 describe('normalizeDocPath', () => {
@@ -96,6 +96,67 @@ describe('GET /api/mcp endpoint discovery', () => {
     });
     expect((await GET({ request })).status).toBe(405);
   });
+});
+
+describe('POST /api/mcp — Cloudflare locals compatibility', () => {
+  function makeToolCallRequest(name = 'search_jmeter_docs') {
+    return new Request('https://docs.jmeter.ai/api/mcp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name, arguments: { query: 'correlation' } },
+      }),
+    });
+  }
+
+  /**
+   * Regression guard: Astro v6 replaced `Astro.locals.runtime.ctx` with
+   * `Astro.locals.cfContext`. The old `.runtime` accessor is now a getter
+   * that THROWS instead of returning undefined. Reading `locals.runtime.ctx`
+   * outside a try/catch (as trackMcpToolCall once did) crashed every POST
+   * to /api/mcp with an empty 500 on production, because `astro dev` never
+   * exercises this getter and so never caught it locally. This fixture
+   * reproduces the real Astro v6 shape so the regression can't come back
+   * unnoticed.
+   */
+  function makeAstroV6Locals(waitUntilCalls) {
+    return {
+      get runtime() {
+        throw new Error(
+          "Astro.locals.runtime.ctx has been removed in Astro v6. Use 'Astro.locals.cfContext' instead.",
+        );
+      },
+      cfContext: {
+        waitUntil(promise) {
+          waitUntilCalls.push(promise);
+        },
+      },
+    };
+  }
+
+  it('does not throw when locals.runtime is a throwing getter (real Astro v6 shape)', async () => {
+    const waitUntilCalls = [];
+    const res = await POST({ request: makeToolCallRequest(), locals: makeAstroV6Locals(waitUntilCalls) });
+    expect(res.status).toBe(200);
+    expect(waitUntilCalls).toHaveLength(1);
+    await expect(waitUntilCalls[0]).resolves.toBeUndefined();
+  }, 15000);
+
+  it('responds successfully when locals is undefined (local dev, no Cloudflare runtime)', async () => {
+    const res = await POST({ request: makeToolCallRequest() });
+    expect(res.status).toBe(200);
+  }, 15000);
+
+  it('responds successfully when locals has neither runtime nor cfContext', async () => {
+    const res = await POST({ request: makeToolCallRequest(), locals: {} });
+    expect(res.status).toBe(200);
+  }, 15000);
 });
 
 describe('convert_curl_or_har_to_jmx MCP policy', () => {
