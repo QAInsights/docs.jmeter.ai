@@ -1,6 +1,7 @@
 ---
 import StarlightHead from '@astrojs/starlight/components/Head.astro';
 import type { Props } from '@astrojs/starlight/props';
+import { getCollection } from 'astro:content';
 import { buildFaqJsonLd } from '../faq-schema.mjs';
 import { buildHowToJsonLd } from '../howto-schema.mjs';
 import {
@@ -8,6 +9,7 @@ import {
   buildWebApplicationJsonLd,
   buildItemListJsonLd,
 } from '../lib/head-tags.mjs';
+import { TOOLS_REGISTRY } from '../lib/tools-config.mjs';
 
 const route = Astro.locals.starlightRoute;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
@@ -73,7 +75,22 @@ const jsonLd = isDocPage ? {
   },
 } : null;
 
-// BreadcrumbList JSON-LD
+// BreadcrumbList JSON-LD — use real page titles (from the docs collection)
+// so crumbs read "Timers, Think Time & Pacing" not "Timers Pacing Throughput
+// Modeling". Falls back to a humanized slug for non-docs paths.
+const pageTitleByPath = new Map(
+  (await getCollection('docs')).flatMap((entry) => {
+    const title = entry.data?.title;
+    if (!title) return [];
+    const dirPath = `/${entry.id.replace(/\/index$/, '')}/`;
+    const filePath = `/${entry.id}/`;
+    return dirPath === filePath ? [[filePath, title]] : [[filePath, title], [dirPath, title]];
+  }),
+);
+
+const humanizeSlug = (segment) =>
+  segment.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
 const pathSegments = Astro.url.pathname.split('/').filter(Boolean);
 const breadcrumbItems = [
   { name: 'Home', url: 'https://docs.jmeter.ai/' },
@@ -81,7 +98,7 @@ const breadcrumbItems = [
 let currentPath = '';
 for (const segment of pathSegments) {
   currentPath += `/${segment}`;
-  const name = segment.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const name = pageTitleByPath.get(`${currentPath}/`) ?? humanizeSlug(segment);
   breadcrumbItems.push({ name, url: `https://docs.jmeter.ai${currentPath}` });
 }
 
@@ -204,16 +221,31 @@ gtag('config', 'G-MVZN6CMXYQ');`,
     });
   }
 
-  // Satoshi typeface from Fontshare (variable weight)
+  // Satoshi typeface from Fontshare (variable weight). Loaded with the
+  // media="print" swap so it never blocks first paint (LCP); noscript users
+  // get it render-blocking as before.
   if (!hasTag('link', 'data-font', 'satoshi')) {
-    route.head.unshift({
-      tag: 'link',
-      attrs: {
-        rel: 'stylesheet',
-        href: 'https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap',
-        'data-font': 'satoshi',
+    route.head.unshift(
+      {
+        tag: 'link',
+        attrs: { rel: 'preconnect', href: 'https://api.fontshare.com', crossorigin: true },
       },
-    });
+      {
+        tag: 'link',
+        attrs: {
+          rel: 'stylesheet',
+          href: 'https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap',
+          media: 'print',
+          onload: "this.media='all'",
+          'data-font': 'satoshi',
+        },
+      },
+      {
+        tag: 'noscript',
+        content:
+          '<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap">',
+      },
+    );
   }
 
   // Inject manifest link
@@ -304,14 +336,10 @@ gtag('config', 'G-MVZN6CMXYQ');`,
       ? buildItemListJsonLd({
           name: 'JMeter Interactive Tools',
           url: canonicalUrl,
-          items: [
-            { title: 'Thread Calculator', url: 'https://docs.jmeter.ai/tools/thread-calculator/' },
-            { title: 'Heap & Memory Estimator', url: 'https://docs.jmeter.ai/tools/heap-estimator/' },
-            { title: 'CLI Command Builder', url: 'https://docs.jmeter.ai/tools/cli-builder/' },
-            { title: 'Coordinated Omission Calculator', url: 'https://docs.jmeter.ai/tools/coordinated-omission/' },
-            { title: 'Properties Cheat Sheet', url: 'https://docs.jmeter.ai/tools/properties-cheatsheet/' },
-            { title: 'Regex Extractor Builder', url: 'https://docs.jmeter.ai/tools/regex-tester/' },
-          ],
+          items: TOOLS_REGISTRY.map((tool) => ({
+            title: tool.title,
+            url: `https://docs.jmeter.ai${tool.path}`,
+          })),
         })
       : buildWebApplicationJsonLd({
           name: rawTitle || 'JMeter Tool',

@@ -6,6 +6,22 @@
 /** Placeholder shown in metric cards before a value is computed. */
 export const EMPTY_VALUE = '-';
 
+/**
+ * Single source of truth for the interactive tools: drives the /tools hub,
+ * the ItemList JSON-LD in SeoHead, and llms.txt. Keep paths trailing-slash.
+ */
+export const TOOLS_REGISTRY = [
+  { title: 'cURL & HAR to JMX Converter', path: '/tools/curl-to-jmx/' },
+  { title: 'Thread Calculator', path: '/tools/thread-calculator/' },
+  { title: 'Heap & Memory Estimator', path: '/tools/heap-estimator/' },
+  { title: 'CLI Command Builder', path: '/tools/cli-builder/' },
+  { title: 'Distributed Testing Planner', path: '/tools/distributed-planner/' },
+  { title: 'Linux OS & Kernel Tuning', path: '/tools/os-tuning/' },
+  { title: 'Coordinated Omission Calculator', path: '/tools/coordinated-omission/' },
+  { title: 'Properties Cheat Sheet', path: '/tools/properties-cheatsheet/' },
+  { title: 'Regex Extractor Builder', path: '/tools/regex-tester/' },
+];
+
 /** Thread / RPS calculator bounds and defaults. */
 export const THREAD_CALCULATOR = {
   limits: {

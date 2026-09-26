@@ -22,6 +22,19 @@ export function contentPathForLink(link, docsDir) {
 }
 
 /**
+ * Append UTM tracking params to a docs.jmeter.ai URL so outbound traffic
+ * from agents/tools/posts can be attributed in analytics.
+ * Accepts absolute or root-relative URLs. Existing utm_source wins.
+ */
+export function withUtm(url, source, { medium = 'referral', campaign } = {}) {
+  const u = new URL(url, 'https://docs.jmeter.ai');
+  if (!u.searchParams.has('utm_source')) u.searchParams.set('utm_source', source);
+  if (!u.searchParams.has('utm_medium')) u.searchParams.set('utm_medium', medium);
+  if (campaign && !u.searchParams.has('utm_campaign')) u.searchParams.set('utm_campaign', campaign);
+  return u.toString();
+}
+
+/**
  * Build breadcrumb items from a pathname.
  * Returns [{ name, url }] with at least the Home entry.
  */

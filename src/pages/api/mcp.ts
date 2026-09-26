@@ -24,6 +24,7 @@ import {
   MCP_TOOL_NAMES,
   runCurlHarConversionTool,
 } from '../../lib/mcp/server.mjs';
+import { incrementMcpToolCount } from '../../lib/counter.mjs';
 
 export {
   normalizeDocPath,
@@ -35,9 +36,11 @@ export {
 
 export const prerender = false;
 
-export async function POST({ request }: { request: Request }) {
+export async function POST({ request, locals }: { request: Request; locals: any }) {
   const limited = await mcpRateLimitResponse(request);
   if (limited) return limited;
+
+  trackMcpToolCall(request, locals);
 
   try {
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -113,6 +116,30 @@ export async function GET({ request }: { request: Request }) {
       },
     },
   );
+}
+
+/**
+ * Peek at the cloned JSON-RPC body for a tools/call and bump the weekly
+ * usage counters. Fire-and-forget via the Cloudflare waitUntil when
+ * available; failures are swallowed inside the counter.
+ */
+function trackMcpToolCall(request: Request, locals: any) {
+  const work = (async () => {
+    try {
+      const payload: any = await request.clone().json();
+      const calls = Array.isArray(payload) ? payload : [payload];
+      for (const call of calls) {
+        const name = call?.params?.name;
+        if (call?.method === 'tools/call' && typeof name === 'string' && MCP_TOOL_NAMES.includes(name)) {
+          await incrementMcpToolCount(name);
+        }
+      }
+    } catch {
+      /* non-JSON or malformed body: ignore */
+    }
+  })();
+  const ctx = locals?.runtime?.ctx;
+  if (ctx?.waitUntil) ctx.waitUntil(work);
 }
 
 async function mcpRateLimitResponse(request: Request): Promise<Response | null> {

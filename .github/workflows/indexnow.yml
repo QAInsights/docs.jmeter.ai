@@ -18,6 +18,8 @@ on:
     branches: [main]
     paths:
       - 'src/content/docs/**'
+      - 'src/data/**'
+      - 'public/templates/**'
   workflow_dispatch:
 
 permissions:
@@ -48,6 +50,14 @@ jobs:
                   -e 's|^https://docs.jmeter.ai/$|https://docs.jmeter.ai/|' \
               | head -100 \
               | paste -sd, -)
+            # Data-driven generated pages (overlays, template metadata)
+            # change URLs that aren't derivable per-file, so resubmit their
+            # hub indexes whenever src/data or public/templates move.
+            DATA_CHANGED=$(git diff --name-only HEAD^1 HEAD -- 'src/data/**' 'public/templates/**')
+            if [ -n "${DATA_CHANGED}" ]; then
+              HUBS="https://docs.jmeter.ai/components/,https://docs.jmeter.ai/functions/,https://docs.jmeter.ai/templates/"
+              URLS="${URLS:+${URLS},}${HUBS}"
+            fi
           fi
           echo "urls=${URLS}" >> "$GITHUB_OUTPUT"
           if [ -z "${URLS}" ]; then

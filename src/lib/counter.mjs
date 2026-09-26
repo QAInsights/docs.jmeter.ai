@@ -47,3 +47,41 @@ export async function getChatCount() {
     return 0;
   }
 }
+
+/** ISO week key (YYYY-Wnn) for weekly per-tool MCP usage buckets. */
+export function isoWeekKey(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = (d.getUTCDay() + 6) % 7; // Monday = 0
+  d.setUTCDate(d.getUTCDate() - day + 3); // nearest Thursday
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const fd = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - fd + 3);
+  const week = 1 + Math.round((d - firstThursday) / 604800000);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+const MCP_TOOL_KEY_PREFIX = 'mcp:tool';
+const MCP_WEEK_KEY_PREFIX = 'mcp:calls';
+
+/**
+ * Increment weekly usage counters for an MCP tool call:
+ *   mcp:tool:<name>:<yyyy-Wnn>  (per tool)
+ *   mcp:calls:<yyyy-Wnn>        (all tools)
+ * Returns the per-tool count, or null if Redis is not configured.
+ * Never throws — telemetry must not break tool serving.
+ */
+export async function incrementMcpToolCount(toolName) {
+  const redis = getClient();
+  if (!redis) return null;
+  const week = isoWeekKey();
+  try {
+    const pipeline = redis.pipeline();
+    const toolKey = `${MCP_TOOL_KEY_PREFIX}:${toolName}:${week}`;
+    pipeline.incr(toolKey);
+    pipeline.incr(`${MCP_WEEK_KEY_PREFIX}:${week}`);
+    const [count] = await pipeline.exec();
+    return typeof count === 'number' ? count : null;
+  } catch {
+    return null;
+  }
+}

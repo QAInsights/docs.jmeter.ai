@@ -15,6 +15,7 @@ import { lookupErrorPlaybook } from './error-playbooks.mjs';
 import { generateDistributedPlan } from '../distributed-planner.mjs';
 import { generateOsTuningPlan } from '../os-tuning.mjs';
 import { convertCurlOrHarToJmx } from './curl-har-to-jmx.mjs';
+import { withUtm } from '../path-utils.mjs';
 
 export const SERVER_NAME = 'jmeter-docs';
 export const SERVER_VERSION = '1.4.0';
@@ -127,13 +128,13 @@ export function createServer() {
           content: [
             {
               type: 'text',
-              text: `No documentation pages on docs.jmeter.ai matched "${query}". Try broader keywords (e.g. "correlation" instead of a full sentence), or point the user at https://docs.jmeter.ai/topics/troubleshooting/.`,
+              text: `No documentation pages on docs.jmeter.ai matched "${query}". Try broader keywords (e.g. "correlation" instead of a full sentence), or point the user at ${withUtm('https://docs.jmeter.ai/topics/troubleshooting/', 'mcp')}.`,
             },
           ],
         };
       }
       const listing = results
-        .map((r, i) => `${i + 1}. ${r.title}\nURL: ${r.url}\nSnippet: ${snippet(r.body)}`)
+        .map((r, i) => `${i + 1}. ${r.title}\nURL: ${withUtm(r.url, 'mcp')}\nSnippet: ${snippet(r.body)}`)
         .join('\n\n');
       return {
         content: [
@@ -179,7 +180,7 @@ export function createServer() {
         content: [
           {
             type: 'text',
-            text: `# ${chunk.title}\nSource: ${chunk.url}\n\n${body}${truncatedNote}`,
+            text: `# ${chunk.title}\nSource: ${withUtm(chunk.url, 'mcp')}\n\n${body}${truncatedNote}`,
           },
         ],
       };
@@ -250,7 +251,7 @@ export function createServer() {
           content: [
             {
               type: 'text',
-              text: `No curated JMeter properties matched "${query}". Refer to the full reference at https://docs.jmeter.ai/tools/properties-cheatsheet/ or search the user manual using search_jmeter_docs.`,
+              text: `No curated JMeter properties matched "${query}". Refer to the full reference at ${withUtm('https://docs.jmeter.ai/tools/properties-cheatsheet/', 'mcp')} or search the user manual using search_jmeter_docs.`,
             },
           ],
         };
@@ -258,7 +259,7 @@ export function createServer() {
       const capped = matches.slice(0, 15);
       const note =
         matches.length > 15
-          ? `\n\n(Showing top 15 of ${matches.length} matching properties. For the full list, see https://docs.jmeter.ai/tools/properties-cheatsheet/)`
+          ? `\n\n(Showing top 15 of ${matches.length} matching properties. For the full list, see ${withUtm('https://docs.jmeter.ai/tools/properties-cheatsheet/', 'mcp')})`
           : '';
       return {
         content: [{ type: 'text', text: JSON.stringify(capped, null, 2) + note }],
@@ -301,7 +302,7 @@ export function createServer() {
           content: [
             {
               type: 'text',
-              text: `No specific playbook matched "${query}". Search general error guides with search_jmeter_docs or see https://docs.jmeter.ai/topics/errors/.`,
+              text: `No specific playbook matched "${query}". Search general error guides with search_jmeter_docs or see ${withUtm('https://docs.jmeter.ai/topics/errors/', 'mcp')}.`,
             },
           ],
         };
@@ -309,7 +310,7 @@ export function createServer() {
       const capped = playbooks.slice(0, 10);
       const note =
         playbooks.length > 10
-          ? `\n\n(Showing top 10 of ${playbooks.length} matching playbooks. See https://docs.jmeter.ai/topics/errors/)`
+          ? `\n\n(Showing top 10 of ${playbooks.length} matching playbooks. See ${withUtm('https://docs.jmeter.ai/topics/errors/', 'mcp')})`
           : '';
       return {
         content: [{ type: 'text', text: JSON.stringify(capped, null, 2) + note }],
