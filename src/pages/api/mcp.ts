@@ -138,8 +138,9 @@ function trackMcpToolCall(request: Request, locals: any) {
       /* non-JSON or malformed body: ignore */
     }
   })();
-  const ctx = locals?.runtime?.ctx;
+  const ctx = locals?.cfContext;
   if (ctx?.waitUntil) ctx.waitUntil(work);
+  else work.catch(() => {});
 }
 
 async function mcpRateLimitResponse(request: Request): Promise<Response | null> {
