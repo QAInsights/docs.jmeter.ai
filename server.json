@@ -3,7 +3,7 @@
   "name": "io.github.QAInsights/jmeter-docs",
   "title": "JMeter Docs",
   "description": "Apache JMeter community documentation, conversion tools, linters, and calculators for AI agents.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "websiteUrl": "https://docs.jmeter.ai/",
   "repository": {
     "url": "https://github.com/QAInsights/docs.jmeter.ai",

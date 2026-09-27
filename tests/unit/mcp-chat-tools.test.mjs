@@ -45,6 +45,8 @@ describe('buildChatSystemPrompt', () => {
     expect(prompt).toContain('search_jmeter_docs');
     expect(prompt).toContain('get_jmeter_page');
     expect(prompt).toContain('calculate_workload_model');
+    expect(prompt).toContain('convert_openapi_to_jmx');
+    expect(prompt).toContain('lint_groovy_script');
     expect(prompt).not.toContain('DOCUMENTATION CONTEXT');
   });
 

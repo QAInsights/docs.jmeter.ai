@@ -23,6 +23,9 @@ import {
   SERVER_VERSION,
   MCP_TOOL_NAMES,
   runCurlHarConversionTool,
+  runOpenApiConversionTool,
+  runGroovyLintTool,
+  runJmxLintTool,
 } from '../../lib/mcp/server.mjs';
 import { incrementMcpToolCount } from '../../lib/counter.mjs';
 
@@ -32,6 +35,9 @@ export {
   createServer,
   MCP_TOOL_NAMES,
   runCurlHarConversionTool,
+  runOpenApiConversionTool,
+  runGroovyLintTool,
+  runJmxLintTool,
 };
 
 export const prerender = false;
@@ -97,7 +103,7 @@ export async function GET({ request }: { request: Request }) {
         name: SERVER_NAME,
         version: SERVER_VERSION,
         description:
-          'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, convert cURL/HAR to JMX, lint JMX test plans, calculate workload sizing, plan distributed clusters, query tuning properties, fetch Groovy recipes, and lookup diagnostic error playbooks.',
+          'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, convert cURL/HAR/OpenAPI to JMX, lint JMX and Groovy, calculate workload sizing, plan distributed clusters, query tuning properties, fetch Groovy recipes, and lookup diagnostic error playbooks.',
         transport: 'streamable-http',
         endpoint: 'https://docs.jmeter.ai/api/mcp',
         auth: 'none',

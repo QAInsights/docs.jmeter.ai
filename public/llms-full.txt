@@ -3,8 +3,8 @@
 > Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience. This is an independent community resource and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation. For official documentation, visit jmeter.apache.org.
 
 Site: https://docs.jmeter.ai
-Pages: 331
-Generated: 2026-09-27T01:58:24.999Z
+Pages: 334
+Generated: 2026-09-27T22:24:15.878Z
 ---
 Title: MCP Server
 URL: https://docs.jmeter.ai/mcp/
@@ -27,12 +27,14 @@ Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.
 | [`search_jmeter_docs`](#search_jmeter_docs) | Knowledge | BM25 semantic search across documentation, user manual, and guides |
 | [`get_jmeter_page`](#get_jmeter_page) | Knowledge | Fetch full markdown text of any documentation page |
 | [`convert_curl_or_har_to_jmx`](#convert_curl_or_har_to_jmx) | Generator | Convert cURL commands and HAR files to valid JMX XML (GET, POST, QUERY, etc.) |
-| [`lint_jmx_snippet`](#lint_jmx_snippet) | Diagnostics | Scan JMX XML for anti-patterns (GUI listeners, BeanShell, missing timeouts) |
+| [`convert_openapi_to_jmx`](#convert_openapi_to_jmx) | Generator | Convert OpenAPI 3.x or Swagger 2.0 JSON/YAML into a JMeter test plan |
+| [`lint_jmx_snippet`](#lint_jmx_snippet) | Diagnostics | Scan JMX XML for anti-patterns and return a structural inventory |
 | [`calculate_workload_model`](#calculate_workload_model) | Calculator | Little's Law concurrency, pacing, ramp-up schedules, and JVM heap sizing |
 | [`plan_distributed_testing`](#plan_distributed_testing) | Topology | Pinned RMI ports, `user.properties`, firewall rules, and Docker manifests |
 | [`tune_linux_os`](#tune_linux_os) | System | Linux `sysctl.conf`, `limits.conf`, systemd, and Docker tuning parameters |
 | [`lookup_jmeter_property`](#lookup_jmeter_property) | Reference | Search curated tuning properties with defaults and config locations |
 | [`get_jsr223_recipe`](#get_jsr223_recipe) | Code | Production Groovy recipes (JWT decoding, HMAC signing, dynamic headers) |
+| [`lint_groovy_script`](#lint_groovy_script) | Code | Review JSR223 Groovy pitfalls and generate ready-to-paste element XML |
 | [`lookup_error_playbook`](#lookup_error_playbook) | Diagnostics | Instant remediation and OS/JVM fixes for common runtime exceptions |
 | [`lookup_component`](#lookup_component) | Reference | Dedicated reference page for one JMeter component (properties, defaults, related guides) |
 | [`lookup_function`](#lookup_function) | Reference | Dedicated reference page for one built-in JMeter function (syntax, parameters, examples) |
@@ -67,9 +69,21 @@ Convert one or more cURL commands or HAR (HTTP Archive 1.2) JSON files into a sc
 }
 ```
 
+### convert_openapi_to_jmx
+
+Convert an OpenAPI 3.0/3.1 or Swagger 2.0 document in JSON or YAML into a ready-to-run JMeter 5.6.3 test plan. The tool samples request bodies from schemas, turns path and security values into JMeter variables, and supports method, tag, server, and deprecated-operation filters.
+
+```json
+{
+  "input": "{\"openapi\":\"3.0.3\",\"info\":{\"title\":\"Orders API\",\"version\":\"1\"},\"servers\":[{\"url\":\"https://api.example.com\"}],\"paths\":{\"/orders\":{\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}",
+  "threads": 25,
+  "tags": ["orders"]
+}
+```
+
 ### lint_jmx_snippet
 
-Validate a JMX XML snippet or test plan configuration against performance best practices and anti-patterns (active GUI listeners, legacy BeanShell, uncompiled JSR223, missing timeouts, zero ramp-up).
+Validate a JMX XML snippet or test plan configuration up to 1 MB against performance best practices and anti-patterns (active GUI listeners, legacy BeanShell, uncompiled JSR223, missing timeouts, zero ramp-up). The response also includes a `structure` inventory with thread groups, sampler/listener/assertion counts, common config elements, plugin classes, and the JMeter version.
 
 ```json
 { "jmxContent": "<HTTPSamplerProxy testclass=\"HTTPSamplerProxy\" ...>" }
@@ -126,6 +140,18 @@ Fetch production-ready, performant Groovy scripts for JMeter JSR223 elements (JW
 
 ```json
 { "query": "jwt" }
+```
+
+### lint_groovy_script
+
+Statically review a user-provided Groovy script for JMeter-specific performance pitfalls and bindings unavailable to the selected JSR223 element. By default, the response also contains compilation-cached JSR223 element XML ready to paste into a test plan.
+
+```json
+{
+  "code": "vars.put('elapsed', prev.getTime().toString())",
+  "elementType": "JSR223PostProcessor",
+  "includeJmxElement": true
+}
 ```
 
 ### lookup_error_playbook
@@ -5318,6 +5344,9 @@ Interactive helpers for common load-testing decisions. All tools run **in your b
 | Tool | Use it when you need to… |
 |------|--------------------------|
 | [cURL & HAR to JMX Converter](/tools/curl-to-jmx/) | Convert cURL commands and HAR files into valid JMX test plans (supports GET, POST, QUERY, etc.) |
+| [OpenAPI to JMX Converter](/tools/openapi-to-jmx/) | Convert OpenAPI 3.x or Swagger 2.0 JSON/YAML into a parameterized JMeter test plan |
+| [JMX Linter & Health Analyzer](/tools/jmx-linter/) | Find JMeter anti-patterns, calculate a health score, and inventory a JMX test plan locally |
+| [JSR223 Groovy Builder](/tools/groovy-builder/) | Lint JMeter Groovy code and generate ready-to-paste JSR223 JMX elements |
 | [Thread Calculator](/tools/thread-calculator/) | Estimate concurrent threads / RPS, think time, and ramp-up |
 | [Heap Estimator](/tools/heap-estimator/) | Pick a starting `-Xmx` for injectors |
 | [CLI Command Builder](/tools/cli-builder/) | Assemble `jmeter -n -t` with report, HEAP, and `-J` flags |
@@ -5425,6 +5454,210 @@ Prompt your AI agent:
 > *"Convert this cURL command into a JMeter test plan with 50 threads and 10s rampup: `curl -X QUERY https://api.example.com/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"loadtest\"}'`"*
 
 Your agent calls `convert_curl_or_har_to_jmx` and outputs schema-valid XML ready for execution.
+
+
+---
+Title: OpenAPI / Swagger to JMeter JMX Converter
+URL: https://docs.jmeter.ai/tools/openapi-to-jmx/
+---
+
+import OpenApiToJmx from '../../../components/tools/OpenApiToJmx.astro';
+
+<OpenApiToJmx />
+
+## What gets generated
+
+The converter turns each included API operation into a JMeter HTTP Request sampler and builds the surrounding Test Plan, HTTP Request Defaults, Thread Group, optional Cookie Manager, and response assertions.
+
+- **Servers become HTTP Defaults:** the selected OpenAPI server supplies the protocol, host, port, and path prefix. With host extraction enabled, the host is stored as `${BASE_URL}`.
+- **Path parameters become variables:** `/users/{userId}` becomes `/users/${userId}`. A generated User Defined Variable contains the schema example or a `CHANGE_ME` placeholder.
+- **Schemas become sample bodies:** JSON and form bodies are populated from examples, defaults, enums, formats, and referenced schemas.
+- **Security becomes variables:** bearer authentication becomes `${AUTH_TOKEN}` and API-key authentication becomes `${API_KEY}`. Basic authentication uses `${BASIC_AUTH}`.
+- **Assertions catch unexpected responses:** the optional response assertion accepts HTTP 200, 201, and 204 as a starting point. Adjust it to match each API contract.
+
+## Supported specification features
+
+| Feature | Support |
+| :--- | :--- |
+| OpenAPI versions | OpenAPI 3.0, OpenAPI 3.1, and Swagger 2.0 |
+| Input formats | JSON and YAML |
+| Local references | `#/components/...`, `#/definitions/...`, `#/parameters/...`, and `#/responses/...` |
+| Request bodies | JSON, `application/*+json`, URL-encoded forms, text examples, and XML examples |
+| Parameters | Path, query, and header parameters; optional query parameters are opt-in |
+| Security | Bearer, OAuth2/OpenID Connect, HTTP Basic, and header/query API keys |
+| Schema composition | `allOf` merging; the first `oneOf` or `anyOf` branch is used |
+| Known limitations | Multipart bodies, cookie parameters, and external `$ref` documents are not converted |
+
+Operation order follows the source document's path order and a stable HTTP method order. The generated plan does not infer a business workflow or dependencies between endpoints, so reorder samplers and add correlation where needed.
+
+## Filling in variables before running
+
+Open the generated Test Plan's **User Defined Variables** element and replace `CHANGE_ME` placeholder values and sample IDs. You can also replace values at runtime with JMeter properties after changing the corresponding variable value to a property function such as `${__P(apiKey,CHANGE_ME)}`.
+
+For secrets, avoid committing real values to the `.jmx`. Supply them through your CI secret store and `-J` properties instead.
+
+## Running in CLI mode
+
+Run generated plans in non-GUI mode:
+
+```bash
+jmeter -n -t openapi-test-plan.jmx -l results.jtl -e -o ./report
+```
+
+The generated Thread Group already reads concurrency, ramp-up, and duration from JMeter properties, so you can override them without editing the plan:
+
+```bash
+jmeter -n -t openapi-test-plan.jmx \
+  -Jthreads=100 -JrampUp=30 -Jduration=300 \
+  -l results.jtl -e -o ./report
+```
+
+A duration greater than zero enables the scheduler and infinite looping for the configured duration.
+
+## Use via MCP
+
+Connect an MCP-compatible agent:
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
+```
+
+Ask the agent to call `convert_openapi_to_jmx` with an OpenAPI 3.x or Swagger 2.0 document in JSON or YAML. It can apply the same server, method, tag, deprecated-operation, path-value, assertion, and Cookie Manager options as the browser converter and returns the generated JMX XML in its response.
+
+## Related tools
+
+- Use the [cURL & HAR to JMX Converter](/tools/curl-to-jmx/) when you have captured requests rather than an API contract.
+- Run the generated plan through the [JMX Linter & Health Analyzer](/tools/jmx-linter/) before execution.
+- Review [JMeter Best Practices](/user-manual/best-practices/) before increasing load.
+
+
+---
+Title: JMX Linter & Test Plan Health Analyzer
+URL: https://docs.jmeter.ai/tools/jmx-linter/
+---
+
+import JmxLinter from '../../../components/tools/JmxLinter.astro';
+
+<JmxLinter />
+
+## How the health score works
+
+The linter starts at **100 points** and subtracts **25 points per error**, **10 points per warning**, and **5 points per informational finding**, with a floor of zero. The score is a fast review signal, not proof that a test plan is valid or safe to run. The analyzer uses deterministic browser-side heuristics and does not execute the plan.
+
+## Rules
+
+| Rule ID | Severity | What it catches | Recommended fix |
+|---|---|---|---|
+| `ACTIVE_GUI_LISTENER` | Error | Enabled View Results Tree, table, graph, or aggregate GUI listeners | Disable GUI listeners and write JTL results or use a Backend Listener during load runs |
+| `LEGACY_BEANSHELL` | Error | Enabled BeanShell samplers, processors, assertions, timers, or listeners | Replace with cached JSR223 elements using Groovy |
+| `JSR223_NO_CACHE` | Warning | Active JSR223 elements with an absent, empty, or false cache key | Enable **Cache compiled script if available** |
+| `JSR223_NON_GROOVY_LANGUAGE` | Warning | Active JSR223 scripts using a language other than Groovy | Select Groovy to use compilation caching and the supported JMeter scripting path |
+| `THREAD_SLEEP_IN_SCRIPT` | Error | `Thread.sleep()` inside active JSR223 scripts | Model waits with JMeter Timers or Flow Control Action |
+| `ZERO_RAMP_UP_HIGH_CONCURRENCY` | Warning | At least 50 threads launched in zero or one second | Add a gradual ramp-up or use Concurrency Thread Group |
+| `MISSING_HTTP_TIMEOUTS` | Warning | HTTP plans without positive connect and response timeouts | Set both values in HTTP Request Defaults |
+| `JAVA_HTTP_IMPLEMENTATION` | Warning | The legacy Java HTTP implementation | Use HttpClient4 or leave the implementation blank |
+
+## What the inventory tells you
+
+The inventory summarizes thread groups, samplers, scripts, listeners, assertions, timers, controllers, configuration elements, processors, and disabled elements. It also identifies common shared configuration such as HTTP Request Defaults, CSV Data Set Config, Header Manager, Cookie Manager, Cache Manager, and Backend Listener. **Total Threads** sums enabled standard `ThreadGroup`, `SetupThreadGroup`, and `PostThreadGroup` elements only; plugin groups such as Concurrency Thread Group are excluded. Thread-group details expose static thread counts, ramp-up, loops, and scheduler duration; property expressions such as `${threads}` are intentionally reported as unknown rather than guessed.
+
+Plugin class names beginning with `kg.apc.` or `com.blazemeter.` are listed so you can confirm that every load generator has the required plugin JARs.
+
+## Run the plan in CLI mode
+
+After fixing findings, validate the plan with JMeter and run load tests outside the GUI:
+
+```bash
+jmeter -n -t test-plan.jmx -l results.jtl -e -o report/
+```
+
+A clean lint score does not replace a one-user smoke run, response assertions, realistic test data, or monitoring the system under test.
+
+## Use via AI agent (MCP)
+
+Connect an MCP-compatible agent:
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
+```
+
+The agent can call `lint_jmx_snippet` with a JMX snippet or full test plan and return the same findings, score, and remediation guidance.
+
+
+---
+Title: JSR223 Groovy Playground & Code Builder
+URL: https://docs.jmeter.ai/tools/groovy-builder/
+---
+
+import GroovyBuilder from '../../../components/tools/GroovyBuilder.astro';
+import { BINDINGS_BY_ELEMENT } from '../../../lib/groovy-builder.mjs';
+import { GROOVY_BUILDER } from '../../../lib/tools-config.mjs';
+
+<GroovyBuilder />
+
+## Why Groovy over BeanShell
+
+JMeter supports Groovy through JSR223 compilation caching, while BeanShell is interpreted and substantially slower in a hot sampling path. Groovy also provides modern Java interoperability, mature JSON support, and access to JMeter's documented script bindings.
+
+This page is a **builder and static analyzer**. Groovy cannot execute in the browser. The tool inspects source text for JMeter-specific pitfalls and generates files for you to review and run in JMeter; it does not validate runtime types, external classes, network access, or script behavior.
+
+## Binding availability
+
+Every JSR223 element exposes the common bindings `log`, `Label`, `FileName`, `Parameters`, `args`, `ctx`, `vars`, `props`, and `OUT`. Element-specific bindings differ:
+
+<table>
+  <thead>
+    <tr><th>Element</th><th>Available bindings</th></tr>
+  </thead>
+  <tbody>
+    {GROOVY_BUILDER.elementTypes.map((element) => (
+      <tr>
+        <td><code>{element.label}</code></td>
+        <td>{BINDINGS_BY_ELEMENT[element.id].map((binding) => <code>{binding}</code>).reduce((items, item, index) => index ? [...items, ', ', item] : [item], [])}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+Binding names are case-sensitive. For example, `SampleResult` is available in a Sampler or Assertion, while lowercase `sampleResult` and `sampleEvent` belong to a Listener. `prev` is available to PostProcessors, Assertions, and Listeners, but not PreProcessors or Timers; `sampler` is available to all six element types, including Listeners.
+
+## Anti-patterns this linter catches
+
+| Rule ID | Severity | What it catches |
+|---|---|---|
+| `EMPTY_SCRIPT` | Error | Blank code |
+| `THREAD_SLEEP` | Error | `Thread.sleep(...)` or `sleep(...)` blocking a JMeter worker thread |
+| `JMETER_VAR_INTERPOLATION` | Warning | `${name}` expansion without a preceding Groovy local declaration |
+| `SYSTEM_OUT` | Warning | `System.out`, `System.err`, or statement-level `println(...)` |
+| `NEW_RANDOM_PER_CALL` | Info | A new `Random` instance created on each invocation |
+| `REGEX_COMPILE_IN_SCRIPT` | Info | `Pattern.compile(...)` in the hot script path |
+| `UNAVAILABLE_BINDING` | Error | A known binding used by the wrong JSR223 element type |
+| `BEANSHELL_IMPORT` | Error | BeanShell imports or API references inside Groovy |
+| `LEGACY_JSONSLURPER_CLASSIC` | Info | `JsonSlurperClassic` instead of `JsonSlurper` |
+| `PROPS_MUTATION_IN_LOOP_HOT_PATH` | Info | Writes to shared JMeter properties with `props.put(...)` |
+| `SCRIPT_TOO_LONG` | Warning | Inline code over 200,000 characters that belongs in a `.groovy` file |
+
+For dynamic JMeter values, prefer `vars.get("name")` or `props.get("name")`. Substitution such as `${token}` happens before Groovy compilation, can create a new compiled script for each value, and can break syntax when data contains quotes or other special characters.
+
+## How to use the generated JMX snippet
+
+1. Select the JSR223 element that matches where the script should run.
+2. Fix error-level binding or scripting findings.
+3. Copy the generated element and its following `<hashTree/>`.
+4. Paste it under the target element's `<hashTree>` in the `.jmx`, or use **JMeter GUI → Edit → Paste**.
+5. Open the plan in JMeter, confirm the tree location, and run a one-user smoke test with assertions before applying load.
+
+The generated element uses `TestBeanGUI`, Groovy, and a non-empty `cacheKey` so JMeter can cache compiled scripts. Downloading the `.groovy` variant is useful when scripts are shared across plans or maintained in source control; set that file through the JSR223 **FileName** field in JMeter.
+
+## Use via MCP
+
+Connect an MCP-compatible agent:
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
+```
+
+Ask the agent to call `get_jsr223_recipe` by recipe name or category to retrieve the curated JWT, HMAC, dynamic header, JSON extraction, and custom logging examples used by this builder. For your own script, call `lint_groovy_script` with the code and JSR223 element type to receive the same findings, binding analysis, and optional ready-to-paste JMX element XML.
 
 
 ---

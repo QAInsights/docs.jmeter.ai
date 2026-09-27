@@ -31,12 +31,14 @@ Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.
 | [`search_jmeter_docs`](#search_jmeter_docs) | Knowledge | BM25 semantic search across documentation, user manual, and guides |
 | [`get_jmeter_page`](#get_jmeter_page) | Knowledge | Fetch full markdown text of any documentation page |
 | [`convert_curl_or_har_to_jmx`](#convert_curl_or_har_to_jmx) | Generator | Convert cURL commands and HAR files to valid JMX XML (GET, POST, QUERY, etc.) |
-| [`lint_jmx_snippet`](#lint_jmx_snippet) | Diagnostics | Scan JMX XML for anti-patterns (GUI listeners, BeanShell, missing timeouts) |
+| [`convert_openapi_to_jmx`](#convert_openapi_to_jmx) | Generator | Convert OpenAPI 3.x or Swagger 2.0 JSON/YAML into a JMeter test plan |
+| [`lint_jmx_snippet`](#lint_jmx_snippet) | Diagnostics | Scan JMX XML for anti-patterns and return a structural inventory |
 | [`calculate_workload_model`](#calculate_workload_model) | Calculator | Little's Law concurrency, pacing, ramp-up schedules, and JVM heap sizing |
 | [`plan_distributed_testing`](#plan_distributed_testing) | Topology | Pinned RMI ports, `user.properties`, firewall rules, and Docker manifests |
 | [`tune_linux_os`](#tune_linux_os) | System | Linux `sysctl.conf`, `limits.conf`, systemd, and Docker tuning parameters |
 | [`lookup_jmeter_property`](#lookup_jmeter_property) | Reference | Search curated tuning properties with defaults and config locations |
 | [`get_jsr223_recipe`](#get_jsr223_recipe) | Code | Production Groovy recipes (JWT decoding, HMAC signing, dynamic headers) |
+| [`lint_groovy_script`](#lint_groovy_script) | Code | Review JSR223 Groovy pitfalls and generate ready-to-paste element XML |
 | [`lookup_error_playbook`](#lookup_error_playbook) | Diagnostics | Instant remediation and OS/JVM fixes for common runtime exceptions |
 | [`lookup_component`](#lookup_component) | Reference | Dedicated reference page for one JMeter component (properties, defaults, related guides) |
 | [`lookup_function`](#lookup_function) | Reference | Dedicated reference page for one built-in JMeter function (syntax, parameters, examples) |
@@ -71,9 +73,21 @@ Convert one or more cURL commands or HAR (HTTP Archive 1.2) JSON files into a sc
 }
 ```
 
+### convert_openapi_to_jmx
+
+Convert an OpenAPI 3.0/3.1 or Swagger 2.0 document in JSON or YAML into a ready-to-run JMeter 5.6.3 test plan. The tool samples request bodies from schemas, turns path and security values into JMeter variables, and supports method, tag, server, and deprecated-operation filters.
+
+```json
+{
+  "input": "{\"openapi\":\"3.0.3\",\"info\":{\"title\":\"Orders API\",\"version\":\"1\"},\"servers\":[{\"url\":\"https://api.example.com\"}],\"paths\":{\"/orders\":{\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}",
+  "threads": 25,
+  "tags": ["orders"]
+}
+```
+
 ### lint_jmx_snippet
 
-Validate a JMX XML snippet or test plan configuration against performance best practices and anti-patterns (active GUI listeners, legacy BeanShell, uncompiled JSR223, missing timeouts, zero ramp-up).
+Validate a JMX XML snippet or test plan configuration up to 1 MB against performance best practices and anti-patterns (active GUI listeners, legacy BeanShell, uncompiled JSR223, missing timeouts, zero ramp-up). The response also includes a `structure` inventory with thread groups, sampler/listener/assertion counts, common config elements, plugin classes, and the JMeter version.
 
 ```json
 { "jmxContent": "<HTTPSamplerProxy testclass=\"HTTPSamplerProxy\" ...>" }
@@ -130,6 +144,18 @@ Fetch production-ready, performant Groovy scripts for JMeter JSR223 elements (JW
 
 ```json
 { "query": "jwt" }
+```
+
+### lint_groovy_script
+
+Statically review a user-provided Groovy script for JMeter-specific performance pitfalls and bindings unavailable to the selected JSR223 element. By default, the response also contains compilation-cached JSR223 element XML ready to paste into a test plan.
+
+```json
+{
+  "code": "vars.put('elapsed', prev.getTime().toString())",
+  "elementType": "JSR223PostProcessor",
+  "includeJmxElement": true
+}
 ```
 
 ### lookup_error_playbook

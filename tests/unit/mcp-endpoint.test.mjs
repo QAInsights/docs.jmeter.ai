@@ -1,6 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeDocPath, findChunkByPath, GET, POST, runCurlHarConversionTool } from '../../src/pages/api/mcp.ts';
+import {
+  normalizeDocPath,
+  findChunkByPath,
+  GET,
+  POST,
+  runCurlHarConversionTool,
+  runOpenApiConversionTool,
+  runGroovyLintTool,
+  runJmxLintTool,
+} from '../../src/pages/api/mcp.ts';
 import { INDEX } from '../../src/lib/rag.mjs';
+import { JMX_LINTER, OPENAPI_TO_JMX } from '../../src/lib/tools-config.mjs';
 
 describe('normalizeDocPath', () => {
   it('accepts full URLs', () => {
@@ -56,7 +66,7 @@ describe('findChunkByPath', () => {
 });
 
 describe('GET /api/mcp endpoint discovery', () => {
-  it('advertises all 12 MCP tools and streamable HTTP metadata', async () => {
+  it('advertises all 14 MCP tools and streamable HTTP metadata', async () => {
     const request = new Request('https://docs.jmeter.ai/api/mcp', {
       headers: { Accept: 'application/json' },
     });
@@ -70,16 +80,18 @@ describe('GET /api/mcp endpoint discovery', () => {
     expect(body.tools).toContain('search_jmeter_docs');
     expect(body.tools).toContain('get_jmeter_page');
     expect(body.tools).toContain('convert_curl_or_har_to_jmx');
+    expect(body.tools).toContain('convert_openapi_to_jmx');
     expect(body.tools).toContain('lint_jmx_snippet');
     expect(body.tools).toContain('calculate_workload_model');
     expect(body.tools).toContain('plan_distributed_testing');
     expect(body.tools).toContain('tune_linux_os');
     expect(body.tools).toContain('lookup_jmeter_property');
     expect(body.tools).toContain('get_jsr223_recipe');
+    expect(body.tools).toContain('lint_groovy_script');
     expect(body.tools).toContain('lookup_error_playbook');
     expect(body.tools).toContain('lookup_component');
     expect(body.tools).toContain('lookup_function');
-    expect(body.tools).toHaveLength(12);
+    expect(body.tools).toHaveLength(14);
   });
 
   it('returns 405 instead of starting a reconnect loop for an SSE listener GET', async () => {
@@ -101,7 +113,7 @@ describe('GET /api/mcp endpoint discovery', () => {
 });
 
 describe('POST /api/mcp — Cloudflare locals compatibility', () => {
-  function makeToolCallRequest(name = 'search_jmeter_docs') {
+  function makeToolCallRequest(name = 'search_jmeter_docs', args = { query: 'correlation' }) {
     return new Request('https://docs.jmeter.ai/api/mcp', {
       method: 'POST',
       headers: {
@@ -112,7 +124,7 @@ describe('POST /api/mcp — Cloudflare locals compatibility', () => {
         jsonrpc: '2.0',
         id: 1,
         method: 'tools/call',
-        params: { name, arguments: { query: 'correlation' } },
+        params: { name, arguments: args },
       }),
     });
   }
@@ -158,6 +170,15 @@ describe('POST /api/mcp — Cloudflare locals compatibility', () => {
   it('responds successfully when locals has neither runtime nor cfContext', async () => {
     const res = await POST({ request: makeToolCallRequest(), locals: {} });
     expect(res.status).toBe(200);
+  }, 15000);
+
+  it('rejects lint_jmx_snippet input over the 1 MB schema limit', async () => {
+    const request = makeToolCallRequest('lint_jmx_snippet', { jmxContent: 'x'.repeat(1_000_001) });
+    const res = await POST({ request });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.result.isError).toBe(true);
+    expect(body.result.content[0].text).toMatch(/1,?000,?000|too_big|maximum/i);
   }, 15000);
 });
 
@@ -419,5 +440,78 @@ describe('convert_curl_or_har_to_jmx MCP policy', () => {
     const response = runCurlHarConversionTool({ input });
     expect(response.isError).toBe(true);
     expect(response.content[0].text).toMatch(expected);
+  });
+});
+
+describe('convert_openapi_to_jmx MCP policy', () => {
+  it('returns a runnable conversion for the Petstore sample', () => {
+    const response = runOpenApiConversionTool({ input: OPENAPI_TO_JMX.samples.petstoreJson });
+    expect(response.isError).toBeUndefined();
+    const result = JSON.parse(response.content[0].text);
+    expect(result.requestCount).toBeGreaterThan(0);
+    expect(result.jmxXml).toContain('<HTTPSamplerProxy');
+  });
+
+  it('returns a tool error for invalid JSON or YAML', () => {
+    const response = runOpenApiConversionTool({ input: 'not: [valid' });
+    expect(response.isError).toBe(true);
+    expect(response.content[0].text).toMatch(/^Conversion blocked:/);
+  });
+
+  it('blocks a spec whose only operation is excluded as deprecated', () => {
+    const input = JSON.stringify({
+      openapi: '3.0.3',
+      info: { title: 'Deprecated API', version: '1.0.0' },
+      paths: {
+        '/legacy': {
+          get: { deprecated: true, responses: { 200: { description: 'ok' } } },
+        },
+      },
+    });
+    const response = runOpenApiConversionTool({ input, includeDeprecated: false });
+    expect(response.isError).toBe(true);
+    expect(response.content[0].text).toMatch(/^Conversion blocked:/);
+  });
+});
+
+describe('lint_groovy_script MCP policy', () => {
+  it('reports unavailable bindings and returns a JSR223 element by default', () => {
+    const response = runGroovyLintTool({
+      code: 'Thread.sleep(100); vars.put("a", prev.getTime().toString())',
+      elementType: 'JSR223Timer',
+    });
+    expect(response.isError).toBeUndefined();
+    const result = JSON.parse(response.content[0].text);
+    expect(result.findings.map((finding) => finding.id)).toEqual(expect.arrayContaining(['THREAD_SLEEP', 'UNAVAILABLE_BINDING']));
+    expect(result.unavailableBindings).toEqual(['prev']);
+    expect(result.jmxElement).toContain('<JSR223Timer');
+  });
+
+  it('omits JMX element XML when requested', () => {
+    const response = runGroovyLintTool({
+      code: 'vars.put("status", "ok")',
+      includeJmxElement: false,
+    });
+    const result = JSON.parse(response.content[0].text);
+    expect(result).not.toHaveProperty('jmxElement');
+  });
+
+  it('reports zero errors for a clean script in the default element type', () => {
+    const response = runGroovyLintTool({ code: 'vars.put("status", prev.getResponseCode())' });
+    const result = JSON.parse(response.content[0].text);
+    expect(result.elementType).toBe('JSR223PostProcessor');
+    expect(result.errorCount).toBe(0);
+    expect(result.summary).toBe('No JMeter-specific issues found.');
+  });
+});
+
+describe('lint_jmx_snippet structural inventory', () => {
+  it('returns lint findings and JMX structure together', () => {
+    const response = runJmxLintTool({ jmxContent: JMX_LINTER.samples.antiPatterns });
+    const result = JSON.parse(response.content[0].text);
+    expect(result).toHaveProperty('score');
+    expect(result).toHaveProperty('findings');
+    expect(result.structure.threadGroups).toHaveLength(1);
+    expect(result.structure.totalThreads).toBe(200);
   });
 });
