@@ -1,0 +1,519 @@
+---
+import { OPENAPI_TO_JMX } from '../../lib/tools-config.mjs';
+
+const { defaults, limits, methodOptions, samples } = OPENAPI_TO_JMX;
+---
+
+<div class="tool" data-openapi-to-jmx>
+  <div class="tool-presets">
+    <span class="tool-label" style="margin-right:0.25rem;font-size:0.85rem">Presets:</span>
+    <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-preset="petstoreJson">Petstore (OAS 3.0 JSON)</button>
+    <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-preset="minimalYaml">Minimal (OAS 3.1 YAML)</button>
+    <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-preset="swagger2Json">Swagger 2.0 JSON</button>
+  </div>
+
+  <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem">
+    <span class="tool-label">OpenAPI or Swagger document</span>
+    <textarea name="input" rows="10" spellcheck="false" style="font-family:var(--font-mono, monospace);font-size:0.82rem;line-height:1.4">{samples.petstoreJson}</textarea>
+    <span class="tool-hint">OpenAPI 3.0/3.1 and Swagger 2.0, JSON or YAML. Runs entirely in your browser.</span>
+  </label>
+
+  <div class="tool-actions tool-actions--wrap" style="margin-top:0.6rem">
+    <label class="tool-btn tool-btn-ghost tool-btn-sm" style="cursor:pointer">
+      Upload JSON or YAML
+      <input type="file" name="file" accept=".json,.yaml,.yml,application/json,text/yaml" hidden />
+    </label>
+  </div>
+
+  <div class="tool-grid tool-grid--2" style="margin-top:1rem">
+    <label class="tool-field">
+      <span class="tool-label">Virtual Users (Threads)</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="threads" min={limits.threads.min} max={limits.threads.max} value={defaults.threads} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">users</span>
+      </div>
+    </label>
+    <label class="tool-field">
+      <span class="tool-label">Ramp-Up Time</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="rampUpSeconds" min={limits.rampUp.min} max={limits.rampUp.max} value={defaults.rampUp} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">sec</span>
+      </div>
+    </label>
+    <label class="tool-field">
+      <span class="tool-label">Duration</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="durationSeconds" min={limits.duration.min} max={limits.duration.max} value={defaults.duration} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">sec</span>
+      </div>
+    </label>
+    <label class="tool-field">
+      <span class="tool-label">Loop Count</span>
+      <div class="tool-input-wrap">
+        <input type="number" name="loopCount" min={limits.loopCount.min} max={limits.loopCount.max} value={defaults.loopCount} inputmode="numeric" />
+        <span class="tool-suffix" aria-hidden="true">loops</span>
+      </div>
+    </label>
+    <label class="tool-field">
+      <span class="tool-label">Test Plan Name</span>
+      <input type="text" name="testPlanName" value="Petstore API Test Plan" maxlength="160" spellcheck="false" />
+    </label>
+    <label class="tool-field" data-server-field hidden>
+      <span class="tool-label">Server</span>
+      <select name="serverIndex"></select>
+    </label>
+  </div>
+
+  <div class="tool-checks" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;margin:1rem 0">
+    <label class="tool-check"><input type="checkbox" name="parameterizeHost" checked={defaults.parameterizeHost} /><span>Extract host to <code>${`{BASE_URL}`}</code></span></label>
+    <label class="tool-check"><input type="checkbox" name="includeOptionalQueryParams" checked={defaults.includeOptionalQueryParams} /><span>Include optional query params</span></label>
+    <label class="tool-check"><input type="checkbox" name="useExampleValues" checked={defaults.useExampleValues} /><span>Use example path values instead of <code>${`{var}`}</code></span></label>
+    <label class="tool-check"><input type="checkbox" name="includeAssertions" checked={defaults.includeAssertions} /><span>Add response assertions</span></label>
+    <label class="tool-check"><input type="checkbox" name="includeCookieManager" checked={defaults.includeCookieManager} /><span>Include Cookie Manager</span></label>
+    <label class="tool-check"><input type="checkbox" name="includeDeprecated" checked={defaults.includeDeprecated} /><span>Include deprecated operations</span></label>
+  </div>
+
+  <fieldset class="tool-field" style="border:0;padding:0;margin:0 0 1rem">
+    <legend class="tool-label" style="margin-bottom:0.45rem">HTTP methods</legend>
+    <div class="tool-chip-list" data-methods>
+      {methodOptions.map((method) => (
+        <label class="tool-chip" style="cursor:pointer">
+          <input type="checkbox" name="method" value={method} checked={defaults.methods.includes(method)} />
+          <span>{method}</span>
+        </label>
+      ))}
+    </div>
+  </fieldset>
+
+  <fieldset class="tool-field" data-tags-field style="border:0;padding:0;margin:0 0 1rem" hidden>
+    <legend class="tool-label" style="margin-bottom:0.45rem">Tags</legend>
+    <div class="tool-actions" style="margin-bottom:0.5rem">
+      <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-tags-all>All</button>
+      <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-tags-none>None</button>
+    </div>
+    <div class="tool-chip-list" data-tags></div>
+  </fieldset>
+
+  <div class="tool-results tool-results--4" aria-live="polite">
+    <div class="tool-card tool-card-primary"><span class="tool-card-label">HTTP Samplers</span><span class="tool-card-value" data-request-count>-</span></div>
+    <div class="tool-card"><span class="tool-card-label">Spec Version</span><span class="tool-card-value tool-card-sm" data-spec-version>-</span></div>
+    <div class="tool-card"><span class="tool-card-label">Base URL</span><span class="tool-card-value tool-card-sm" data-base-url>-</span></div>
+    <div class="tool-card"><span class="tool-card-label">Variables to Set</span><span class="tool-card-value" data-variable-count>-</span></div>
+  </div>
+
+  <div data-warnings-container style="margin-top:1rem;display:none">
+    <div class="tool-notice tool-notice--warning">
+      <strong>Notices</strong>
+      <ul data-warnings-list style="margin:0.35rem 0 0;padding-left:1.25rem"></ul>
+    </div>
+  </div>
+
+  <section style="margin-top:1.4rem">
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">Operations</h4>
+    <div data-operations class="tool-compact-list" style="display:flex;flex-direction:column;gap:0.4rem;max-height:260px;overflow:auto"></div>
+  </section>
+
+  <section style="margin-top:1.25rem">
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem">User Defined Variables</h4>
+    <div data-variables class="tool-inventory-panel"></div>
+  </section>
+
+  <section style="margin-top:1.25rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+      <h4 style="margin:0;font-size:0.95rem">Generated Apache JMeter JMX XML</h4>
+      <span class="tool-badge" data-jmx-badge>JMeter 5.6.3</span>
+    </div>
+    <pre class="tool-code tool-code--tall" data-jmx-output tabindex="0" aria-live="polite"></pre>
+  </section>
+
+  <div class="tool-actions tool-actions--wrap" style="margin-top:1.25rem">
+    <button type="button" class="tool-btn" data-download-jmx>Download .jmx</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-jmx>Copy JMX XML</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
+    <span class="tool-status" data-status aria-live="polite" hidden></span>
+  </div>
+
+  <div class="tool-mcp-callout">
+    <h4>Use this converter through MCP</h4>
+    <p>Connect an AI agent and call <code>convert_openapi_to_jmx</code> to convert OpenAPI or Swagger JSON/YAML into the same JMeter test plan format.</p>
+    <pre class="tool-code"><code>claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http</code></pre>
+  </div>
+
+  <p class="tool-disclaimer">
+    Conversion runs locally in your browser. Review generated sample values, credentials, assertions, and request order before running load.
+    See the <a href="/tools/curl-to-jmx/">cURL &amp; HAR converter</a>, <a href="/tools/jmx-linter/">JMX Linter</a>, and <a href="/user-manual/component-reference/#HTTP_Request">HTTP Request reference</a>.
+  </p>
+</div>
+
+<script>
+  import { OPENAPI_TO_JMX } from '../../lib/tools-config.mjs';
+  import { convertOpenApiToJmx, MAX_INPUT_CHARS } from '../../lib/mcp/openapi-to-jmx.mjs';
+  import { clampToRange, copyText } from '../../lib/tools-utils.mjs';
+
+  interface OperationResult {
+    method: string;
+    path: string;
+    operationId: string;
+    summary: string;
+    tag: string;
+    deprecated: boolean;
+    included: boolean;
+    skippedReason?: string;
+  }
+
+  interface ConversionResult {
+    jmxXml: string;
+    requestCount: number;
+    specVersion: string;
+    title: string;
+    baseUrl: string;
+    servers: string[];
+    tags: string[];
+    operations: OperationResult[];
+    pathVariables: string[];
+    requests: Array<{ method: string; url: string; domain: string; path: string; headersCount: number; bodyType: string }>;
+    detectedDomains: string[];
+    hasBearerToken: boolean;
+    blockingErrors: string[];
+    isValid: boolean;
+    warnings: string[];
+    summary: string;
+  }
+
+  interface VariableEntry { name: string; value: string }
+
+  function init(root: HTMLElement) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const inputArea = root.querySelector<HTMLTextAreaElement>('textarea[name="input"]');
+    const fileInput = root.querySelector<HTMLInputElement>('input[name="file"]');
+    const threadsInput = root.querySelector<HTMLInputElement>('input[name="threads"]');
+    const rampUpInput = root.querySelector<HTMLInputElement>('input[name="rampUpSeconds"]');
+    const durationInput = root.querySelector<HTMLInputElement>('input[name="durationSeconds"]');
+    const loopCountInput = root.querySelector<HTMLInputElement>('input[name="loopCount"]');
+    const testPlanNameInput = root.querySelector<HTMLInputElement>('input[name="testPlanName"]');
+    const serverSelect = root.querySelector<HTMLSelectElement>('select[name="serverIndex"]');
+    const serverField = root.querySelector<HTMLElement>('[data-server-field]');
+    const tagsField = root.querySelector<HTMLElement>('[data-tags-field]');
+    const tagsContainer = root.querySelector<HTMLElement>('[data-tags]');
+    const operationsEl = root.querySelector<HTMLElement>('[data-operations]');
+    const variablesEl = root.querySelector<HTMLElement>('[data-variables]');
+    const warningsContainer = root.querySelector<HTMLElement>('[data-warnings-container]');
+    const warningsList = root.querySelector<HTMLElement>('[data-warnings-list]');
+    const outputEl = root.querySelector<HTMLElement>('[data-jmx-output]');
+    const requestCountEl = root.querySelector<HTMLElement>('[data-request-count]');
+    const specVersionEl = root.querySelector<HTMLElement>('[data-spec-version]');
+    const baseUrlEl = root.querySelector<HTMLElement>('[data-base-url]');
+    const variableCountEl = root.querySelector<HTMLElement>('[data-variable-count]');
+    const badgeEl = root.querySelector<HTMLElement>('[data-jmx-badge]');
+    const downloadBtn = root.querySelector<HTMLButtonElement>('[data-download-jmx]');
+    const copyBtn = root.querySelector<HTMLButtonElement>('[data-copy-jmx]');
+    const statusEl = root.querySelector<HTMLElement>('[data-status]');
+
+    let currentResult: ConversionResult | null = null;
+    let testPlanNameDirty = false;
+    let tagSignature = '';
+    let serverSignature = '';
+
+    function showStatus(message: string) {
+      if (!statusEl) return;
+      statusEl.hidden = !message;
+      statusEl.textContent = message;
+      if (message) setTimeout(() => showStatus(''), 1800);
+    }
+
+    function integerValue(input: HTMLInputElement | null, fallback: number) {
+      const value = Number(input?.value);
+      return Number.isFinite(value) ? Math.round(value) : fallback;
+    }
+
+    function methodStyle(method: string) {
+      switch (method) {
+        case 'GET': return 'background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3)';
+        case 'POST': return 'background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3)';
+        case 'PUT':
+        case 'PATCH': return 'background:rgba(234,179,8,.15);color:#facc15;border:1px solid rgba(234,179,8,.3)';
+        case 'DELETE': return 'background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)';
+        default: return 'background:rgba(156,163,175,.15);color:#d1d5db;border:1px solid rgba(156,163,175,.3)';
+      }
+    }
+
+    function selectedMethods() {
+      return [...root.querySelectorAll<HTMLInputElement>('input[name="method"]:checked')].map((input) => input.value);
+    }
+
+    function selectedTags() {
+      const inputs = [...root.querySelectorAll<HTMLInputElement>('input[name="tag"]')];
+      const checked = inputs.filter((input) => input.checked).map((input) => input.value);
+      return inputs.length > 0 && checked.length === 0 ? ['__no_tags_selected__'] : checked;
+    }
+
+    function xmlDecode(value: string) {
+      return value.replaceAll('&quot;', '"').replaceAll('&apos;', "'").replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
+    }
+
+    function extractVariables(xml: string): VariableEntry[] {
+      const variables: VariableEntry[] = [];
+      const pattern = /<elementProp name="[^"]*" elementType="Argument">\s*<stringProp name="Argument.name">([^<]*)<\/stringProp>\s*<stringProp name="Argument.value">([^<]*)<\/stringProp>/g;
+      for (const match of xml.matchAll(pattern)) variables.push({ name: xmlDecode(match[1]), value: xmlDecode(match[2]) });
+      return variables;
+    }
+
+    function renderTags(tags: string[]): boolean {
+      if (!tagsContainer || !tagsField) return false;
+      const signature = tags.join('\u0000');
+      if (signature === tagSignature) return false;
+      const previous = new Set(selectedTags());
+      const hadTags = Boolean(tagSignature);
+      tagSignature = signature;
+      tagsContainer.textContent = '';
+      tagsField.hidden = tags.length === 0;
+      for (const tag of tags) {
+        const label = document.createElement('label');
+        label.className = 'tool-chip';
+        label.style.cursor = 'pointer';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'tag';
+        checkbox.value = tag;
+        checkbox.checked = hadTags ? previous.has(tag) : true;
+        checkbox.addEventListener('change', recompute);
+        const text = document.createElement('span');
+        text.textContent = tag;
+        label.append(checkbox, text);
+        tagsContainer.appendChild(label);
+      }
+      return true;
+    }
+
+    function renderServers(servers: string[]) {
+      if (!serverSelect || !serverField) return;
+      const signature = servers.join('\u0000');
+      if (signature !== serverSignature) {
+        const previous = serverSelect.value;
+        serverSignature = signature;
+        serverSelect.textContent = '';
+        servers.forEach((server, index) => {
+          const option = document.createElement('option');
+          option.value = String(index);
+          option.textContent = server;
+          serverSelect.appendChild(option);
+        });
+        if ([...serverSelect.options].some((option) => option.value === previous)) serverSelect.value = previous;
+      }
+      serverField.hidden = servers.length <= 1;
+    }
+
+    function renderOperations(operations: OperationResult[]) {
+      if (!operationsEl) return;
+      operationsEl.textContent = '';
+      if (!operations.length) {
+        const empty = document.createElement('p');
+        empty.className = 'tool-hint';
+        empty.textContent = 'No operations found in the document.';
+        operationsEl.appendChild(empty);
+        return;
+      }
+      for (const operation of operations) {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:.5rem;padding:.4rem .5rem;border:1px solid var(--sl-color-hairline);border-radius:4px;font-size:.82rem';
+        if (!operation.included) row.style.opacity = '.62';
+        const badge = document.createElement('span');
+        badge.style.cssText = `font-family:var(--font-mono,monospace);font-size:.72rem;font-weight:700;padding:.12rem .38rem;border-radius:3px;${methodStyle(operation.method)}`;
+        badge.textContent = operation.method;
+        const path = document.createElement('code');
+        path.style.flex = '1';
+        path.textContent = operation.path;
+        const detail = document.createElement('span');
+        detail.style.cssText = 'font-size:.74rem;color:var(--sl-color-gray-3);text-align:right';
+        detail.textContent = operation.included ? (operation.operationId || operation.summary || operation.tag) : `skipped: ${operation.skippedReason || 'filtered'}`;
+        row.append(badge, path, detail);
+        operationsEl.appendChild(row);
+      }
+    }
+
+    function renderVariables(variables: VariableEntry[]) {
+      if (!variablesEl || !variableCountEl) return;
+      variablesEl.textContent = '';
+      const actionable = variables.filter((variable) => variable.name !== 'BASE_URL');
+      variableCountEl.textContent = String(actionable.length);
+      if (!variables.length) {
+        variablesEl.textContent = 'No User Defined Variables were generated.';
+        return;
+      }
+      const list = document.createElement('dl');
+      list.style.cssText = 'display:grid;grid-template-columns:minmax(8rem,auto) 1fr;gap:.35rem .75rem;margin:0';
+      for (const variable of variables) {
+        const name = document.createElement('dt');
+        name.style.fontFamily = 'var(--font-mono, monospace)';
+        name.textContent = variable.name;
+        const value = document.createElement('dd');
+        value.style.cssText = 'margin:0;font-family:var(--font-mono, monospace);overflow-wrap:anywhere';
+        value.textContent = variable.value;
+        list.append(name, value);
+      }
+      variablesEl.appendChild(list);
+    }
+
+    function recompute() {
+      if (!inputArea) return;
+      currentResult = convertOpenApiToJmx({
+        input: inputArea.value,
+        testPlanName: testPlanNameDirty ? testPlanNameInput?.value : undefined,
+        threads: clampToRange(integerValue(threadsInput, OPENAPI_TO_JMX.defaults.threads), OPENAPI_TO_JMX.limits.threads, OPENAPI_TO_JMX.defaults.threads),
+        rampUpSeconds: clampToRange(integerValue(rampUpInput, OPENAPI_TO_JMX.defaults.rampUp), OPENAPI_TO_JMX.limits.rampUp, OPENAPI_TO_JMX.defaults.rampUp),
+        durationSeconds: clampToRange(integerValue(durationInput, OPENAPI_TO_JMX.defaults.duration), OPENAPI_TO_JMX.limits.duration, OPENAPI_TO_JMX.defaults.duration),
+        loopCount: clampToRange(integerValue(loopCountInput, OPENAPI_TO_JMX.defaults.loopCount), OPENAPI_TO_JMX.limits.loopCount, OPENAPI_TO_JMX.defaults.loopCount),
+        parameterizeHost: root.querySelector<HTMLInputElement>('input[name="parameterizeHost"]')?.checked ?? true,
+        includeOptionalQueryParams: root.querySelector<HTMLInputElement>('input[name="includeOptionalQueryParams"]')?.checked ?? false,
+        useExampleValues: root.querySelector<HTMLInputElement>('input[name="useExampleValues"]')?.checked ?? false,
+        includeAssertions: root.querySelector<HTMLInputElement>('input[name="includeAssertions"]')?.checked ?? true,
+        includeCookieManager: root.querySelector<HTMLInputElement>('input[name="includeCookieManager"]')?.checked ?? true,
+        includeDeprecated: root.querySelector<HTMLInputElement>('input[name="includeDeprecated"]')?.checked ?? false,
+        methods: selectedMethods(),
+        tags: selectedTags(),
+        serverIndex: Number(serverSelect?.value || 0),
+      }) as ConversionResult;
+
+      if (!testPlanNameDirty && testPlanNameInput && currentResult.title) testPlanNameInput.value = `${currentResult.title} Test Plan`;
+      renderServers(currentResult.servers);
+      if (renderTags(currentResult.tags)) {
+        recompute();
+        return;
+      }
+      renderOperations(currentResult.operations);
+      const variables = extractVariables(currentResult.jmxXml);
+      renderVariables(variables);
+
+      if (requestCountEl) requestCountEl.textContent = String(currentResult.requestCount);
+      if (specVersionEl) specVersionEl.textContent = currentResult.specVersion.replace('openapi-', 'OAS ').replace('swagger-', 'Swagger ');
+      if (baseUrlEl) baseUrlEl.textContent = currentResult.baseUrl || '-';
+      if (outputEl) outputEl.textContent = currentResult.jmxXml || '<!-- No JMX generated -->';
+
+      if (warningsContainer && warningsList) {
+        const notices = [...currentResult.blockingErrors, ...currentResult.warnings];
+        warningsList.textContent = '';
+        warningsContainer.style.display = notices.length ? 'block' : 'none';
+        notices.forEach((notice) => {
+          const item = document.createElement('li');
+          item.textContent = notice;
+          warningsList.appendChild(item);
+        });
+      }
+
+      if (badgeEl) {
+        badgeEl.textContent = currentResult.isValid ? 'JMeter 5.6.3 Ready' : 'Export unavailable';
+        badgeEl.style.color = currentResult.isValid ? '#4ade80' : '#f87171';
+      }
+      if (downloadBtn) downloadBtn.disabled = !currentResult.isValid;
+      if (copyBtn) copyBtn.disabled = !currentResult.isValid;
+    }
+
+    inputArea?.addEventListener('input', recompute);
+    [threadsInput, rampUpInput, durationInput, loopCountInput].forEach((input) => input?.addEventListener('input', recompute));
+    testPlanNameInput?.addEventListener('input', () => { testPlanNameDirty = true; recompute(); });
+    serverSelect?.addEventListener('change', recompute);
+    root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:not([name="tag"])').forEach((input) => input.addEventListener('change', recompute));
+
+    root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.preset as keyof typeof OPENAPI_TO_JMX.samples;
+        if (!key || !inputArea) return;
+        inputArea.value = OPENAPI_TO_JMX.samples[key];
+        testPlanNameDirty = false;
+        tagSignature = '';
+        serverSignature = '';
+        recompute();
+        showStatus(`Loaded ${button.textContent?.trim() || 'preset'}`);
+      });
+    });
+
+    fileInput?.addEventListener('change', () => {
+      const file = fileInput.files?.[0];
+      if (!file || !inputArea) return;
+      if (file.size > MAX_INPUT_CHARS) {
+        showStatus(`File exceeds ${OPENAPI_TO_JMX.limits.maxInputLabel}`);
+        fileInput.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        inputArea.value = String(reader.result || '');
+        testPlanNameDirty = false;
+        tagSignature = '';
+        serverSignature = '';
+        recompute();
+        showStatus(`Loaded ${file.name}`);
+      };
+      reader.onerror = () => showStatus('Could not read file');
+      reader.readAsText(file);
+    });
+
+    root.querySelector<HTMLButtonElement>('[data-tags-all]')?.addEventListener('click', () => {
+      root.querySelectorAll<HTMLInputElement>('input[name="tag"]').forEach((input) => { input.checked = true; });
+      recompute();
+    });
+    root.querySelector<HTMLButtonElement>('[data-tags-none]')?.addEventListener('click', () => {
+      root.querySelectorAll<HTMLInputElement>('input[name="tag"]').forEach((input) => { input.checked = false; });
+      recompute();
+    });
+
+    downloadBtn?.addEventListener('click', () => {
+      if (!currentResult?.isValid) return;
+      const blob = new Blob([currentResult.jmxXml], { type: 'application/xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${(testPlanNameInput?.value || 'openapi-test-plan').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.jmx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      showStatus('Downloaded JMX file');
+    });
+
+    copyBtn?.addEventListener('click', async () => {
+      if (!currentResult?.isValid) return;
+      try {
+        await copyText(currentResult.jmxXml);
+        showStatus('Copied JMX XML');
+      } catch {
+        showStatus('Copy failed');
+      }
+    });
+
+    root.querySelector<HTMLButtonElement>('[data-reset]')?.addEventListener('click', () => {
+      if (inputArea) inputArea.value = OPENAPI_TO_JMX.samples.petstoreJson;
+      if (threadsInput) threadsInput.value = String(OPENAPI_TO_JMX.defaults.threads);
+      if (rampUpInput) rampUpInput.value = String(OPENAPI_TO_JMX.defaults.rampUp);
+      if (durationInput) durationInput.value = String(OPENAPI_TO_JMX.defaults.duration);
+      if (loopCountInput) loopCountInput.value = String(OPENAPI_TO_JMX.defaults.loopCount);
+      testPlanNameDirty = false;
+      root.querySelectorAll<HTMLInputElement>('input[name="method"]').forEach((input) => { input.checked = OPENAPI_TO_JMX.defaults.methods.includes(input.value); });
+      const checkboxDefaults: Record<string, boolean> = {
+        parameterizeHost: OPENAPI_TO_JMX.defaults.parameterizeHost,
+        includeOptionalQueryParams: OPENAPI_TO_JMX.defaults.includeOptionalQueryParams,
+        useExampleValues: OPENAPI_TO_JMX.defaults.useExampleValues,
+        includeAssertions: OPENAPI_TO_JMX.defaults.includeAssertions,
+        includeCookieManager: OPENAPI_TO_JMX.defaults.includeCookieManager,
+        includeDeprecated: OPENAPI_TO_JMX.defaults.includeDeprecated,
+      };
+      Object.entries(checkboxDefaults).forEach(([name, checked]) => {
+        const checkbox = root.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+        if (checkbox) checkbox.checked = checked;
+      });
+      tagSignature = '';
+      serverSignature = '';
+      recompute();
+      showStatus('Reset to defaults');
+    });
+
+    recompute();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-openapi-to-jmx]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLElement>('[data-openapi-to-jmx]').forEach(init);
+  });
+</script>

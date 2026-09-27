@@ -3,6 +3,7 @@ import {
   parseCurlCommands,
   parseHarJson,
   convertCurlOrHarToJmx,
+  buildJmxXml,
   isStandardPort,
   sanitizeJMeterValue,
   escapeXml,
@@ -669,6 +670,26 @@ describe('curl-har-to-jmx core engine', () => {
   });
 
   describe('End-to-End JMX XML Validation and Linter Score', () => {
+    it('appends escaped, deduplicated extra variables without changing omitted output', () => {
+      const requests = parseCurlCommands('curl https://api.example.com/items');
+      const baseline = buildJmxXml(requests, { testPlanName: 'Variables' });
+      const omitted = buildJmxXml(requests, { testPlanName: 'Variables', extraVariables: undefined });
+      const withVariables = buildJmxXml(requests, {
+        testPlanName: 'Variables',
+        extraVariables: [
+          { name: 'ITEM_ID', value: '10 & 20' },
+          { name: 'ITEM_ID', value: 'ignored' },
+          { name: 'BASE_URL', value: 'ignored.example' },
+        ],
+      });
+
+      expect(omitted).toBe(baseline);
+      expect(withVariables).toContain('<stringProp name="Argument.name">ITEM_ID</stringProp>');
+      expect(withVariables).toContain('<stringProp name="Argument.value">10 &amp; 20</stringProp>');
+      expect(withVariables.match(/<stringProp name="Argument.name">ITEM_ID<\/stringProp>/g)).toHaveLength(1);
+      expect(withVariables).not.toContain('ignored.example');
+    });
+
     it('generates schema-valid XML parseable by fast-xml-parser', () => {
       const cmd = `curl -X QUERY https://api.example.com/v1/search \\
         -H "Content-Type: application/json" \\

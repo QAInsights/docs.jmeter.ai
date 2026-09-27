@@ -1,0 +1,61 @@
+---
+title: "JMX Linter & Test Plan Health Analyzer"
+seoTitle: "JMX Linter & JMeter Test Plan Health Analyzer"
+description: "Lint JMeter JMX files in your browser, find load-testing anti-patterns, calculate a health score, and inspect test plan structure without uploading your plan."
+keywords:
+  - jmeter jmx linter
+  - jmx validator
+  - jmeter test plan analyzer
+  - jmeter best practices checker
+  - jmeter health score
+difficulty: intermediate
+guideType: reference
+estimatedReadTime: "5 min read"
+---
+
+import JmxLinter from '../../../components/tools/JmxLinter.astro';
+
+<JmxLinter />
+
+## How the health score works
+
+The linter starts at **100 points** and subtracts **25 points per error**, **10 points per warning**, and **5 points per informational finding**, with a floor of zero. The score is a fast review signal, not proof that a test plan is valid or safe to run. The analyzer uses deterministic browser-side heuristics and does not execute the plan.
+
+## Rules
+
+| Rule ID | Severity | What it catches | Recommended fix |
+|---|---|---|---|
+| `ACTIVE_GUI_LISTENER` | Error | Enabled View Results Tree, table, graph, or aggregate GUI listeners | Disable GUI listeners and write JTL results or use a Backend Listener during load runs |
+| `LEGACY_BEANSHELL` | Error | Enabled BeanShell samplers, processors, assertions, timers, or listeners | Replace with cached JSR223 elements using Groovy |
+| `JSR223_NO_CACHE` | Warning | Active JSR223 elements with an absent, empty, or false cache key | Enable **Cache compiled script if available** |
+| `JSR223_NON_GROOVY_LANGUAGE` | Warning | Active JSR223 scripts using a language other than Groovy | Select Groovy to use compilation caching and the supported JMeter scripting path |
+| `THREAD_SLEEP_IN_SCRIPT` | Error | `Thread.sleep()` inside active JSR223 scripts | Model waits with JMeter Timers or Flow Control Action |
+| `ZERO_RAMP_UP_HIGH_CONCURRENCY` | Warning | At least 50 threads launched in zero or one second | Add a gradual ramp-up or use Concurrency Thread Group |
+| `MISSING_HTTP_TIMEOUTS` | Warning | HTTP plans without positive connect and response timeouts | Set both values in HTTP Request Defaults |
+| `JAVA_HTTP_IMPLEMENTATION` | Warning | The legacy Java HTTP implementation | Use HttpClient4 or leave the implementation blank |
+
+## What the inventory tells you
+
+The inventory summarizes thread groups, samplers, scripts, listeners, assertions, timers, controllers, configuration elements, processors, and disabled elements. It also identifies common shared configuration such as HTTP Request Defaults, CSV Data Set Config, Header Manager, Cookie Manager, Cache Manager, and Backend Listener. **Total Threads** sums enabled standard `ThreadGroup`, `SetupThreadGroup`, and `PostThreadGroup` elements only; plugin groups such as Concurrency Thread Group are excluded. Thread-group details expose static thread counts, ramp-up, loops, and scheduler duration; property expressions such as `${threads}` are intentionally reported as unknown rather than guessed.
+
+Plugin class names beginning with `kg.apc.` or `com.blazemeter.` are listed so you can confirm that every load generator has the required plugin JARs.
+
+## Run the plan in CLI mode
+
+After fixing findings, validate the plan with JMeter and run load tests outside the GUI:
+
+```bash
+jmeter -n -t test-plan.jmx -l results.jtl -e -o report/
+```
+
+A clean lint score does not replace a one-user smoke run, response assertions, realistic test data, or monitoring the system under test.
+
+## Use via AI agent (MCP)
+
+Connect an MCP-compatible agent:
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
+```
+
+The agent can call `lint_jmx_snippet` with a JMX snippet or full test plan and return the same findings, score, and remediation guidance.

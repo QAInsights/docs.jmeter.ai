@@ -1,0 +1,387 @@
+---
+import { JMX_LINTER } from '../../lib/tools-config.mjs';
+
+const { samples, maxInputLabel } = JMX_LINTER;
+---
+
+<div class="tool" data-jmx-linter>
+  <div class="tool-presets">
+    <span class="tool-label" style="margin-right:0.25rem;font-size:0.85rem">Presets:</span>
+    <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-preset="antiPatterns">Anti-pattern Sample</button>
+    <button type="button" class="tool-btn tool-btn-ghost tool-btn-sm" data-preset="clean">Clean Sample</button>
+  </div>
+
+  <label class="tool-field tool-field-wide">
+    <span class="tool-label">JMX Test Plan</span>
+    <textarea name="input" rows="12" spellcheck="false" aria-describedby="jmx-local-hint">{samples.antiPatterns}</textarea>
+    <span class="tool-hint tool-hint--static" id="jmx-local-hint">Everything runs locally in your browser; your test plan never leaves this page.</span>
+  </label>
+
+  <div class="tool-actions tool-actions--compact">
+    <label class="tool-btn tool-btn-ghost" style="position:relative;overflow:hidden">
+      Upload .jmx
+      <input type="file" name="file" accept=".jmx,.xml,text/xml,application/xml" style="position:absolute;inset:0;opacity:0;cursor:pointer" />
+    </label>
+    <span class="tool-hint tool-hint--static">Maximum file size: {maxInputLabel}</span>
+  </div>
+
+  <div class="tool-notice" data-notice hidden aria-live="polite"></div>
+
+  <div class="tool-results tool-results--4" aria-live="polite">
+    <div class="tool-card tool-card-primary">
+      <span class="tool-card-label">Health Score</span>
+      <span class="tool-card-value" data-score>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Errors</span>
+      <span class="tool-card-value" data-errors>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Warnings</span>
+      <span class="tool-card-value" data-warnings>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Enabled Standard Threads (No Plugins)</span>
+      <span class="tool-card-value" data-threads>-</span>
+    </div>
+  </div>
+
+  <section class="tool-section" aria-labelledby="jmx-findings-title">
+    <h4 id="jmx-findings-title">Findings</h4>
+    <div class="tool-finding-list" data-findings></div>
+    <p class="tool-empty" data-findings-empty hidden>No anti-patterns detected.</p>
+  </section>
+
+  <section class="tool-section" aria-labelledby="jmx-inventory-title">
+    <div class="tool-section__heading">
+      <h4 id="jmx-inventory-title">Test Plan Inventory</h4>
+      <span class="tool-hint tool-hint--static" data-plan-meta></span>
+    </div>
+    <div class="tool-table-wrap">
+      <table class="tool-table">
+        <thead><tr><th>Element</th><th>Count</th><th>Element</th><th>Count</th></tr></thead>
+        <tbody data-inventory></tbody>
+      </table>
+    </div>
+    <div class="tool-chip-list" data-checks aria-label="Test plan features"></div>
+    <div data-thread-groups></div>
+    <div data-plugins></div>
+  </section>
+
+  <div class="tool-actions tool-actions--wrap">
+    <button type="button" class="tool-btn" data-copy-report>Copy Report (Markdown)</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
+    <span class="tool-status" data-status aria-live="polite" hidden></span>
+  </div>
+
+  <div class="tool-mcp-callout">
+    <h4>Add this analyzer to your AI agent (MCP)</h4>
+    <p>Claude Code, Cursor, Windsurf, and other agents can call <code>lint_jmx_snippet</code> directly:</p>
+    <pre class="tool-code"><code>claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http</code></pre>
+  </div>
+
+  <p class="tool-disclaimer">
+    All analysis runs locally in your browser. Rules are heuristics, not a replacement for executing and reviewing your plan.
+    {' '}See <a href="/user-manual/best-practices/">JMeter Best Practices</a> and <a href="/mcp/">JMeter MCP Reference</a>.
+  </p>
+</div>
+
+<script>
+  import { analyzeJmxStructure } from '../../lib/jmx-analyzer.mjs';
+  import { lintJmx } from '../../lib/mcp/jmx-linter.mjs';
+  import { JMX_LINTER } from '../../lib/tools-config.mjs';
+  import { copyText, utf8ByteLength } from '../../lib/tools-utils.mjs';
+
+  interface Finding {
+    id: string;
+    severity: 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+    recommendation: string;
+    matches?: string[];
+  }
+
+  interface LintResult { findings: Finding[]; score: number; summary: string }
+  interface ThreadGroup { name: string; enabled: boolean; type: string; threads: number | null; rampUp: number | null; loops: number | null; duration: number | null }
+  interface Analysis {
+    isJmx: boolean;
+    jmeterVersion: string;
+    testPlanName: string;
+    threadGroups: ThreadGroup[];
+    totalThreads: number;
+    counts: Record<string, number>;
+    hasCsvDataSet: boolean;
+    hasHeaderManager: boolean;
+    hasCookieManager: boolean;
+    hasCacheManager: boolean;
+    hasHttpDefaults: boolean;
+    hasBackendListener: boolean;
+    pluginClasses: string[];
+  }
+
+  const inventoryLabels: Array<[string, string]> = [
+    ['threadGroups', 'Thread Groups'], ['httpSamplers', 'HTTP Samplers'],
+    ['otherSamplers', 'Other Samplers'], ['jsr223', 'JSR223'],
+    ['beanshell', 'BeanShell'], ['listeners', 'Listeners'],
+    ['assertions', 'Assertions'], ['timers', 'Timers'],
+    ['controllers', 'Controllers'], ['configElements', 'Config Elements'],
+    ['processors', 'Pre/Post Processors'], ['disabledElements', 'Disabled'],
+  ];
+
+  function init(root: HTMLElement) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const input = root.querySelector('textarea[name="input"]') as HTMLTextAreaElement | null;
+    const fileInput = root.querySelector('input[name="file"]') as HTMLInputElement | null;
+    const scoreEl = root.querySelector('[data-score]') as HTMLElement | null;
+    const errorsEl = root.querySelector('[data-errors]') as HTMLElement | null;
+    const warningsEl = root.querySelector('[data-warnings]') as HTMLElement | null;
+    const threadsEl = root.querySelector('[data-threads]') as HTMLElement | null;
+    const noticeEl = root.querySelector('[data-notice]') as HTMLElement | null;
+    const findingsEl = root.querySelector('[data-findings]') as HTMLElement | null;
+    const findingsEmptyEl = root.querySelector('[data-findings-empty]') as HTMLElement | null;
+    const inventoryEl = root.querySelector('[data-inventory]') as HTMLElement | null;
+    const checksEl = root.querySelector('[data-checks]') as HTMLElement | null;
+    const threadGroupsEl = root.querySelector('[data-thread-groups]') as HTMLElement | null;
+    const pluginsEl = root.querySelector('[data-plugins]') as HTMLElement | null;
+    const planMetaEl = root.querySelector('[data-plan-meta]') as HTMLElement | null;
+    const copyBtn = root.querySelector('[data-copy-report]') as HTMLButtonElement | null;
+    const statusEl = root.querySelector('[data-status]') as HTMLElement | null;
+    let currentLint: LintResult | null = null;
+    let currentAnalysis: Analysis | null = null;
+
+    function showStatus(message: string) {
+      if (!statusEl) return;
+      statusEl.hidden = !message;
+      statusEl.textContent = message;
+      if (message) setTimeout(() => showStatus(''), 1800);
+    }
+
+    function setNotice(message: string) {
+      if (!noticeEl) return;
+      noticeEl.hidden = !message;
+      noticeEl.textContent = message;
+    }
+
+    function severityStyle(severity: Finding['severity']) {
+      if (severity === 'error') return 'background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.35)';
+      if (severity === 'warning') return 'background:rgba(234,179,8,.15);color:#facc15;border-color:rgba(234,179,8,.35)';
+      return 'background:rgba(59,130,246,.15);color:#60a5fa;border-color:rgba(59,130,246,.35)';
+    }
+
+    function renderFindings(findings: Finding[], isJmx: boolean) {
+      if (!findingsEl || !findingsEmptyEl) return;
+      findingsEl.textContent = '';
+      const order = { error: 0, warning: 1, info: 2 };
+      [...findings].sort((a, b) => order[a.severity] - order[b.severity]).forEach((finding) => {
+        const item = document.createElement('article');
+        item.className = 'tool-finding';
+        const heading = document.createElement('div');
+        heading.className = 'tool-finding__heading';
+        const badge = document.createElement('span');
+        badge.className = 'tool-chip';
+        badge.style.cssText = severityStyle(finding.severity);
+        badge.textContent = finding.severity;
+        const title = document.createElement('strong');
+        title.textContent = finding.title;
+        heading.append(badge, title);
+        const message = document.createElement('p');
+        message.textContent = finding.message;
+        const fix = document.createElement('p');
+        fix.className = 'tool-finding__fix';
+        fix.textContent = `Fix: ${finding.recommendation}`;
+        item.append(heading, message, fix);
+        if (finding.matches?.length) {
+          const matches = document.createElement('code');
+          matches.className = 'tool-finding__matches';
+          matches.textContent = `Matches: ${finding.matches.join(', ')}`;
+          item.appendChild(matches);
+        }
+        findingsEl.appendChild(item);
+      });
+      findingsEmptyEl.hidden = !(isJmx && findings.length === 0);
+    }
+
+    function appendTableCell(row: HTMLTableRowElement, value: string) {
+      const cell = document.createElement('td');
+      cell.textContent = value;
+      row.appendChild(cell);
+    }
+
+    function renderInventory(analysis: Analysis) {
+      if (inventoryEl) {
+        inventoryEl.textContent = '';
+        const values: Record<string, number> = {
+          threadGroups: analysis.threadGroups.length,
+          ...analysis.counts,
+          processors: analysis.counts.preProcessors + analysis.counts.postProcessors,
+        };
+        for (let index = 0; index < inventoryLabels.length; index += 2) {
+          const row = document.createElement('tr');
+          for (const [key, label] of inventoryLabels.slice(index, index + 2)) {
+            appendTableCell(row, label);
+            appendTableCell(row, String(values[key] ?? 0));
+          }
+          inventoryEl.appendChild(row);
+        }
+      }
+
+      if (planMetaEl) {
+        const meta = [];
+        if (analysis.testPlanName) meta.push(analysis.testPlanName);
+        if (analysis.jmeterVersion) meta.push(`JMeter ${analysis.jmeterVersion}`);
+        planMetaEl.textContent = meta.join(' · ');
+      }
+
+      if (checksEl) {
+        checksEl.textContent = '';
+        const checks: Array<[string, boolean]> = [
+          ['HTTP Defaults', analysis.hasHttpDefaults], ['Header Manager', analysis.hasHeaderManager],
+          ['Cookie Manager', analysis.hasCookieManager], ['Cache Manager', analysis.hasCacheManager],
+          ['CSV Data Set', analysis.hasCsvDataSet], ['Backend Listener', analysis.hasBackendListener],
+        ];
+        checks.forEach(([label, present]) => {
+          const chip = document.createElement('span');
+          chip.className = `tool-chip ${present ? 'tool-chip--present' : 'tool-chip--absent'}`;
+          chip.textContent = `${label}: ${present ? 'present' : 'absent'}`;
+          checksEl.appendChild(chip);
+        });
+      }
+
+      if (threadGroupsEl) {
+        threadGroupsEl.textContent = '';
+        if (analysis.threadGroups.length) {
+          const heading = document.createElement('h5');
+          heading.textContent = 'Thread Groups';
+          const list = document.createElement('ul');
+          list.className = 'tool-compact-list';
+          analysis.threadGroups.forEach((group) => {
+            const item = document.createElement('li');
+            const title = document.createElement('strong');
+            title.textContent = group.name || group.type;
+            const state = document.createElement('span');
+            state.className = `tool-chip ${group.enabled ? 'tool-chip--present' : 'tool-chip--absent'}`;
+            state.textContent = group.enabled ? 'enabled' : 'disabled';
+            const detail = document.createElement('span');
+            const parts = [];
+            if (group.threads !== null) parts.push(`${group.threads} threads`);
+            if (group.rampUp !== null) parts.push(`ramp ${group.rampUp}s`);
+            if (group.loops !== null) parts.push(group.loops === -1 ? 'infinite' : `loops ${group.loops}`);
+            if (group.duration !== null) parts.push(`duration ${group.duration}s`);
+            detail.textContent = parts.join(' · ');
+            item.append(title, state, detail);
+            list.appendChild(item);
+          });
+          threadGroupsEl.append(heading, list);
+        }
+      }
+
+      if (pluginsEl) {
+        pluginsEl.textContent = '';
+        if (analysis.pluginClasses.length) {
+          const label = document.createElement('strong');
+          label.textContent = 'Plugin classes: ';
+          const value = document.createElement('code');
+          value.textContent = analysis.pluginClasses.join(', ');
+          pluginsEl.append(label, value);
+        }
+      }
+    }
+
+    function clearResults() {
+      [scoreEl, errorsEl, warningsEl, threadsEl].forEach((element) => { if (element) element.textContent = '-'; });
+      if (scoreEl) scoreEl.style.color = '';
+      [findingsEl, inventoryEl, checksEl, threadGroupsEl, pluginsEl].forEach((element) => { if (element) element.textContent = ''; });
+      if (findingsEmptyEl) findingsEmptyEl.hidden = true;
+      if (planMetaEl) planMetaEl.textContent = '';
+      currentLint = null;
+      currentAnalysis = null;
+    }
+
+    function recompute() {
+      const content = input?.value || '';
+      if (copyBtn) copyBtn.disabled = !content.trim();
+      if (!content.trim()) {
+        setNotice('');
+        clearResults();
+        return;
+      }
+      if (utf8ByteLength(content) > JMX_LINTER.maxInputBytes) {
+        setNotice(`Input exceeds ${JMX_LINTER.maxInputLabel}. Analysis skipped.`);
+        clearResults();
+        if (copyBtn) copyBtn.disabled = true;
+        return;
+      }
+
+      currentLint = lintJmx(content) as LintResult;
+      currentAnalysis = analyzeJmxStructure(content) as Analysis;
+      const errors = currentLint.findings.filter((finding) => finding.severity === 'error').length;
+      const warnings = currentLint.findings.filter((finding) => finding.severity === 'warning').length;
+      if (scoreEl) {
+        scoreEl.textContent = `${currentLint.score}/100`;
+        scoreEl.style.color = currentLint.score >= JMX_LINTER.scoreBands.good ? '#4ade80' : currentLint.score >= JMX_LINTER.scoreBands.fair ? '#facc15' : '#f87171';
+      }
+      if (errorsEl) errorsEl.textContent = String(errors);
+      if (warningsEl) warningsEl.textContent = String(warnings);
+      if (threadsEl) threadsEl.textContent = currentAnalysis.isJmx ? String(currentAnalysis.totalThreads) : '-';
+      setNotice(currentAnalysis.isJmx ? '' : "This doesn't look like a JMeter test plan (<jmeterTestPlan> not found). Lint results may be partial.");
+      renderFindings(currentLint.findings, currentAnalysis.isJmx);
+      renderInventory(currentAnalysis);
+    }
+
+    function buildReport() {
+      if (!currentLint || !currentAnalysis) return '';
+      const title = currentAnalysis.testPlanName || 'JMX Test Plan';
+      const lines = [`# ${title} — Health Score ${currentLint.score}/100`, '', currentLint.summary, '', '## Findings'];
+      if (currentLint.findings.length === 0) lines.push('', '- No anti-patterns detected.');
+      else currentLint.findings.forEach((finding) => lines.push('', `- **${finding.severity.toUpperCase()}: ${finding.title}** — ${finding.message}`, `  - Fix: ${finding.recommendation}`));
+      lines.push('', '## Inventory', '', '| Element | Count |', '|---|---:|');
+      const values: Record<string, number> = { threadGroups: currentAnalysis.threadGroups.length, ...currentAnalysis.counts, processors: currentAnalysis.counts.preProcessors + currentAnalysis.counts.postProcessors };
+      inventoryLabels.forEach(([key, label]) => lines.push(`| ${label} | ${values[key] ?? 0} |`));
+      return lines.join('\n');
+    }
+
+    input?.addEventListener('input', recompute);
+    root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.preset as keyof typeof JMX_LINTER.samples;
+        if (input && key) input.value = JMX_LINTER.samples[key];
+        recompute();
+        showStatus(`Loaded ${button.textContent?.trim() || 'sample'}`);
+      });
+    });
+    fileInput?.addEventListener('change', () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      if (file.size > JMX_LINTER.maxInputBytes) {
+        setNotice(`File exceeds ${JMX_LINTER.maxInputLabel}`);
+        fileInput.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        if (input) input.value = String(reader.result || '');
+        recompute();
+        showStatus(`Loaded ${file.name}`);
+      });
+      reader.readAsText(file);
+    });
+    copyBtn?.addEventListener('click', async () => {
+      const report = buildReport();
+      if (!report) return;
+      try { await copyText(report); showStatus('Markdown report copied'); }
+      catch { showStatus('Copy failed'); }
+    });
+    root.querySelector('[data-reset]')?.addEventListener('click', () => {
+      if (input) input.value = JMX_LINTER.samples.antiPatterns;
+      if (fileInput) fileInput.value = '';
+      recompute();
+      showStatus('Reset to defaults');
+    });
+    recompute();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-jmx-linter]').forEach(init);
+  document.addEventListener('astro:page-load', () => document.querySelectorAll<HTMLElement>('[data-jmx-linter]').forEach(init));
+</script>

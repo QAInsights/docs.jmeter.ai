@@ -1,0 +1,85 @@
+---
+title: "JSR223 Groovy Playground & Code Builder"
+seoTitle: "JMeter JSR223 Groovy Playground & JMX Code Builder"
+description: "Lint JMeter-specific Groovy anti-patterns, inspect JSR223 bindings, and generate ready-to-paste JMX elements from curated recipes or custom scripts."
+keywords:
+  - jmeter groovy
+  - jsr223 sampler groovy
+  - jmeter jsr223 examples
+  - groovy script jmeter
+  - jmeter vars.get
+  - jsr223 preprocessor groovy
+difficulty: intermediate
+guideType: reference
+estimatedReadTime: "6 min read"
+---
+
+import GroovyBuilder from '../../../components/tools/GroovyBuilder.astro';
+import { BINDINGS_BY_ELEMENT } from '../../../lib/groovy-builder.mjs';
+import { GROOVY_BUILDER } from '../../../lib/tools-config.mjs';
+
+<GroovyBuilder />
+
+## Why Groovy over BeanShell
+
+JMeter supports Groovy through JSR223 compilation caching, while BeanShell is interpreted and substantially slower in a hot sampling path. Groovy also provides modern Java interoperability, mature JSON support, and access to JMeter's documented script bindings.
+
+This page is a **builder and static analyzer**. Groovy cannot execute in the browser. The tool inspects source text for JMeter-specific pitfalls and generates files for you to review and run in JMeter; it does not validate runtime types, external classes, network access, or script behavior.
+
+## Binding availability
+
+Every JSR223 element exposes the common bindings `log`, `Label`, `FileName`, `Parameters`, `args`, `ctx`, `vars`, `props`, and `OUT`. Element-specific bindings differ:
+
+<table>
+  <thead>
+    <tr><th>Element</th><th>Available bindings</th></tr>
+  </thead>
+  <tbody>
+    {GROOVY_BUILDER.elementTypes.map((element) => (
+      <tr>
+        <td><code>{element.label}</code></td>
+        <td>{BINDINGS_BY_ELEMENT[element.id].map((binding) => <code>{binding}</code>).reduce((items, item, index) => index ? [...items, ', ', item] : [item], [])}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+Binding names are case-sensitive. For example, `SampleResult` is available in a Sampler or Assertion, while lowercase `sampleResult` and `sampleEvent` belong to a Listener. `prev` is available to PostProcessors, Assertions, and Listeners, but not PreProcessors or Timers; `sampler` is available to all six element types, including Listeners.
+
+## Anti-patterns this linter catches
+
+| Rule ID | Severity | What it catches |
+|---|---|---|
+| `EMPTY_SCRIPT` | Error | Blank code |
+| `THREAD_SLEEP` | Error | `Thread.sleep(...)` or `sleep(...)` blocking a JMeter worker thread |
+| `JMETER_VAR_INTERPOLATION` | Warning | `${name}` expansion without a preceding Groovy local declaration |
+| `SYSTEM_OUT` | Warning | `System.out`, `System.err`, or statement-level `println(...)` |
+| `NEW_RANDOM_PER_CALL` | Info | A new `Random` instance created on each invocation |
+| `REGEX_COMPILE_IN_SCRIPT` | Info | `Pattern.compile(...)` in the hot script path |
+| `UNAVAILABLE_BINDING` | Error | A known binding used by the wrong JSR223 element type |
+| `BEANSHELL_IMPORT` | Error | BeanShell imports or API references inside Groovy |
+| `LEGACY_JSONSLURPER_CLASSIC` | Info | `JsonSlurperClassic` instead of `JsonSlurper` |
+| `PROPS_MUTATION_IN_LOOP_HOT_PATH` | Info | Writes to shared JMeter properties with `props.put(...)` |
+| `SCRIPT_TOO_LONG` | Warning | Inline code over 200,000 characters that belongs in a `.groovy` file |
+
+For dynamic JMeter values, prefer `vars.get("name")` or `props.get("name")`. Substitution such as `${token}` happens before Groovy compilation, can create a new compiled script for each value, and can break syntax when data contains quotes or other special characters.
+
+## How to use the generated JMX snippet
+
+1. Select the JSR223 element that matches where the script should run.
+2. Fix error-level binding or scripting findings.
+3. Copy the generated element and its following `<hashTree/>`.
+4. Paste it under the target element's `<hashTree>` in the `.jmx`, or use **JMeter GUI → Edit → Paste**.
+5. Open the plan in JMeter, confirm the tree location, and run a one-user smoke test with assertions before applying load.
+
+The generated element uses `TestBeanGUI`, Groovy, and a non-empty `cacheKey` so JMeter can cache compiled scripts. Downloading the `.groovy` variant is useful when scripts are shared across plans or maintained in source control; set that file through the JSR223 **FileName** field in JMeter.
+
+## Use via MCP
+
+Connect an MCP-compatible agent:
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
+```
+
+Ask the agent to call `get_jsr223_recipe` by recipe name or category to retrieve the curated JWT, HMAC, dynamic header, JSON extraction, and custom logging examples used by this builder. For your own script, call `lint_groovy_script` with the code and JSR223 element type to receive the same findings, binding analysis, and optional ready-to-paste JMX element XML.

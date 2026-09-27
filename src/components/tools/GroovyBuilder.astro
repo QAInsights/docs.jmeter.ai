@@ -1,0 +1,301 @@
+---
+import { GROOVY_BUILDER } from '../../lib/tools-config.mjs';
+import { getJsr223Recipes } from '../../lib/mcp/jsr223-recipes.mjs';
+
+const recipes = getJsr223Recipes();
+const categories = [...new Set(recipes.map((recipe) => recipe.category))];
+const defaultRecipe = recipes.find((recipe) => recipe.id === GROOVY_BUILDER.defaults.recipeId);
+---
+
+<div class="tool" data-groovy-builder>
+  <div class="tool-grid tool-grid--2">
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Recipe</span>
+      <select name="recipe">
+        <option value="">Custom script (blank)</option>
+        {categories.map((category) => (
+          <optgroup label={category}>
+            {recipes.filter((recipe) => recipe.category === category).map((recipe) => (
+              <option value={recipe.id} selected={recipe.id === GROOVY_BUILDER.defaults.recipeId}>{recipe.title}</option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Element Type</span>
+      <select name="elementType">
+        {GROOVY_BUILDER.elementTypes.map((type) => (
+          <option value={type.id} selected={type.id === GROOVY_BUILDER.defaults.elementType}>{type.label}</option>
+        ))}
+      </select>
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Name</span>
+      <input type="text" name="name" maxlength={GROOVY_BUILDER.limits.nameMaxLen} value={GROOVY_BUILDER.defaults.name} spellcheck="false" />
+    </label>
+
+    <label class="tool-field" style="display:flex;flex-direction:column;gap:0.35rem;grid-row:auto">
+      <span class="tool-label">Parameters</span>
+      <input type="text" name="parameters" maxlength={GROOVY_BUILDER.limits.parametersMaxLen} value={GROOVY_BUILDER.defaults.parameters} spellcheck="false" aria-describedby="groovy-parameters-hint" />
+      <span class="tool-hint tool-hint--static" id="groovy-parameters-hint">Space-separated; available as <code>Parameters</code> string and <code>args</code> array.</span>
+    </label>
+  </div>
+
+  <label class="tool-field tool-field-wide">
+    <span class="tool-label">Groovy Code</span>
+    <textarea name="code" rows="16" spellcheck="false" maxlength={GROOVY_BUILDER.limits.codeMaxChars + 1} aria-describedby="groovy-code-hint">{defaultRecipe?.code || ''}</textarea>
+    <span class="tool-hint tool-hint--static" id="groovy-code-hint">Groovy is not executed in the browser — this tool lints for JMeter-specific pitfalls and generates the JMX element for you to run in JMeter.</span>
+  </label>
+
+  <div class="tool-results tool-results--4" aria-live="polite">
+    <div class="tool-card tool-card-primary">
+      <span class="tool-card-label">Bindings Used</span>
+      <span class="tool-card-value tool-card-value--text" data-bindings-used>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Errors</span>
+      <span class="tool-card-value" data-errors>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Warnings</span>
+      <span class="tool-card-value" data-warnings>-</span>
+    </div>
+    <div class="tool-card">
+      <span class="tool-card-label">Lines</span>
+      <span class="tool-card-value" data-lines>-</span>
+    </div>
+  </div>
+
+  <section class="tool-section" aria-labelledby="groovy-findings-title">
+    <h4 id="groovy-findings-title">Static Analysis</h4>
+    <div class="tool-finding-list" data-findings></div>
+    <p class="tool-empty" data-findings-empty hidden>No JMeter-specific anti-patterns detected.</p>
+  </section>
+
+  <section class="tool-section" aria-labelledby="groovy-bindings-title">
+    <h4 id="groovy-bindings-title">Bindings for Selected Element</h4>
+    <div class="tool-chip-list" data-binding-chips></div>
+  </section>
+
+  <section class="tool-section" aria-labelledby="groovy-file-title">
+    <h4 id="groovy-file-title">Groovy Script (.groovy)</h4>
+    <pre class="tool-code tool-code--tall" data-groovy-output tabindex="0" aria-live="polite"></pre>
+  </section>
+
+  <section class="tool-section" aria-labelledby="groovy-jmx-title">
+    <h4 id="groovy-jmx-title">JMX Element Snippet</h4>
+    <pre class="tool-code tool-code--tall" data-jmx-output tabindex="0" aria-live="polite"></pre>
+    <span class="tool-hint tool-hint--static">Paste into a .jmx under the target sampler's <code>&lt;hashTree&gt;</code>, or import via JMeter GUI → Edit → Paste.</span>
+  </section>
+
+  <div class="tool-actions tool-actions--wrap">
+    <button type="button" class="tool-btn" data-copy-groovy>Copy Groovy</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-download-groovy>Download .groovy</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-copy-jmx>Copy JMX Snippet</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-download-xml>Download .xml snippet</button>
+    <button type="button" class="tool-btn tool-btn-ghost" data-reset>Reset</button>
+    <span class="tool-status" data-status aria-live="polite" hidden></span>
+  </div>
+
+  <div class="tool-mcp-callout">
+    <h4>Use Groovy tools through MCP</h4>
+    <p>Call <code>get_jsr223_recipe</code> for curated examples, or <code>lint_groovy_script</code> to review your own code and generate JSR223 element XML.</p>
+    <pre class="tool-code"><code>claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http</code></pre>
+  </div>
+
+  <p class="tool-disclaimer">
+    This builder does not execute Groovy. Review generated code and run it in a controlled JMeter test before load testing.
+    {' '}See <a href="/user-manual/component-reference/#jsr223-sampler">JSR223 Sampler Reference</a> and <a href="/mcp/">JMeter MCP Reference</a>.
+  </p>
+</div>
+
+<script>
+  import { jsr223Recipes } from '../../lib/mcp/jsr223-recipes.mjs';
+  import { BINDINGS_BY_ELEMENT, buildGroovyFile, buildJsr223ElementXml, lintGroovyScript } from '../../lib/groovy-builder.mjs';
+  import { GROOVY_BUILDER } from '../../lib/tools-config.mjs';
+  import { copyText } from '../../lib/tools-utils.mjs';
+
+  interface Recipe { id: string; title: string; category: string; summary: string; code: string; jmeterVariables: string[] }
+  interface Finding { id: string; severity: 'error' | 'warning' | 'info'; title: string; message: string; recommendation: string }
+  interface LintResult { findings: Finding[]; bindings: string[]; unavailableBindings: string[] }
+
+  const recipeTypes: Record<string, string> = {
+    jwt_parse_expiry: 'JSR223PreProcessor',
+    hmac_sha256_signer: 'JSR223PreProcessor',
+    dynamic_header_injection: 'JSR223PreProcessor',
+    json_nested_extraction: 'JSR223PostProcessor',
+    custom_csv_logger: 'JSR223PostProcessor',
+  };
+
+  function init(root: HTMLElement) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+
+    const recipes = jsr223Recipes as Recipe[];
+    const recipeSelect = root.querySelector('select[name="recipe"]') as HTMLSelectElement | null;
+    const typeSelect = root.querySelector('select[name="elementType"]') as HTMLSelectElement | null;
+    const nameInput = root.querySelector('input[name="name"]') as HTMLInputElement | null;
+    const parametersInput = root.querySelector('input[name="parameters"]') as HTMLInputElement | null;
+    const codeInput = root.querySelector('textarea[name="code"]') as HTMLTextAreaElement | null;
+    const bindingsUsedEl = root.querySelector('[data-bindings-used]') as HTMLElement | null;
+    const errorsEl = root.querySelector('[data-errors]') as HTMLElement | null;
+    const warningsEl = root.querySelector('[data-warnings]') as HTMLElement | null;
+    const linesEl = root.querySelector('[data-lines]') as HTMLElement | null;
+    const findingsEl = root.querySelector('[data-findings]') as HTMLElement | null;
+    const findingsEmptyEl = root.querySelector('[data-findings-empty]') as HTMLElement | null;
+    const bindingChipsEl = root.querySelector('[data-binding-chips]') as HTMLElement | null;
+    const groovyOutputEl = root.querySelector('[data-groovy-output]') as HTMLElement | null;
+    const jmxOutputEl = root.querySelector('[data-jmx-output]') as HTMLElement | null;
+    const statusEl = root.querySelector('[data-status]') as HTMLElement | null;
+    const actionButtons = root.querySelectorAll<HTMLButtonElement>('[data-copy-groovy], [data-download-groovy], [data-copy-jmx], [data-download-xml]');
+    let currentGroovy = '';
+    let currentJmx = '';
+
+    function showStatus(message: string) {
+      if (!statusEl) return;
+      statusEl.hidden = !message;
+      statusEl.textContent = message;
+      if (message) setTimeout(() => showStatus(''), 1800);
+    }
+
+    function severityStyle(severity: Finding['severity']) {
+      if (severity === 'error') return 'background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.35)';
+      if (severity === 'warning') return 'background:rgba(234,179,8,.15);color:#facc15;border-color:rgba(234,179,8,.35)';
+      return 'background:rgba(59,130,246,.15);color:#60a5fa;border-color:rgba(59,130,246,.35)';
+    }
+
+    function renderFindings(findings: Finding[]) {
+      if (!findingsEl || !findingsEmptyEl) return;
+      findingsEl.textContent = '';
+      const order = { error: 0, warning: 1, info: 2 };
+      [...findings].sort((a, b) => order[a.severity] - order[b.severity]).forEach((finding) => {
+        const item = document.createElement('article');
+        item.className = 'tool-finding';
+        const heading = document.createElement('div');
+        heading.className = 'tool-finding__heading';
+        const badge = document.createElement('span');
+        badge.className = 'tool-chip';
+        badge.style.cssText = severityStyle(finding.severity);
+        badge.textContent = finding.severity;
+        const title = document.createElement('strong');
+        title.textContent = finding.title;
+        heading.append(badge, title);
+        const message = document.createElement('p');
+        message.textContent = finding.message;
+        const fix = document.createElement('p');
+        fix.className = 'tool-finding__fix';
+        fix.textContent = `Fix: ${finding.recommendation}`;
+        item.append(heading, message, fix);
+        findingsEl.appendChild(item);
+      });
+      findingsEmptyEl.hidden = findings.length !== 0;
+    }
+
+    function renderBindings(result: LintResult, elementType: string) {
+      if (!bindingChipsEl) return;
+      bindingChipsEl.textContent = '';
+      const available = (BINDINGS_BY_ELEMENT as Record<string, string[]>)[elementType] || [];
+      const names = [...available, ...result.unavailableBindings.filter((name) => !available.includes(name))];
+      names.forEach((name) => {
+        const chip = document.createElement('span');
+        const detected = result.bindings.includes(name);
+        const unavailable = result.unavailableBindings.includes(name);
+        chip.className = `tool-chip ${unavailable ? 'tool-chip--absent' : detected ? 'tool-chip--present' : ''}`;
+        chip.textContent = name;
+        chip.title = unavailable ? 'Detected but unavailable' : detected ? 'Detected and available' : 'Available but unused';
+        bindingChipsEl.appendChild(chip);
+      });
+    }
+
+    function recompute() {
+      const code = codeInput?.value || '';
+      const elementType = typeSelect?.value || GROOVY_BUILDER.defaults.elementType;
+      const name = nameInput?.value || GROOVY_BUILDER.elementTypes.find((type) => type.id === elementType)?.defaultName || 'JSR223 Element';
+      const parameters = parametersInput?.value || '';
+      const result = lintGroovyScript(code, elementType) as LintResult;
+      const errors = result.findings.filter((finding) => finding.severity === 'error').length;
+      const warnings = result.findings.filter((finding) => finding.severity === 'warning').length;
+
+      currentGroovy = buildGroovyFile({ name, elementType, code });
+      currentJmx = buildJsr223ElementXml({ elementType, name, code, parameters });
+      if (bindingsUsedEl) bindingsUsedEl.textContent = result.bindings.length ? result.bindings.join(', ') : '-';
+      if (errorsEl) errorsEl.textContent = String(errors);
+      if (warningsEl) warningsEl.textContent = String(warnings);
+      if (linesEl) linesEl.textContent = code ? String(code.split(/\r?\n/).length) : '0';
+      if (groovyOutputEl) groovyOutputEl.textContent = currentGroovy;
+      if (jmxOutputEl) jmxOutputEl.textContent = currentJmx;
+      actionButtons.forEach((button) => { button.disabled = !code.trim(); });
+      renderFindings(result.findings);
+      renderBindings(result, elementType);
+    }
+
+    function download(content: string, filename: string, type: string) {
+      const url = URL.createObjectURL(new Blob([content], { type }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function slugName() {
+      return (nameInput?.value || 'jsr223-script').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'jsr223-script';
+    }
+
+    recipeSelect?.addEventListener('change', () => {
+      const recipe = recipes.find((item) => item.id === recipeSelect.value);
+      if (!recipe) {
+        if (codeInput) codeInput.value = '';
+        const selected = GROOVY_BUILDER.elementTypes.find((type) => type.id === typeSelect?.value);
+        if (nameInput) nameInput.value = selected?.defaultName || GROOVY_BUILDER.defaults.name;
+      } else {
+        if (codeInput) codeInput.value = recipe.code;
+        if (nameInput) nameInput.value = recipe.title;
+        if (typeSelect) typeSelect.value = recipeTypes[recipe.id] || GROOVY_BUILDER.defaults.elementType;
+      }
+      recompute();
+    });
+    codeInput?.addEventListener('input', () => {
+      if (recipeSelect) recipeSelect.value = '';
+      recompute();
+    });
+    [typeSelect, nameInput, parametersInput].forEach((element) => {
+      element?.addEventListener('input', recompute);
+      element?.addEventListener('change', recompute);
+    });
+
+    root.querySelector('[data-copy-groovy]')?.addEventListener('click', async () => {
+      try { await copyText(currentGroovy); showStatus('Groovy copied'); } catch { showStatus('Copy failed'); }
+    });
+    root.querySelector('[data-copy-jmx]')?.addEventListener('click', async () => {
+      try { await copyText(currentJmx); showStatus('JMX snippet copied'); } catch { showStatus('Copy failed'); }
+    });
+    root.querySelector('[data-download-groovy]')?.addEventListener('click', () => {
+      download(currentGroovy, `${slugName()}.groovy`, 'text/x-groovy;charset=utf-8');
+      showStatus('Groovy file downloaded');
+    });
+    root.querySelector('[data-download-xml]')?.addEventListener('click', () => {
+      download(currentJmx, `${slugName()}.xml`, 'application/xml;charset=utf-8');
+      showStatus('XML snippet downloaded');
+    });
+    root.querySelector('[data-reset]')?.addEventListener('click', () => {
+      const recipe = recipes.find((item) => item.id === GROOVY_BUILDER.defaults.recipeId);
+      if (recipeSelect) recipeSelect.value = GROOVY_BUILDER.defaults.recipeId;
+      if (typeSelect) typeSelect.value = GROOVY_BUILDER.defaults.elementType;
+      if (nameInput) nameInput.value = GROOVY_BUILDER.defaults.name;
+      if (parametersInput) parametersInput.value = GROOVY_BUILDER.defaults.parameters;
+      if (codeInput) codeInput.value = recipe?.code || '';
+      recompute();
+      showStatus('Reset to defaults');
+    });
+    recompute();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-groovy-builder]').forEach(init);
+  document.addEventListener('astro:page-load', () => document.querySelectorAll<HTMLElement>('[data-groovy-builder]').forEach(init));
+</script>

@@ -49,6 +49,7 @@
     "marked": "^18.0.5",
     "satori": "^0.12.2",
     "sharp": "^0.34.2",
+    "yaml": "^2.9.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

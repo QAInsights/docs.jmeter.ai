@@ -1,0 +1,83 @@
+---
+title: "OpenAPI / Swagger to JMeter JMX Converter"
+seoTitle: "OpenAPI to JMeter JMX Converter - Swagger 2.0 and OpenAPI 3"
+description: "Convert OpenAPI 3.0, OpenAPI 3.1, and Swagger 2.0 JSON or YAML into an Apache JMeter JMX test plan in your browser."
+keywords:
+  - openapi to jmeter
+  - swagger to jmx
+  - openapi jmx converter
+  - generate jmeter test plan from openapi
+  - swagger 2.0 jmeter
+difficulty: beginner
+guideType: reference
+estimatedReadTime: "4 min read"
+---
+
+import OpenApiToJmx from '../../../components/tools/OpenApiToJmx.astro';
+
+<OpenApiToJmx />
+
+## What gets generated
+
+The converter turns each included API operation into a JMeter HTTP Request sampler and builds the surrounding Test Plan, HTTP Request Defaults, Thread Group, optional Cookie Manager, and response assertions.
+
+- **Servers become HTTP Defaults:** the selected OpenAPI server supplies the protocol, host, port, and path prefix. With host extraction enabled, the host is stored as `${BASE_URL}`.
+- **Path parameters become variables:** `/users/{userId}` becomes `/users/${userId}`. A generated User Defined Variable contains the schema example or a `CHANGE_ME` placeholder.
+- **Schemas become sample bodies:** JSON and form bodies are populated from examples, defaults, enums, formats, and referenced schemas.
+- **Security becomes variables:** bearer authentication becomes `${AUTH_TOKEN}` and API-key authentication becomes `${API_KEY}`. Basic authentication uses `${BASIC_AUTH}`.
+- **Assertions catch unexpected responses:** the optional response assertion accepts HTTP 200, 201, and 204 as a starting point. Adjust it to match each API contract.
+
+## Supported specification features
+
+| Feature | Support |
+| :--- | :--- |
+| OpenAPI versions | OpenAPI 3.0, OpenAPI 3.1, and Swagger 2.0 |
+| Input formats | JSON and YAML |
+| Local references | `#/components/...`, `#/definitions/...`, `#/parameters/...`, and `#/responses/...` |
+| Request bodies | JSON, `application/*+json`, URL-encoded forms, text examples, and XML examples |
+| Parameters | Path, query, and header parameters; optional query parameters are opt-in |
+| Security | Bearer, OAuth2/OpenID Connect, HTTP Basic, and header/query API keys |
+| Schema composition | `allOf` merging; the first `oneOf` or `anyOf` branch is used |
+| Known limitations | Multipart bodies, cookie parameters, and external `$ref` documents are not converted |
+
+Operation order follows the source document's path order and a stable HTTP method order. The generated plan does not infer a business workflow or dependencies between endpoints, so reorder samplers and add correlation where needed.
+
+## Filling in variables before running
+
+Open the generated Test Plan's **User Defined Variables** element and replace `CHANGE_ME` placeholder values and sample IDs. You can also replace values at runtime with JMeter properties after changing the corresponding variable value to a property function such as `${__P(apiKey,CHANGE_ME)}`.
+
+For secrets, avoid committing real values to the `.jmx`. Supply them through your CI secret store and `-J` properties instead.
+
+## Running in CLI mode
+
+Run generated plans in non-GUI mode:
+
+```bash
+jmeter -n -t openapi-test-plan.jmx -l results.jtl -e -o ./report
+```
+
+The generated Thread Group already reads concurrency, ramp-up, and duration from JMeter properties, so you can override them without editing the plan:
+
+```bash
+jmeter -n -t openapi-test-plan.jmx \
+  -Jthreads=100 -JrampUp=30 -Jduration=300 \
+  -l results.jtl -e -o ./report
+```
+
+A duration greater than zero enables the scheduler and infinite looping for the configured duration.
+
+## Use via MCP
+
+Connect an MCP-compatible agent:
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
+```
+
+Ask the agent to call `convert_openapi_to_jmx` with an OpenAPI 3.x or Swagger 2.0 document in JSON or YAML. It can apply the same server, method, tag, deprecated-operation, path-value, assertion, and Cookie Manager options as the browser converter and returns the generated JMX XML in its response.
+
+## Related tools
+
+- Use the [cURL & HAR to JMX Converter](/tools/curl-to-jmx/) when you have captured requests rather than an API contract.
+- Run the generated plan through the [JMX Linter & Health Analyzer](/tools/jmx-linter/) before execution.
+- Review [JMeter Best Practices](/user-manual/best-practices/) before increasing load.

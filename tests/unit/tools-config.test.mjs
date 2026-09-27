@@ -5,6 +5,10 @@ import {
   HEAP_ESTIMATOR,
   REGEX_EXTRACTOR,
   CLI_BUILDER,
+  OPENAPI_TO_JMX,
+  JMX_LINTER,
+  GROOVY_BUILDER,
+  TOOLS_REGISTRY,
   buildDynamicKeyRegex,
 } from '../../src/lib/tools-config.mjs';
 import {
@@ -136,6 +140,46 @@ describe('curl to jmx config', () => {
     expect(CURL_TO_JMX.defaults.includeAssertions).toBe(true);
     expect(CURL_TO_JMX.samples.queryMethod).toContain('-X QUERY');
     expect(CURL_TO_JMX.samples.restAuth).toContain('-X POST');
+  });
+});
+
+describe('OpenAPI to JMX config', () => {
+  it('exposes limits, methods, and representative spec samples', () => {
+    expect(OPENAPI_TO_JMX.limits.maxOperations).toBe(500);
+    expect(OPENAPI_TO_JMX.limits.maxInputLabel).toBe('1 MB');
+    expect(OPENAPI_TO_JMX.defaults.methods).toEqual(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+    expect(OPENAPI_TO_JMX.methodOptions).toEqual(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE']);
+    expect(OPENAPI_TO_JMX.samples.petstoreJson).toContain('"openapi": "3.0.3"');
+    expect(OPENAPI_TO_JMX.samples.minimalYaml).toContain('openapi: 3.1.0');
+    expect(OPENAPI_TO_JMX.samples.swagger2Json).toContain('"swagger": "2.0"');
+  });
+
+  it('registers the converter with a trailing slash', () => {
+    expect(TOOLS_REGISTRY).toContainEqual({ title: 'OpenAPI to JMX Converter', path: '/tools/openapi-to-jmx/' });
+  });
+});
+
+describe('JMX linter and Groovy builder config', () => {
+  it('configures the JMX input limit and complete samples', () => {
+    expect(JMX_LINTER.maxInputBytes).toBe(5 * 1024 * 1024);
+    expect(JMX_LINTER.samples.antiPatterns).toContain('<jmeterTestPlan');
+    expect(JMX_LINTER.samples.clean).toContain('<jmeterTestPlan');
+  });
+
+  it('exposes all six JSR223 element types', () => {
+    expect(GROOVY_BUILDER.elementTypes.map((type) => type.id)).toEqual([
+      'JSR223Sampler',
+      'JSR223PreProcessor',
+      'JSR223PostProcessor',
+      'JSR223Assertion',
+      'JSR223Timer',
+      'JSR223Listener',
+    ]);
+  });
+
+  it('registers both new tool paths with trailing slashes', () => {
+    expect(TOOLS_REGISTRY).toContainEqual({ title: 'JMX Linter & Health Analyzer', path: '/tools/jmx-linter/' });
+    expect(TOOLS_REGISTRY).toContainEqual({ title: 'JSR223 Groovy Builder', path: '/tools/groovy-builder/' });
   });
 });
 

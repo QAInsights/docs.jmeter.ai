@@ -158,6 +158,9 @@ export const sidebar = [
     items: [
       { label: 'Tools Hub', link: '/tools' },
       { label: 'cURL & HAR to JMX', link: '/tools/curl-to-jmx' },
+      { label: 'OpenAPI to JMX', link: '/tools/openapi-to-jmx' },
+      { label: 'JMX Linter & Health Analyzer', link: '/tools/jmx-linter' },
+      { label: 'Groovy Script Builder', link: '/tools/groovy-builder' },
       { label: 'Thread Calculator', link: '/tools/thread-calculator' },
       { label: 'Heap Estimator', link: '/tools/heap-estimator' },
       { label: 'CLI Command Builder', link: '/tools/cli-builder' },

@@ -61,6 +61,7 @@ export const MAX_BATCH_REQUESTS = 250;
  *   includeCookieManager?: boolean,
  *   filterStaticAssets?: boolean,
  *   allowJMeterFunctions?: boolean,
+ *   extraVariables?: Array<{ name: string, value: string }>,
  * }} ConversionOptions
  */
 
@@ -1073,7 +1074,9 @@ export function buildJmxXml(requests, options = {}) {
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
         <collectionProp name="Arguments.arguments">`;
 
+  const emittedVariableNames = new Set();
   if (parameterizeHost && dominantDomain) {
+    emittedVariableNames.add('BASE_URL');
     xml += `
           <elementProp name="BASE_URL" elementType="Argument">
             <stringProp name="Argument.name">BASE_URL</stringProp>
@@ -1084,6 +1087,7 @@ export function buildJmxXml(requests, options = {}) {
 
   if (parameterizeAuth) {
     for (const [token, variableName] of bearerVariables) {
+      emittedVariableNames.add(variableName);
       xml += `
           <elementProp name="${variableName}" elementType="Argument">
             <stringProp name="Argument.name">${variableName}</stringProp>
@@ -1091,6 +1095,18 @@ export function buildJmxXml(requests, options = {}) {
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>`;
     }
+  }
+
+  for (const variable of options.extraVariables || []) {
+    const name = String(variable?.name || '').trim();
+    if (!name || emittedVariableNames.has(name)) continue;
+    emittedVariableNames.add(name);
+    xml += `
+          <elementProp name="${escapeXml(name)}" elementType="Argument">
+            <stringProp name="Argument.name">${escapeXml(name)}</stringProp>
+            <stringProp name="Argument.value">${escapeXml(variable?.value ?? '')}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>`;
   }
 
   xml += `
