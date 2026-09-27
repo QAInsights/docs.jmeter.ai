@@ -30,11 +30,11 @@ JMeter variables have thread scope. This is deliberate, so that threads can act 
 However sometimes there is a need to pass variables between different threads, in the same or different Thread Groups.
 
 One way to do this is to use a property instead.
-Properties are shared between all JMeter threads, so if one thread [sets a property](/user-manual/functions/#__setProperty),
-another thread can [read](/user-manual/functions/#__P) the updated value.
+Properties are shared between all JMeter threads, so if one thread [sets a property](/functions/setproperty/),
+another thread can [read](/functions/p/) the updated value.
 
 If there is a lot of information that needs to be passed between threads, then consider using a file.
-For example you could use the [Save Responses to a file](/user-manual/component-reference/#Save_Responses_to_a_file)
+For example you could use the [Save Responses to a file](/components/save-responses-to-a-file/)
 listener or perhaps a BeanShell PostProcessor in one thread, and read the file using the HTTP Sampler "`file:`" protocol,
 and extract the information using a PostProcessor or BeanShell element.
 

@@ -30,7 +30,7 @@ Component fields, defaults, and save formats can change across JMeter versions. 
 :::note
 Several test elements use JMeter properties to control their behaviour.
  These properties are normally resolved when the class is loaded.
- This generally occurs before the test plan starts, so it's not possible to change the settings by using the `[__setProperty()](/user-manual/functions/#__setProperty__)` function.
+ This generally occurs before the test plan starts, so it's not possible to change the settings by using the `[__setProperty()](/functions/setproperty/)` function.
 :::
 
 <a id="samplers"></a>
@@ -39,7 +39,7 @@ Several test elements use JMeter properties to control their behaviour.
 
     
     Samplers perform the actual work of JMeter.
-    Each sampler (except [Flow Control Action](/user-manual/component-reference/#Flow_Control_Action)) generates one or more sample results.
+    Each sampler (except [Flow Control Action](/components/flow-control-action/)) generates one or more sample results.
     The sample results have various attributes (success/fail, elapsed time, data size etc.) and can be viewed in the various listeners.
     
 
@@ -49,7 +49,7 @@ Several test elements use JMeter properties to control their behaviour.
 
 This controller lets you send an FTP "retrieve file" or "upload file" request to an FTP server.
 If you are going to send multiple requests to the same FTP server, consider
-using a [FTP Request Defaults](/user-manual/component-reference/#FTP_Request_Defaults) Configuration
+using a [FTP Request Defaults](/components/ftp-request-defaults/) Configuration
 Element so you do not have to enter the same information for each FTP Request Generative
 Controller. When downloading a file, it can be stored on disk (Local File) or in the Response Data, or both.
 
@@ -65,7 +65,7 @@ Latency is set to the time it takes to login.
 | Local File Contents: | Yes, if uploading (*) | Provides the contents for the upload, overrides the Local File property. |
 | get(RETR) / put(STOR) | Yes | Whether to retrieve or upload a file. |
 | Use Binary mode | Yes | Check this to use Binary mode (default ASCII) |
-| Save File in Response | Yes, if downloading | Whether to store contents of retrieved file in response data.         If the mode is ASCII, then the contents will be visible in the [View Results Tree](/user-manual/component-reference/#View_Results_Tree). |
+| Save File in Response | Yes, if downloading | Whether to store contents of retrieved file in response data.         If the mode is ASCII, then the contents will be visible in the [View Results Tree](/components/view-results-tree/). |
 | Username | Usually | FTP account username. |
 | Password | Usually | FTP account password. N.B. This will be visible in the test plan. |
 
@@ -75,7 +75,7 @@ Latency is set to the time it takes to login.
 
         - [Assertions](/user-manual/test-plan/#assertions)
 
-        [FTP Request Defaults](/user-manual/component-reference/#FTP_Request_Defaults)
+        [FTP Request Defaults](/components/ftp-request-defaults/)
         - [Building an FTP Test Plan](/user-manual/build-ftp-test-plan/)
 
 </div>
@@ -104,12 +104,12 @@ Latency is set to the time it takes to login.
         
 
         If you are going to send multiple requests to the same web server, consider
-        using an [HTTP Request Defaults](/user-manual/component-reference/#HTTP_Request_Defaults)
+        using an [HTTP Request Defaults](/components/http-request-defaults/)
         Configuration Element so you do not have to enter the same information for each
         HTTP Request.
 
         Or, instead of manually adding HTTP Requests, you may want to use
-        JMeter's [HTTP(S) Test Script Recorder](/user-manual/component-reference/#HTTP_S__Test_Script_Recorder) to create
+        JMeter's [HTTP(S) Test Script Recorder](/components/http-s-test-script-recorder/) to create
         them.  This can save you time if you have a lot of HTTP requests or requests with many
         parameters.
 
@@ -156,7 +156,7 @@ Latency is set to the time it takes to login.
 - Better control of Retry mechanism
 - It does not support virtual hosts.
 - It supports only the following methods: `GET`, `POST`, `HEAD`, `OPTIONS`, `PUT`, `DELETE` and `TRACE`
-- Better control on DNS Caching with [DNS Cache Manager](/user-manual/component-reference/#DNS_Cache_Manager)
+- Better control on DNS Caching with [DNS Cache Manager](/components/dns-cache-manager/)
 
          
 :::note
@@ -165,7 +165,7 @@ Note: the `FILE` protocol is intended for testing purposes only.
 :::
 
         If the request requires server or proxy login authorization (i.e. where a browser would create a pop-up dialog box),
-         you will also have to add an [HTTP Authorization Manager](/user-manual/component-reference/#HTTP_Authorization_Manager) Configuration Element.
+         you will also have to add an [HTTP Authorization Manager](/components/http-authorization-manager/) Configuration Element.
          For normal logins (i.e. where the user enters login information in a form), you will need to work out what the form submit button does,
          and create an HTTP request with the appropriate method (usually `POST`)
          and the appropriate parameters from the form definition.
@@ -204,7 +204,7 @@ https.default.protocol=SSLv3
         
 
         If the request uses cookies, then you will also need an
-        [HTTP Cookie Manager](/user-manual/component-reference/#HTTP_Cookie_Manager).  You can
+        [HTTP Cookie Manager](/components/http-cookie-manager/).  You can
         add either of these elements to the Thread Group or the HTTP Request. If you have
         more than one HTTP Request that needs authorizations or cookies, then add the
         elements to the Thread Group. That way, all HTTP Request controllers will share the
@@ -227,10 +227,10 @@ _Variables field for GraphQL HTTP Request_
 | Name | Required | Description |
 |------|----------|-------------|
 | Name | No | Descriptive name for this sampler that is shown in the tree. |
-| Server | No | Domain name or IP address of the web server, e.g. `www.example.com`. [Do not include the `http://` prefix.]              Note: If the "`Host`" header is defined in a Header Manager, then this will be used              as the virtual host name.               :::note Server is required, unless:                - it is provided by [HTTP Request Defaults](/user-manual/component-reference/#HTTP_Request_Defaults) - or a full URL including scheme, host and port (`scheme://host:port`) is set in **Path** field ::: |
+| Server | No | Domain name or IP address of the web server, e.g. `www.example.com`. [Do not include the `http://` prefix.]              Note: If the "`Host`" header is defined in a Header Manager, then this will be used              as the virtual host name.               :::note Server is required, unless:                - it is provided by [HTTP Request Defaults](/components/http-request-defaults/) - or a full URL including scheme, host and port (`scheme://host:port`) is set in **Path** field ::: |
 | Port | No | Port the web server is listening to. Default: `80` |
 | Connect Timeout | No | Connection Timeout. Number of milliseconds to wait for a connection to open. |
-| Response Timeout | No | Response Timeout. Number of milliseconds to wait for a response.         Note that this applies to each wait for a response. If the server response is sent in several chunks, the overall         elapsed time may be longer than the timeout.         A [Duration Assertion](/user-manual/component-reference/#Duration_Assertion) can be used to detect responses that take too long to complete. |
+| Response Timeout | No | Response Timeout. Number of milliseconds to wait for a response.         Note that this applies to each wait for a response. If the server response is sent in several chunks, the overall         elapsed time may be longer than the timeout.         A [Duration Assertion](/components/duration-assertion/) can be used to detect responses that take too long to complete. |
 | Server (proxy) | No | Hostname or IP address of a proxy server to perform request. [Do not include the `http://` prefix.] |
 | Port | No, unless proxy hostname is specified | Port the proxy server is listening to. |
 | Username | No | (Optional) username for proxy server. |
@@ -284,7 +284,7 @@ as a test plan created using a recorder would continue from the redirected URL.
 For the `POST` and `PUT` method, if there is no file to send, and the name(s) of the parameter(s) are omitted,
 then the body is created by concatenating all the value(s) of the parameters.
 Note that the values are concatenated without adding any end-of-line characters.
-These can be added by using the `[__char()](/user-manual/functions/#__char__)` function in the value fields.
+These can be added by using the `[__char()](/functions/char/)` function in the value fields.
 This allows arbitrary bodies to be sent.
 The values are encoded if the encoding flag is set.
 See also the MIME Type above how you can control the `content-type` request header that is sent.
@@ -418,12 +418,12 @@ See  [Bug 56357](https://bz.apache.org/bugzilla/show_bug.cgi?id=56357) for detai
 
         - [Building an Advanced Web Test Plan](/user-manual/build-adv-web-test-plan/)
 
-        [HTTP Authorization Manager](/user-manual/component-reference/#HTTP_Authorization_Manager)
-        [HTTP Cookie Manager](/user-manual/component-reference/#HTTP_Cookie_Manager)
-        [HTTP Header Manager](/user-manual/component-reference/#HTTP_Header_Manager)
-        [HTML Link Parser](/user-manual/component-reference/#HTML_Link_Parser)
-        [HTTP(S) Test Script Recorder](/user-manual/component-reference/#HTTP_S__Test_Script_Recorder)
-        [HTTP Request Defaults](/user-manual/component-reference/#HTTP_Request_Defaults)
+        [HTTP Authorization Manager](/components/http-authorization-manager/)
+        [HTTP Cookie Manager](/components/http-cookie-manager/)
+        [HTTP Header Manager](/components/http-header-manager/)
+        [HTML Link Parser](/components/html-link-parser/)
+        [HTTP(S) Test Script Recorder](/components/http-s-test-script-recorder/)
+        [HTTP Request Defaults](/components/http-request-defaults/)
         - [HTTP Requests and Session ID's: URL Rewriting](/user-manual/build-adv-web-test-plan/#session_url_rewriting)
 
 </div>
@@ -435,7 +435,7 @@ See  [Bug 56357](https://bz.apache.org/bugzilla/show_bug.cgi?id=56357) for detai
 This sampler lets you send a JDBC Request (an SQL query) to a database.
 
 Before using this you need to set up a
-[JDBC Connection Configuration](/user-manual/component-reference/#JDBC_Connection_Configuration) Configuration element
+[JDBC Connection Configuration](/components/jdbc-connection-configuration/) Configuration element
 
 If the Variable Names list is provided, then for each row returned by a Select statement, the variables are set up
 with the value of the corresponding column (if a variable name is provided), and the count of rows is also set up.
@@ -463,7 +463,7 @@ The latency time is set from the time it took to acquire a connection.
 | Name | Required | Description |
 |------|----------|-------------|
 | Name | No | Descriptive name for this sampler that is shown in the tree. |
-| Variable Name of Pool declared in JDBC Connection Configuration | Yes | Name of the JMeter variable that the connection pool is bound to.         This must agree with the '`Variable Name`' field of a [JDBC Connection Configuration](/user-manual/component-reference/#JDBC_Connection_Configuration). |
+| Variable Name of Pool declared in JDBC Connection Configuration | Yes | Name of the JMeter variable that the connection pool is bound to.         This must agree with the '`Variable Name`' field of a [JDBC Connection Configuration](/components/jdbc-connection-configuration/). |
 | Query Type | Yes | Set this according to the statement type:              - Select Statement - Update Statement - use this for Inserts and Deletes as well - Callable Statement - Prepared Select Statement - Prepared Update Statement - use this for Inserts and Deletes as well - Commit - Rollback - Autocommit(false) - Autocommit(true) - Edit - this should be a variable reference that evaluates to one of the above              :::note The types `Commit`, `Rollback`, `Autocommit(false)` and `Autocommit(true)`               are special, as they are ignoring the given SQL statements and are changing the state of the connection, only. ::: |
 | SQL Query | Yes | SQL query.          :::note Do not enter a trailing semi-colon. :::         There is generally no need to use `{` and `}` to enclose Callable statements;         however they may be used if the database uses a non-standard syntax.          :::note The JDBC driver automatically converts the statement if necessary when it is enclosed in `{}`. :::         For example:          - `select * from t_customers where id=23` - `CALL SYSCS_UTIL.SYSCS_EXPORT_TABLE (null, ?, ?, null, null, null)`          - Parameter values: `tablename`,`filename` - Parameter types:  `VARCHAR`,`VARCHAR`         The second example assumes you are using Apache Derby. |
 | Parameter values | Yes, if a prepared or callable statement has parameters | Comma-separated list of parameter values. Use `]NULL[` to indicate a `NULL` parameter.         (If required, the null string can be changed by defining the property "`jdbcsampler.nullmarker`".)                  The list must be enclosed in double-quotes if any of the values contain a comma or double-quote,         and any embedded double-quotes must be doubled-up, for example:          ``` "Dbl-Quote: "" and Comma: ," ```          :::note There must be as many values as there are placeholders in the statement even if your parameters are `OUT` ones.         Be sure to set a value even if the value will not be used (for example in a CallableStatement). ::: |
@@ -480,7 +480,7 @@ The latency time is set from the time it took to acquire a connection.
 
         - [Building a Database Test Plan](/user-manual/build-db-test-plan/)
 
-        [JDBC Connection Configuration](/user-manual/component-reference/#JDBC_Connection_Configuration)
+        [JDBC Connection Configuration](/components/jdbc-connection-configuration/)
 
 </div>
 
@@ -553,11 +553,11 @@ The Add/Delete buttons don't serve any purpose at present.
 
   This Sampler lets you send a different LDAP request(`Add`, `Modify`, `Delete` and `Search`) to an LDAP server.
     If you are going to send multiple requests to the same LDAP server, consider
-      using an [LDAP Request Defaults](/user-manual/component-reference/#LDAP_Request_Defaults)
+      using an [LDAP Request Defaults](/components/ldap-request-defaults/)
       Configuration Element so you do not have to enter the same information for each
       LDAP Request.
 
- The same way the [Login Config Element](/user-manual/component-reference/#Login_Config_Element) also using for Login and password.
+ The same way the [Login Config Element](/components/login-config-element/) also using for Login and password.
   
 
   There are two ways to create test cases for testing an LDAP Server.
@@ -597,7 +597,7 @@ The Add/Delete buttons don't serve any purpose at present.
 
     - [Building an LDAP Test Plan](/user-manual/build-ldap-test-plan/)
 
-    [LDAP Request Defaults](/user-manual/component-reference/#LDAP_Request_Defaults)
+    [LDAP Request Defaults](/components/ldap-request-defaults/)
   
 </div>
 
@@ -608,7 +608,7 @@ The Add/Delete buttons don't serve any purpose at present.
   This Sampler can send all 8 different LDAP requests to an LDAP server. It is an extended version of the LDAP sampler,
   therefore it is harder to configure, but can be made much closer resembling a real LDAP session.
     If you are going to send multiple requests to the same LDAP server, consider
-      using an [LDAP Extended Request Defaults](/user-manual/component-reference/#LDAP_Extended_Request_Defaults)
+      using an [LDAP Extended Request Defaults](/components/ldap-extended-request-defaults/)
       Configuration Element so you do not have to enter the same information for each
       LDAP Request.
 
@@ -744,7 +744,7 @@ The Add/Delete buttons don't serve any purpose at present.
 
      - [Building an LDAP Test Plan](/user-manual/build-ldapext-test-plan/)
 
-     [LDAP Extended Request Defaults](/user-manual/component-reference/#LDAP_Extended_Request_Defaults)
+     [LDAP Extended Request Defaults](/components/ldap-extended-request-defaults/)
    
 </div>
 
@@ -836,7 +836,7 @@ to configure this via the GUI, so it cannot really be used.
 **For full details on using BeanShell, please see the [BeanShell website.](http://www.beanshell.org/)**
 
 :::note
-Migration to [JSR223 Sampler](/user-manual/component-reference/#JSR223_Sampler)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
+Migration to [JSR223 Sampler](/components/jsr223-sampler/)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
 :::
 
 The test element supports the `ThreadListener` and `TestListener` interface methods.
@@ -977,7 +977,7 @@ jsr223.compiled_scripts_cache_size=100
 ```
 
 :::note
-Unlike the [BeanShell Sampler](/user-manual/component-reference/#BeanShell_Sampler), the interpreter is not saved between invocations.
+Unlike the [BeanShell Sampler](/components/beanshell-sampler/), the interpreter is not saved between invocations.
 :::
 
 :::note
@@ -1346,11 +1346,11 @@ JMeter does not include any JMS implementation jar; this must be downloaded from
 
 The current implementation supports standard JUnit convention and extensions. It also
 includes extensions like `oneTimeSetUp` and `oneTimeTearDown`. The sampler works like the
-[Java Request](/user-manual/component-reference/#Java_Request) with some differences.
+[Java Request](/components/java-request/) with some differences.
 
 - rather than use JMeter's test interface, it scans the jar files for classes extending JUnit's `TestCase` class. That includes any class or subclass.
 - JUnit test jar files should be placed in `jmeter/lib/junit` instead of `/lib` directory. You can also use the "`user.classpath`" property to specify where to look for `TestCase` classes.
-- JUnit sampler does not use name/value pairs for configuration like the [Java Request](/user-manual/component-reference/#Java_Request). The sampler assumes `setUp` and `tearDown` will configure the test correctly.
+- JUnit sampler does not use name/value pairs for configuration like the [Java Request](/components/java-request/). The sampler assumes `setUp` and `tearDown` will configure the test correctly.
 - The sampler measures the elapsed time only for the test method and does not include `setUp` and `tearDown`.
 - Each time the test method is called, JMeter will pass the result to the listeners.
 - Support for `oneTimeSetUp` and `oneTimeTearDown` is done as a method. Since JMeter is multi-threaded, we cannot call `oneTimeSetUp`/`oneTimeTearDown` the same way Maven does it.
@@ -1610,7 +1610,7 @@ For example, the Windows command-line: `DIR C:\TEMP` needs to be specified as fo
     
         This sampler allows you to run Cypher queries through the Bolt protocol.
 
-        Before using this you need to set up a [Bolt Connection Configuration](/user-manual/component-reference/#Bolt_Connection_Configuration)
+        Before using this you need to set up a [Bolt Connection Configuration](/components/bolt-connection-configuration/)
 
         Every request uses a connection acquired from the pool and returns it to the pool when the sampler completes.
         The connection pool size defaults to 100 and is configurable.
@@ -1642,7 +1642,7 @@ It is strongly advised to use query parameters, allowing the database to cache a
 
 #### See Also
 
-        [Bolt Connection Configuration](/user-manual/component-reference/#Bolt_Connection_Configuration)
+        [Bolt Connection Configuration](/components/bolt-connection-configuration/)
     
 </div>
 
@@ -1700,7 +1700,7 @@ Index starts at 0
 | Name | Required | Description |
 |------|----------|-------------|
 | Name | No | Descriptive name for this controller that is shown in the tree. |
-| Loop Count | Yes, unless "Forever" is checked | The number of times the subelements of this controller will be iterated each time                 through a test run.                 The value `-1` is equivalent to checking the `Forever` toggle.                 **Special Case:** The Loop Controller embedded in the [Thread Group](/user-manual/test-plan/#thread_group)                 element behaves slightly different.  Unless set to forever, it stops the test after                 the given number of iterations have been done.                  :::note When using a function in this field, be aware it may be evaluated multiple times.                 Example using `[__Random](/user-manual/functions/#__Random)` will evaluate it to a different value for each child samplers of Loop Controller and result into unwanted behaviour. ::: |
+| Loop Count | Yes, unless "Forever" is checked | The number of times the subelements of this controller will be iterated each time                 through a test run.                 The value `-1` is equivalent to checking the `Forever` toggle.                 **Special Case:** The Loop Controller embedded in the [Thread Group](/user-manual/test-plan/#thread_group)                 element behaves slightly different.  Unless set to forever, it stops the test after                 the given number of iterations have been done.                  :::note When using a function in this field, be aware it may be evaluated multiple times.                 Example using `[__Random](/functions/random/)` will evaluate it to a different value for each child samplers of Loop Controller and result into unwanted behaviour. ::: |
 
 #### Looping Example
 
@@ -1873,7 +1873,7 @@ Like the Once Only Controller, this setting is reset when a parent Loop Controll
 
 :::note
 This controller is badly named, as it does not control throughput.
-Please refer to the [Constant Throughput Timer](/user-manual/component-reference/#Constant_Throughput_Timer) for an element that can be used to adjust the throughput.
+Please refer to the [Constant Throughput Timer](/components/constant-throughput-timer/) for an element that can be used to adjust the throughput.
 :::
 
 :::note
@@ -1954,7 +1954,7 @@ _If Controller using javascript_
 |------|----------|-------------|
 | Name | No | Descriptive name for this controller that is shown in the tree. |
 | Condition (default JavaScript) | Yes | By default the condition is interpreted as **JavaScript** code that returns "`true`" or "`false`",     but this can be overridden (see below) |
-| Interpret Condition as Variable Expression | Yes | If this is selected, then the condition must be an expression that evaluates to "`true`" (case is ignored).     For example, `\${FOUND}` or `\${__jexl3(\${VAR} &gt; 100)}`.     Unlike the JavaScript case, the condition is only checked to see if it matches "`true`" (case is ignored).      :::note Checking this and using `[__jexl3](/user-manual/functions/#__jexl3)` or `[__groovy](/user-manual/functions/#__groovy)` function in Condition is advised for performances ::: |
+| Interpret Condition as Variable Expression | Yes | If this is selected, then the condition must be an expression that evaluates to "`true`" (case is ignored).     For example, `\${FOUND}` or `\${__jexl3(\${VAR} &gt; 100)}`.     Unlike the JavaScript case, the condition is only checked to see if it matches "`true`" (case is ignored).      :::note Checking this and using `[__jexl3](/functions/jexl3/)` or `[__groovy](/functions/groovy/)` function in Condition is advised for performances ::: |
 | Evaluate for all children | Yes | Should condition be evaluated for all children?     If not checked, then the condition is only evaluated on entry. |
 
     
@@ -1969,7 +1969,7 @@ _If Controller using javascript_
 :::note
 Note it is advised to avoid using JavaScript mode for performance.
 
-When using `[__groovy](/user-manual/functions/#__groovy)` take care to not use variable replacement in the string, otherwise if using a variable that changes the script cannot be cached.  Instead get the variable using: `vars.get("myVar").`  See the Groovy examples below.
+When using `[__groovy](/functions/groovy/)` take care to not use variable replacement in the string, otherwise if using a variable that changes the script cannot be cached.  Instead get the variable using: `vars.get("myVar").`  See the Groovy examples below.
 :::
 
     
@@ -2008,12 +2008,12 @@ Possible condition values:
 
 :::note
 The condition can be any variable or function that eventually evaluates to the string "`false`".
-This allows the use of `[__jexl3](/user-manual/functions/#__jexl3)`, `[__groovy](/user-manual/functions/#__groovy)` function, properties or variables as needed.
+This allows the use of `[__jexl3](/functions/jexl3/)`, `[__groovy](/functions/groovy/)` function, properties or variables as needed.
 :::
 
 :::note
 Note that the condition is evaluated twice, once before starting sampling children and once at end of children sampling, so putting
-non idempotent functions in Condition (like `[__counter](/user-manual/functions/#__counter)`) can introduce issues.
+non idempotent functions in Condition (like `[__counter](/functions/counter/)`) can introduce issues.
 :::
 
 For example:
@@ -2036,7 +2036,7 @@ For example:
 
     
 
-The Switch Controller acts like the [Interleave Controller](/user-manual/component-reference/#Interleave_Controller)
+The Switch Controller acts like the [Interleave Controller](/components/interleave-controller/)
 in that it runs one of the subordinate elements on each iteration, but rather than
 run them in sequence, the controller runs the element defined by the switch value.
 
@@ -2194,8 +2194,8 @@ The include controller is designed to use an external JMX file. To use it, creat
 underneath the Test Plan and add any desired samplers, controllers etc. below it.
 Then save the Test Plan.  The file is now ready to be included as part of other Test Plans.
 
-For convenience, a [Thread Group](/user-manual/component-reference/#Thread_Group) can also be added in the external JMX file for debugging purposes.
-A [Module Controller](/user-manual/component-reference/#Module_Controller) can be used to reference the Test Fragment.  The [Thread Group](/user-manual/component-reference/#Thread_Group) will be ignored during the
+For convenience, a [Thread Group](/components/thread-group/) can also be added in the external JMX file for debugging purposes.
+A [Module Controller](/components/module-controller/) can be used to reference the Test Fragment.  The [Thread Group](/components/thread-group/) will be ignored during the
 include process.
 
 If the test uses a Cookie Manager or User Defined Variables, these should be placed in the top-level
@@ -2282,7 +2282,7 @@ In parent mode, Assertions (etc.) can be added to the Transaction Controller.
 
 The Recording Controller is a place holder indicating where the proxy server should
 record samples to.  During test run, it has no effect, similar to the Simple Controller.  But during
-recording using the [HTTP(S) Test Script Recorder](/user-manual/component-reference/#HTTP_S__Test_Script_Recorder), all recorded samples will by default
+recording using the [HTTP(S) Test Script Recorder](/components/http-s-test-script-recorder/), all recorded samples will by default
 be saved under the Recording Controller.
 
 | Name | Required | Description |
@@ -2481,7 +2481,7 @@ are part of the test plan.
 
 #### See Also
 
-        [Response Assertion](/user-manual/component-reference/#Response_Assertion)
+        [Response Assertion](/components/response-assertion/)
 
 </div>
 
@@ -2536,14 +2536,14 @@ Note: The regular expression uses the Java engine (not ORO engine like the Regul
 
 If there is no `content-type` provided, then the content
 will not be displayed in the any of the Response Data panels.
-You can use [Save Responses to a file](/user-manual/component-reference/#Save_Responses_to_a_file) to save the data in this case.
+You can use [Save Responses to a file](/components/save-responses-to-a-file/) to save the data in this case.
 Note that the response data will still be available in the sample result,
 so can still be accessed using Post-Processors.
 
 If the response data is larger than 200K, then it won't be displayed.
 To change this limit, set the JMeter property `view.results.tree.max_size`.
 You can also use save the entire response to a file using
-[Save Responses to a file](/user-manual/component-reference/#Save_Responses_to_a_file).
+[Save Responses to a file](/components/save-responses-to-a-file/).
 
 Additional renderers can be created.
 The class must implement the interface `org.apache.jmeter.visualizers.ResultRenderer`
@@ -2591,7 +2591,7 @@ JMeter now combines samples with the same elapsed time, so far less memory is us
 However, for samples that take more than a few seconds, the probability is that fewer samples will have identical times,
 in which case more memory will be needed.
 Note you can use this listener afterwards to reload a CSV or XML results file which is the recommended way to avoid performance impacts.
-See the [Summary Report](/user-manual/component-reference/#Summary_Report) for a similar Listener that does not store individual samples and so needs constant memory.
+See the [Summary Report](/components/summary-report/) for a similar Listener that does not store individual samples and so needs constant memory.
 
 :::note
 Starting with JMeter 2.12, you can configure the 3 percentile values you want to compute, this can be done by setting properties:
@@ -2627,7 +2627,7 @@ _Sample "`Include group name`" display_
 ![View Results in Table](/images/screenshots/table_results.png)
 
 This visualizer creates a row for every sample result.
-Like the [View Results Tree](/user-manual/component-reference/#View_Results_Tree), this visualizer uses a lot of memory.
+Like the [View Results Tree](/components/view-results-tree/), this visualizer uses a lot of memory.
 
 By default, it only displays the main (parent) samples; it does not display the sub-samples (child samples).
 JMeter has a "`Child Samples`" check-box.
@@ -2730,7 +2730,7 @@ The BeanShell Listener allows the use of BeanShell for processing samples for sa
 **For full details on using BeanShell, please see the [BeanShell website.](http://www.beanshell.org/)**
 
 :::note
-Migration to [JSR223 Listener](/user-manual/component-reference/#JSR223_Listener)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
+Migration to [JSR223 Listener](/components/jsr223-listener/)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
 :::
 
 The test element supports the `ThreadListener` and `TestListener` methods.
@@ -2763,7 +2763,7 @@ If the property `beanshell.listener.init` is defined, this is used to load an in
 ![Summary Report](/images/screenshots/summary_report.png)
 
 The summary report creates a table row for each differently named request in your
-test. This is similar to the [Aggregate Report](/user-manual/component-reference/#Aggregate_Report) , except that it uses less memory.
+test. This is similar to the [Aggregate Report](/components/aggregate-report/) , except that it uses less memory.
 
 The throughput is calculated from the point of view of the sampler target
 (e.g. the remote server in the case of HTTP samples).
@@ -2803,7 +2803,7 @@ _Sample "`Include group name`" display_
         For each sample in its scope, it will create a file of the response Data.
         The primary use for this is in creating functional tests, but it can also
         be useful where the response is too large to be displayed in the
-        [View Results Tree](/user-manual/component-reference/#View_Results_Tree) Listener.
+        [View Results Tree](/components/view-results-tree/) Listener.
         The file name is created from the specified prefix, plus a number (unless this is disabled, see below).
         The file extension is created from the document type, if known.
         If not known, the file extension is set to '`unknown`'.
@@ -2997,7 +2997,7 @@ This is not a bug but a design choice allowing to summarize across thread groups
 
 ![Comparison Assertion Visualizer](/images/screenshots/comparison_assertion_visualizer.png)
 
-The Comparison Assertion Visualizer shows the results of any [Compare Assertion](/user-manual/component-reference/#Compare_Assertion) elements.
+The Comparison Assertion Visualizer shows the results of any [Compare Assertion](/components/compare-assertion/) elements.
 
  
 | Name | Required | Description |
@@ -3101,7 +3101,7 @@ _Grafana dashboard_
 
     
     CSV Data Set Config is used to read lines from a file, and split them into variables.
-    It is easier to use than the `[__CSVRead()](/user-manual/functions/#__CSVRead__)` and `[__StringFromFile()](/user-manual/functions/#__StringFromFile__)` functions.
+    It is easier to use than the `[__CSVRead()](/functions/csvread/)` and `[__StringFromFile()](/functions/stringfromfile/)` functions.
     It is well suited to handling large numbers of variables, and is also useful for testing with
     "random" and unique values.
 
@@ -3291,7 +3291,7 @@ When looking for a match against a URL, JMeter checks each entry in turn, and st
 Thus the most specific URLs should appear first in the list, followed by less specific ones.
 Duplicate URLs will be ignored.
 If you want to use different usernames/passwords for different threads, you can use variables.
-These can be set up using a [CSV Data Set Config](/user-manual/component-reference/#CSV_Data_Set_Config) Element (for example).
+These can be set up using a [CSV Data Set Config](/components/csv-data-set-config/) Element (for example).
 :::
 
 | Name | Required | Description |
@@ -3419,7 +3419,7 @@ use it for all future requests to that particular web site.  Each JMeter thread 
 "cookie storage area".  So, if you are testing a web site that uses a cookie for storing
 session information, each JMeter thread will have its own session.
 Note that such cookies do not appear on the Cookie Manager display, but they can be seen using
-the [View Results Tree](/user-manual/component-reference/#View_Results_Tree) Listener.
+the [View Results Tree](/components/view-results-tree/) Listener.
 
 JMeter checks that received cookies are valid for the URL.
 This means that cross-domain cookies are not stored.
@@ -3538,13 +3538,13 @@ _Figure 13 - Header Manager Control Panel_
 
 ![Java Request Defaults](/images/screenshots/java_defaults.png)
 
-The Java Request Defaults component lets you set default values for Java testing.  See the [Java Request](/user-manual/component-reference/#Java_Request).
+The Java Request Defaults component lets you set default values for Java testing.  See the [Java Request](/components/java-request/).
 
 ## JDBC Connection Configuration
 
 ![JDBC Connection Configuration](/images/screenshots/jdbc-config/jdbc-conn-config.png)
 
-    Creates a database connection (used by [JDBC Request](/user-manual/component-reference/#JDBC_Request)Sampler)
+    Creates a database connection (used by [JDBC Request](/components/jdbc-request/)Sampler)
      from the supplied JDBC Connection settings. The connection may be optionally pooled between threads.
      Otherwise each thread gets its own connection.
      The connection configuration name is used by the JDBC Sampler to select the appropriate
@@ -3695,13 +3695,13 @@ The Login Config Element lets you add or override username and password settings
 
 ![LDAP Request Defaults](/images/screenshots/ldap_defaults.png)
 
-The LDAP Request Defaults component lets you set default values for LDAP testing.  See the [LDAP Request](/user-manual/component-reference/#LDAP_Request).
+The LDAP Request Defaults component lets you set default values for LDAP testing.  See the [LDAP Request](/components/ldap-request/).
 
 ## LDAP Extended Request Defaults
 
 ![LDAP Extended Request Defaults](/images/screenshots/ldapext_defaults.png)
 
-The LDAP Extended Request Defaults component lets you set default values for extended LDAP testing.  See the [LDAP Extended Request](/user-manual/component-reference/#LDAP_Extended_Request).
+The LDAP Extended Request Defaults component lets you set default values for extended LDAP testing.  See the [LDAP Extended Request](/components/ldap-extended-request/).
 
 ## TCP Sampler Config
 
@@ -3730,7 +3730,7 @@ The LDAP Extended Request Defaults component lets you set default values for ext
 
 ![User Defined Variables](/images/screenshots/user_defined_variables.png)
 
-The User Defined Variables element lets you define an **initial set of variables**, just as in the [Test Plan](/user-manual/component-reference/#Test_Plan).
+The User Defined Variables element lets you define an **initial set of variables**, just as in the [Test Plan](/components/test-plan/).
 
 :::note
 Note that all the UDV elements in a test plan - no matter where they are - are processed at the start.
@@ -3740,7 +3740,7 @@ So you cannot reference variables which are defined as part of a test run, e.g. 
 
 <strong>UDVs should not be used with functions that generate different results each time they are called.
 Only the result of the first function call will be saved in the variable.</strong>
-However, UDVs can be used with functions such as `[__P()](/user-manual/functions/#__P__)`, for example:
+However, UDVs can be used with functions such as `[__P()](/functions/p/)`, for example:
 
 ```
 HOST      \${__P(host,localhost)}
@@ -3748,7 +3748,7 @@ HOST      \${__P(host,localhost)}
 
 which would define the variable "`HOST`" to have the value of the JMeter property "`host`", defaulting to "`localhost`" if not defined.
 
-For defining variables during a test run, see [User Parameters](/user-manual/component-reference/#User_Parameters).
+For defining variables during a test run, see [User Parameters](/components/user-parameters/).
 UDVs are processed in the order they appear in the Plan, from top to bottom.
 
 For simplicity, it is suggested that UDVs are placed only at the start of a Thread Group
@@ -3778,7 +3778,7 @@ You can reference variables defined in earlier UDVs or on the Test Plan.
 ![Random Variable](/images/screenshots/random_variable.png)
 
 The Random Variable Config Element is used to generate random numeric strings and store them in variable for use later.
-It's simpler than using [User Defined Variables](/user-manual/component-reference/#User_Defined_Variables) together with the `[__Random()](/user-manual/functions/#__Random__)` function.
+It's simpler than using [User Defined Variables](/components/user-defined-variables/) together with the `[__Random()](/functions/random/)` function.
 
 The output variable is constructed by using the random number generator,
 and then the resulting number is formatted using the format string.
@@ -3844,7 +3844,7 @@ GUI that they can use while developing new JMeter components.
 
 ![Bolt Connection Configuration](/images/screenshots/bolt-connection-config.png)
 
-    Creates a Bolt connection pool (used by [Bolt Request](/user-manual/component-reference/#Bolt_Request) Sampler)
+    Creates a Bolt connection pool (used by [Bolt Request](/components/bolt-request/) Sampler)
         from the supplied Connection settings.
     
 
@@ -3961,7 +3961,7 @@ These can be used anywhere within the expression and remain in effect until over
 |------|----------|-------------|
 | Name | No | Descriptive name for this element that is shown in the tree. |
 | Apply to: | Yes | This is for use with samplers that can generate sub-samples,         e.g. HTTP Sampler with embedded resources, Mail Reader or samples generated by the Transaction Controller.          - `Main sample only` - only applies to the main sample - `Sub-samples only` - only applies to the sub-samples - `Main sample and sub-samples` - applies to both. - `JMeter Variable Name to use` - assertion is to be applied to the contents of the named variable |
-| Field to Test | Yes | Instructs JMeter which field of the Request or Response to test.          - `Text Response` - the response text from the server, i.e. the body, excluding any HTTP headers. - `Request data` - the request text sent to the server, i.e. the body, excluding any HTTP headers. - `Response Code` - e.g. `200` - `Response Message` - e.g. `OK` - `Response Headers`, including Set-Cookie headers (if any) - `Request Headers` - `URL sampled` - `Document (text)` - the extract text from various type of documents via Apache Tika (see [View Results Tree](/user-manual/component-reference/#View_Results_Tree) Document view section). |
+| Field to Test | Yes | Instructs JMeter which field of the Request or Response to test.          - `Text Response` - the response text from the server, i.e. the body, excluding any HTTP headers. - `Request data` - the request text sent to the server, i.e. the body, excluding any HTTP headers. - `Response Code` - e.g. `200` - `Response Message` - e.g. `OK` - `Response Headers`, including Set-Cookie headers (if any) - `Request Headers` - `URL sampled` - `Document (text)` - the extract text from various type of documents via Apache Tika (see [View Results Tree](/components/view-results-tree/) Document view section). |
 | Ignore status | Yes | Instructs JMeter to set the status to success initially.                                  The overall success of the sample is determined by combining the result of the                 assertion with the existing Response status.                 When the `Ignore Status` checkbox is selected, the Response status is forced                 to successful before evaluating the Assertion.                                  HTTP Responses with statuses in the `4xx` and `5xx` ranges are normally                 regarded as unsuccessful.                 The "`Ignore status`" checkbox can be used to set the status successful before performing further checks.                  :::note Note that this will have the effect of clearing any previous assertion failures,                 so make sure that this is only set on the first assertion. ::: |
 | Pattern Matching Rules | Yes | Indicates how the text being tested         is checked against the pattern.          - `Contains` - true if the text contains the regular expression pattern - `Matches` - true if the whole text matches the regular expression pattern - `Equals` - true if the whole text equals the pattern string (case-sensitive) - `Substring` - true if the text contains the pattern string (case-sensitive)         `Equals` and `Substring` patterns are plain strings, not regular expressions.         `NOT` may also be selected to invert the result of the check.         `OR` Apply each assertion in OR combination (if 1 pattern to test matches, Assertion will be ok) instead of AND (All patterns must match so that Assertion is OK). |
 | Patterns to Test | Yes | A list of patterns to         be tested.         Each pattern is tested separately.         If a pattern fails, then further patterns are not checked.         There is no difference between setting up         one Assertion with multiple patterns and setting up multiple Assertions with one         pattern each (assuming the other options are the same).          :::note However, when the `Ignore Status` checkbox is selected, this has the effect of cancelling any         previous assertion failures - so make sure that the `Ignore Status` checkbox is only used on         the first Assertion. ::: |
@@ -4034,7 +4034,7 @@ The BeanShell Assertion allows the user to perform assertion checking using a Be
 **For full details on using BeanShell, please see the [BeanShell website.](http://www.beanshell.org/)**
 
 :::note
-Migration to [JSR223 Assertion](/user-manual/component-reference/#JSR223_Assertion)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
+Migration to [JSR223 Assertion](/components/jsr223-assertion/)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
 :::
 
 Note that a different Interpreter is used for each independent occurrence of the assertion
@@ -4233,7 +4233,7 @@ during Test Plan debugging and Validation.
 
 The Compare Assertion can be used to compare sample results within its scope.
 Either the contents or the elapsed time can be compared, and the contents can be filtered before comparison.
-The assertion comparisons can be seen in the [Comparison Assertion Visualizer](/user-manual/component-reference/#Comparison_Assertion_Visualizer).
+The assertion comparisons can be seen in the [Comparison Assertion Visualizer](/components/comparison-assertion-visualizer/).
 
 | Name | Required | Description |
 |------|----------|-------------|
@@ -4255,7 +4255,7 @@ As this is a functionality that is not necessarily needed by most users, additio
 
 These need to be [downloaded from BouncyCastle.](http://www.bouncycastle.org/latest_releases.html)
 
-If using the [Mail Reader Sampler](/user-manual/component-reference/#Mail_Reader_Sampler),
+If using the [Mail Reader Sampler](/components/mail-reader-sampler/),
 please ensure that you select "`Store the message using MIME (raw)`" otherwise the Assertion won't be able to process the message correctly.
 
 | Name | Required | Description |
@@ -4347,9 +4347,9 @@ Since version 3.1, a new feature (in Beta mode as of JMeter 3.1 and subject to c
 
     JMeter will multiply this factor by the computed sleep delay. This feature can be used by:
     
-- [Gaussian Random Timer](/user-manual/component-reference/#Gaussian_Random_Timer)
-- [Poisson Random Timer](/user-manual/component-reference/#Poisson_Random_Timer)
-- [Uniform Random Timer](/user-manual/component-reference/#Uniform_Random_Timer)
+- [Gaussian Random Timer](/components/gaussian-random-timer/)
+- [Poisson Random Timer](/components/poisson-random-timer/)
+- [Uniform Random Timer](/components/uniform-random-timer/)
 :::
 
     
@@ -4366,7 +4366,7 @@ Note that timers are processed **before** each sampler in the scope in which the
     To apply a timer to a single sampler, add the timer as a child element of the sampler.
     The timer will be applied before the sampler is executed.
     To apply a timer after a sampler, either add it to the next sampler, or add it as the
-    child of a [Flow Control Action](/user-manual/component-reference/#Flow_Control_Action) Sampler.
+    child of a [Flow Control Action](/components/flow-control-action/) Sampler.
 :::
 
 ## Constant Timer
@@ -4470,14 +4470,14 @@ As you might know, the timers are inherited by all the siblings and their child 
 
 `Precise Throughput Timer` models [Poisson arrivals](https://en.wikipedia.org/wiki/Poisson_point_process) schedule. That schedule often happens in a real-life, so it makes sense to use that for load testing.
     For instance, it naturally might generate samples that are close together thus it might reveal concurrency issues. Even if you manage to generate Poisson arrivals
-    with [Poisson Random Timer](/user-manual/component-reference/#Poisson_Random_Timer), it would be susceptible to the issues listed below. For instance, true Poisson arrivals might have indefinitely long
+    with [Poisson Random Timer](/components/poisson-random-timer/), it would be susceptible to the issues listed below. For instance, true Poisson arrivals might have indefinitely long
     pause, and that is not practical for load testing. For instance, "regular" Poisson arrivals with 1 per second rate might end up with 50 samples over 60 second long test.
 
-[Constant Throughput Timer](/user-manual/component-reference/#Constant_Throughput_Timer) converges to the specified rate, however it tends to produce samples at even intervals.
+[Constant Throughput Timer](/components/constant-throughput-timer/) converges to the specified rate, however it tends to produce samples at even intervals.
 
 ##### Ramp-up and startup spike
 
-You might used "ramp-up" or similar approaches to avoid a spike at the test start. For instance, if you configure [Thread Group](/user-manual/component-reference/#Thread_Group) to have
+You might used "ramp-up" or similar approaches to avoid a spike at the test start. For instance, if you configure [Thread Group](/components/thread-group/) to have
     100 threads, and set `Ramp-up Period` to `0` (or to a small number), then all the threads would start at the same time, and it would produce an unwanted spike of the load. On top of that, if you set `Ramp-up Period` too high, it might result in "_too few_" threads being available at the very beginning to achieve
 the required load.
 
@@ -4486,8 +4486,8 @@ the required load.
 
 ##### Multiple thread groups starting at the same time
 
-A variation of `Ramp-up` issue might appear when [Test Plan](/user-manual/component-reference/#Test_Plan) includes multiple [Thread Group](/user-manual/component-reference/#Thread_Group)s. To mitigate that issue
-    one typically adds "random" delay to each [Thread Group](/user-manual/component-reference/#Thread_Group) so threads start at different times.
+A variation of `Ramp-up` issue might appear when [Test Plan](/components/test-plan/) includes multiple [Thread Group](/components/thread-group/)s. To mitigate that issue
+    one typically adds "random" delay to each [Thread Group](/components/thread-group/) so threads start at different times.
 
 `Precise Throughput Timer` avoids that issue since it schedules executions in a random way. You do not need to add extra random delays to mitigate startup spike
 
@@ -4527,7 +4527,7 @@ For instance, if you application is used by support engineers in a call center. 
 ##### Testing low rates and repeatable tests
 
 Testing at low rates (e.g. 60 per hour) requires to know the desired test profile. For instance, if you need to inject load at even intervals (e.g. 60 seconds in between)
-    then you'd better use [Constant Throughput Timer](/user-manual/component-reference/#Constant_Throughput_Timer). However, if you need to have randomized schedule (e.g. to model real users that execute reports),
+    then you'd better use [Constant Throughput Timer](/components/constant-throughput-timer/). However, if you need to have randomized schedule (e.g. to model real users that execute reports),
     then `Precise Throughput Timer` is your friend.
 
 When comparing outcomes of multiple load tests, it is useful to be able to repeat exactly the same test profile. For instance, if action X (e.g. "Profit Report")
@@ -4558,7 +4558,7 @@ At the same time, you can set `Test duration (seconds)` to 2 weeks, and the time
 
 ##### Bursty load
 
-There might be a case when all the samples should come in pairs, triples, etc. Certain cases might be solved via [Synchronizing Timer](/user-manual/component-reference/#Synchronizing_Timer), however
+There might be a case when all the samples should come in pairs, triples, etc. Certain cases might be solved via [Synchronizing Timer](/components/synchronizing-timer/), however
     `Precise Throughput Timer` has native way to issue requests in packs. This behavior is disabled by default, and it is controlled with "Batched departures"
     settings
 
@@ -4622,7 +4622,7 @@ The BeanShell Timer can be used to generate a delay.
 **For full details on using BeanShell, please see the [BeanShell website.](http://www.beanshell.org/)**
 
 :::note
-Migration to [JSR223 Timer](/user-manual/component-reference/#JSR223_Timer)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
+Migration to [JSR223 Timer](/components/jsr223-timer/)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
 :::
 
 The test element supports the `ThreadListener` and `TestListener` methods.
@@ -4683,7 +4683,7 @@ This timer pauses each thread request for a random amount of time, with most
 of the time intervals occurring near a particular value.  The total delay is the
 sum of the Poisson distributed value, and the offset value.
 
-Note: if you want to model Poisson arrivals, consider using [Precise Throughput Timer](/user-manual/component-reference/#Precise_Throughput_Timer) instead.
+Note: if you want to model Poisson arrivals, consider using [Precise Throughput Timer](/components/precise-throughput-timer/) instead.
 
 | Name | Required | Description |
 |------|----------|-------------|
@@ -4730,7 +4730,7 @@ If using distributed testing, ensure you switch mode (see `jmeter.properties`) s
 Consider a simple example: let's say you wanted JMeter to "spider" through your site,
 hitting link after link parsed from the HTML returned from your server (this is not
 actually the most useful thing to do, but it serves as a good example).  You would create
-a [Simple Controller](/user-manual/component-reference/#Simple_Controller), and add the "HTML Link Parser" to it.  Then, create an
+a [Simple Controller](/components/simple-controller/), and add the "HTML Link Parser" to it.  Then, create an
 HTTP Request, and set the domain to "`.*`", and the path likewise. This will
 cause your test sample to match with any link found on the returned pages.  If you wanted to
 restrict the spidering to a particular domain, then change the domain value
@@ -4772,13 +4772,13 @@ your dynamic test sample.
 This modifier works similarly to the HTML Link Parser, except it has a specific purpose for which
 it is easier to use than the HTML Link Parser, and more efficient.  For web applications that
 use URL Re-writing to store session ids instead of cookies, this element can be attached at the
-ThreadGroup level, much like the [HTTP Cookie Manager](/user-manual/component-reference/#HTTP_Cookie_Manager).  Simply give it the name
+ThreadGroup level, much like the [HTTP Cookie Manager](/components/http-cookie-manager/).  Simply give it the name
 of the session id parameter, and it will find it on the page and add the argument to every
 request of that ThreadGroup.
 
 Alternatively, this modifier can be attached to select requests and it will modify only them.
 Clever users will even determine that this modifier can be used to grab values that elude the
-[HTML Link Parser](/user-manual/component-reference/#HTML_Link_Parser).
+[HTML Link Parser](/components/html-link-parser/).
 
 | Name | Required | Description |
 |------|----------|-------------|
@@ -4810,7 +4810,7 @@ To add a new value to the series, click the '`Add User`' button and fill in the 
 
 Values can be accessed in any test component in the same thread group, using the [function syntax](/user-manual/functions/): `\${variable}`.
 
-See also the [CSV Data Set Config](/user-manual/component-reference/#CSV_Data_Set_Config) element, which is more suitable for large numbers of parameters
+See also the [CSV Data Set Config](/components/csv-data-set-config/) element, which is more suitable for large numbers of parameters
 
 | Name | Required | Description |
 |------|----------|-------------|
@@ -4826,7 +4826,7 @@ The BeanShell PreProcessor allows arbitrary code to be applied before taking a s
 **For full details on using BeanShell, please see the [BeanShell website.](http://www.beanshell.org/)**
 
 :::note
-Migration to [JSR223 PreProcessor](/user-manual/component-reference/#JSR223_PreProcessor)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
+Migration to [JSR223 PreProcessor](/components/jsr223-preprocessor/)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
 :::
 
 The test element supports the `ThreadListener` and `TestListener` methods.
@@ -4886,7 +4886,7 @@ For details of all the methods available on each of the above variables, please 
 
 The JDBC PreProcessor enables you to run some SQL statement just before a sample runs.
 This can be useful if your JDBC Sample requires some data to be in DataBase and you cannot compute this in a setup Thread group.
-For details, see [JDBC Request](/user-manual/component-reference/#JDBC_Request).
+For details, see [JDBC Request](/components/jdbc-request/).
 
 See the following Test plan:
 
@@ -4936,7 +4936,7 @@ _Create Price Cut-Off Preprocessor_
 
     
 
-    See also the [Regular Expression Extractor](/user-manual/component-reference/#Regular_Expression_Extractor) element, which is used to extract parameters names and values
+    See also the [Regular Expression Extractor](/components/regular-expression-extractor/) element, which is used to extract parameters names and values
 
 <div class="component-links">
 
@@ -5016,11 +5016,11 @@ generate the template string, and store the result into the given variable name.
 |------|----------|-------------|
 | Name | No | Descriptive name for this element that is shown in the tree. |
 | Apply to: | Yes | This is for use with samplers that can generate sub-samples,         e.g. HTTP Sampler with embedded resources, Mail Reader or samples generated by the Transaction Controller.          - `Main sample only` - only applies to the main sample - `Sub-samples only` - only applies to the sub-samples - `Main sample and sub-samples` - applies to both. - `JMeter Variable Name to use` - extraction is to be applied to the contents of the named variable         Matching is applied to all qualifying samples in turn.         For example if there is a main sample and 3 sub-samples, each of which contains a single match for the regex,         (i.e. 4 matches in total).         For match number = `3`, Sub-samples only, the extractor will match the 3rd sub-sample.         For match number = `3`, Main sample and sub-samples, the extractor will match the 2nd sub-sample (1st match is main sample).         For match number = `0` or negative, all qualifying samples will be processed.         For match number > `0`, matching will stop as soon as enough matches have been found. |
-| Field to check | Yes | The following fields can be checked:          - `Body` - the body of the response, e.g. the content of a web-page (excluding headers) - `Body (unescaped)` - the body of the response, with all Html escape codes replaced.         Note that Html escapes are processed without regard to context, so some incorrect substitutions         may be made.          :::note Note that this option highly impacts performances, so use it only when absolutely necessary and be aware of its impacts ::: - `Body as a Document` - the extract text from various type of documents via Apache Tika (see [View Results Tree](/user-manual/component-reference/#View_Results_Tree) Document view section).          :::note Note that the Body as a Document option can impact performances, so ensure it is OK for your test ::: - `Request Headers` - may not be present for non-HTTP samples - `Response Headers` - may not be present for non-HTTP samples - `URL` - `Response Code` - e.g. `200` - `Response Message` - e.g. `OK`         Headers can be useful for HTTP samples; it may not be present for other sample types. |
+| Field to check | Yes | The following fields can be checked:          - `Body` - the body of the response, e.g. the content of a web-page (excluding headers) - `Body (unescaped)` - the body of the response, with all Html escape codes replaced.         Note that Html escapes are processed without regard to context, so some incorrect substitutions         may be made.          :::note Note that this option highly impacts performances, so use it only when absolutely necessary and be aware of its impacts ::: - `Body as a Document` - the extract text from various type of documents via Apache Tika (see [View Results Tree](/components/view-results-tree/) Document view section).          :::note Note that the Body as a Document option can impact performances, so ensure it is OK for your test ::: - `Request Headers` - may not be present for non-HTTP samples - `Response Headers` - may not be present for non-HTTP samples - `URL` - `Response Code` - e.g. `200` - `Response Message` - e.g. `OK`         Headers can be useful for HTTP samples; it may not be present for other sample types. |
 | Name of created variable | Yes | The name of the JMeter variable in which to store the result.  Also note that each group is stored as `[refname]_g#`, where `[refname]` is the string you entered as the reference name, and `#` is the group number, where group `0` is the entire match, group `1` is the match from the first set of parentheses, etc. |
 | Regular Expression | Yes | The regular expression used to parse the response data.         This must contain at least one set of parentheses "`()`" to capture a portion of the string, unless using the group `$0$`.         Do not enclose the expression in `/ /` - unless of course you want to match these characters as well. |
 | Template | Yes | The template used to create a string from the matches found.  This is an arbitrary string         with special elements to refer to groups within the regular expression.  The syntax to refer to a group is: '`$1$`' to refer to         group `1`, '`$2$`' to refer to group `2`, etc. `$0$` refers to whatever the entire expression matches. |
-| Match No. (0 for Random) | Yes | Indicates which match to use.  The regular expression may match multiple times.              - Use a value of zero to indicate JMeter should choose a match at random. - A positive number N means to select the nth match. - Negative numbers are used in conjunction with the [ForEach Controller](/user-manual/component-reference/#ForEach_Controller) - see below. |
+| Match No. (0 for Random) | Yes | Indicates which match to use.  The regular expression may match multiple times.              - Use a value of zero to indicate JMeter should choose a match at random. - A positive number N means to select the nth match. - Negative numbers are used in conjunction with the [ForEach Controller](/components/foreach-controller/) - see below. |
 | Default Value | No, but recommended | If the regular expression does not match, then the reference variable will be set to the default value.         This is particularly useful for debugging tests. If no default is provided, then it is difficult to tell         whether the regular expression did not match, or the RE element was not processed or maybe the wrong variable         is being used.                  However, if you have several test elements that set the same variable,         you may wish to leave the variable unchanged if the expression does not match.         In this case, remove the default value once debugging is complete. |
 | Use empty default value | No | If the checkbox is checked and `Default Value` is empty, then JMeter will set the variable to empty string instead of not setting it.         Thus when you will for example use `\${var}` (if `Reference Name` is var) in your Test Plan, if the extracted value is not found then         `\${var}` will be equal to empty string instead of containing `\${var}` which may be useful if extracted value is optional. |
 
@@ -5052,7 +5052,7 @@ generate the template string, and store the result into the given variable name.
     Note that the `refName` variable is always set to the default value in this case,
     and the associated group variables are not set.
 
-    See also [Response Assertion](/user-manual/component-reference/#Response_Assertion) for some examples of how to specify modifiers,
+    See also [Response Assertion](/components/response-assertion/) for some examples of how to specify modifiers,
     and [for further information on JMeter regular expressions.](/user-manual/regular-expressions/)
 
 ## CSS Selector Extractor _(formerly CSS/JQuery Extractor)_
@@ -5071,7 +5071,7 @@ extracting the node as text or attribute value and store the result into the giv
 | Name of created variable | Yes | The name of the JMeter variable in which to store the result. |
 | CSS/JQuery expression | Yes | The CSS/JQuery selector used to select nodes from the response data.         Selector, selectors combination and pseudo-selectors are supported, examples:          - `E[foo]` - an `E` element with a "`foo`" attribute - `ancestor child` - child elements that descend from ancestor, e.g. `.body p` finds `p` elements anywhere under a block with class "`body`" - `:lt(n)` - find elements whose sibling index (i.e. its position in the DOM tree relative to its parent) is less than `n`; e.g. `td:lt(3)` - `:contains(text)` - find elements that contain the given `text`. The search is case-insensitive; e.g. `p:contains(jsoup)` - …         For more details on syntax, see:              - [JSoup](http://jsoup.org/cookbook/extracting-data/selector-syntax) - [Jodd-Lagarto (CSSelly)](http://jodd.org/doc/csselly/) |
 | Attribute | false | Name of attribute (as per HTML syntax) to extract from nodes that matched the selector. If empty, then the combined text of this element and all its children will be returned.             This is the equivalent [Element#attr(name)](http://jsoup.org/apidocs/org/jsoup/nodes/Node.html#attr%28java.lang.String%29) function for JSoup if an attribute is set.             ![CSS Extractor with attribute value set](/images/screenshots/css_extractor_attr.png) _CSS Extractor with attribute value set_             If empty this is the equivalent of [Element#text()](http://jsoup.org/apidocs/org/jsoup/nodes/Element.html#text%28%29) function for JSoup if not value is set for attribute.             ![CSS Extractor with no attribute set](/images/screenshots/css_extractor_noattr.png) _CSS Extractor with no attribute set_ |
-| Match No. (0 for Random) | Yes | Indicates which match to use.  The CSS/JQuery selector may match multiple times.              - Use a value of zero to indicate JMeter should choose a match at random. - A positive number `N` means to select the nth match. - Negative numbers are used in conjunction with the [ForEach Controller](/user-manual/component-reference/#ForEach_Controller) - see below. |
+| Match No. (0 for Random) | Yes | Indicates which match to use.  The CSS/JQuery selector may match multiple times.              - Use a value of zero to indicate JMeter should choose a match at random. - A positive number `N` means to select the nth match. - Negative numbers are used in conjunction with the [ForEach Controller](/components/foreach-controller/) - see below. |
 | Default Value | No, but recommended | If the expression does not match, then the reference variable will be set to the default value.         This is particularly useful for debugging tests. If no default is provided, then it is difficult to tell         whether the expression did not match, or the CSS/JQuery element was not processed or maybe the wrong variable         is being used.                  However, if you have several test elements that set the same variable,         you may wish to leave the variable unchanged if the expression does not match.         In this case, remove the default value once debugging is complete. |
 | Use empty default value | No | If the checkbox is checked and `Default Value` is empty, then JMeter will set the variable to empty string instead of not setting it.         Thus when you will for example use `\${var}` (if `Reference Name` is var) in your Test Plan, if the extracted value is not found then         `\${var}` will be equal to empty string instead of containing `\${var}` which may be useful if extracted value is optional. |
 
@@ -5112,7 +5112,7 @@ extracting the node as text or attribute value and store the result into the giv
 | Default Value | yes | Default value returned when no match found.     It is also returned if the node has no value and the fragment option is not selected. |
 | Namespaces aliases list | No | List of namespaces aliases you want to use to parse the document, one line per declaration.     You must specify them as follow: `prefix=namespace`. This implementation makes it easier to     use namespaces than with the old XPathExtractor version. |
 
-   To allow for use in a [ForEach Controller](/user-manual/component-reference/#ForEach_Controller), it works exactly the same as the above XPath Extractor
+   To allow for use in a [ForEach Controller](/components/foreach-controller/), it works exactly the same as the above XPath Extractor
 
    XPath2 Extractor provides some interestings tools such as an improved syntax and much more functions than in its first version.
 
@@ -5140,7 +5140,7 @@ extracting the node as text or attribute value and store the result into the giv
         query language.
         
 :::note
-Since JMeter 5.0, you should use [XPath2 Extractor](/user-manual/component-reference/#XPath2_Extractor) as it provides better and easier namespace management, better performances and support for XPath 2.0
+Since JMeter 5.0, you should use [XPath2 Extractor](/components/xpath2-extractor/) as it provides better and easier namespace management, better performances and support for XPath 2.0
 :::
 
    
@@ -5164,7 +5164,7 @@ Since JMeter 5.0, you should use [XPath2 Extractor](/user-manual/component-refer
 | Match No. (0 for Random) | No | If the XPath Path query leads to many results, you can choose which one(s) to extract as Variables:      - `0`: means random - `-1` means extract all results (default value), they will be named as `_&lt;variable name&gt;__N` (where `N` goes from 1 to Number of results) - `X`: means extract the Xth result. If this Xth is greater than number of matches, then nothing is returned. Default value will be used |
 | Default Value | No | Default value returned when no match found.     It is also returned if the node has no value and the fragment option is not selected. |
 
-   To allow for use in a [ForEach Controller](/user-manual/component-reference/#ForEach_Controller), the following variables are set on return:
+   To allow for use in a [ForEach Controller](/components/foreach-controller/), the following variables are set on return:
 
    
 - `refName` - set to first (or only) match; if no match, then set to default
@@ -5283,7 +5283,7 @@ BeanShell Post-Processor no longer ignores samples with zero-length result data
 **For full details on using BeanShell, please see the [BeanShell website.](http://www.beanshell.org/)**
 
 :::note
-Migration to [JSR223 PostProcessor](/user-manual/component-reference/#JSR223_PostProcessor)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
+Migration to [JSR223 PostProcessor](/components/jsr223-postprocessor/)+Groovy is highly recommended for performance, support of new Java features and limited maintenance of the BeanShell library.
 :::
 
 The test element supports the `ThreadListener` and `TestListener` methods.
@@ -5390,11 +5390,11 @@ generate the template string, and store the result into the given variable name.
 |------|----------|-------------|
 | Name | No | Descriptive name for this element that is shown in the tree. |
 | Apply to: | Yes | This is for use with samplers that can generate sub-samples,         e.g. HTTP Sampler with embedded resources, Mail Reader or samples generated by the Transaction Controller.          - `Main sample only` - only applies to the main sample - `Sub-samples only` - only applies to the sub-samples - `Main sample and sub-samples` - applies to both. - `JMeter Variable Name to use` - assertion is to be applied to the contents of the named variable         Matching is applied to all qualifying samples in turn.         For example if there is a main sample and 3 sub-samples, each of which contains a single match test,         (i.e. 4 matches in total).         For match number = `3`, Sub-samples only, the extractor will match the 3rd sub-sample.         For match number = `3`, Main sample and sub-samples, the extractor will match the 2nd sub-sample (1st match is main sample).         For match number = `0` or negative, all qualifying samples will be processed.         For match number > `0`, matching will stop as soon as enough matches have been found. |
-| Field to check | Yes | The following fields can be checked:          - `Body` - the body of the response, e.g. the content of a web-page (excluding headers) - `Body (unescaped)` - the body of the response, with all Html escape codes replaced.         Note that Html escapes are processed without regard to context, so some incorrect substitutions         may be made.          :::note Note that this option highly impacts performances, so use it only when absolutely necessary and be aware of its impacts ::: - `Body as a Document` - the extract text from various type of documents via Apache Tika (see [View Results Tree](/user-manual/component-reference/#View_Results_Tree) Document view section).          :::note Note that the Body as a Document option can impact performances, so ensure it is OK for your test ::: - `Request Headers` - may not be present for non-HTTP samples - `Response Headers` - may not be present for non-HTTP samples - `URL` - `Response Code` - e.g. `200` - `Response Message` - e.g. `OK`         Headers can be useful for HTTP samples; it may not be present for other sample types. |
+| Field to check | Yes | The following fields can be checked:          - `Body` - the body of the response, e.g. the content of a web-page (excluding headers) - `Body (unescaped)` - the body of the response, with all Html escape codes replaced.         Note that Html escapes are processed without regard to context, so some incorrect substitutions         may be made.          :::note Note that this option highly impacts performances, so use it only when absolutely necessary and be aware of its impacts ::: - `Body as a Document` - the extract text from various type of documents via Apache Tika (see [View Results Tree](/components/view-results-tree/) Document view section).          :::note Note that the Body as a Document option can impact performances, so ensure it is OK for your test ::: - `Request Headers` - may not be present for non-HTTP samples - `Response Headers` - may not be present for non-HTTP samples - `URL` - `Response Code` - e.g. `200` - `Response Message` - e.g. `OK`         Headers can be useful for HTTP samples; it may not be present for other sample types. |
 | Name of created variable | Yes | The name of the JMeter variable in which to store the result.  Also note that each group is stored as `[refname]_g#`, where `[refname]` is the string you entered as the reference name, and `#` is the group number, where group `0` is the entire match, group `1` is the match from the first set of parentheses, etc. |
 | Left Boundary | No | Left boundary of value to find |
 | Right Boundary | No | Right boundary of value to find |
-| Match No. (0 for Random) | Yes | Indicates which match to use.  The boundaries may match multiple times.              - Use a value of zero to indicate JMeter should choose a match at random. - A positive number N means to select the nth match. - Negative numbers are used in conjunction with the [ForEach Controller](/user-manual/component-reference/#ForEach_Controller) - see below. |
+| Match No. (0 for Random) | Yes | Indicates which match to use.  The boundaries may match multiple times.              - Use a value of zero to indicate JMeter should choose a match at random. - A positive number N means to select the nth match. - Negative numbers are used in conjunction with the [ForEach Controller](/components/foreach-controller/) - see below. |
 | Default Value | No, but recommended | If the boundaries do not match, then the reference variable will be set to the default value.         This is particularly useful for debugging tests. If no default is provided, then it is difficult to tell         whether the boundaries did not match, or maybe the wrong variable         is being used.                  However, if you have several test elements that set the same variable,         you may wish to leave the variable unchanged if the expression does not match.         In this case, remove the default value once debugging is complete. |
 
     If the match number is set to a non-negative number, and a match occurs, the variables are set as follows:
@@ -5437,7 +5437,7 @@ For example the variable `SERVER` could be defined as `www.example.com`, and the
 could refer to it as `\${SERVER}`. This simplifies changing the name later.
 
 If the same variable name is reused on one of more
-[User Defined Variables](/user-manual/component-reference/#User_Defined_Variables) Configuration elements,
+[User Defined Variables](/components/user-defined-variables/) Configuration elements,
 the value is set to the last definition in the test plan (reading from top to bottom).
 Such variables should be used for items that may change between test runs,
 but which remain the same during a test run.
@@ -5447,7 +5447,7 @@ Note that the Test Plan cannot refer to variables it defines.
 :::
 
 If you need to construct other variables from the Test Plan variables,
-use a [User Defined Variables](/user-manual/component-reference/#User_Defined_Variables) test element.
+use a [User Defined Variables](/components/user-defined-variables/) test element.
 
 Selecting Functional Testing instructs JMeter to save the  additional sample information
 - Response Data and Sampler Data - to all result files.
@@ -5458,7 +5458,7 @@ If more data is required for a particular sampler only, then add a Listener to i
 The option does not affect CSV result files, which cannot currently store such information.
 :::
 
-Also, an option exists here to instruct JMeter to run the [Thread Group](/user-manual/component-reference/#Thread_Group) serially rather than in parallel.
+Also, an option exists here to instruct JMeter to run the [Thread Group](/components/thread-group/) serially rather than in parallel.
 
 Run tearDown Thread Groups after shutdown of main threads:
 if selected, the tearDown groups (if any) will be run after graceful shutdown of the main threads.
@@ -5598,7 +5598,7 @@ The implicit rate at the beginning of the test is `0`. If the finish rate is not
 
 A Thread Group defines a pool of users that will execute a particular test case against your server.  In the Thread Group GUI, you can control the number of users simulated (number of threads), the ramp up time (how long it takes to start all the threads), the number of times to perform the test, and optionally, a start and stop time for the test.
 
-See also [tearDown Thread Group](/user-manual/component-reference/#tearDown_Thread_Group) and [setUp Thread Group](/user-manual/component-reference/#setUp_Thread_Group).
+See also [tearDown Thread Group](/components/teardown-thread-group/) and [setUp Thread Group](/components/setup-thread-group/).
 
 When using the scheduler, JMeter runs the thread group until either the number of loops is reached or the duration/end-time is reached - whichever occurs first.
 Note that the condition is only checked between samples; when the end condition is reached, that thread will stop.
@@ -5659,7 +5659,7 @@ Behaviour can be modified with some properties by setting in `user.properties`:
   It is only needed if you have not set up the appropriate System properties.
 
 :::note
-If you want to test client certificate authentication, see [Keystore Configuration](/user-manual/component-reference/#Keystore_Configuration)
+If you want to test client certificate authentication, see [Keystore Configuration](/components/keystore-configuration/)
 :::
 
 **Choosing a Client Certificate**
@@ -5865,7 +5865,7 @@ Both Chrome and Internet Explorer use the same trust store for certificates.
 | Port | Yes | The port that the HTTP(S) Test Script Recorder listens to.  `8888` is the default, but you can change it. |
 | HTTPS Domains | No | List of domain (or host) names for HTTPS. Use this to pre-generate certificates for all servers you wish to record.                  For example, `*.example.com,*.subdomain.example.com`                  Note that wildcard domains only apply to one level,         i.e. `abc.subdomain.example.com` matches `*.subdomain.example.com` but not `*.example.com` |
 | Target Controller | Yes | The controller where the proxy will store the generated samples. By default, it will look for a Recording Controller and store them there wherever it is. |
-| Grouping | Yes | Whether to group samplers for requests from a single "click" (requests received without significant time separation), and how to represent that grouping in the recording:             - `Do not group samplers` - store all recorded samplers sequentially, without any grouping. - `Add separators between groups` - add a controller named "`--------------`" to create a visual separation between the groups. Otherwise the samplers are all stored sequentially. - `Put each group in a new controller` - create a new [Simple Controller](/user-manual/component-reference/#Simple_Controller) for each group, and store all samplers for that group in it. - `Store 1st sampler of each group only` - only the first request in each group will be recorded. The "`Follow Redirects`" and "`Retrieve All Embedded Resources …`" flags will be turned on in those samplers. - `Put each group in a new transaction controller` - create a new [Transaction Controller](/user-manual/component-reference/#Transaction_Controller) for each group, and store all samplers for that group in it.            The property `proxy.pause` determines the minimum gap that JMeter needs between requests            to treat them as separate "clicks". The default is `5000` (milliseconds) i.e. 5 seconds.            If you are using grouping, please ensure that you leave the required gap between clicks. |
+| Grouping | Yes | Whether to group samplers for requests from a single "click" (requests received without significant time separation), and how to represent that grouping in the recording:             - `Do not group samplers` - store all recorded samplers sequentially, without any grouping. - `Add separators between groups` - add a controller named "`--------------`" to create a visual separation between the groups. Otherwise the samplers are all stored sequentially. - `Put each group in a new controller` - create a new [Simple Controller](/components/simple-controller/) for each group, and store all samplers for that group in it. - `Store 1st sampler of each group only` - only the first request in each group will be recorded. The "`Follow Redirects`" and "`Retrieve All Embedded Resources …`" flags will be turned on in those samplers. - `Put each group in a new transaction controller` - create a new [Transaction Controller](/components/transaction-controller/) for each group, and store all samplers for that group in it.            The property `proxy.pause` determines the minimum gap that JMeter needs between requests            to treat them as separate "clicks". The default is `5000` (milliseconds) i.e. 5 seconds.            If you are using grouping, please ensure that you leave the required gap between clicks. |
 | Capture HTTP Headers | Yes | Should headers be added to the plan?         If specified, a Header Manager will be added to each HTTP Sampler.         The Proxy server always removes Cookie and Authorization headers from the generated Header Managers.         By default it also removes `If-Modified-Since` and `If-None-Match` headers.         These are used to determine if the browser cache items are up to date;         when recording one normally wants to download all the content.         To change which additional headers are removed, define the JMeter property `proxy.headers.remove`         as a comma-separated list of headers. |
 | Add Assertions | Yes | Add a blank assertion to each sampler? |
 | Regex Matching | Yes | Use Regex Matching when replacing variables? If checked replacement will use word boundaries, i.e. it will only replace word matching values of variable, not part of a word. A word boundary follows Perl5 definition and is equivalent to `\b`. More information below in the paragraph about "`User Defined Variable replacement`". |
@@ -5987,7 +5987,7 @@ try using the non-loopback hostname or IP address, e.g. `http://myhost/` or `htt
 
 ##### Handling of HTTP Request Defaults
 
-If the HTTP(S) Test Script Recorder finds enabled [HTTP Request Defaults](/user-manual/component-reference/#HTTP_Request_Defaults) directly within the
+If the HTTP(S) Test Script Recorder finds enabled [HTTP Request Defaults](/components/http-request-defaults/) directly within the
 controller where samples are being stored, or directly within any of its parent controllers, the recorded samples
 will have empty fields for the default values you specified. You may further control this behaviour by placing an
 HTTP Request Defaults element directly within the HTTP(S) Test Script Recorder, whose non-blank values will override
@@ -5996,7 +5996,7 @@ Practices with the HTTP(S) Test Script Recorder](/user-manual/best-practices/#pr
 
 ##### User Defined Variable replacement
 
-Similarly, if the HTTP(S) Test Script Recorder finds [User Defined Variables](/user-manual/component-reference/#User_Defined_Variables) (UDV) directly within the
+Similarly, if the HTTP(S) Test Script Recorder finds [User Defined Variables](/components/user-defined-variables/) (UDV) directly within the
 controller where samples are being stored, or directly within any of its parent controllers, the recorded samples
 will have any occurrences of the values of those variables replaced by the corresponding variable. Again, you can
 place User Defined Variables directly within the HTTP(S) Test Script Recorder to override the values to be replaced. See
@@ -6055,8 +6055,8 @@ cookie manager, etc.
 
 ##### How can I record the server's responses too?
 
-Just place a [View Results Tree](/user-manual/component-reference/#View_Results_Tree) listener as a child of the HTTP(S) Test Script Recorder and the responses will be displayed.
-You can also add a [Save Responses to a file](/user-manual/component-reference/#Save_Responses_to_a_file) Post-Processor which will save the responses to files.
+Just place a [View Results Tree](/components/view-results-tree/) listener as a child of the HTTP(S) Test Script Recorder and the responses will be displayed.
+You can also add a [Save Responses to a file](/components/save-responses-to-a-file/) Post-Processor which will save the responses to files.
 
 ##### Associating requests with responses
 
@@ -6067,7 +6067,7 @@ Responses that have been excluded will have labels enclosed in `[` and `],` for 
 
 ##### Cookie Manager
 
-If the server you are testing against uses cookies, remember to add an [HTTP Cookie Manager](/user-manual/component-reference/#HTTP_Cookie_Manager) to the test plan
+If the server you are testing against uses cookies, remember to add an [HTTP Cookie Manager](/components/http-cookie-manager/) to the test plan
 when you have finished recording it.
 During recording, the browser handles any cookies, but JMeter needs a Cookie Manager
 to do the cookie handling during a test run.
@@ -6148,7 +6148,7 @@ Values can be changed by entering new text in the Value column.
 
 The Debug Sampler generates a sample containing the values of all JMeter variables and/or properties.
 
-The values can be seen in the [View Results Tree](/user-manual/component-reference/#View_Results_Tree) Listener Response Data pane.
+The values can be seen in the [View Results Tree](/components/view-results-tree/) Listener Response Data pane.
 
 | Name | Required | Description |
 |------|----------|-------------|
@@ -6164,7 +6164,7 @@ The values can be seen in the [View Results Tree](/user-manual/component-referen
 The Debug PostProcessor creates a subSample with the details of the previous Sampler properties,
 JMeter variables, properties and/or System Properties.
 
-The values can be seen in the [View Results Tree](/user-manual/component-reference/#View_Results_Tree) Listener Response Data pane.
+The values can be seen in the [View Results Tree](/components/view-results-tree/) Listener Response Data pane.
 
 | Name | Required | Description |
 |------|----------|-------------|
@@ -6178,14 +6178,14 @@ The values can be seen in the [View Results Tree](/user-manual/component-referen
 
 ![Test Fragment](/images/screenshots/test_fragment.png)
 
-The Test Fragment is used in conjunction with the [Include Controller](/user-manual/component-reference/#Include_Controller) and [Module Controller](/user-manual/component-reference/#Module_Controller).
+The Test Fragment is used in conjunction with the [Include Controller](/components/include-controller/) and [Module Controller](/components/module-controller/).
 
 | Name | Required | Description |
 |------|----------|-------------|
 | Name | Yes | Descriptive name for this element that is shown in the tree. |
 
 :::note
-When using Test Fragment with [Module Controller](/user-manual/component-reference/#Module_Controller), ensure you disable the Test Fragment to avoid the execution of Test Fragment itself.
+When using Test Fragment with [Module Controller](/components/module-controller/), ensure you disable the Test Fragment to avoid the execution of Test Fragment itself.
 This is done by default since JMeter 2.13.
 :::
 
@@ -6195,7 +6195,7 @@ This is done by default since JMeter 2.13.
 
     
     A special type of ThreadGroup that can be utilized to perform Pre-Test Actions.  The behavior of these threads
-    is exactly like a normal [Thread Group](/user-manual/component-reference/#Thread_Group) element.  The difference is that these type of threads
+    is exactly like a normal [Thread Group](/components/thread-group/) element.  The difference is that these type of threads
     execute before the test proceeds to the executing of regular Thread Groups.
     
 
@@ -6205,7 +6205,7 @@ This is done by default since JMeter 2.13.
 
     
     A special type of ThreadGroup that can be utilized to perform Post-Test Actions.  The behavior of these threads
-    is exactly like a normal [Thread Group](/user-manual/component-reference/#Thread_Group) element.  The difference is that these type of threads
+    is exactly like a normal [Thread Group](/components/thread-group/) element.  The difference is that these type of threads
     execute after the test has finished executing its regular Thread Groups.
     
 

@@ -28,9 +28,9 @@ each one to 10 iterations. The total messages is (6 threads) x (1 message) x
 (repeat 10 times) = 60 messages. To construct the Test Plan, you will use the
 following elements:
 [Thread Group](/user-manual/test-plan/#thread_group),
-[JMS Publisher](/user-manual/component-reference/#JMS_Publisher),
-[JMS Subscriber](/user-manual/component-reference/#JMS_Subscriber), and
-[Graph Results](/user-manual/component-reference/#Graph_Results).
+[JMS Publisher](/components/jms-publisher/),
+[JMS Subscriber](/components/jms-subscriber/), and
+[Graph Results](/components/graph-results/).
 
 General notes on JMS: There are currently two JMS samplers. One uses JMS topics
 and the other uses queues. Topic messages are commonly known as pub/sub messaging.
@@ -105,7 +105,7 @@ leave the Control Panel (for example, when selecting another tree element).
 Make sure the required jar files are in JMeter's `lib` directory. If they are
 not, shutdown JMeter, copy the jar files over and restart JMeter.
 
-Start by adding the sampler [JMS Subscriber](/user-manual/component-reference/#JMS_Subscriber)
+Start by adding the sampler [JMS Subscriber](/components/jms-subscriber/)
 to the Subscribers element
 (**Add → Sampler → JMS Subscriber**).
 Then, select the JMS Subscriber element in the tree and edit the following properties:
@@ -124,7 +124,7 @@ Then, select the JMS Subscriber element in the tree and edit the following prope
 ![Figure 11.2. JMS Subscriber](/images/screenshots/jms/jms_sub.png)
 _Figure 11.2. JMS Subscriber_
 
-Next add the sampler [JMS Publisher](/user-manual/component-reference/#JMS_Publisher)
+Next add the sampler [JMS Publisher](/components/jms-publisher/)
 to the Publisher element
 (**Add → Sampler → JMS Publisher**).
 Then, select the JMS Publisher element in the tree and edit the following properties:
@@ -152,7 +152,7 @@ The final element you need to add to your Test Plan is a
 responsible for storing all of the results of your HTTP requests in a file and presenting
 a visual model of the data.
 
-Select the Test Plan element and add a [Graph Results](/user-manual/component-reference/#Graph_Results) listener
+Select the Test Plan element and add a [Graph Results](/components/graph-results/) listener
 (**Add → Listener → Graph Results**).  Next, you need to specify a directory and filename of the
 output file.  You can either type it into the filename field, or select the
 Browse button and browse to a directory and then enter a filename.

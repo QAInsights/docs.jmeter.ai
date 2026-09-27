@@ -623,7 +623,7 @@ StrippedBatch strips response data from SampleResult, so if you need the respons
 | CookieManager.name.prefix | No | CookieManager behaviour - prefix to add to cookie name before storing it as a variable.     Default is COOKIE_; to remove the prefix, define it as one or more spaces.     Defaults to: `COOKIE_` |
 | CookieManager.check.cookies | No | CookieManager behaviour - check received cookies are valid before storing them?     Use `false` to revert to previous behaviour.     Defaults to: `true` |
 | cookies | No | Netscape HTTP Cookie file.     Defaults to: `cookies` |
-| javascript.use_rhino | No | Ability to switch to Rhino as default Javascript Engine used by `IfController`     and `[__javaScript](/user-manual/functions/#__javaScript)` function.      :::note JMeter uses Nashorn since 3.2 version.     If you want to use Rhino, set this value to `true` :::     Defaults to: `false` |
+| javascript.use_rhino | No | Ability to switch to Rhino as default Javascript Engine used by `IfController`     and `[__javaScript](/functions/javascript/)` function.      :::note JMeter uses Nashorn since 3.2 version.     If you want to use Rhino, set this value to `true` :::     Defaults to: `false` |
 | jmeter.regex.engine | No | Ability to switch out the old Oro Regex implementation with the JDK built-in implementation.     Any value different to `oro` will disable the Oro implementation and enable the JDK based.      :::note We intend to switch the default to the JDK based one in a later version of JMeter. :::     Defaults to: `oro` |
 | jmeter.regex.patterncache.size | No | We assist the JDK based Regex implementation by caching Pattern objects. The size of the     cache can be set with this setting. It can be disabled by setting it to `0`.     Defaults to: `1000` |
 | jmeterengine.threadstop.wait | No | Number of milliseconds to wait for a thread to stop.     Defaults to: `5000` |
@@ -800,7 +800,7 @@ Advanced properties for configuration of scripting in Groovy
 
 | Name | Required | Description |
 |------|----------|-------------|
-| groovy.utilities | No | Path to Groovy file containing utility functions to make available to `[__groovy](/user-manual/functions/#__groovy)` function.     Defaults to `bin/utility.groovy` |
+| groovy.utilities | No | Path to Groovy file containing utility functions to make available to `[__groovy](/functions/groovy/)` function.     Defaults to `bin/utility.groovy` |
 
 <a id="jsr223"></a>
 

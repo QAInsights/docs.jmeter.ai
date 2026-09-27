@@ -268,7 +268,7 @@ Summary
 
 #### Documentation
 
-- [Issue#5694](https://github.com/apache/jmeter/issues/5694)Document changed formatter for [__time()](/user-manual/functions/#__time__). A warning will be logged,   if the code `u` is found in the format string, as the meaning for that code has changed from _day-of-week_   to _year_.
+- [Issue#5694](https://github.com/apache/jmeter/issues/5694)Document changed formatter for [__time()](/functions/time/). A warning will be logged,   if the code `u` is found in the format string, as the meaning for that code has changed from _day-of-week_   to _year_.
 
 #### General
 
@@ -1971,7 +1971,7 @@ In Live reporting, the sent and received bytes are now sent to Backends (InfluxD
 
 ### Functions
 
-A New function `[__threadGroupName](/user-manual/functions/#__threadGroupName)` has been introduced to obtain ThreadGroup name.
+A New function `[__threadGroupName](/functions/threadgroupname/)` has been introduced to obtain ThreadGroup name.
 
 ## Incompatible changes
 
@@ -2020,10 +2020,10 @@ A New function `[__threadGroupName](/user-manual/functions/#__threadGroupName)` 
 
 #### Functions
 
-- [Bug 62178](https://bz.apache.org/bugzilla/show_bug.cgi?id=62178)Add default value to `[__V](/user-manual/functions/#__V)` function. Contributed by Ori Marko (orimarko at gmail.com)
-- [Bug 62178](https://bz.apache.org/bugzilla/show_bug.cgi?id=62178)Add function `[__threadGroupName](/user-manual/functions/#__threadGroupName)` function to obtain ThreadGroup name. Mainly contributed by Ori Marko (orimarko at gmail.com)
-- [Bug 62533](https://bz.apache.org/bugzilla/show_bug.cgi?id=62533)Allow use epoch time as Date String value in function `[__dateTimeConvert](/user-manual/functions/#__dateTimeConvert)`
-- [Bug 62541](https://bz.apache.org/bugzilla/show_bug.cgi?id=62541)Allow `[__jexl3](/user-manual/functions/#__jexl3)`, `[__jexl2](/user-manual/functions/#__jexl2)` functions to support new syntax as `var x;`. Contributed by Ori Marko (orimarko at gmail.com)
+- [Bug 62178](https://bz.apache.org/bugzilla/show_bug.cgi?id=62178)Add default value to `[__V](/functions/v/)` function. Contributed by Ori Marko (orimarko at gmail.com)
+- [Bug 62178](https://bz.apache.org/bugzilla/show_bug.cgi?id=62178)Add function `[__threadGroupName](/functions/threadgroupname/)` function to obtain ThreadGroup name. Mainly contributed by Ori Marko (orimarko at gmail.com)
+- [Bug 62533](https://bz.apache.org/bugzilla/show_bug.cgi?id=62533)Allow use epoch time as Date String value in function `[__dateTimeConvert](/functions/datetimeconvert/)`
+- [Bug 62541](https://bz.apache.org/bugzilla/show_bug.cgi?id=62541)Allow `[__jexl3](/functions/jexl3/)`, `[__jexl2](/functions/jexl2/)` functions to support new syntax as `var x;`. Contributed by Ori Marko (orimarko at gmail.com)
 - [Bug 61834](https://bz.apache.org/bugzilla/show_bug.cgi?id=61834)Function Helper Dialog : Improve tests by showing variables and keeping them available between evaluations
 
 #### I18N
@@ -2462,7 +2462,7 @@ itself does not have to be edited anymore.
 - [Bug 61970](https://bz.apache.org/bugzilla/show_bug.cgi?id=61970)JMeter now uses English as default locale to avoid missing translations in some locales make UI look weird
 - [Bug 56368](https://bz.apache.org/bugzilla/show_bug.cgi?id=56368)Create and Deploy source artifacts to Maven central
 - [Bug 61973](https://bz.apache.org/bugzilla/show_bug.cgi?id=61973)Create and Deploy javadoc artifacts to Maven central
-- [PR#371](https://github.com/apache/jmeter/pull/371)Fix example in documentation for [XPath Assertion](/user-manual/component-reference/#XPath_Assertion). Contributed by Konstantin Kalinin (kkalinin at hotmail.com)
+- [PR#371](https://github.com/apache/jmeter/pull/371)Fix example in documentation for [XPath Assertion](/components/xpath-assertion/). Contributed by Konstantin Kalinin (kkalinin at hotmail.com)
 - [Bug 62039](https://bz.apache.org/bugzilla/show_bug.cgi?id=62039)Distributed testing: Provide ability to use SSL
 
 ## Non-functional changes
@@ -2536,7 +2536,7 @@ itself does not have to be edited anymore.
 
 #### Functions
 
-- [Bug 61588](https://bz.apache.org/bugzilla/show_bug.cgi?id=61588)Better log message for [__RandomDate()](/user-manual/functions/#__RandomDate__) function
+- [Bug 61588](https://bz.apache.org/bugzilla/show_bug.cgi?id=61588)Better log message for [__RandomDate()](/functions/randomdate/) function
 - [Bug 61619](https://bz.apache.org/bugzilla/show_bug.cgi?id=61619)In Function Helper Dialog, the 1st function doesn't display default parameters
 - [Bug 61628](https://bz.apache.org/bugzilla/show_bug.cgi?id=61628)If split string has empty separator default separator is not used
 - [Bug 61752](https://bz.apache.org/bugzilla/show_bug.cgi?id=61752)`__RandomDate`: Function does not allow missing last parameter used for variable name
@@ -2680,8 +2680,8 @@ Function Helper Dialog: a new field that shows execution result has been added.
 
 New functions:
 
-- `[__timeShift](/user-manual/functions/#__timeShift)` - return a date in various formats with the specified amount of seconds/minutes/hours/days added. ![changes/3.3/jmeter_function_add_time.png](/images/screenshots/changes/3.3/jmeter_function_add_time.png)
-- `[__RandomDate](/user-manual/functions/#__RandomDate)` - generate random date within a specific date range. ![changes/3.3/jmeter_function_random_date.png](/images/screenshots/changes/3.3/jmeter_function_random_date.png)
+- `[__timeShift](/functions/timeshift/)` - return a date in various formats with the specified amount of seconds/minutes/hours/days added. ![changes/3.3/jmeter_function_add_time.png](/images/screenshots/changes/3.3/jmeter_function_add_time.png)
+- `[__RandomDate](/functions/randomdate/)` - generate random date within a specific date range. ![changes/3.3/jmeter_function_random_date.png](/images/screenshots/changes/3.3/jmeter_function_random_date.png)
 
 ## Incompatible changes
 
@@ -2692,7 +2692,7 @@ New functions:
 
 #### Removed elements or functions
 
-- `_StringFromFile` function has been dropped, use `[__StringFromFile](/user-manual/functions/#__StringFromFile)` instead
+- `_StringFromFile` function has been dropped, use `[__StringFromFile](/functions/stringfromfile/)` instead
 
 ## Improvements
 
@@ -2803,7 +2803,7 @@ New functions:
 #### Functions
 
 - [Bug 61258](https://bz.apache.org/bugzilla/show_bug.cgi?id=61258)StringFromFile function is mentioned twice in the Function helper dialog
-- [Bug 61260](https://bz.apache.org/bugzilla/show_bug.cgi?id=61260)`[__XPath](/user-manual/functions/#__XPath)` function returns null despite XPath checker founds matches
+- [Bug 61260](https://bz.apache.org/bugzilla/show_bug.cgi?id=61260)`[__XPath](/functions/xpath/)` function returns null despite XPath checker founds matches
 - [Bug 58876](https://bz.apache.org/bugzilla/show_bug.cgi?id=58876)TestPlanName function returns `null` for a newly saved Test Plan and uses previously opened one for a new one
 
 #### I18N
@@ -3684,7 +3684,7 @@ Migration to HttpClient 4.5.2 improves the following fields of JMeter:
 
 ### Introduction of Sample Timeout feature
 
-This new [Sample Timeout](/user-manual/component-reference/#Sample_Timeout) Pre-Processor allows you to apply a Timeout on the elements that are in its scope.
+This new [Sample Timeout](/components/sample-timeout/) Pre-Processor allows you to apply a Timeout on the elements that are in its scope.
 In the screenshot below the 10 second timeout applies to the `Debug Sampler` and `HTTP Request` elements.
 
 ![changes/3.0/sample_timeout.png](/images/screenshots/changes/3.0/sample_timeout.png)
@@ -4917,7 +4917,7 @@ citizen in JMeter, you can now test your expressions very easily
 The "HTTP Proxy Server" test element has been renamed as "HTTP(S) Test Script Recorder".
 :::
 
-- Better recording of HTTPS sites, embedded resources using subdomains will more easily be recorded when using JDK 7. See [Bug 55507](https://bz.apache.org/bugzilla/show_bug.cgi?id=55507). See updated documentation: [HTTP(S) Test Script Recorder](/user-manual/component-reference/#HTTP_S__Test_Script_Recorder)
+- Better recording of HTTPS sites, embedded resources using subdomains will more easily be recorded when using JDK 7. See [Bug 55507](https://bz.apache.org/bugzilla/show_bug.cgi?id=55507). See updated documentation: [HTTP(S) Test Script Recorder](/components/http-s-test-script-recorder/)
 - Redirection are now more smartly detected by HTTP Proxy Server, see [Bug 55531](https://bz.apache.org/bugzilla/show_bug.cgi?id=55531)
 - Many fixes on edge cases with HTTPS have been made, see [Bug 55502](https://bz.apache.org/bugzilla/show_bug.cgi?id=55502), [Bug 55504](https://bz.apache.org/bugzilla/show_bug.cgi?id=55504), [Bug 55506](https://bz.apache.org/bugzilla/show_bug.cgi?id=55506)
 - Many encoding fixes have been made, see [Bug 54482](https://bz.apache.org/bugzilla/show_bug.cgi?id=54482), [Bug 54142](https://bz.apache.org/bugzilla/show_bug.cgi?id=54142), [Bug 54293](https://bz.apache.org/bugzilla/show_bug.cgi?id=54293)
@@ -7028,8 +7028,8 @@ The immediate "Stop" command can now be used if "Shutdown" takes too long.
 Also the immediate "Stop" command is able to interrupt samplers which support the new Interruptible interface (e.g. HTTP and SOAP, FTP).
 This allows immediate completion of pending responses.
 Non-GUI mode tests can also now be sent a "Shutdown" or "Stop" message.
-[Test Action](/user-manual/component-reference/#Test_Action) now supports a "Stop Now" action,
-as do the [Thread Group](/user-manual/component-reference/#Thread_Group) and [Result Status Action Handler](/user-manual/component-reference/#Result_Status_Action_Handler) Post Processor elements.
+[Test Action](/components/flow-control-action/) now supports a "Stop Now" action,
+as do the [Thread Group](/components/thread-group/) and [Result Status Action Handler](/components/result-status-action-handler/) Post Processor elements.
 
 HTTP Cookie handling is improved, and HTTP POST can now use variable file names correctly.
 HTTP, SOAP/XML-RPC and WebService(SOAP) sampler character encodings updated to be more consistent.
@@ -7050,9 +7050,9 @@ A reference to a missing function - e.g. \$\{__missing(a)\} - is now treated the
 Previously the function name - and leading \{ - were dropped. This makes it easier to debug test plans.
 
 Some Assertions can now be applied to sub-samples as well as (or instead of) just the parent sample.
-There is a new [Random Variable](/user-manual/component-reference/#Random_Variable) Configuration element.
+There is a new [Random Variable](/components/random-variable/) Configuration element.
 
-JMS samplers are much improved (see details below). The [TCP Sampler](/user-manual/component-reference/#TCP_Sampler) now supports some additional clients and is a bit more flexible.
+JMS samplers are much improved (see details below). The [TCP Sampler](/components/tcp-sampler/) now supports some additional clients and is a bit more flexible.
 
 Client-server mode has been improved, and the server can optionally use a fixed RMI port, which should help with setting up firewalls.
 

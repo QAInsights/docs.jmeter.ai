@@ -41,9 +41,9 @@ You will also debug it using one of these options:
 
 - **Run → Start no pauses**
 - **Run → Start**
-- **Validate** on [Thread Group](/user-manual/component-reference/#Thread_Group)
+- **Validate** on [Thread Group](/components/thread-group/)
 
-and [View Results Tree](/user-manual/component-reference/#View_Results_Tree) renderers or Testers (CSS/JQUERY, JSON, Regexp, XPath).
+and [View Results Tree](/components/view-results-tree/) renderers or Testers (CSS/JQUERY, JSON, Regexp, XPath).
 
 Ensure you follow [best-practices](/user-manual/best-practices/) when building your Test Plan.
 
@@ -68,7 +68,7 @@ Don't run load test using GUI mode !
 Using CLI mode, you can generate a CSV (or XML) file containing results and have JMeter [generate an HTML report](/user-manual/generating-dashboard/) at end of Load Test.
 JMeter will by default provide a summary of load test while it's running. 
 
-You can also have [real-time results](/user-manual/realtime-results/) during your test using [Backend Listener](/user-manual/component-reference/#Backend_Listener).
+You can also have [real-time results](/user-manual/realtime-results/) during your test using [Backend Listener](/components/backend-listener/).
 
 <a id="load_test_analysis"></a>
 
@@ -201,7 +201,7 @@ This is to allow the maximum flexibility in testing servers.
 
 If the server requires a client certificate, this can be provided.
 
-There is also the [SSL Manager](/user-manual/component-reference/#SSL_Manager), for greater control of certificates.
+There is also the [SSL Manager](/components/ssl-manager/), for greater control of certificates.
 
 :::note
 The JMeter proxy server (see below) supports recording HTTPS (SSL)
@@ -564,11 +564,11 @@ If a nonproxy host list is provided, then JMeter sets the following System prope
 So if you don't wish to set both http and https proxies,
 you can define the relevant properties in `system.properties` instead of using the command-line parameters.
 
-Proxy Settings can also be defined in a Test Plan, using either the [HTTP Request Defaults](/user-manual/component-reference/#HTTP_Request_Defaults)
-configuration or the [HTTP Request](/user-manual/component-reference/#HTTP_Request) sampler elements.
+Proxy Settings can also be defined in a Test Plan, using either the [HTTP Request Defaults](/components/http-request-defaults/)
+configuration or the [HTTP Request](/components/http-request/) sampler elements.
 
 :::note
-JMeter also has its own in-built Proxy Server, the [HTTP(S) Test Script Recorder](/user-manual/component-reference/#HTTP_S__Test_Script_Recorder).
+JMeter also has its own in-built Proxy Server, the [HTTP(S) Test Script Recorder](/components/http-s-test-script-recorder/).
 This is only used for recording HTTP or HTTPS browser sessions.
 This is not to be confused with the proxy settings described above, which are used when JMeter makes HTTP or HTTPS requests itself.
 :::

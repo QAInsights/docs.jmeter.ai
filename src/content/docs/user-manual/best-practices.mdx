@@ -78,10 +78,10 @@ Web Test](/user-manual/build-adv-web-test-plan/#header_manager) for information.
 
 ## 16.5 Using the HTTP(S) Test Script Recorder
 
-Refer to [HTTP(S) Test Script Recorder](/user-manual/component-reference/#HTTP_S__Test_Script_Recorder) for details on setting up the
+Refer to [HTTP(S) Test Script Recorder](/components/http-s-test-script-recorder/) for details on setting up the
 recorder. The most important thing to do is filter out all requests you aren't
 interested in.  For instance, there's no point in recording image requests (JMeter can
-be instructed to download all images on a page - see [HTTP Request](/user-manual/component-reference/#HTTP_Request)).
+be instructed to download all images on a page - see [HTTP Request](/components/http-request/)).
 These will just clutter your test plan.  Most likely, there is an extension all your files
 share, such as `.jsp`, `.asp`, `.php`, `.html` or the like.
 These you should "`include`" by entering "`.*\.jsp`" as an "Include Pattern". 
@@ -105,7 +105,7 @@ test case "rough drafts".
 One of the most useful features of the HTTP(S) Test Script Recorder is that you can abstract out
 certain common elements from the recorded samples.  By defining some
 [user-defined variables](/user-manual/functions/) at the Test Plan level or in
-[User Defined Variables](/user-manual/component-reference/#User_Defined_Variables) elements, you can have JMeter automatically
+[User Defined Variables](/components/user-defined-variables/) elements, you can have JMeter automatically
 replace values in you recorded samples.  For instance, if you are testing an app on
 server "`xxx.example.com`", then you can define a variable called "`server`" with the value of
 "`xxx.example.com`", and anyplace that value is found in your recorded samples will be replaced
@@ -252,8 +252,8 @@ java -jar ../lib/bshclient.jar localhost 9000 throughput.bsh 70 5 100 60
 ## 16.9 BeanShell scripting
 
 :::note
-Since JMeter 3.1, we advise switching from BeanShell to JSR223 Test Elements (see JSR223 section below for more details), and switching from `[__Beanshell](/user-manual/functions/#__BeanShell)` function
-to [__groovy](/user-manual/functions/#__groovy) function.
+Since JMeter 3.1, we advise switching from BeanShell to JSR223 Test Elements (see JSR223 section below for more details), and switching from `[__Beanshell](/functions/beanshell/)` function
+to [__groovy](/functions/groovy/) function.
 :::
 
 <a id="bsh_overview"></a>

@@ -182,6 +182,24 @@ describe('buildComponentPage / buildFunctionPage (idempotency)', () => {
     expect(buildFunctionsHub(functions)).toBe(buildFunctionsHub(functions));
   });
 
+  it('renders both hubs with server-rendered filterable directories', () => {
+    expect(buildComponentsHub(categories)).toContain("import ReferenceDirectory from '../../../components/ReferenceDirectory.astro';");
+    expect(buildFunctionsHub(functions)).toContain("import ReferenceDirectory from '../../../components/ReferenceDirectory.astro';");
+    expect(buildComponentsHub(categories)).toContain('<ReferenceDirectory kind="component" />');
+    expect(buildFunctionsHub(functions)).toContain('<ReferenceDirectory kind="function" />');
+  });
+
+  it('sets canonicalTopic for every generated reference page', () => {
+    for (const { category, components } of categories) {
+      for (const component of components) {
+        expect(buildComponentPage(component, category), component.name).toMatch(/^canonicalTopic: [a-z0-9-]+$/m);
+      }
+    }
+    for (const fn of functions) {
+      expect(buildFunctionPage(fn), fn.name).toContain('canonicalTopic: functions-and-variables');
+    }
+  });
+
   it('embeds valid YAML frontmatter with a title matching the component name', () => {
     const page = buildComponentPage(ftp, 'Samplers');
     expect(page.startsWith('---\ntitle: "FTP Request"')).toBe(true);
@@ -213,19 +231,41 @@ describe('legacy anchor rewriting (pre-existing dead links from the old <complin
   it('maps a legacy NAME_WITH_UNDERSCORES component anchor to the new split-page path', () => {
     expect(componentAnchorMap.get('FTP_Request_Defaults')).toBe('/components/ftp-request-defaults/');
     expect(componentAnchorMap.get('User_Parameters')).toBe('/components/user-parameters/');
+    expect(componentAnchorMap.get('Test_Action')).toBe('/components/flow-control-action/');
+    expect(componentAnchorMap.get('HTTP_Proxy_Server')).toBe('/components/http-s-test-script-recorder/');
+    expect(rewriteLegacyReferenceLinks('[Recorder](/user-manual/component-reference/#HTTP%28S%29_Test_Script_Recorder)', componentAnchorMap, functionAnchorMap)).toBe('[Recorder](/components/http-s-test-script-recorder/)');
   });
 
   it('maps a legacy __function anchor to the new split-page path', () => {
     expect(functionAnchorMap.get('__CSVRead')).toBe('/functions/csvread/');
     expect(functionAnchorMap.get('__time')).toBe('/functions/time/');
+    expect(functionAnchorMap.get('__CSVRead__')).toBe('/functions/csvread/');
   });
 
-  it('rewrites a real cross-component link found in the actual monolith (FTP Request -> FTP Request Defaults)', () => {
-    const ftp = categories.flatMap((c) => c.components).find((c) => c.name === 'FTP Request');
-    expect(ftp.body).toContain('/user-manual/component-reference/#FTP_Request_Defaults');
-    const rewritten = rewriteLegacyReferenceLinks(ftp.body, componentAnchorMap, functionAnchorMap);
-    expect(rewritten).not.toContain('/user-manual/component-reference/#FTP_Request_Defaults');
-    expect(rewritten).toContain('/components/ftp-request-defaults/');
+  it('rewrites historical component and function cross-references without touching surrounding text', () => {
+    const source = 'See [FTP Request Defaults](/user-manual/component-reference/#FTP_Request_Defaults) and [__CSVRead](/user-manual/functions/#__CSVRead).';
+    const rewritten = rewriteLegacyReferenceLinks(source, componentAnchorMap, functionAnchorMap);
+    expect(rewritten).toBe('See [FTP Request Defaults](/components/ftp-request-defaults/) and [__CSVRead](/functions/csvread/).');
+    expect(rewriteLegacyReferenceLinks(rewritten, componentAnchorMap, functionAnchorMap)).toBe(rewritten);
+  });
+
+  it('keeps committed monolith cross-references aligned with the split pages', () => {
+    expect(componentRaw).toContain('[FTP Request Defaults](/components/ftp-request-defaults/)');
+    expect(componentRaw).not.toContain('/user-manual/component-reference/#FTP_Request_Defaults');
+    expect(functionRaw).not.toMatch(/\/user-manual\/(?:component-reference|functions)\/#(?:FTP_Request_Defaults|__CSVRead)/);
+    const testPlan = fs.readFileSync(path.join(ROOT, 'src/content/docs/user-manual/test-plan.mdx'), 'utf8');
+    expect(testPlan).toContain('[Once Only Controller](/components/once-only-controller/)');
+    const proxy = fs.readFileSync(path.join(ROOT, 'src/content/docs/user-manual/jmeter-proxy-step-by-step.mdx'), 'utf8');
+    expect(proxy).toContain('/components/http-s-test-script-recorder/');
+  });
+
+  it('keeps all non-generated docs free of known legacy reference links', () => {
+    const docsDir = path.join(ROOT, 'src/content/docs');
+    for (const entry of fs.readdirSync(docsDir, { recursive: true })) {
+      if (!entry.endsWith('.mdx') || ['components', 'functions'].includes(entry.split(path.sep)[0])) continue;
+      const source = fs.readFileSync(path.join(docsDir, entry), 'utf8');
+      expect(rewriteLegacyReferenceLinks(source, componentAnchorMap, functionAnchorMap), entry).toBe(source);
+    }
   });
 
   it('leaves non-component anchors (category/section headings) untouched', () => {

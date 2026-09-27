@@ -1,0 +1,108 @@
+---
+import referenceIndex from '../lib/reference-index.json';
+
+interface Props {
+  kind: 'component' | 'function';
+}
+
+const { kind } = Astro.props;
+const entries = referenceIndex.filter((entry) => entry.kind === kind);
+const categories = [...new Set(entries.map((entry) => entry.category))];
+const label = kind === 'component' ? 'components' : 'functions';
+---
+
+<div class="reference-directory" data-reference-directory data-label={label}>
+  <div class="reference-filters" data-controls hidden>
+    <div class="reference-field">
+      <label for={`reference-search-${kind}`}>Find {label}</label>
+      <input id={`reference-search-${kind}`} type="search" placeholder={kind === 'component' ? 'e.g. HTTP Request, timer, extractor' : 'e.g. __time, Random, groovy'} autocomplete="off" data-query />
+    </div>
+    {kind === 'component' && (
+      <div class="reference-field">
+        <label for="reference-category">Category</label>
+        <select id="reference-category" data-category>
+          <option value="">All categories</option>
+          {categories.map((category) => <option value={category}>{category}</option>)}
+        </select>
+      </div>
+    )}
+  </div>
+  <p class="reference-count" aria-live="polite" data-count>Showing {entries.length} of {entries.length} {label}</p>
+  <div class="reference-table-wrap" data-table-wrap>
+    <table>
+      <caption>JMeter {label} reference</caption>
+      <thead>
+        <tr><th scope="col">{kind === 'component' ? 'Component' : 'Function'}</th>{kind === 'component' && <th scope="col">Category</th>}</tr>
+      </thead>
+      <tbody>
+        {entries.map((entry) => (
+          <tr data-entry data-name={entry.name.toLowerCase()} data-entry-category={entry.category}>
+            <td><a href={entry.path}>{entry.name}</a></td>
+            {kind === 'component' && <td>{entry.category}</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="reference-empty" data-empty hidden>No {label} match. Try another name or category.</p>
+</div>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = 'true';
+    const controls = root.querySelector<HTMLElement>('[data-controls]');
+    const search = root.querySelector<HTMLInputElement>('[data-query]');
+    const category = root.querySelector<HTMLSelectElement>('[data-category]');
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    const empty = root.querySelector<HTMLElement>('[data-empty]');
+    const table = root.querySelector<HTMLElement>('[data-table-wrap]');
+    const rows = [...root.querySelectorAll<HTMLTableRowElement>('[data-entry]')];
+    if (!controls || !search || !count || !empty || !table) return;
+    controls.hidden = false;
+    let announceTimer: ReturnType<typeof setTimeout>;
+    const filter = () => {
+      const query = search.value.trim().toLocaleLowerCase();
+      const selectedCategory = category?.value || '';
+      let visible = 0;
+      for (const row of rows) {
+        row.hidden = !(row.dataset.name?.includes(query) && (!selectedCategory || row.dataset.entryCategory === selectedCategory));
+        if (!row.hidden) visible++;
+      }
+      table.hidden = visible === 0;
+      empty.hidden = visible !== 0;
+      clearTimeout(announceTimer);
+      announceTimer = setTimeout(() => {
+        count.textContent = `Showing ${visible} of ${rows.length} ${root.dataset.label}`;
+      }, 200);
+    };
+    search.addEventListener('input', filter);
+    category?.addEventListener('change', filter);
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-reference-directory]').forEach(init);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLElement>('[data-reference-directory]').forEach(init);
+  });
+</script>
+
+<style>
+  .reference-directory { margin-block: 1.5rem; }
+  .reference-directory [hidden] { display: none !important; }
+  .reference-filters { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; margin-bottom: 1.25rem; }
+  .reference-field { display: grid; gap: 0.4rem; flex: 1 1 12rem; }
+  .reference-field:first-child { flex: 2 1 16rem; }
+  .reference-field label { color: var(--sl-color-text); font-weight: 600; font-size: 0.9rem; }
+  .reference-field input, .reference-field select { width: 100%; min-height: 2.75rem; padding: 0.55rem 0.75rem; border: 1px solid var(--sl-color-gray-5); border-radius: 0.5rem; background: var(--sl-color-bg); color: var(--sl-color-text); font: inherit; }
+  .reference-field :is(input, select):focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+  .reference-count { color: var(--sl-color-gray-3); font-size: 0.875rem; margin-block: 0 0.6rem; }
+  .reference-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; text-align: start; font-size: 0.95rem; }
+  caption { text-align: start; font-weight: 600; padding-block: 0.5rem; }
+  th, td { padding: 0.7rem 0.75rem; border-bottom: 1px solid var(--sl-color-gray-5); text-align: start; }
+  th { color: var(--sl-color-gray-2); font-size: 0.82rem; font-weight: 600; }
+  td:last-child:not(:first-child) { color: var(--sl-color-gray-3); }
+  td a { font-weight: 600; text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  .reference-empty { padding-block: 1.5rem; color: var(--sl-color-gray-3); }
+</style>

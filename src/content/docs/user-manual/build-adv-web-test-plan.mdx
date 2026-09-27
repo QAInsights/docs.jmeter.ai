@@ -31,7 +31,7 @@ If your web application uses URL rewriting rather than cookies to save session i
 then you'll need to do a bit of extra work to test your site.
 
 To respond correctly to URL rewriting, JMeter needs to parse the HTML
-received from the server and retrieve the unique session ID.  Use the appropriate [HTTP URL Re-writing Modifier](/user-manual/component-reference/#HTTP_URL_Re_writing_Modifier)
+received from the server and retrieve the unique session ID.  Use the appropriate [HTTP URL Re-writing Modifier](/components/http-url-re-writing-modifier/)
 to accomplish this.  Simply enter the name of your session ID parameter into the modifier, and it
 will find it and add it to each request.  If the request already has a value, it will be replaced.
 If "Cache Session Id" is checked, then the last found session id will be saved,
@@ -57,12 +57,12 @@ _Figure 2 - Request parameters_
 
 ## 5.2 Using a Header Manager
 
-The [HTTP Header Manager](/user-manual/component-reference/#HTTP_Header_Manager) lets you customize what information
+The [HTTP Header Manager](/components/http-header-manager/) lets you customize what information
 JMeter sends in the HTTP request header.  This header includes properties like "User-Agent",
 "Pragma", "Referer", etc.
 
-The [HTTP Header Manager](/user-manual/component-reference/#HTTP_Header_Manager), like the [HTTP Cookie Manager](/user-manual/component-reference/#HTTP_Cookie_Manager),
+The [HTTP Header Manager](/components/http-header-manager/), like the [HTTP Cookie Manager](/components/http-cookie-manager/),
 should probably be added at the Thread Group level, unless for some reason you wish to
-specify different headers for the different [HTTP Request](/user-manual/component-reference/#HTTP_Request) objects in
+specify different headers for the different [HTTP Request](/components/http-request/) objects in
 your test.
 {/* SYNCED-BODY:END */}

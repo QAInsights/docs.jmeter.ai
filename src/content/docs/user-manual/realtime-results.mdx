@@ -21,7 +21,7 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 ## 15. Real-time results
 
 Since JMeter 2.13 you can get real-time results sent to a backend through the
-[Backend Listener](/user-manual/component-reference/#Backend_Listener) using potentially any backend (JDBC, JMS, Webservice, …)
+[Backend Listener](/components/backend-listener/) using potentially any backend (JDBC, JMS, Webservice, …)
 by providing a class which implements [AbstractBackendListenerClient](https://jmeter.apache.org/api/org/apache/jmeter/visualizers/backend/AbstractBackendListenerClient.html).
 
 JMeter ships with:
@@ -131,7 +131,7 @@ In this document we will present the configuration setup to graph and historize 
 : Percentile computed for responses of sampler name. There will be one metric for each calculated value. (calculated on the totals for OK and failed samples)
 
     
-    The default `percentiles` setting on the [Backend Listener](/user-manual/component-reference/#Backend_Listener) is "90;95;99",
+    The default `percentiles` setting on the [Backend Listener](/components/backend-listener/) is "90;95;99",
     i.e. the 3 percentiles 90%, 95% and 99%.
     
 

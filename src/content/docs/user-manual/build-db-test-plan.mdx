@@ -26,7 +26,7 @@ Also, you will tell the users to run their tests 100 times. So, the total number
 of requests is (50 users) x (2 requests) x (repeat 100 times) = 10'000 JDBC requests.
 To construct the Test Plan, you will use the following elements:
 [Thread Group](/user-manual/test-plan/#thread_group),
-[JDBC Request](/user-manual/component-reference/#JDBC_Request), [Summary Report](/user-manual/component-reference/#Summary_Report).
+[JDBC Request](/components/jdbc-request/), [Summary Report](/components/summary-report/).
 
 :::note
 This example uses the MySQL database driver.
@@ -173,7 +173,7 @@ The final element you need to add to your Test Plan is a
 responsible for storing all of the results of your JDBC requests in a file
 and presenting the results.
 
-Select the _JDBC Users_ element and add a [Summary Report](/user-manual/component-reference/#Summary_Report)
+Select the _JDBC Users_ element and add a [Summary Report](/components/summary-report/)
 listener (**Add → Listener → Summary Report**).
 
 Save the test plan, and run the test with the menu

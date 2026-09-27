@@ -18,7 +18,7 @@ import RelatedContent from '../../../components/RelatedContent.astro';
 
 # JMeter + Grafana / InfluxDB / Backend Listener
 
-For long tests you need **live** visibility, not only a post-run HTML report. Since JMeter 2.13, the [Backend Listener](/user-manual/component-reference/#Backend_Listener) can send metrics to external backends. JMeter ships Graphite and InfluxDB clients; Grafana commonly visualizes InfluxDB or Graphite data. This guide summarizes the official [Real-time results](/user-manual/realtime-results/) chapter and component reference fields so you can wire live dashboards without abandoning CLI + [HTML dashboard](/user-manual/generating-dashboard/) artifacts.
+For long tests you need **live** visibility, not only a post-run HTML report. Since JMeter 2.13, the [Backend Listener](/components/backend-listener/) can send metrics to external backends. JMeter ships Graphite and InfluxDB clients; Grafana commonly visualizes InfluxDB or Graphite data. This guide summarizes the official [Real-time results](/user-manual/realtime-results/) chapter and component reference fields so you can wire live dashboards without abandoning CLI + [HTML dashboard](/user-manual/generating-dashboard/) artifacts.
 
 :::tip[Both, not either]
 Use Backend Listener for **during-test** graphs. Still write a JTL with `-l` and generate the HTML report with `-e -o` for durable, shareable results.
