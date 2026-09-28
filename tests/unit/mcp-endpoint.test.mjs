@@ -66,7 +66,7 @@ describe('findChunkByPath', () => {
 });
 
 describe('GET /api/mcp endpoint discovery', () => {
-  it('advertises all 14 MCP tools and streamable HTTP metadata', async () => {
+  it('advertises all 15 MCP tools and streamable HTTP metadata', async () => {
     const request = new Request('https://docs.jmeter.ai/api/mcp', {
       headers: { Accept: 'application/json' },
     });
@@ -89,9 +89,10 @@ describe('GET /api/mcp endpoint discovery', () => {
     expect(body.tools).toContain('get_jsr223_recipe');
     expect(body.tools).toContain('lint_groovy_script');
     expect(body.tools).toContain('lookup_error_playbook');
+    expect(body.tools).toContain('triage_errors');
     expect(body.tools).toContain('lookup_component');
     expect(body.tools).toContain('lookup_function');
-    expect(body.tools).toHaveLength(14);
+    expect(body.tools).toHaveLength(15);
   });
 
   it('returns 405 instead of starting a reconnect loop for an SSE listener GET', async () => {

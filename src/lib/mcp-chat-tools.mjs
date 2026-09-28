@@ -64,7 +64,7 @@ export function buildChatSystemPrompt(opts = {}) {
     'For documentation questions: call search_jmeter_docs, then get_jmeter_page for the 1-2 most relevant URLs before answering.',
     'For cURL commands or HAR traces: call convert_curl_or_har_to_jmx.',
     'For OpenAPI/Swagger specs: call convert_openapi_to_jmx.',
-    'For exceptions and HTTP errors: call lookup_error_playbook, then search if needed.',
+    'For exceptions and HTTP errors: call lookup_error_playbook, then search if needed. For a batch of failure signatures from a test run: call triage_errors.',
     'For thread/RPS/heap/pacing questions: call calculate_workload_model with the numbers the user gave.',
     'For JMX XML or test-plan anti-patterns: call lint_jmx_snippet.',
     'For property names: call lookup_jmeter_property.',

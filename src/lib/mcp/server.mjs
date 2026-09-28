@@ -14,7 +14,8 @@ import { propertiesCheatsheet, filterProperties } from '../properties-data.mjs';
 import { getJsr223Recipes } from './jsr223-recipes.mjs';
 import { lintGroovyScript, buildJsr223ElementXml, BINDINGS_BY_ELEMENT } from '../groovy-builder.mjs';
 import { GROOVY_BUILDER } from '../tools-config.mjs';
-import { lookupErrorPlaybook } from './error-playbooks.mjs';
+import { lookupErrorPlaybook, lookupErrorPlaybookSemantic } from './error-playbooks.mjs';
+import { triageErrors, renderTriageText, triageErrorsSchema } from './triage-errors.mjs';
 import { generateDistributedPlan } from '../distributed-planner.mjs';
 import { generateOsTuningPlan } from '../os-tuning.mjs';
 import { convertCurlOrHarToJmx } from './curl-har-to-jmx.mjs';
@@ -23,7 +24,7 @@ import { withUtm } from '../path-utils.mjs';
 import referenceIndex from '../reference-index.json' with { type: 'json' };
 
 export const SERVER_NAME = 'jmeter-docs';
-export const SERVER_VERSION = '1.5.0';
+export const SERVER_VERSION = '1.6.0';
 
 export const MCP_TOOL_NAMES = [
   'search_jmeter_docs',
@@ -38,6 +39,7 @@ export const MCP_TOOL_NAMES = [
   'get_jsr223_recipe',
   'lint_groovy_script',
   'lookup_error_playbook',
+  'triage_errors',
   'lookup_component',
   'lookup_function',
 ];
@@ -72,6 +74,7 @@ export const SERVER_INSTRUCTIONS = [
   'Use plan_distributed_testing to configure Master-Worker RMI ports, user.properties, firewall rules, and Docker manifests.',
   'Use tune_linux_os to generate sysctl.conf, limits.conf, and systemd tuning parameters for high-concurrency injectors.',
   'Use lookup_jmeter_property, get_jsr223_recipe, and lookup_error_playbook for precise configuration and troubleshooting guidance.',
+  'Use triage_errors to batch-map a run\'s distinct failure signatures (sampler | response code | response message) to error playbooks before reading them with get_jmeter_page.',
   'Use lookup_component and lookup_function for the dedicated reference page of a specific test plan component (e.g. "HTTP Request") or built-in function (e.g. "__time").',
   'Always cite the docs.jmeter.ai URL you used when answering.',
 ].join(' ');
@@ -415,23 +418,33 @@ export function createServer() {
     {
       title: 'Lookup Error & Exception Diagnostic Playbook',
       description:
-        'Get immediate root causes, OS/JVM config fixes, and remediation steps for common JMeter exceptions (e.g. "BindException", "SocketTimeoutException", "OutOfMemoryError", "NoHttpResponseException", "SSLHandshakeException", "401/403 after recording").',
+        'Get immediate root causes, OS/JVM config fixes, and remediation steps for common JMeter exceptions (e.g. "BindException", "SocketTimeoutException", "OutOfMemoryError", "NoHttpResponseException", "SSLHandshakeException", "401/403 after recording"). When keywords miss, unmatched text is sent to classifier.dev for zero-shot semantic matching (public keyless calls are not stored).',
       inputSchema: {
         query: z.string().describe('Error message, exception name, or status (e.g. "bindexception", "heap", "timeout", "401").'),
+        classifierApiKey: z.string().optional().describe('Your own classifier.dev API key for the semantic fallback (anonymous quota is shared); never logged.'),
       },
     },
-    async ({ query }) => {
-      const playbooks = lookupErrorPlaybook(query);
-      if (playbooks.length === 0) {
+    async ({ query, classifierApiKey }) => {
+      const noMatchText = `No specific playbook matched "${query}". Search general error guides with search_jmeter_docs or see ${withUtm('https://docs.jmeter.ai/topics/errors/', 'mcp')}.`;
+      const outcome = await lookupErrorPlaybookSemantic(query, { classifierApiKey });
+
+      if (outcome.matchedBy === 'none') {
+        return { content: [{ type: 'text', text: noMatchText }] };
+      }
+      if (outcome.matchedBy === 'uncertain') {
+        const possible = (outcome.possible || [])
+          .map((p) => `- ${p.title} (${p.score}) ${p.docUrl}`)
+          .join('\n');
         return {
           content: [
             {
               type: 'text',
-              text: `No specific playbook matched "${query}". Search general error guides with search_jmeter_docs or see ${withUtm('https://docs.jmeter.ai/topics/errors/', 'mcp')}.`,
+              text: `${noMatchText}\n\nPossible playbooks:\n${possible}`,
             },
           ],
         };
       }
+      const playbooks = outcome.playbooks;
       const capped = playbooks.slice(0, 10);
       const note =
         playbooks.length > 10
@@ -440,6 +453,30 @@ export function createServer() {
       return {
         content: [{ type: 'text', text: JSON.stringify(capped, null, 2) + note }],
       };
+    },
+  );
+
+  server.registerTool(
+    'triage_errors',
+    {
+      title: 'Triage a Batch of JMeter Error Signatures',
+      description:
+        'Map a run\'s distinct failure signatures to docs.jmeter.ai error playbooks. Error text is sent to classifier.dev for zero-shot classification (public keyless calls are not stored; obvious secrets are redacted first). Prefer signatures shaped as "sampler | response code | response message".',
+      inputSchema: triageErrorsSchema,
+    },
+    async (params) => {
+      try {
+        const result = await triageErrors(params);
+        return {
+          content: [{ type: 'text', text: `${renderTriageText(result)}\n\n${JSON.stringify(result, null, 2)}` }],
+          structuredContent: result,
+        };
+      } catch (err) {
+        return {
+          content: [{ type: 'text', text: `Triage error: ${errorText(err)}` }],
+          isError: true,
+        };
+      }
     },
   );
 
