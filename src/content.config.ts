@@ -16,6 +16,7 @@ export const collections = {
         estimatedReadTime: z.string().optional(),
         lastVerified: z.string().optional(),
         canonicalTopic: z.string().optional(),
+        classifierLabel: z.string().optional(),
       }),
     }),
   }),

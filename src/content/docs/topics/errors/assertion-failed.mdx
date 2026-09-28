@@ -1,0 +1,95 @@
+---
+title: "JMeter Assertion Failed"
+seoTitle: "JMeter Assertion Failed: Response & JSON Assertion Errors"
+description: "Fix JMeter assertion failures: Response Assertion text expected to contain, JSON Assertion path mismatches, Duration and Size assertions. Causes and fixes."
+keywords:
+  - JMeter assertion failed
+  - JMeter Response Assertion
+  - JMeter JSON Assertion
+  - Assertion failure message JMeter
+difficulty: intermediate
+guideType: troubleshooting
+estimatedReadTime: "6 min read"
+lastVerified: "JMeter 5.6"
+canonicalTopic: troubleshooting
+classifierLabel: "Assertion failed: response did not match expected text or JSON"
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Assertion failed in JMeter
+
+## Symptom
+
+Samplers are marked failed even though the server answered, with messages such as:
+
+- `Test failed: text expected to contain /expected text/`
+- `Assertion failure message: ...` in the JTL or View Results Tree
+- `Test failed: path expected to exist, but was not found` (JSON Assertion)
+- `Duration Assertion` / `Size Assertion` failures under load
+
+The response code is usually `200` — the sampler fails because the body, duration, or size did not match what the assertion expects.
+
+## Quick diagnosis (TL;DR)
+
+The response you asserted on is not the response you got. Either the application returned different content (dynamic values, an error page with status 200), or the assertion itself is too strict — wrong pattern mode, wrong scope, or an un-correlated variable.
+
+## Common causes
+
+| Cause | Detail |
+|-------|--------|
+| Dynamic or localized content | Session IDs, timestamps, tokens, or personalized text baked into the assertion |
+| Wrong pattern-matching mode | `Matches` (full regex) or `Equals` used where `Contains` / `Substring` was intended |
+| Wrong assertion scope | Assertion applied to sub-samples (redirects, embedded resources) or to the wrong field (headers vs body) |
+| Failed upstream correlation | `${var}` resolves to a literal or default, so the asserted text never existed — see [extractor default value](/topics/errors/extractor-not-found-default-value/) and [401/403 after recording](/topics/errors/401-403-after-recording/) |
+| JSON path returns an array | JSON Assertion path matches `[]` or multiple nodes where a scalar was expected |
+| Whitespace / encoding differences | Pretty-printed JSON, CRLF, or HTML entities differ from the recorded expectation |
+| Server returned an error page with 200 | The body contains an error message while the status stays green |
+| Negative assertions inverted | `Not` checkbox or `Contains` on a value that legitimately appears |
+
+## Fix (ordered)
+
+1. Read the **Assertion failure message** in [View Results Tree](/components/view-results-tree/) — it states which assertion failed and what was expected vs received. In CLI runs, set `jmeter.save.saveservice.assertion_results_failure_message=true` so JTL rows carry the message.
+2. Reproduce once in **GUI mode with 1 thread** and compare the actual response body against the asserted pattern.
+3. Check the assertion's **scope**: "Main sample only" vs "Sub-samples", and the field being asserted (Body, Response Headers, URL Sampled).
+4. Prefer **Contains** or **Substring** pattern matching over `Equals` or `Matches` on [Response Assertion](/components/response-assertion/); if you must use regex, escape variables with `${__escapeHtml(...)}` or `\Q...\E`.
+5. For [JSON Assertion](/components/json-assertion/), verify the path with a JSON Path evaluator, check **Additionally assert value** with a tolerant match, or tick **Expect null** when absence is the expected outcome.
+6. Add a **Debug Sampler** or Debug PostProcessor to confirm the variable the assertion references actually resolved.
+7. Re-run [correlation](/topics/correlation-dynamic-values/) for any recorded token; a stale CSRF or session token often surfaces first as an assertion failure on the login page.
+8. If the server returns an error page with HTTP 200, assert on a success marker instead of the status code — see [non HTTP response code](/topics/errors/non-http-response-code/) for the inverse case.
+9. For [Duration Assertion](/components/duration-assertion/) and [Size Assertion](/components/size-assertion/) failures, check whether they only trigger under load — that points at server capacity, not script logic ([throughput stuck](/topics/errors/throughput-stuck/)).
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Assertions & SLA validation guide](/topics/jmeter-assertions-guide/) | Choosing the right assertion type and placement |
+| [Response Assertion reference](/components/response-assertion/) | Full field-by-field documentation |
+| [JSON Assertion reference](/components/json-assertion/) | JSON path expressions and operators |
+| [Correlation & dynamic values](/topics/correlation-dynamic-values/) | Assertion fails because a variable never resolved |
+| [Regex extractor builder](/tools/regex-tester/) | Testing patterns against real response bodies |
+
+## Frequently asked questions
+
+### Why does my assertion pass in the browser but fail in JMeter?
+
+JMeter does not run JavaScript or render the page, and it may receive a different body than the browser — often because a token or cookie was not correlated. Compare JMeter's recorded response with the browser's actual response body, not the rendered page.
+
+### How do I see assertion failure details in CLI (non-GUI) mode?
+
+Set `jmeter.save.saveservice.assertion_results_failure_message=true` in `user.properties` so the JTL includes the failure message, then inspect the failing rows. The HTML dashboard also surfaces assertion failures per sampler.
+
+### Should I assert on the exact response body?
+
+Almost never. Assert on a stable marker (a fixed string, JSON field, or status) with `Contains` or `Substring` matching. Exact-match assertions break on every dynamic value, timestamp, and whitespace change.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Open the failing sampler in View Results Tree, read the assertion failure message, and compare the expected pattern against the actual response body.
+</Fragment>
+<Fragment slot="related">
+- [Assertions & SLA validation](/topics/jmeter-assertions-guide/)
+- [Correlation & dynamic values](/topics/correlation-dynamic-values/)
+- [Extractor default value](/topics/errors/extractor-not-found-default-value/)
+</Fragment>
+</RelatedContent>

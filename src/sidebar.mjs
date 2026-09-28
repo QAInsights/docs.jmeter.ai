@@ -138,6 +138,7 @@ export const sidebar = [
           { label: "JMX Won't Load / Corrupt Plan", link: '/topics/errors/jmx-wont-load-corrupt-plan' },
           { label: 'Extractor Default Value (NOT_FOUND)', link: '/topics/errors/extractor-not-found-default-value' },
           { label: 'CSV Data Set & Sharing Issues', link: '/topics/errors/csv-data-set-file-not-found-sharing' },
+          { label: 'Assertion Failed', link: '/topics/errors/assertion-failed' },
         ],
       },
       {

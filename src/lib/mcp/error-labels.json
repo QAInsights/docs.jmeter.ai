@@ -1,0 +1,278 @@
+{
+  "generatedAt": "2026-09-28T03:05:06.955Z",
+  "labelSetVersion": "75382de254bd",
+  "playbooks": [
+    {
+      "id": "401-403-after-recording",
+      "title": "JMeter 401 403 After Recording",
+      "label": "HTTP 401 or 403 after recording: login, session or token not correlated",
+      "url": "https://docs.jmeter.ai/topics/errors/401-403-after-recording/",
+      "rootCause": "Missing Cookie Manager: Session cookies from Set-Cookie not stored per thread (web test plan)",
+      "firstFix": "Replay with 1 thread, View Results Tree on; find the first 401/403."
+    },
+    {
+      "id": "assertion-failed",
+      "title": "JMeter Assertion Failed",
+      "label": "Assertion failed: response did not match expected text or JSON",
+      "url": "https://docs.jmeter.ai/topics/errors/assertion-failed/",
+      "rootCause": "Dynamic or localized content: Session IDs, timestamps, tokens, or personalized text baked into the assertion",
+      "firstFix": "Read the Assertion failure message in View Results Tree — it states which assertion failed and what was expected vs received. In CLI runs, set jmeter.save.saveservice.assertion_results_failure_message=true so JTL rows carry the message."
+    },
+    {
+      "id": "bind-exception-address-in-use",
+      "title": "JMeter java.net.BindException: Address already in use",
+      "label": "BindException: address already in use / port exhaustion",
+      "url": "https://docs.jmeter.ai/topics/errors/bind-exception-address-in-use/",
+      "rootCause": "HTTP Keep-Alive disabled: Disabling \"Use KeepAlive\" forces JMeter to open a fresh TCP socket for every single request",
+      "firstFix": "Ensure \"Use KeepAlive\" is Checked"
+    },
+    {
+      "id": "class-not-found-noclassdeffound",
+      "title": "JMeter ClassNotFoundException & NoClassDefFoundError",
+      "label": "ClassNotFoundException or NoClassDefFoundError: missing jar or plugin",
+      "url": "https://docs.jmeter.ai/topics/errors/class-not-found-noclassdeffound/",
+      "rootCause": "ClassNotFoundException and NoClassDefFoundError occur when JMeter's Java ClassLoader cannot find a required .jar file on its classpath. The fix is placing the missing JAR file into the correct directory (lib/ for drivers/libraries vs lib/ext/ for JMeter plugins) and restarting JMeter.",
+      "firstFix": "Fix Missing Database JDBC Drivers"
+    },
+    {
+      "id": "connect-exception",
+      "title": "JMeter java.net.ConnectException",
+      "label": "ConnectException: connection refused, host unreachable",
+      "url": "https://docs.jmeter.ai/topics/errors/connect-exception/",
+      "rootCause": "Wrong host, port, or protocol: HTTP Request Defaults / sampler still point at lab host or http vs https",
+      "firstFix": "Copy the exact error from the first failed sample (code + message)."
+    },
+    {
+      "id": "csv-data-set-file-not-found-sharing",
+      "title": "JMeter CSV Data Set Config: File not found & Sharing Mode",
+      "label": "CSV Data Set file not found or sharing mode problem",
+      "url": "https://docs.jmeter.ai/topics/errors/csv-data-set-file-not-found-sharing/",
+      "rootCause": "CLI FileNotFoundException: Invoked jmeter from a folder other than the test plan folder: Use \\${__P(testdata.path)} or FileServer basedir",
+      "firstFix": "Use Robust Relative Path Resolution"
+    },
+    {
+      "id": "extractor-not-found-default-value",
+      "title": "JMeter JSON & Regex Extractor Returns Default Value (NOT_FOUND)",
+      "label": "Extractor found nothing, variable shows default value or literal ${var}",
+      "url": "https://docs.jmeter.ai/topics/errors/extractor-not-found-default-value/",
+      "rootCause": "Scoping set to \"Main sample only\": JSON / Regex: Target response came from a redirect (HTTP 302 -> 200) located in a sub-sample",
+      "firstFix": "Test Expressions Directly in View Results Tree Tester"
+    },
+    {
+      "id": "gui-works-cli-fails",
+      "title": "JMeter Works in GUI Fails in CLI",
+      "label": "Works in GUI but fails in CLI / non-GUI mode",
+      "url": "https://docs.jmeter.ai/topics/errors/gui-works-cli-fails/",
+      "rootCause": "Working directory: Relative CSV, keystore, or payload paths resolve from different cwd",
+      "firstFix": "Run CLI on the same machine as the successful GUI run first:"
+    },
+    {
+      "id": "html-dashboard-generation-errors",
+      "title": "JMeter HTML Dashboard Generation Errors & Fixes",
+      "label": "HTML dashboard report generation error",
+      "url": "https://docs.jmeter.ai/topics/errors/html-dashboard-generation-errors/",
+      "rootCause": "Output directory not empty: Passing -o ./dashboard when ./dashboard already contains previous run files: Delete the folder before running: rm -rf ./dashboard",
+      "firstFix": "Ensure the Output Directory is Empty Before Generating"
+    },
+    {
+      "id": "http-407-proxy-authentication",
+      "title": "JMeter HTTP 407 Proxy Authentication Required",
+      "label": "HTTP 407 proxy authentication required",
+      "url": "https://docs.jmeter.ai/topics/errors/http-407-proxy-authentication/",
+      "rootCause": "Corporate forward proxy requires authentication: 407 on every request: Office networks route outbound traffic through an authenticating proxy",
+      "firstFix": "Set proxy credentials in HTTP Request Defaults"
+    },
+    {
+      "id": "http-415-400-bad-request",
+      "title": "JMeter HTTP 400 Bad Request & 415 Unsupported Media Type",
+      "label": "HTTP 400 or 415 bad request, wrong content type or body",
+      "url": "https://docs.jmeter.ai/topics/errors/http-415-400-bad-request/",
+      "rootCause": "Missing Content-Type header: 415: JMeter HTTP Request does not include Content-Type by default without an HTTP Header Manager",
+      "firstFix": "Add HTTP Header Manager at the Test Plan or Thread Group Level"
+    },
+    {
+      "id": "http-429-rate-limited",
+      "title": "JMeter HTTP 429 Too Many Requests & WAF Blocks",
+      "label": "HTTP 429 rate limited by target",
+      "url": "https://docs.jmeter.ai/topics/errors/http-429-rate-limited/",
+      "rootCause": "IP-based API rate limiting: 429: Hundreds of virtual users share a single injector IP address, triggering per-IP throttles (e.g. Nginx limit_req, Redis token buckets)",
+      "firstFix": "Set Realistic Browser User-Agent & Headers"
+    },
+    {
+      "id": "http-502-503-504",
+      "title": "JMeter HTTP 500, 502, 503, 504 Server Errors",
+      "label": "HTTP 502, 503 or 504 from gateway or overloaded server",
+      "url": "https://docs.jmeter.ai/topics/errors/http-502-503-504/",
+      "rootCause": "HTTP 500: Unhandled exception, null pointer, or DB query error inside the application code.",
+      "firstFix": "Extract the Full Response Body in View Results Tree"
+    },
+    {
+      "id": "jdbc-connection-pool-errors",
+      "title": "JMeter JDBC Connection Pool & SQL Database Errors",
+      "label": "JDBC connection pool or database sampler error",
+      "url": "https://docs.jmeter.ai/topics/errors/jdbc-connection-pool-errors/",
+      "rootCause": "Communications link failure / Connection refused: Database network unreachable: Database port (3306, 5432, 1521, 1433) closed, blocked by firewall, or DB not listening on external interface",
+      "firstFix": "Verify Variable Name Bound to Pool"
+    },
+    {
+      "id": "jmeter-freeze-high-cpu-hanging",
+      "title": "JMeter Freezing, 100% CPU Usage & CLI Hanging at End",
+      "label": "JMeter GUI freezes, high CPU, hanging",
+      "url": "https://docs.jmeter.ai/topics/errors/jmeter-freeze-high-cpu-hanging/",
+      "rootCause": "GUI Freeze: Listeners in GUI: View Results Tree stores full XML/JSON response payloads in RAM, blocking UI threads",
+      "firstFix": "Always Run Load Tests in Non-GUI (CLI) Mode"
+    },
+    {
+      "id": "jmeter-wont-start-crash-on-launch",
+      "title": "JMeter Won't Start or Crashes on Launch",
+      "label": "JMeter will not start or crashes on launch",
+      "url": "https://docs.jmeter.ai/topics/errors/jmeter-wont-start-crash-on-launch/",
+      "rootCause": "Java not installed or not on PATH: 'java' is not recognized: No JDK/JRE installed, or JAVA_HOME/PATH not set",
+      "firstFix": "Launch from a terminal to see the real error"
+    },
+    {
+      "id": "jmx-wont-load-corrupt-plan",
+      "title": "JMeter Won't Open a Test Plan (JMX Load Errors)",
+      "label": "JMX file will not load, corrupt or incompatible test plan",
+      "url": "https://docs.jmeter.ai/topics/errors/jmx-wont-load-corrupt-plan/",
+      "rootCause": "Interrupted save: Truncated file, abrupt SAXParseException: A crash or full disk stopped the write mid-file",
+      "firstFix": "Find the exact error location"
+    },
+    {
+      "id": "jsr223-groovy-script-errors",
+      "title": "JMeter JSR223 Groovy Script Errors & Exceptions",
+      "label": "JSR223 Groovy or BeanShell script error",
+      "url": "https://docs.jmeter.ai/topics/errors/jsr223-groovy-script-errors/",
+      "rootCause": "MissingPropertyException: You referenced an undeclared variable directly (e.g. println token) instead of accessing it via the JMeter variables object (vars.get(\"token\")).",
+      "firstFix": "Always Use vars.get() and vars.put() (Never Direct Variables)"
+    },
+    {
+      "id": "metaspace-gc-overhead-limit",
+      "title": "JMeter OutOfMemoryError: Metaspace & GC overhead limit exceeded",
+      "label": "Metaspace or GC overhead limit exceeded",
+      "url": "https://docs.jmeter.ai/topics/errors/metaspace-gc-overhead-limit/",
+      "rootCause": "In-script string interpolation (\\${var}): Metaspace: Using vars.get(\"x\") vs \"Hello ${x}\" avoids generating millions of temporary dynamic classes that fill Metaspace",
+      "firstFix": "Fix Groovy Variable Interpolation (The #1 Metaspace Culprit)"
+    },
+    {
+      "id": "no-http-response-exception",
+      "title": "JMeter org.apache.http.NoHttpResponseException",
+      "label": "NoHttpResponseException: target server failed to respond",
+      "url": "https://docs.jmeter.ai/topics/errors/no-http-response-exception/",
+      "rootCause": "Keep-Alive race condition: Server idle timeout (e.g. 5s) is shorter than JMeter's connection reuse interval / think time",
+      "firstFix": "Validate Idle Connections Before Reuse in user.properties"
+    },
+    {
+      "id": "non-http-response-code",
+      "title": "JMeter Non HTTP response code",
+      "label": "Generic Non HTTP response code from the HTTP client",
+      "url": "https://docs.jmeter.ai/topics/errors/non-http-response-code/",
+      "rootCause": "Cannot connect: ConnectException, connection refused/timed out",
+      "firstFix": "Read the full message after Non HTTP response code: / message: - treat the Java exception as the real error."
+    },
+    {
+      "id": "out-of-memory-heap",
+      "title": "JMeter OutOfMemoryError Java heap space",
+      "label": "OutOfMemoryError: Java heap space",
+      "url": "https://docs.jmeter.ai/topics/errors/out-of-memory-heap/",
+      "rootCause": "Official best practices stress lean injectors:",
+      "firstFix": "Switch to non-GUI for load"
+    },
+    {
+      "id": "outofmemory-unable-to-create-native-thread",
+      "title": "JMeter OutOfMemoryError: unable to create new native thread",
+      "label": "OutOfMemoryError: unable to create native thread",
+      "url": "https://docs.jmeter.ai/topics/errors/outofmemory-unable-to-create-native-thread/",
+      "rootCause": "Linux user process limit (ulimit -u): OS: Default nproc limit (often 1024 or 4096) reached by Java and background OS tasks",
+      "firstFix": "Increase Linux OS User Process & File Descriptor Limits"
+    },
+    {
+      "id": "premature-eof-connection-abort",
+      "title": "JMeter Premature EOF / Unexpected End of File",
+      "label": "Premature EOF or connection aborted mid-response",
+      "url": "https://docs.jmeter.ai/topics/errors/premature-eof-connection-abort/",
+      "rootCause": "Server or LB idle timeout shorter than client reuse window: Unexpected end of file from server: The server closes idle keep-alive sockets (AWS ALB defaults to 60s) and JMeter reuses one that is already dead",
+      "firstFix": "Align client connection lifetime with server timeouts"
+    },
+    {
+      "id": "rmi-connection-refused-remote-testing",
+      "title": "JMeter Distributed Testing RMI Connection Refused & Port Errors",
+      "label": "RMI connection refused in distributed / remote testing",
+      "url": "https://docs.jmeter.ai/topics/errors/rmi-connection-refused-remote-testing/",
+      "rootCause": "Connection refused to host: 127.0.0.1: Remote worker did not publish its external IP: Set java.rmi.server.hostname=WORKER_IP",
+      "firstFix": "Fix the RMI Hostname on Every Worker Node"
+    },
+    {
+      "id": "socket-closed-connection-reset",
+      "title": "JMeter Socket Closed Connection Reset",
+      "label": "Socket closed or connection reset by peer",
+      "url": "https://docs.jmeter.ai/topics/errors/socket-closed-connection-reset/",
+      "rootCause": "Server or load balancer limits: Max connections, rate limits, or worker exhaustion",
+      "firstFix": "Capture error rate vs active threads on the dashboard and SUT metrics (connections, 5xx, restarts)."
+    },
+    {
+      "id": "socket-timeout-exception",
+      "title": "JMeter java.net.SocketTimeoutException",
+      "label": "SocketTimeoutException: read or connect timed out",
+      "url": "https://docs.jmeter.ai/topics/errors/socket-timeout-exception/",
+      "rootCause": "Slow server processing: Read timed out: Database locks, CPU saturation, or heavy downstream microservice calls delay response generation beyond client timeout",
+      "firstFix": "Differentiate Connect vs Read Timeout"
+    },
+    {
+      "id": "ssl-handshake-exception",
+      "title": "JMeter SSLHandshakeException",
+      "label": "SSLHandshakeException: TLS handshake failed",
+      "url": "https://docs.jmeter.ai/topics/errors/ssl-handshake-exception/",
+      "rootCause": "Untrusted server certificate: Lab/self-signed or private PKI not in the JVM truststore JMeter uses",
+      "firstFix": "Confirm the URL works in a browser and with curl using the same hostname."
+    },
+    {
+      "id": "ssl-peer-unverified",
+      "title": "JMeter javax.net.ssl.SSLPeerUnverifiedException",
+      "label": "SSLPeerUnverifiedException: certificate not trusted",
+      "url": "https://docs.jmeter.ai/topics/errors/ssl-peer-unverified/",
+      "rootCause": "Direct IP addressing over HTTPS: HTTP Sampler points to 10.0.1.5 instead of api.example.com, but the TLS cert only contains the domain name",
+      "firstFix": "Use the Real Domain Name in HTTP Samplers"
+    },
+    {
+      "id": "test-stops-early-unexpectedly",
+      "title": "JMeter Test Stops Early or Unexpectedly",
+      "label": "Test stops early or unexpectedly",
+      "url": "https://docs.jmeter.ai/topics/errors/test-stops-early-unexpectedly/",
+      "rootCause": "Scheduler duration set: Thread Group, Specify Thread lifetime: Duration (seconds) ends the test after that many seconds, regardless of loops",
+      "firstFix": "Check the Thread Group scheduler"
+    },
+    {
+      "id": "throughput-stuck",
+      "title": "JMeter Throughput Stuck Below Target RPS",
+      "label": "Throughput stuck, RPS will not increase",
+      "url": "https://docs.jmeter.ai/topics/errors/throughput-stuck/",
+      "rootCause": "Not enough threads for target RPS: Little’s Law style sizing: threads ≈ RPS × response time (seconds) when busy (Thread Calculator)",
+      "firstFix": "Measure average response time with a small pilot under CLI."
+    },
+    {
+      "id": "too-many-open-files-ulimit",
+      "title": "JMeter Too Many Open Files (ulimit)",
+      "label": "Too many open files, ulimit",
+      "url": "https://docs.jmeter.ai/topics/errors/too-many-open-files-ulimit/",
+      "rootCause": "High concurrency with short-lived connections: SocketException: Too many open files: Each request opens a new socket, and descriptors pile up faster than the OS reclaims them",
+      "firstFix": "Confirm the current limit and usage"
+    },
+    {
+      "id": "unknown-host-exception",
+      "title": "JMeter java.net.UnknownHostException",
+      "label": "UnknownHostException: DNS resolution failed",
+      "url": "https://docs.jmeter.ai/topics/errors/unknown-host-exception/",
+      "rootCause": "Protocol / Path in Server Name field: Entering https://api.example.com or api.example.com/v1 in the \"Server Name or IP\" field instead of just api.example.com",
+      "firstFix": "Clean the \"Server Name or IP\" Field"
+    },
+    {
+      "id": "works-in-browser-fails-in-jmeter",
+      "title": "Site Works in Browser but Fails in JMeter",
+      "label": "Works in browser but fails in JMeter",
+      "url": "https://docs.jmeter.ai/topics/errors/works-in-browser-fails-in-jmeter/",
+      "rootCause": "Missing request headers: 403 or 400: The server or WAF checks User-Agent, Accept, Origin, or custom headers the browser sends but the script omits",
+      "firstFix": "Compare the failing request with browser DevTools"
+    }
+  ]
+}
