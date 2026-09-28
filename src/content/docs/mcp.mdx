@@ -40,6 +40,7 @@ Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.
 | [`get_jsr223_recipe`](#get_jsr223_recipe) | Code | Production Groovy recipes (JWT decoding, HMAC signing, dynamic headers) |
 | [`lint_groovy_script`](#lint_groovy_script) | Code | Review JSR223 Groovy pitfalls and generate ready-to-paste element XML |
 | [`lookup_error_playbook`](#lookup_error_playbook) | Diagnostics | Instant remediation and OS/JVM fixes for common runtime exceptions |
+| [`triage_errors`](#triage_errors) | Diagnostics | Batch-map a run's distinct failure signatures to error playbooks |
 | [`lookup_component`](#lookup_component) | Reference | Dedicated reference page for one JMeter component (properties, defaults, related guides) |
 | [`lookup_function`](#lookup_function) | Reference | Dedicated reference page for one built-in JMeter function (syntax, parameters, examples) |
 
@@ -160,10 +161,24 @@ Statically review a user-provided Groovy script for JMeter-specific performance 
 
 ### lookup_error_playbook
 
-Get instant root cause analysis, OS/JVM tuning parameters, and step-by-step remediation for common JMeter and JVM exceptions (`BindException`, `SocketTimeoutException`, `OutOfMemoryError`, `NoHttpResponseException`, etc.).
+Get instant root cause analysis, OS/JVM tuning parameters, and step-by-step remediation for common JMeter and JVM exceptions (`BindException`, `SocketTimeoutException`, `OutOfMemoryError`, `NoHttpResponseException`, etc.). When keyword matching misses, the query is classified semantically against all error playbooks via classifier.dev (public keyless calls are not stored); pass `classifierApiKey` to use your own classifier.dev quota.
 
 ```json
 { "query": "bindexception" }
+```
+
+### triage_errors
+
+Batch-triage a run's distinct failure signatures (ideally `sampler | response code | response message` rows) into the matching error playbooks with per-playbook sample counts and share. Error text is sent to classifier.dev for zero-shot classification — public keyless calls are not stored, and obvious secrets (Bearer tokens, passwords, JWTs) are redacted before sending.
+
+```json
+{
+  "errors": [
+    { "text": "Checkout | Non HTTP response code: java.net.SocketTimeoutException | Read timed out", "count": 1240 },
+    { "text": "Login | 401 | Unauthorized", "count": 87 }
+  ],
+  "minConfidence": 0.7
+}
 ```
 
 ### lookup_component
