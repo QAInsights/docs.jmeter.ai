@@ -896,6 +896,21 @@ export const faqSchema = {
     },
   ],
 
+  '/topics/errors/assertion-failed': [
+    {
+      q: 'Why do JMeter assertions fail even when the server returns HTTP 200?',
+      a: 'Assertions check the response body, headers, duration, or size rather than the status code. Common causes are dynamic content baked into the expected pattern, the wrong pattern-matching mode such as Equals instead of Contains, an assertion scoped to sub-samples, or a variable that never resolved because upstream correlation failed.',
+    },
+    {
+      q: 'How do I see assertion failure details in CLI mode?',
+      a: 'Set jmeter.save.saveservice.assertion_results_failure_message=true in user.properties so JTL files include the assertion failure message, then inspect the failing rows. The HTML dashboard also surfaces assertion failures per sampler.',
+    },
+    {
+      q: 'Should a Response Assertion use Contains or Equals?',
+      a: 'Prefer Contains or Substring on a stable marker in the response. Equals and Matches compare the whole field, so any dynamic value, timestamp, or whitespace difference fails the assertion even when the application works correctly.',
+    },
+  ],
+
   '/topics/errors/socket-closed-connection-reset': [
     {
       q: 'What causes connection reset in JMeter load tests?',
