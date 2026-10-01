@@ -1,0 +1,74 @@
+---
+/**
+ * EthicalAd - the site's single floating EthicalAds placement plus the client script.
+ *
+ * Rendered once per page from FooterDisclaimer (EthicalAds allows one ad per
+ * page). The inline script moves the slot to <body> (Starlight's .main-pane
+ * is an isolated stacking context), picks the placement for the viewport
+ * (FLOATING_AD_PLACEMENTS), then loads the client. While an ad is filled,
+ * the footer ad's height (--ea-float-h) or the corner ad's width
+ * (--ea-float-w) is exposed so the page and the go-to-top button can clear it.
+ * Disabled at build time with PUBLIC_ETHICALADS_PUBLISHER=off.
+ */
+import {
+  ETHICAL_ADS_CAMPAIGN_TYPES,
+  ETHICAL_ADS_CLIENT_SRC,
+  ETHICAL_ADS_DARK_SELECTOR,
+  FLOATING_AD_PLACEMENTS,
+  FLOATING_AD_WIDE_QUERY,
+  pageAdKeywords,
+  resolveEthicalAdsPublisher,
+} from '../lib/ethical-ads.mjs';
+
+const publisher = resolveEthicalAdsPublisher(import.meta.env.PUBLIC_ETHICALADS_PUBLISHER);
+const keywords = pageAdKeywords(
+  Astro.url.pathname,
+  Astro.locals.starlightRoute?.entry?.data?.keywords,
+);
+---
+
+{publisher && (
+  <div
+    class="ea-slot flat"
+    data-ea-publisher={publisher}
+    data-ea-keywords={keywords}
+    data-ea-campaign-types={ETHICAL_ADS_CAMPAIGN_TYPES}
+    data-ea-dark-selector={ETHICAL_ADS_DARK_SELECTOR}
+    data-ea-placements={JSON.stringify(FLOATING_AD_PLACEMENTS)}
+    data-ea-wide-query={FLOATING_AD_WIDE_QUERY}
+    data-ea-client={ETHICAL_ADS_CLIENT_SRC}
+  ></div>
+)}
+
+<script is:inline>
+  (function() {
+    var slot = document.querySelector('.ea-slot[data-ea-placements]');
+    if (!slot || slot.dataset.eaInit) return;
+    slot.dataset.eaInit = '1';
+    document.body.appendChild(slot);
+
+    var placements = JSON.parse(slot.dataset.eaPlacements);
+    var placement = window.matchMedia(slot.dataset.eaWideQuery).matches
+      ? placements.wide
+      : placements.narrow;
+    slot.id = placement.id;
+    slot.setAttribute('data-ea-type', placement.type);
+    slot.setAttribute('data-ea-style', placement.style);
+
+    var root = document.documentElement;
+    function sync() {
+      var filled = slot.isConnected && slot.classList.contains('loaded');
+      var footer = filled && placement.style === 'fixedfooter';
+      var corner = filled && placement.style === 'stickybox';
+      root.style.setProperty('--ea-float-h', footer ? slot.offsetHeight + 'px' : '0px');
+      root.style.setProperty('--ea-float-w', corner ? slot.offsetWidth + 20 + 'px' : '0px');
+    }
+    new ResizeObserver(sync).observe(slot);
+    new MutationObserver(sync).observe(slot, { attributes: true, attributeFilter: ['class'] });
+
+    var client = document.createElement('script');
+    client.async = true;
+    client.src = slot.dataset.eaClient;
+    document.head.appendChild(client);
+  })();
+</script>

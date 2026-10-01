@@ -161,6 +161,23 @@ html:hover::-webkit-scrollbar-thumb {
   pointer-events: auto;
 }
 
+/* ==========================================================================
+   EthicalAds clearance (see EthicalAd.astro)
+   ========================================================================== */
+body:has([data-ea-style='fixedfooter'].loaded) {
+  padding-bottom: var(--ea-float-h, 0px);
+}
+
+body:has([data-ea-style='fixedfooter'].loaded) .go-to-top {
+  bottom: calc(2rem + var(--ea-float-h, 0px));
+}
+
+@media (min-width: 1301px) {
+  body:has([data-ea-style='stickybox'].loaded) .go-to-top {
+    right: calc(2rem + var(--ea-float-w, 0px));
+  }
+}
+
 .go-to-top:hover {
   background: var(--sl-color-accent);
   color: #fff;

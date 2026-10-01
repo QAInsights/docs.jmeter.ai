@@ -7,6 +7,7 @@ import DocActions from './DocActions.astro';
 import ImageLightbox from './ImageLightbox.astro';
 import PeopleAlsoAsk from './PeopleAlsoAsk.astro';
 import PageFeedback from './PageFeedback.astro';
+import EthicalAd from './EthicalAd.astro';
 
 const isLandingPage = Astro.url.pathname === '/';
 const isDocPage = !isLandingPage
@@ -50,6 +51,7 @@ const isDocPage = !isLandingPage
   </footer>
   <GoToTop />
   <ImageLightbox />
+  {!Astro.url.pathname.startsWith('/404') && <EthicalAd />}
 </div>
 
 <style>
