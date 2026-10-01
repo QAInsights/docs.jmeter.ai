@@ -23,6 +23,7 @@ export default defineConfig({
         'src/lib/path-utils.mjs',
         'src/lib/head-tags.mjs',
         'src/lib/reading-tracker.mjs',
+        'src/lib/ethical-ads.mjs',
         'src/faq-schema.mjs',
         'src/howto-schema.mjs',
         'src/sidebar.mjs',
