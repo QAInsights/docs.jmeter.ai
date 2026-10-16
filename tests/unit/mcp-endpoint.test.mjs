@@ -127,6 +127,22 @@ describe('MCPRUSH_TOKEN bearer gate', () => {
     expect(res.status).toBe(200);
   }, 15000);
 
+  it('accepts the x-mcprush-token header as an alternative credential', async () => {
+    process.env.MCPRUSH_TOKEN = 'mgw_test_token';
+    const res = await POST({
+      request: new Request('https://docs.jmeter.ai/api/mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+          'x-mcprush-token': 'mgw_test_token',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+      }),
+    });
+    expect(res.status).toBe(200);
+  }, 15000);
+
   it('401s GET and DELETE without the token, and reports bearer auth in the listing', async () => {
     process.env.MCPRUSH_TOKEN = 'mgw_test_token';
 

@@ -10,8 +10,9 @@
  * session storage — Cloudflare Workers / serverless friendly.
  *
  * Access gate: when MCPRUSH_TOKEN is set in the environment (Cloudflare
- * secret / .dev.vars), every request must send `Authorization: Bearer
- * <token>`; anything else gets a 401 before reaching the MCP handler.
+ * secret / .dev.vars), every request must send the token either as
+ * `Authorization: Bearer <token>` or as `x-mcprush-token: <token>`;
+ * anything else gets a 401 before reaching the MCP handler.
  * Unset means open access (local dev default).
  *
  * The index is generated at build time (scripts/generate-llms-chunks.mjs),
@@ -177,6 +178,9 @@ function mcpAuthResponse(request: Request): Response | null {
   // normalize whitespace, so compare the scheme loosely and the token exactly.
   const match = /^bearer\s+(.+)$/i.exec(header.trim());
   if (match?.[1] === token) return null;
+
+  // MCPRush also supports authenticating via the x-mcprush-token header.
+  if (request.headers.get('x-mcprush-token') === token) return null;
 
   return new Response(JSON.stringify({ error: 'Unauthorized' }), {
     status: 401,
