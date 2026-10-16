@@ -6,6 +6,7 @@ import {
   MCP_OUTCOMES,
   MAX_BLOB_CHARS,
   detectMcpClient,
+  isMcpTelemetryDisabled,
   extractRequestMeta,
   sanitizeTelemetryQuery,
   measureInputSize,
@@ -30,6 +31,7 @@ describe('detectMcpClient', () => {
     expect(detectMcpClient('Windsurf/1.4').family).toBe('windsurf');
     expect(detectMcpClient('Antigravity/2.0').family).toBe('antigravity');
     expect(detectMcpClient('qwen-code/0.1.0').family).toBe('qwen');
+    expect(detectMcpClient('pi/0.3.0').family).toBe('pi');
     expect(detectMcpClient('curl/8.7.1').family).toBe('curl');
   });
 
@@ -52,7 +54,7 @@ describe('detectMcpClient', () => {
   });
 });
 
-describe('extractRequestMeta', () => {
+describe('extractRequestMeta & isMcpTelemetryDisabled', () => {
   it('extracts country, colo, and User-Agent from Cloudflare request', () => {
     const req = new Request('https://docs.jmeter.ai/api/mcp', {
       headers: { 'User-Agent': 'Cursor/1.0' },
@@ -64,6 +66,7 @@ describe('extractRequestMeta', () => {
       userAgent: 'Cursor/1.0',
       country: 'US',
       colo: 'IAD',
+      telemetryDisabled: false,
     });
   });
 
@@ -75,7 +78,30 @@ describe('extractRequestMeta', () => {
       userAgent: '',
       country: 'DE',
       colo: 'UNKNOWN',
+      telemetryDisabled: false,
     });
+  });
+
+  it('detects opt-out via ?telemetry=0, X-MCP-Telemetry: off, DNT: 1, and MCP_TELEMETRY_DISABLED env', () => {
+    expect(isMcpTelemetryDisabled(new Request('https://docs.jmeter.ai/api/mcp?telemetry=0'))).toBe(true);
+    expect(isMcpTelemetryDisabled(new Request('https://docs.jmeter.ai/api/mcp?telemetry=off'))).toBe(true);
+    expect(
+      isMcpTelemetryDisabled(
+        new Request('https://docs.jmeter.ai/api/mcp', { headers: { 'X-MCP-Telemetry': 'off' } }),
+      ),
+    ).toBe(true);
+    expect(
+      isMcpTelemetryDisabled(new Request('https://docs.jmeter.ai/api/mcp', { headers: { DNT: '1' } })),
+    ).toBe(true);
+
+    const prev = process.env.MCP_TELEMETRY_DISABLED;
+    try {
+      process.env.MCP_TELEMETRY_DISABLED = 'true';
+      expect(isMcpTelemetryDisabled()).toBe(true);
+    } finally {
+      if (prev === undefined) delete process.env.MCP_TELEMETRY_DISABLED;
+      else process.env.MCP_TELEMETRY_DISABLED = prev;
+    }
   });
 });
 
@@ -335,5 +361,41 @@ describe('/api/mcp endpoint telemetry integration', () => {
     expect(toolEvent.blobs[3]).toBe(MCP_OUTCOMES.ZERO_RESULT);
     expect(toolEvent.blobs[5]).toBe('claude-code');
     expect(toolEvent.doubles[4]).toBe(1); // isZeroResult
+  }, 15000);
+
+  it('suppresses Analytics Engine writes when client opts out via ?telemetry=0 or X-MCP-Telemetry: off', async () => {
+    const recorded = [];
+    env.MCP_ANALYTICS.writeDataPoint = (dp) => recorded.push(dp);
+
+    const getRes = await getMcp({
+      request: new Request('https://docs.jmeter.ai/api/mcp?telemetry=0', {
+        headers: { Accept: 'application/json' },
+      }),
+    });
+    expect(getRes.status).toBe(200);
+    expect(recorded).toHaveLength(0);
+
+    const postRes = await postMcp({
+      request: new Request('https://docs.jmeter.ai/api/mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+          'X-MCP-Telemetry': 'off',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/call',
+          params: {
+            name: 'search_jmeter_docs',
+            arguments: { query: 'thread group' },
+          },
+        }),
+      }),
+      locals: {},
+    });
+    expect(postRes.status).toBe(200);
+    expect(recorded).toHaveLength(0);
   }, 15000);
 });

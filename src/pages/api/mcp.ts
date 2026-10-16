@@ -87,6 +87,7 @@ export async function POST({ request, locals }: { request: Request; locals: any 
           isError: classification.isError,
           isZeroResult: classification.isZeroResult,
           inputChars: measureInputSize(toolName, args),
+          telemetryDisabled: reqMeta.telemetryDisabled,
         });
       },
     });
@@ -121,6 +122,7 @@ export async function POST({ request, locals }: { request: Request; locals: any 
       colo: reqMeta.colo,
       latencyMs: Date.now() - startedAt,
       isError: 1,
+      telemetryDisabled: reqMeta.telemetryDisabled,
     });
     return new Response(JSON.stringify({ error: 'MCP request failed: ' + message }), {
       status: 500,
@@ -154,6 +156,7 @@ export async function GET({ request }: { request: Request }) {
       subDetail: 'sse_rejected',
       latencyMs: Date.now() - startedAt,
       isError: 1,
+      telemetryDisabled: reqMeta.telemetryDisabled,
     });
     return new Response(
       JSON.stringify({ error: 'This stateless MCP endpoint does not offer an SSE listening stream.' }),
@@ -179,6 +182,7 @@ export async function GET({ request }: { request: Request }) {
     colo: reqMeta.colo,
     latencyMs: Date.now() - startedAt,
     resultCount: MCP_TOOL_NAMES.length,
+    telemetryDisabled: reqMeta.telemetryDisabled,
   });
 
   return new Response(
@@ -217,13 +221,14 @@ function recordRpcLifecycleEvents(
   clonedRequest: Request,
   locals: any,
   context: {
-    reqMeta: { userAgent: string; country: string; colo: string };
+    reqMeta: { userAgent: string; country: string; colo: string; telemetryDisabled?: boolean };
     baseClient: { family: string; raw: string };
     latencyMs: number;
     getHandledToolCalls: () => number;
   },
 ) {
   const work = (async () => {
+    if (context.reqMeta.telemetryDisabled) return;
     try {
       const payload: any = await clonedRequest.json();
       const calls = Array.isArray(payload) ? payload : [payload];
@@ -253,6 +258,7 @@ function recordRpcLifecycleEvents(
                 latencyMs: context.latencyMs,
                 isError: 1,
                 inputChars: isKnown ? measureInputSize(name, args) : 0,
+                telemetryDisabled: context.reqMeta.telemetryDisabled,
               });
             }
           }
@@ -274,6 +280,7 @@ function recordRpcLifecycleEvents(
           colo: context.reqMeta.colo,
           subDetail: typeof call?.params?.protocolVersion === 'string' ? call.params.protocolVersion : '',
           latencyMs: context.latencyMs,
+          telemetryDisabled: context.reqMeta.telemetryDisabled,
         });
       }
     } catch {
@@ -289,7 +296,7 @@ function recordRpcLifecycleEvents(
 async function mcpRateLimitResponse(
   request: Request,
   rpcMethod: string,
-  reqMeta: { userAgent: string; country: string; colo: string },
+  reqMeta: { userAgent: string; country: string; colo: string; telemetryDisabled?: boolean },
   client: { family: string; raw: string },
 ): Promise<Response | null> {
   const rate = await checkMcpRateLimit(getClientIp(request));
@@ -304,6 +311,7 @@ async function mcpRateLimitResponse(
     country: reqMeta.country,
     colo: reqMeta.colo,
     isError: 1,
+    telemetryDisabled: reqMeta.telemetryDisabled,
   });
 
   // JSON-RPC-shaped error so MCP clients surface a meaningful message.

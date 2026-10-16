@@ -106,8 +106,39 @@ export function detectMcpClient(userAgent = '', clientInfo = null) {
   return { family: combined ? 'other' : 'unknown', raw: truncateBlob(userAgent) };
 }
 
+const OPT_OUT_VALUES = new Set(['0', 'false', 'off', 'no', 'disable', 'disabled']);
+const ENV_TRUE_VALUES = new Set(['1', 'true', 'yes', 'on']);
+
 /**
- * Extract coarse geo/colo and User-Agent metadata from a Cloudflare Request.
+ * Check whether MCP telemetry is disabled globally (`MCP_TELEMETRY_DISABLED=true`)
+ * or per-request (`?telemetry=0|off|false`, `X-MCP-Telemetry: off|0`, or `DNT: 1`).
+ * @param {Request | null} [request]
+ * @returns {boolean}
+ */
+export function isMcpTelemetryDisabled(request = null) {
+  const envFlag =
+    typeof process !== 'undefined' ? String(process.env?.MCP_TELEMETRY_DISABLED || '').trim().toLowerCase() : '';
+  if (ENV_TRUE_VALUES.has(envFlag)) return true;
+  if (!request) return false;
+
+  const headerVal = String(request.headers?.get?.('x-mcp-telemetry') || '').trim().toLowerCase();
+  if (OPT_OUT_VALUES.has(headerVal)) return true;
+
+  const dnt = String(request.headers?.get?.('dnt') || '').trim();
+  if (dnt === '1') return true;
+
+  try {
+    const url = new URL(request.url);
+    const paramVal = String(url.searchParams.get('telemetry') || '').trim().toLowerCase();
+    if (OPT_OUT_VALUES.has(paramVal)) return true;
+  } catch {
+    /* ignore invalid URL */
+  }
+  return false;
+}
+
+/**
+ * Extract coarse geo/colo, User-Agent, and opt-out flag from a Cloudflare Request.
  * Never extracts IP addresses.
  * @param {Request} request
  */
@@ -122,6 +153,7 @@ export function extractRequestMeta(request) {
     userAgent: truncateBlob(userAgent),
     country: truncateBlob(country, 16),
     colo: truncateBlob(colo, 16),
+    telemetryDisabled: isMcpTelemetryDisabled(request),
   };
 }
 
@@ -273,6 +305,7 @@ export function classifyToolOutcome(toolName, args, result) {
  * @param {{ writeDataPoint?: (dp: { indexes?: string[], blobs?: string[], doubles?: number[] }) => void }} [dataset]
  */
 export function writeMcpEvent(event, dataset = env?.MCP_ANALYTICS) {
+  if (event?.telemetryDisabled || isMcpTelemetryDisabled()) return false;
   if (!dataset || typeof dataset.writeDataPoint !== 'function') return false;
   try {
     const indexKey = truncateBlob(event.toolName || event.rpcMethod || event.eventType, 96);
