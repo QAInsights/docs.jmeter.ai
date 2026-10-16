@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   normalizeDocPath,
   findChunkByPath,
   GET,
   POST,
+  DELETE,
   runCurlHarConversionTool,
   runOpenApiConversionTool,
   runGroovyLintTool,
@@ -62,6 +63,72 @@ describe('findChunkByPath', () => {
     for (const chunk of INDEX) {
       expect(chunk.url.startsWith('https://docs.jmeter.ai/')).toBe(true);
     }
+  });
+});
+
+describe('MCPRUSH_TOKEN bearer gate', () => {
+  afterEach(() => {
+    delete process.env.MCPRUSH_TOKEN;
+  });
+
+  function authedRequest(url, init = {}) {
+    const headers = new Headers(init.headers || {});
+    headers.set('Authorization', 'Bearer mgw_test_token');
+    return new Request(url, { ...init, headers });
+  }
+
+  it('401s POST without or with a wrong Authorization header when the token is set', async () => {
+    process.env.MCPRUSH_TOKEN = 'mgw_test_token';
+    const body = JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
+    const init = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+      body,
+    };
+
+    const missing = await POST({ request: new Request('https://docs.jmeter.ai/api/mcp', init) });
+    expect(missing.status).toBe(401);
+    expect(missing.headers.get('www-authenticate')).toContain('Bearer');
+
+    const wrong = await POST({
+      request: new Request('https://docs.jmeter.ai/api/mcp', {
+        ...init,
+        headers: { ...init.headers, Authorization: 'Bearer wrong' },
+      }),
+    });
+    expect(wrong.status).toBe(401);
+  });
+
+  it('lets POST through with the right Bearer token', async () => {
+    process.env.MCPRUSH_TOKEN = 'mgw_test_token';
+    const res = await POST({
+      request: authedRequest('https://docs.jmeter.ai/api/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+      }),
+    });
+    expect(res.status).toBe(200);
+  }, 15000);
+
+  it('401s GET and DELETE without the token, and reports bearer auth in the listing', async () => {
+    process.env.MCPRUSH_TOKEN = 'mgw_test_token';
+
+    const get = await GET({ request: new Request('https://docs.jmeter.ai/api/mcp') });
+    expect(get.status).toBe(401);
+
+    const del = DELETE({ request: new Request('https://docs.jmeter.ai/api/mcp', { method: 'DELETE' }) });
+    expect(del.status).toBe(401);
+
+    const authedGet = await GET({ request: authedRequest('https://docs.jmeter.ai/api/mcp') });
+    expect(authedGet.status).toBe(200);
+    expect((await authedGet.json()).auth).toBe('bearer');
+  });
+
+  it('leaves the endpoint open when the token is not set', async () => {
+    const res = await GET({ request: new Request('https://docs.jmeter.ai/api/mcp') });
+    expect(res.status).toBe(200);
+    expect((await res.json()).auth).toBe('none');
   });
 });
 
