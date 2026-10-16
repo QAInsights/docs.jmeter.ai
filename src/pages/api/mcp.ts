@@ -9,11 +9,6 @@
  * Stateless mode: every request gets a fresh server and transport, no
  * session storage — Cloudflare Workers / serverless friendly.
  *
- * Access gate: when MCPRUSH_TOKEN is set in the environment (Cloudflare
- * secret / .dev.vars), every request must send `Authorization: Bearer
- * <token>`; anything else gets a 401 before reaching the MCP handler.
- * Unset means open access (local dev default).
- *
  * The index is generated at build time (scripts/generate-llms-chunks.mjs),
  * so this endpoint needs no database and no API keys.
  */
@@ -48,9 +43,6 @@ export {
 export const prerender = false;
 
 export async function POST({ request, locals }: { request: Request; locals: any }) {
-  const unauthorized = mcpAuthResponse(request);
-  if (unauthorized) return unauthorized;
-
   const limited = await mcpRateLimitResponse(request);
   if (limited) return limited;
 
@@ -87,9 +79,6 @@ export async function POST({ request, locals }: { request: Request; locals: any 
  * server for humans and directory crawlers.
  */
 export async function GET({ request }: { request: Request }) {
-  const unauthorized = mcpAuthResponse(request);
-  if (unauthorized) return unauthorized;
-
   const limited = await mcpRateLimitResponse(request);
   if (limited) return limited;
 
@@ -117,7 +106,7 @@ export async function GET({ request }: { request: Request }) {
           'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, convert cURL/HAR/OpenAPI to JMX, lint JMX and Groovy, calculate workload sizing, plan distributed clusters, query tuning properties, fetch Groovy recipes, and lookup diagnostic error playbooks.',
         transport: 'streamable-http',
         endpoint: 'https://docs.jmeter.ai/api/mcp',
-        auth: process.env.MCPRUSH_TOKEN ? 'bearer' : 'none',
+        auth: 'none',
         tools: [...MCP_TOOL_NAMES],
         docs: 'https://docs.jmeter.ai/mcp/',
       },
@@ -160,27 +149,6 @@ function trackMcpToolCall(request: Request, locals: any) {
   else work.catch(() => {});
 }
 
-/**
- * Bearer-token gate for the MCP endpoint. Runs before the MCP handler on
- * every request; enforced only when MCPRUSH_TOKEN is configured.
- */
-function mcpAuthResponse(request: Request): Response | null {
-  const token = process.env.MCPRUSH_TOKEN;
-  if (!token) return null;
-
-  const header = request.headers.get('authorization') || '';
-  if (header === `Bearer ${token}`) return null;
-
-  return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-    status: 401,
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store',
-      'WWW-Authenticate': 'Bearer realm="mcp"',
-    },
-  });
-}
-
 async function mcpRateLimitResponse(request: Request): Promise<Response | null> {
   const rate = await checkMcpRateLimit(getClientIp(request));
   if (rate.allowed) return null;
@@ -213,10 +181,7 @@ function acceptsEventStream(request: Request): boolean {
 }
 
 /** Stateless server: there are no sessions to terminate. */
-export function DELETE({ request }: { request: Request }) {
-  const unauthorized = mcpAuthResponse(request);
-  if (unauthorized) return unauthorized;
-
+export function DELETE() {
   return new Response(JSON.stringify({ error: 'Stateless MCP server: no sessions to delete.' }), {
     status: 405,
     headers: {
