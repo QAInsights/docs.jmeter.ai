@@ -19,6 +19,12 @@
       "simple": { "limit": 120, "period": 60 }
     }
   ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "MCP_ANALYTICS",
+      "dataset": "mcp_events"
+    }
+  ],
   // Workers Logs + traces in the dashboard (free). Watch for CPU-limit
   // errors (1102) and free-tier request-cap errors (1027) after cutover.
   "observability": {
