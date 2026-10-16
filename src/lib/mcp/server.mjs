@@ -221,11 +221,26 @@ export function runJmxLintTool({ jmxContent }) {
   }
 }
 
-export function createServer() {
+export function createServer({ onToolCall } = {}) {
   const server = new McpServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
     { instructions: SERVER_INSTRUCTIONS },
   );
+
+  if (typeof onToolCall === 'function') {
+    const rawRegisterTool = server.registerTool.bind(server);
+    server.registerTool = (name, config, handler) =>
+      rawRegisterTool(name, config, async (args, extra) => {
+        const started = Date.now();
+        const result = await handler(args, extra);
+        try {
+          onToolCall({ toolName: name, args, result, durationMs: Date.now() - started });
+        } catch {
+          /* telemetry must never break tool serving */
+        }
+        return result;
+      });
+  }
 
   server.registerTool(
     'search_jmeter_docs',

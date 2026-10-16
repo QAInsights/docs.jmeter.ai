@@ -27,7 +27,16 @@ import {
   runGroovyLintTool,
   runJmxLintTool,
 } from '../../lib/mcp/server.mjs';
-import { incrementMcpToolCount } from '../../lib/counter.mjs';
+import {
+  MCP_EVENT_TYPES,
+  MCP_OUTCOMES,
+  detectMcpClient,
+  extractRequestMeta,
+  sanitizeTelemetryQuery,
+  measureInputSize,
+  classifyToolOutcome,
+  writeMcpEvent,
+} from '../../lib/mcp/telemetry.mjs';
 
 export {
   normalizeDocPath,
@@ -43,19 +52,56 @@ export {
 export const prerender = false;
 
 export async function POST({ request, locals }: { request: Request; locals: any }) {
-  const limited = await mcpRateLimitResponse(request);
+  const startedAt = Date.now();
+  const reqMeta = extractRequestMeta(request);
+  const baseClient = detectMcpClient(reqMeta.userAgent);
+
+  const limited = await mcpRateLimitResponse(request, 'POST /api/mcp', reqMeta, baseClient);
   if (limited) return limited;
 
-  trackMcpToolCall(request, locals);
+  const clonedRequest = request.clone();
+  let handledToolCalls = 0;
 
   try {
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless: no session headers, Vercel-safe
       enableJsonResponse: true, // plain JSON responses (no SSE) for serverless
     });
-    const server = createServer();
+    const server = createServer({
+      onToolCall({ toolName, args, result, durationMs }) {
+        handledToolCalls++;
+        const classification = classifyToolOutcome(toolName, args, result);
+        writeMcpEvent({
+          eventType: MCP_EVENT_TYPES.TOOL_CALL,
+          rpcMethod: 'tools/call',
+          toolName,
+          outcome: classification.outcome,
+          query: sanitizeTelemetryQuery(toolName, args),
+          clientFamily: baseClient.family,
+          clientRaw: baseClient.raw,
+          country: reqMeta.country,
+          colo: reqMeta.colo,
+          subDetail: classification.subDetail,
+          latencyMs: durationMs,
+          resultCount: classification.resultCount,
+          isError: classification.isError,
+          isZeroResult: classification.isZeroResult,
+          inputChars: measureInputSize(toolName, args),
+          telemetryDisabled: reqMeta.telemetryDisabled,
+        });
+      },
+    });
     await server.connect(transport);
     const response = await transport.handleRequest(request);
+    const latencyMs = Date.now() - startedAt;
+
+    recordRpcLifecycleEvents(clonedRequest, locals, {
+      reqMeta,
+      baseClient,
+      latencyMs,
+      getHandledToolCalls: () => handledToolCalls,
+    });
+
     const headers = new Headers(response.headers);
     headers.set('Cache-Control', 'no-store');
     return new Response(response.body, {
@@ -66,6 +112,18 @@ export async function POST({ request, locals }: { request: Request; locals: any 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[api/mcp] error:', message);
+    writeMcpEvent({
+      eventType: MCP_EVENT_TYPES.HTTP_ERROR,
+      rpcMethod: 'POST /api/mcp',
+      outcome: MCP_OUTCOMES.HTTP_500,
+      clientFamily: baseClient.family,
+      clientRaw: baseClient.raw,
+      country: reqMeta.country,
+      colo: reqMeta.colo,
+      latencyMs: Date.now() - startedAt,
+      isError: 1,
+      telemetryDisabled: reqMeta.telemetryDisabled,
+    });
     return new Response(JSON.stringify({ error: 'MCP request failed: ' + message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -79,10 +137,27 @@ export async function POST({ request, locals }: { request: Request; locals: any 
  * server for humans and directory crawlers.
  */
 export async function GET({ request }: { request: Request }) {
-  const limited = await mcpRateLimitResponse(request);
+  const startedAt = Date.now();
+  const reqMeta = extractRequestMeta(request);
+  const client = detectMcpClient(reqMeta.userAgent);
+
+  const limited = await mcpRateLimitResponse(request, 'GET /api/mcp', reqMeta, client);
   if (limited) return limited;
 
   if (acceptsEventStream(request)) {
+    writeMcpEvent({
+      eventType: MCP_EVENT_TYPES.DISCOVERY,
+      rpcMethod: 'GET /api/mcp',
+      outcome: MCP_OUTCOMES.HTTP_405,
+      clientFamily: client.family,
+      clientRaw: client.raw,
+      country: reqMeta.country,
+      colo: reqMeta.colo,
+      subDetail: 'sse_rejected',
+      latencyMs: Date.now() - startedAt,
+      isError: 1,
+      telemetryDisabled: reqMeta.telemetryDisabled,
+    });
     return new Response(
       JSON.stringify({ error: 'This stateless MCP endpoint does not offer an SSE listening stream.' }),
       {
@@ -96,6 +171,19 @@ export async function GET({ request }: { request: Request }) {
       },
     );
   }
+
+  writeMcpEvent({
+    eventType: MCP_EVENT_TYPES.DISCOVERY,
+    rpcMethod: 'GET /api/mcp',
+    outcome: MCP_OUTCOMES.OK,
+    clientFamily: client.family,
+    clientRaw: client.raw,
+    country: reqMeta.country,
+    colo: reqMeta.colo,
+    latencyMs: Date.now() - startedAt,
+    resultCount: MCP_TOOL_NAMES.length,
+    telemetryDisabled: reqMeta.telemetryDisabled,
+  });
 
   return new Response(
     JSON.stringify(
@@ -125,33 +213,106 @@ export async function GET({ request }: { request: Request }) {
 }
 
 /**
- * Peek at the cloned JSON-RPC body for a tools/call and bump the weekly
- * usage counters. Fire-and-forget via the Cloudflare waitUntil when
- * available; failures are swallowed inside the counter.
+ * Inspect the cloned JSON-RPC payload asynchronously via Cloudflare waitUntil
+ * to record lifecycle methods (`initialize` clientInfo, `tools/list`, `ping`)
+ * and any `tools/call` rejected by schema validation before reaching the tool handler.
  */
-function trackMcpToolCall(request: Request, locals: any) {
+function recordRpcLifecycleEvents(
+  clonedRequest: Request,
+  locals: any,
+  context: {
+    reqMeta: { userAgent: string; country: string; colo: string; telemetryDisabled?: boolean };
+    baseClient: { family: string; raw: string };
+    latencyMs: number;
+    getHandledToolCalls: () => number;
+  },
+) {
   const work = (async () => {
+    if (context.reqMeta.telemetryDisabled) return;
     try {
-      const payload: any = await request.clone().json();
+      const payload: any = await clonedRequest.json();
       const calls = Array.isArray(payload) ? payload : [payload];
+      let unhandledTools = 0;
+
       for (const call of calls) {
-        const name = call?.params?.name;
-        if (call?.method === 'tools/call' && typeof name === 'string' && MCP_TOOL_NAMES.includes(name)) {
-          await incrementMcpToolCount(name);
+        const method = typeof call?.method === 'string' ? call.method : '';
+        if (!method) continue;
+
+        if (method === 'tools/call') {
+          const name = typeof call?.params?.name === 'string' ? call.params.name : '';
+          const args = call?.params?.arguments;
+          const isKnown = MCP_TOOL_NAMES.includes(name);
+          if (!isKnown || context.getHandledToolCalls() === 0) {
+            unhandledTools++;
+            if (unhandledTools > context.getHandledToolCalls()) {
+              writeMcpEvent({
+                eventType: MCP_EVENT_TYPES.TOOL_CALL,
+                rpcMethod: 'tools/call',
+                toolName: isKnown ? name : name.slice(0, 64),
+                outcome: isKnown ? MCP_OUTCOMES.SCHEMA_ERROR : MCP_OUTCOMES.UNKNOWN_TOOL,
+                query: isKnown ? sanitizeTelemetryQuery(name, args) : '',
+                clientFamily: context.baseClient.family,
+                clientRaw: context.baseClient.raw,
+                country: context.reqMeta.country,
+                colo: context.reqMeta.colo,
+                latencyMs: context.latencyMs,
+                isError: 1,
+                inputChars: isKnown ? measureInputSize(name, args) : 0,
+                telemetryDisabled: context.reqMeta.telemetryDisabled,
+              });
+            }
+          }
+          continue;
         }
+
+        const client =
+          method === 'initialize' && call?.params?.clientInfo
+            ? detectMcpClient(context.reqMeta.userAgent, call.params.clientInfo)
+            : context.baseClient;
+
+        writeMcpEvent({
+          eventType: MCP_EVENT_TYPES.RPC_LIFECYCLE,
+          rpcMethod: method,
+          outcome: MCP_OUTCOMES.OK,
+          clientFamily: client.family,
+          clientRaw: client.raw,
+          country: context.reqMeta.country,
+          colo: context.reqMeta.colo,
+          subDetail: typeof call?.params?.protocolVersion === 'string' ? call.params.protocolVersion : '',
+          latencyMs: context.latencyMs,
+          telemetryDisabled: context.reqMeta.telemetryDisabled,
+        });
       }
     } catch {
       /* non-JSON or malformed body: ignore */
     }
   })();
+
   const ctx = locals?.cfContext;
   if (ctx?.waitUntil) ctx.waitUntil(work);
   else work.catch(() => {});
 }
 
-async function mcpRateLimitResponse(request: Request): Promise<Response | null> {
+async function mcpRateLimitResponse(
+  request: Request,
+  rpcMethod: string,
+  reqMeta: { userAgent: string; country: string; colo: string; telemetryDisabled?: boolean },
+  client: { family: string; raw: string },
+): Promise<Response | null> {
   const rate = await checkMcpRateLimit(getClientIp(request));
   if (rate.allowed) return null;
+
+  writeMcpEvent({
+    eventType: MCP_EVENT_TYPES.RATE_LIMIT,
+    rpcMethod,
+    outcome: MCP_OUTCOMES.RATE_LIMITED,
+    clientFamily: client.family,
+    clientRaw: client.raw,
+    country: reqMeta.country,
+    colo: reqMeta.colo,
+    isError: 1,
+    telemetryDisabled: reqMeta.telemetryDisabled,
+  });
 
   // JSON-RPC-shaped error so MCP clients surface a meaningful message.
   return new Response(

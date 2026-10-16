@@ -73,10 +73,36 @@ const mcpJson = JSON.stringify({ mcpServers: { [SERVER_NAME]: { url: ENDPOINT } 
     <span>Copy mcp.json</span>
     <span class="sr-only" aria-live="polite" data-copy-status></span>
   </button>
+  <span class="mcp-usage-badge is-hidden" data-mcp-usage-badge aria-live="polite">
+    <span class="mcp-usage-dot" aria-hidden="true"></span>
+    <span data-mcp-usage-text></span>
+  </span>
 </div>
 
 <script>
   (() => {
+    const loadUsageBadge = async () => {
+      const badges = document.querySelectorAll('[data-mcp-usage-badge]');
+      if (!badges.length) return;
+      try {
+        const res = await fetch('/api/mcp-stats');
+        if (!res.ok) return;
+        const data = await res.json();
+        const total = Number(data?.totalCalls) || 0;
+        if (total <= 0) return;
+        const formatted = total.toLocaleString();
+        const label = `${formatted} tool call${total === 1 ? '' : 's'} (30d)`;
+        badges.forEach((badge) => {
+          const textEl = badge.querySelector('[data-mcp-usage-text]');
+          if (textEl) textEl.textContent = label;
+          badge.classList.remove('is-hidden');
+        });
+      } catch {
+        /* telemetry badge is optional */
+      }
+    };
+    loadUsageBadge();
+
     if (window.__jmeterMcpInstallReady) return;
     window.__jmeterMcpInstallReady = true;
 
@@ -187,8 +213,30 @@ const mcpJson = JSON.stringify({ mcpServers: { [SERVER_NAME]: { url: ENDPOINT } 
     overflow: visible;
   }
 
-  .mcp-install-btn path.is-hidden {
+  .mcp-install-btn path.is-hidden,
+  .mcp-usage-badge.is-hidden {
     display: none;
+  }
+
+  .mcp-usage-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid var(--sl-color-gray-5);
+    color: var(--sl-color-gray-2);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .mcp-usage-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--sl-color-green, #22c55e);
   }
 
   .sr-only {

@@ -240,6 +240,41 @@ curl -X POST https://docs.jmeter.ai/api/mcp \
   }'
 ```
 
+## Telemetry & privacy
+
+By default, `/api/mcp` records lightweight, anonymous operational telemetry via Cloudflare Workers Analytics Engine to help improve documentation coverage and tool reliability:
+
+- **What is recorded:** Tool name, execution latency, outcome status (`ok` / `zero_result` / `tool_error`), MCP client family (e.g., Claude Code, Cursor, VS Code), coarse Cloudflare edge region, and redacted search/lookup queries (up to 256 characters, with tokens/JWTs/passwords stripped).
+- **What is never recorded:** Client IP addresses, raw `.jmx` test plans, Groovy scripts, cURL commands, HAR traces, OpenAPI specs, error signature batches, or API keys.
+
+### How to opt out
+
+You can disable telemetry for your MCP client at any time using either a query parameter or an HTTP header:
+
+1. **URL query parameter** — append `?telemetry=0` (or `?telemetry=off`) to the endpoint URL:
+   ```json
+   {
+     "mcpServers": {
+       "jmeter-docs": {
+         "url": "https://docs.jmeter.ai/api/mcp?telemetry=0"
+       }
+     }
+   }
+   ```
+2. **HTTP header** — send `"X-MCP-Telemetry": "off"` (or standard `"DNT": "1"`) in your MCP client's headers configuration:
+   ```json
+   {
+     "mcpServers": {
+       "jmeter-docs": {
+         "url": "https://docs.jmeter.ai/api/mcp",
+         "headers": {
+           "X-MCP-Telemetry": "off"
+         }
+       }
+     }
+   }
+   ```
+
 ## Why connect the docs?
 
 - **Grounded answers.** Responses come from the actual JMeter documentation, not from stale model memory.
