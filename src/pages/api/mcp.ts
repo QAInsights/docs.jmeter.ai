@@ -128,7 +128,11 @@ export async function GET({ request }: { request: Request }) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+        // Never let a shared cache replay the gated listing to
+        // unauthenticated clients.
+        'Cache-Control': process.env.MCPRUSH_TOKEN
+          ? 'private, no-store'
+          : 'public, max-age=3600, s-maxage=86400',
         Vary: 'Accept',
       },
     },
@@ -169,7 +173,10 @@ function mcpAuthResponse(request: Request): Response | null {
   if (!token) return null;
 
   const header = request.headers.get('authorization') || '';
-  if (header === `Bearer ${token}`) return null;
+  // The auth scheme is case-insensitive per RFC 9110 and intermediaries may
+  // normalize whitespace, so compare the scheme loosely and the token exactly.
+  const match = /^bearer\s+(.+)$/i.exec(header.trim());
+  if (match?.[1] === token) return null;
 
   return new Response(JSON.stringify({ error: 'Unauthorized' }), {
     status: 401,

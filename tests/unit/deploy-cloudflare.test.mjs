@@ -33,12 +33,14 @@ describe('resolveSecrets', () => {
       TURNSTILE_SECRET_KEY: 'turnstile',
       KV_REST_API_URL: 'https://upstash.example.com',
       KV_REST_API_TOKEN: 'redis-token',
+      MCPRUSH_TOKEN: 'mgw_x',
     });
     expect(secrets).toEqual({
       GOOGLE_GENERATIVE_AI_API_KEY: 'gemini',
       TURNSTILE_SECRET_KEY: 'turnstile',
       UPSTASH_REDIS_REST_URL: 'https://upstash.example.com',
       UPSTASH_REDIS_REST_TOKEN: 'redis-token',
+      MCPRUSH_TOKEN: 'mgw_x',
     });
   });
 

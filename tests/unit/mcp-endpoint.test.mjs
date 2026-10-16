@@ -111,6 +111,22 @@ describe('MCPRUSH_TOKEN bearer gate', () => {
     expect(res.status).toBe(200);
   }, 15000);
 
+  it('accepts a lowercase scheme and extra whitespace (RFC 9110)', async () => {
+    process.env.MCPRUSH_TOKEN = 'mgw_test_token';
+    const res = await POST({
+      request: new Request('https://docs.jmeter.ai/api/mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+          Authorization: 'bearer  mgw_test_token',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+      }),
+    });
+    expect(res.status).toBe(200);
+  }, 15000);
+
   it('401s GET and DELETE without the token, and reports bearer auth in the listing', async () => {
     process.env.MCPRUSH_TOKEN = 'mgw_test_token';
 
@@ -123,6 +139,8 @@ describe('MCPRUSH_TOKEN bearer gate', () => {
     const authedGet = await GET({ request: authedRequest('https://docs.jmeter.ai/api/mcp') });
     expect(authedGet.status).toBe(200);
     expect((await authedGet.json()).auth).toBe('bearer');
+    // Gated listing must not be replayed by a shared cache.
+    expect(authedGet.headers.get('cache-control')).toContain('no-store');
   });
 
   it('leaves the endpoint open when the token is not set', async () => {

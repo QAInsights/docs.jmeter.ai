@@ -69,6 +69,7 @@ export function resolveSecrets(env) {
     TURNSTILE_SECRET_KEY: env.TURNSTILE_SECRET_KEY,
     UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL,
     UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN,
+    MCPRUSH_TOKEN: env.MCPRUSH_TOKEN,
   };
   return Object.fromEntries(Object.entries(pairs).filter(([, v]) => v));
 }
