@@ -12,15 +12,23 @@ keywords:
 difficulty: intermediate
 guideType: reference
 estimatedReadTime: "6 min read"
+template: splash
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import GroovyBuilder from '../../../components/tools/GroovyBuilder.astro';
 import { BINDINGS_BY_ELEMENT } from '../../../lib/groovy-builder.mjs';
 import { GROOVY_BUILDER } from '../../../lib/tools-config.mjs';
 
-<GroovyBuilder />
+<ToolPageLayout
+  title="JSR223 Groovy Playground & Code Builder"
+  description="Lint JMeter-specific Groovy anti-patterns, inspect JSR223 bindings, and generate ready-to-paste JMX elements from curated recipes."
+  badge="Groovy Linter & Builder"
+  version="JMeter 5.6.3 Validated"
+>
+  <GroovyBuilder slot="tool" />
 
-## Why Groovy over BeanShell
+  ## Why Groovy over BeanShell
 
 JMeter supports Groovy through JSR223 compilation caching, while BeanShell is interpreted and substantially slower in a hot sampling path. Groovy also provides modern Java interoperability, mature JSON support, and access to JMeter's documented script bindings.
 
@@ -83,3 +91,5 @@ claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
 ```
 
 Ask the agent to call `get_jsr223_recipe` by recipe name or category to retrieve the curated JWT, HMAC, dynamic header, JSON extraction, and custom logging examples used by this builder. For your own script, call `lint_groovy_script` with the code and JSR223 element type to receive the same findings, binding analysis, and optional ready-to-paste JMX element XML.
+
+</ToolPageLayout>

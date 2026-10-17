@@ -37,53 +37,6 @@ nav.nav-bar a::after,
 }
 
 /* ==========================================================================
-   Footer disclaimer
-   ========================================================================== */
-.site-footer {
-  border-top: 1px solid var(--sl-color-gray-5);
-  padding: 1.5rem 1rem;
-  text-align: center;
-  font-size: 0.8rem;
-  line-height: 1.6;
-  color: var(--sl-color-gray-2);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.site-footer a {
-  color: var(--sl-color-accent-high);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.site-footer a:hover {
-  color: var(--sl-color-accent);
-}
-
-.site-footer-top,
-.site-footer-links {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.site-footer-trademark {
-  max-width: 42rem;
-  color: var(--sl-color-gray-3);
-  font-size: 0.75rem;
-  margin: 0.25rem 0 0;
-}
-
-.footer-divider {
-  color: var(--sl-color-gray-4);
-  opacity: 0.5;
-}
-
-/* ==========================================================================
    Component reference property tables
    ========================================================================== */
 .prop-table {

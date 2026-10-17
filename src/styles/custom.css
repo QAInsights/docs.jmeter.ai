@@ -2,5 +2,9 @@
    Split into variables, motion, interaction, and components for maintainability. */
 @import './variables.css';
 @import './components.css';
+@import './footer.css';
+@import './tools-hub.css';
 @import './motion.css';
 @import './interaction.css';
+
+

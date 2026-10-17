@@ -3,8 +3,8 @@
 > Community-maintained documentation for Apache JMeter with improved navigation, search, and reading experience. This is an independent community resource and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation. For official documentation, visit jmeter.apache.org.
 
 Site: https://docs.jmeter.ai
-Pages: 334
-Generated: 2026-09-27T22:24:15.878Z
+Pages: 336
+Generated: 2026-10-17T22:45:30.640Z
 ---
 Title: MCP Server
 URL: https://docs.jmeter.ai/mcp/
@@ -12,7 +12,7 @@ URL: https://docs.jmeter.ai/mcp/
 
 import McpInstallButtons from '../../components/McpInstallButtons.astro';
 
-Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.ai/api/mcp` and your agent answers JMeter questions grounded in this documentation, with a source link for every answer. Free, no API key, no signup. The on-site **Ask AI** chat uses these same tools in-process.
+Point Claude Code, Qwen Code, Cursor, Pi, or any MCP client at `https://docs.jmeter.ai/api/mcp` and your agent answers JMeter questions grounded in this documentation, with a source link for every answer. Free, no API key, no signup. The on-site **Ask AI** chat uses these same tools in-process.
 
 **Endpoint:** `https://docs.jmeter.ai/api/mcp` (Streamable HTTP, stateless)
 
@@ -36,6 +36,7 @@ Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.
 | [`get_jsr223_recipe`](#get_jsr223_recipe) | Code | Production Groovy recipes (JWT decoding, HMAC signing, dynamic headers) |
 | [`lint_groovy_script`](#lint_groovy_script) | Code | Review JSR223 Groovy pitfalls and generate ready-to-paste element XML |
 | [`lookup_error_playbook`](#lookup_error_playbook) | Diagnostics | Instant remediation and OS/JVM fixes for common runtime exceptions |
+| [`triage_errors`](#triage_errors) | Diagnostics | Batch-map a run's distinct failure signatures to error playbooks |
 | [`lookup_component`](#lookup_component) | Reference | Dedicated reference page for one JMeter component (properties, defaults, related guides) |
 | [`lookup_function`](#lookup_function) | Reference | Dedicated reference page for one built-in JMeter function (syntax, parameters, examples) |
 
@@ -156,10 +157,24 @@ Statically review a user-provided Groovy script for JMeter-specific performance 
 
 ### lookup_error_playbook
 
-Get instant root cause analysis, OS/JVM tuning parameters, and step-by-step remediation for common JMeter and JVM exceptions (`BindException`, `SocketTimeoutException`, `OutOfMemoryError`, `NoHttpResponseException`, etc.).
+Get instant root cause analysis, OS/JVM tuning parameters, and step-by-step remediation for common JMeter and JVM exceptions (`BindException`, `SocketTimeoutException`, `OutOfMemoryError`, `NoHttpResponseException`, etc.). When keyword matching misses, the query is classified semantically against all error playbooks via classifier.dev (public keyless calls are not stored); pass `classifierApiKey` to use your own classifier.dev quota.
 
 ```json
 { "query": "bindexception" }
+```
+
+### triage_errors
+
+Batch-triage a run's distinct failure signatures (ideally `sampler | response code | response message` rows) into the matching error playbooks with per-playbook sample counts and share. Error text is sent to classifier.dev for zero-shot classification — public keyless calls are not stored, and obvious secrets (Bearer tokens, passwords, JWTs) are redacted before sending.
+
+```json
+{
+  "errors": [
+    { "text": "Checkout | Non HTTP response code: java.net.SocketTimeoutException | Read timed out", "count": 1240 },
+    { "text": "Login | 401 | Unauthorized", "count": 87 }
+  ],
+  "minConfidence": 0.7
+}
 ```
 
 ### lookup_component
@@ -188,6 +203,25 @@ claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --sco
 ```
 
 `--scope user` registers the server for all your projects, no matter which folder you run the command from. Restart Claude Code after adding it, then verify with `/mcp`.
+
+### Pi
+
+```bash
+pi mcp add jmeter-docs --url https://docs.jmeter.ai/api/mcp
+```
+
+This registers the server for all your projects. Verify the connection with `pi mcp list`, then start Pi and run `/mcp` to inspect the tools. Pi reaches MCP tools through its `codemode` tool by default; to declare the tools to the model directly, set `"exposure": "direct"` in `~/.pi/agent/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "jmeter-docs": {
+      "url": "https://docs.jmeter.ai/api/mcp",
+      "exposure": "direct"
+    }
+  }
+}
+```
 
 ### Qwen Code, Cursor, and other MCP clients
 
@@ -220,6 +254,41 @@ curl -X POST https://docs.jmeter.ai/api/mcp \
     }
   }'
 ```
+
+## Telemetry & privacy
+
+By default, `/api/mcp` records lightweight, anonymous operational telemetry via Cloudflare Workers Analytics Engine to help improve documentation coverage and tool reliability:
+
+- **What is recorded:** Tool name, execution latency, outcome status (`ok` / `zero_result` / `tool_error`), MCP client family (e.g., Claude Code, Cursor, VS Code), coarse Cloudflare edge region, and redacted search/lookup queries (up to 256 characters, with tokens/JWTs/passwords stripped).
+- **What is never recorded:** Client IP addresses, raw `.jmx` test plans, Groovy scripts, cURL commands, HAR traces, OpenAPI specs, error signature batches, or API keys.
+
+### How to opt out
+
+You can disable telemetry for your MCP client at any time using either a query parameter or an HTTP header:
+
+1. **URL query parameter** — append `?telemetry=0` (or `?telemetry=off`) to the endpoint URL:
+   ```json
+   {
+     "mcpServers": {
+       "jmeter-docs": {
+         "url": "https://docs.jmeter.ai/api/mcp?telemetry=0"
+       }
+     }
+   }
+   ```
+2. **HTTP header** — send `"X-MCP-Telemetry": "off"` (or standard `"DNT": "1"`) in your MCP client's headers configuration:
+   ```json
+   {
+     "mcpServers": {
+       "jmeter-docs": {
+         "url": "https://docs.jmeter.ai/api/mcp",
+         "headers": {
+           "X-MCP-Telemetry": "off"
+         }
+       }
+     }
+   }
+   ```
 
 ## Why connect the docs?
 
@@ -1312,6 +1381,7 @@ Before running large-scale tests, always debug with **1 thread and 1 loop** in G
 | `Error loading test plan` | Corrupt JMX, merge conflict markers, or version mismatch | [JMX Won't Load / Corrupt Plan](/topics/errors/jmx-wont-load-corrupt-plan/) |
 | JSON/Regex returns `NOT_FOUND` | Extractor scoping, JSONPath syntax, or correlation bug | [Extractor Default Value](/topics/errors/extractor-not-found-default-value/) |
 | `CSV: File not found` & Sharing issues | Relative path resolution or duplicate data reading | [CSV Data Set & Sharing](/topics/errors/csv-data-set-file-not-found-sharing/) |
+| `Test failed: text expected to contain` | Response/JSON/Duration assertion mismatch or failed correlation | [Assertion Failed](/topics/errors/assertion-failed/) |
 
 ---
 
@@ -4816,6 +4886,91 @@ Use `\${__groovy(org.apache.jmeter.services.FileServer.getFileServer().getBaseDi
 
 
 ---
+Title: JMeter Assertion Failed
+URL: https://docs.jmeter.ai/topics/errors/assertion-failed/
+---
+
+import RelatedContent from '../../../../components/RelatedContent.astro';
+
+# Assertion failed in JMeter
+
+## Symptom
+
+Samplers are marked failed even though the server answered, with messages such as:
+
+- `Test failed: text expected to contain /expected text/`
+- `Assertion failure message: ...` in the JTL or View Results Tree
+- `Test failed: path expected to exist, but was not found` (JSON Assertion)
+- `Duration Assertion` / `Size Assertion` failures under load
+
+The response code is usually `200` — the sampler fails because the body, duration, or size did not match what the assertion expects.
+
+## Quick diagnosis (TL;DR)
+
+The response you asserted on is not the response you got. Either the application returned different content (dynamic values, an error page with status 200), or the assertion itself is too strict — wrong pattern mode, wrong scope, or an un-correlated variable.
+
+## Common causes
+
+| Cause | Detail |
+|-------|--------|
+| Dynamic or localized content | Session IDs, timestamps, tokens, or personalized text baked into the assertion |
+| Wrong pattern-matching mode | `Matches` (full regex) or `Equals` used where `Contains` / `Substring` was intended |
+| Wrong assertion scope | Assertion applied to sub-samples (redirects, embedded resources) or to the wrong field (headers vs body) |
+| Failed upstream correlation | `${var}` resolves to a literal or default, so the asserted text never existed — see [extractor default value](/topics/errors/extractor-not-found-default-value/) and [401/403 after recording](/topics/errors/401-403-after-recording/) |
+| JSON path returns an array | JSON Assertion path matches `[]` or multiple nodes where a scalar was expected |
+| Whitespace / encoding differences | Pretty-printed JSON, CRLF, or HTML entities differ from the recorded expectation |
+| Server returned an error page with 200 | The body contains an error message while the status stays green |
+| Negative assertions inverted | `Not` checkbox or `Contains` on a value that legitimately appears |
+
+## Fix (ordered)
+
+1. Read the **Assertion failure message** in [View Results Tree](/components/view-results-tree/) — it states which assertion failed and what was expected vs received. In CLI runs, set `jmeter.save.saveservice.assertion_results_failure_message=true` so JTL rows carry the message.
+2. Reproduce once in **GUI mode with 1 thread** and compare the actual response body against the asserted pattern.
+3. Check the assertion's **scope**: "Main sample only" vs "Sub-samples", and the field being asserted (Body, Response Headers, URL Sampled).
+4. Prefer **Contains** or **Substring** pattern matching over `Equals` or `Matches` on [Response Assertion](/components/response-assertion/); if you must use regex, escape variables with `${__escapeHtml(...)}` or `\Q...\E`.
+5. For [JSON Assertion](/components/json-assertion/), verify the path with a JSON Path evaluator, check **Additionally assert value** with a tolerant match, or tick **Expect null** when absence is the expected outcome.
+6. Add a **Debug Sampler** or Debug PostProcessor to confirm the variable the assertion references actually resolved.
+7. Re-run [correlation](/topics/correlation-dynamic-values/) for any recorded token; a stale CSRF or session token often surfaces first as an assertion failure on the login page.
+8. If the server returns an error page with HTTP 200, assert on a success marker instead of the status code — see [non HTTP response code](/topics/errors/non-http-response-code/) for the inverse case.
+9. For [Duration Assertion](/components/duration-assertion/) and [Size Assertion](/components/size-assertion/) failures, check whether they only trigger under load — that points at server capacity, not script logic ([throughput stuck](/topics/errors/throughput-stuck/)).
+
+## Related tools and topics
+
+| Resource | Use when |
+|----------|----------|
+| [Assertions & SLA validation guide](/topics/jmeter-assertions-guide/) | Choosing the right assertion type and placement |
+| [Response Assertion reference](/components/response-assertion/) | Full field-by-field documentation |
+| [JSON Assertion reference](/components/json-assertion/) | JSON path expressions and operators |
+| [Correlation & dynamic values](/topics/correlation-dynamic-values/) | Assertion fails because a variable never resolved |
+| [Regex extractor builder](/tools/regex-tester/) | Testing patterns against real response bodies |
+
+## Frequently asked questions
+
+### Why does my assertion pass in the browser but fail in JMeter?
+
+JMeter does not run JavaScript or render the page, and it may receive a different body than the browser — often because a token or cookie was not correlated. Compare JMeter's recorded response with the browser's actual response body, not the rendered page.
+
+### How do I see assertion failure details in CLI (non-GUI) mode?
+
+Set `jmeter.save.saveservice.assertion_results_failure_message=true` in `user.properties` so the JTL includes the failure message, then inspect the failing rows. The HTML dashboard also surfaces assertion failures per sampler.
+
+### Should I assert on the exact response body?
+
+Almost never. Assert on a stable marker (a fixed string, JSON field, or status) with `Contains` or `Substring` matching. Exact-match assertions break on every dynamic value, timestamp, and whitespace change.
+
+<RelatedContent>
+<Fragment slot="next-step">
+Open the failing sampler in View Results Tree, read the assertion failure message, and compare the expected pattern against the actual response body.
+</Fragment>
+<Fragment slot="related">
+- [Assertions & SLA validation](/topics/jmeter-assertions-guide/)
+- [Correlation & dynamic values](/topics/correlation-dynamic-values/)
+- [Extractor default value](/topics/errors/extractor-not-found-default-value/)
+</Fragment>
+</RelatedContent>
+
+
+---
 Title: JMeter Distributed Testing RMI Connection Refused & Port Errors
 URL: https://docs.jmeter.ai/topics/errors/rmi-connection-refused-remote-testing/
 ---
@@ -5335,38 +5490,104 @@ Title: JMeter Tools
 URL: https://docs.jmeter.ai/tools/
 ---
 
-# JMeter Tools
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
+import ToolsHub from '../../../components/tools/ToolsHub.astro';
 
-Interactive helpers for common load-testing decisions. All tools run **in your browser** on [docs.jmeter.ai](https://docs.jmeter.ai): no account, no upload of test data.
+<ToolPageLayout
+  title="JMeter Interactive Tools Hub"
+  description="Client-side utilities and practice targets for performance engineers: test plan converters, sizing calculators, linters, and correlation sandboxes."
+  badge="13 Production Tools"
+  version="JMeter 5.6.3 Validated"
+>
+  <ToolsHub slot="tool" />
 
-## Available tools
+  ## Architecture & Client-Side Privacy
 
-| Tool | Use it when you need to… |
-|------|--------------------------|
-| [cURL & HAR to JMX Converter](/tools/curl-to-jmx/) | Convert cURL commands and HAR files into valid JMX test plans (supports GET, POST, QUERY, etc.) |
-| [OpenAPI to JMX Converter](/tools/openapi-to-jmx/) | Convert OpenAPI 3.x or Swagger 2.0 JSON/YAML into a parameterized JMeter test plan |
-| [JMX Linter & Health Analyzer](/tools/jmx-linter/) | Find JMeter anti-patterns, calculate a health score, and inventory a JMX test plan locally |
-| [JSR223 Groovy Builder](/tools/groovy-builder/) | Lint JMeter Groovy code and generate ready-to-paste JSR223 JMX elements |
-| [Thread Calculator](/tools/thread-calculator/) | Estimate concurrent threads / RPS, think time, and ramp-up |
-| [Heap Estimator](/tools/heap-estimator/) | Pick a starting `-Xmx` for injectors |
-| [CLI Command Builder](/tools/cli-builder/) | Assemble `jmeter -n -t` with report, HEAP, and `-J` flags |
-| [Distributed Testing Planner](/tools/distributed-planner/) | Plan pinned RMI ports, firewall rules, and cluster configs |
-| [Linux OS & Kernel Tuning](/tools/os-tuning/) | Generate `sysctl.conf`, `limits.conf`, and systemd configs for high concurrency |
-| [Coordinated Omission Calculator](/tools/coordinated-omission/) | Correct for dropped requests when throughput falls below target |
-| [Properties Cheat Sheet](/tools/properties-cheatsheet/) | Find high-impact `user.properties` quickly |
-| [Regex Extractor Builder](/tools/regex-tester/) | Paste a response (max 1 MB, browser-only) for Regex Extractor fields |
+  Every tool in this catalog executes **100% locally in your web browser**. No test plan files (`.jmx`), cURL commands, API tokens, response bodies, or infrastructure IP addresses are uploaded, logged, or sent to any remote server or third-party telemetry service.
 
-## Why these tools
+  * **Converters & Linters:** DOM parsers and Web Workers process your files entirely in browser memory.
+  * **Sizing Calculators:** Mathematical algorithms based on Little's Law, Erlang queues, and JVM footprint formulas run instantly with zero latency.
+  * **Correlation Sandbox:** Practice endpoints can be targeted against the hosted cloud edge (`https://docs.jmeter.ai/api/sandbox`) for single-thread debugging or run completely offline against your own local Node.js server (`http://localhost:8787`).
 
-Docs alone rank for "what is…", but practitioners search for calculators and cheat sheets. Each tool has shareable URL state, SEO metadata, and links back into the manual so answers stay grounded in JMeter concepts.
+  ---
+
+  ## Related reading
+
+  - [Best Practices](/user-manual/best-practices/)
+  - [Properties Reference](/user-manual/properties-reference/)
+  - [Regular Expressions](/user-manual/regular-expressions/)
+  - [Remote Testing](/user-manual/remote-test/)
+</ToolPageLayout>
 
 
-## Related reading
+---
+Title: JMeter Correlation & Practice Sandbox
+URL: https://docs.jmeter.ai/tools/correlation-sandbox/
+---
 
-- [Best Practices](/user-manual/best-practices/)
-- [Properties Reference](/user-manual/properties-reference/)
-- [Regular Expressions](/user-manual/regular-expressions/)
-- [Remote Testing](/user-manual/remote-test/)
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
+import CorrelationSandbox from '../../../components/tools/CorrelationSandbox.astro';
+
+<ToolPageLayout
+  title="JMeter Correlation & Practice Sandbox"
+  description="Practice JMeter correlation against live edge endpoints or a local server: CSRF tokens, session cookies, JWT Bearer auth, and __VIEWSTATE."
+  badge="Live Edge Ready"
+  version="JMeter 5.6.3 Validated"
+>
+  <CorrelationSandbox slot="tool" />
+
+  ## Why a Dedicated Correlation Sandbox?
+
+AI coding assistants can generate a `.jmx` file in seconds, but you still need a **safe, deterministic target server** to verify that your extractors (`Boundary Extractor`, `JSON Extractor`, `Regular Expression Extractor`), `HTTP Cookie Manager`, and `HTTP Header Manager` actually pass dynamic values from Step 1 to Step 2.
+
+This sandbox gives you two ways to run and validate your test plans:
+
+| Target Mode | Base URL | Best For |
+| :--- | :--- | :--- |
+| **Hosted Cloud Edge** | `https://docs.jmeter.ai/api/sandbox` | **1-thread functional debugging** in JMeter GUI or CLI (`ThreadGroup.num_threads = 1`). Zero setup required. |
+| **Local High-RPS Server** | `http://localhost:8787/api/sandbox` | **High-concurrency load tests (1,000+ threads)**. Click `$ node jmeter-sandbox.mjs` above to download the zero-dependency Node.js server. |
+
+---
+
+## The 4 Practice Scenarios
+
+### 01 · HTML Form + `csrf_token` + `Set-Cookie` Session Chain
+* **`GET /api/sandbox/flow1/login-page`**: Returns an HTML login form containing `<input type="hidden" name="csrf_token" value="csrf_..." />` and sets `Set-Cookie: JMETER_SANDBOX_SID=sid_...`.
+* **`POST /api/sandbox/flow1/login`**: Validates both the cookie and the `csrf_token` form parameter. If you run the **Challenge `.jmx`** without correlation, the endpoint returns `403 Forbidden` with a diagnostic message explaining whether the cookie or token failed.
+* **Related Playbook**: [HTTP 401/403 After Recording](/topics/errors/401-403-after-recording/)
+
+### 02 · OAuth2 / JWT Bearer Chain $\to$ Dynamic Order Polling
+* **`POST /api/sandbox/flow2/auth/token`**: Returns a signed token inside `$.auth.access_token`.
+* **`POST /api/sandbox/flow2/orders`**: Requires `Authorization: Bearer ${access_token}` via an `HTTP Header Manager` and returns `$.data.orderId`.
+* **`GET /api/sandbox/flow2/orders/${orderId}`**: Polls the created order using both the Bearer header and the extracted `${orderId}` path variable.
+* **Related Guide**: [JWT, OAuth & SSO Load Testing](/topics/jwt-oauth-sso/)
+
+### 03 · ASP.NET `__VIEWSTATE` Body + Response Header Ticket
+* **`GET /api/sandbox/flow3/checkout.aspx`**: Outputs a hidden `__VIEWSTATE` input field in the HTML body.
+* **`POST /api/sandbox/flow3/checkout.aspx`**: Validates `__VIEWSTATE` and issues `X-Checkout-Ticket` in the **HTTP Response Headers** (teaching header-scoped extraction).
+* **`GET /api/sandbox/flow3/confirm.aspx`**: Validates `X-Checkout-Ticket: ${checkout_ticket}`.
+* **Related Playbook**: [Works in Browser, Fails in JMeter](/topics/errors/works-in-browser-fails-in-jmeter/)
+
+### 04 · HTTP 429 Rate Limits & Silent HTTP 200 Soft Errors
+* **`GET /api/sandbox/flow4/chaos?mode=soft_error`**: Returns `HTTP 200 OK`, but the JSON body contains `{"status": "ERROR", "code": "DB_POOL_EXHAUSTED"}`. Teaches why HTTP status code 200 alone masks production failures unless paired with a `JSON Assertion` (`$.status == "OK"`).
+* **`GET /api/sandbox/flow4/chaos?mode=429`**: Simulates `HTTP 429 Too Many Requests` with `Retry-After: 2`.
+* **Related Playbooks**: [Assertions & SLA Validation](/topics/jmeter-assertions-guide/) · [HTTP 429 & WAF Rate Limits](/topics/errors/http-429-rate-limited/)
+
+---
+
+## Use via AI Agent (MCP Tool)
+
+Connected AI coding agents (Claude Code, Cursor, Windsurf, Copilot) can fetch any sandbox flow and its `.jmx` test plan directly via Model Context Protocol:
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --scope user
+```
+
+Prompt your agent:
+
+> *"Fetch the Flow 2 JWT Bearer correlation challenge from `get_correlation_sandbox`, explain why Step 2 fails, and show me the solved JMX plan."*
+
+</ToolPageLayout>
 
 
 ---
@@ -5374,11 +5595,18 @@ Title: cURL & HAR to JMeter JMX Converter
 URL: https://docs.jmeter.ai/tools/curl-to-jmx/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import CurlToJmx from '../../../components/tools/CurlToJmx.astro';
 
-<CurlToJmx />
+<ToolPageLayout
+  title="cURL & HAR to JMeter JMX Converter"
+  description="Convert cURL commands and HAR files into valid Apache JMeter JMX test plans. Supports GET, POST, PUT, DELETE, PATCH, and RFC 9838 QUERY."
+  badge="JMX Converter"
+  version="JMeter 5.6.3 Validated"
+>
+  <CurlToJmx slot="tool" />
 
-## How the Converter Works
+  ## How the Converter Works
 
 Creating JMeter test plans manually for dozens of API endpoints is slow and error-prone. This converter takes raw **cURL commands** (from Swagger, Postman, browser DevTools, or terminal history) and **HAR 1.2 network captures**, automatically structuring them into a production-grade Apache JMeter 5.6.3 `.jmx` test plan.
 
@@ -5455,17 +5683,26 @@ Prompt your AI agent:
 
 Your agent calls `convert_curl_or_har_to_jmx` and outputs schema-valid XML ready for execution.
 
+</ToolPageLayout>
+
 
 ---
 Title: OpenAPI / Swagger to JMeter JMX Converter
 URL: https://docs.jmeter.ai/tools/openapi-to-jmx/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import OpenApiToJmx from '../../../components/tools/OpenApiToJmx.astro';
 
-<OpenApiToJmx />
+<ToolPageLayout
+  title="OpenAPI / Swagger to JMeter JMX Converter"
+  description="Convert OpenAPI 3.0, OpenAPI 3.1, and Swagger 2.0 JSON or YAML into an Apache JMeter JMX test plan in your browser."
+  badge="OpenAPI Converter"
+  version="JMeter 5.6.3 Validated"
+>
+  <OpenApiToJmx slot="tool" />
 
-## What gets generated
+  ## What gets generated
 
 The converter turns each included API operation into a JMeter HTTP Request sampler and builds the surrounding Test Plan, HTTP Request Defaults, Thread Group, optional Cookie Manager, and response assertions.
 
@@ -5530,17 +5767,26 @@ Ask the agent to call `convert_openapi_to_jmx` with an OpenAPI 3.x or Swagger 2.
 - Run the generated plan through the [JMX Linter & Health Analyzer](/tools/jmx-linter/) before execution.
 - Review [JMeter Best Practices](/user-manual/best-practices/) before increasing load.
 
+</ToolPageLayout>
+
 
 ---
 Title: JMX Linter & Test Plan Health Analyzer
 URL: https://docs.jmeter.ai/tools/jmx-linter/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import JmxLinter from '../../../components/tools/JmxLinter.astro';
 
-<JmxLinter />
+<ToolPageLayout
+  title="JMX Linter & Test Plan Health Analyzer"
+  description="Lint JMeter JMX files in your browser, find load-testing anti-patterns, calculate a health score, and inspect test plan structure."
+  badge="Test Plan Linter"
+  version="JMeter 5.6.3 Validated"
+>
+  <JmxLinter slot="tool" />
 
-## How the health score works
+  ## How the health score works
 
 The linter starts at **100 points** and subtracts **25 points per error**, **10 points per warning**, and **5 points per informational finding**, with a floor of zero. The score is a fast review signal, not proof that a test plan is valid or safe to run. The analyzer uses deterministic browser-side heuristics and does not execute the plan.
 
@@ -5583,19 +5829,28 @@ claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
 
 The agent can call `lint_jmx_snippet` with a JMX snippet or full test plan and return the same findings, score, and remediation guidance.
 
+</ToolPageLayout>
+
 
 ---
 Title: JSR223 Groovy Playground & Code Builder
 URL: https://docs.jmeter.ai/tools/groovy-builder/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import GroovyBuilder from '../../../components/tools/GroovyBuilder.astro';
 import { BINDINGS_BY_ELEMENT } from '../../../lib/groovy-builder.mjs';
 import { GROOVY_BUILDER } from '../../../lib/tools-config.mjs';
 
-<GroovyBuilder />
+<ToolPageLayout
+  title="JSR223 Groovy Playground & Code Builder"
+  description="Lint JMeter-specific Groovy anti-patterns, inspect JSR223 bindings, and generate ready-to-paste JMX elements from curated recipes."
+  badge="Groovy Linter & Builder"
+  version="JMeter 5.6.3 Validated"
+>
+  <GroovyBuilder slot="tool" />
 
-## Why Groovy over BeanShell
+  ## Why Groovy over BeanShell
 
 JMeter supports Groovy through JSR223 compilation caching, while BeanShell is interpreted and substantially slower in a hot sampling path. Groovy also provides modern Java interoperability, mature JSON support, and access to JMeter's documented script bindings.
 
@@ -5659,76 +5914,82 @@ claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
 
 Ask the agent to call `get_jsr223_recipe` by recipe name or category to retrieve the curated JWT, HMAC, dynamic header, JSON extraction, and custom logging examples used by this builder. For your own script, call `lint_groovy_script` with the code and JSR223 element type to receive the same findings, binding analysis, and optional ready-to-paste JMX element XML.
 
+</ToolPageLayout>
+
 
 ---
 Title: JMeter Thread Group Calculator
 URL: https://docs.jmeter.ai/tools/thread-calculator/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import ThreadCalculator from '../../../components/tools/ThreadCalculator.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter Thread Group Calculator
+<ToolPageLayout
+  title="JMeter Thread Group Calculator"
+  description="Estimate required concurrent users, ramp-up time, and CLI heap from target throughput (RPS), response time, and think time."
+  badge="Sizing Calculator"
+  version="JMeter 5.6.3 Validated"
+>
+  <ThreadCalculator slot="tool" />
 
-Size your Thread Group before you hit Coordinated Omission. Enter a target **requests per second (RPS)**, expected **average response time**, and optional **think time** to estimate concurrent threads, ramp-up, and a rough CLI heap.
+  ## How the estimate works
 
-<ThreadCalculator />
+  Little's Law: concurrency ≈ arrival rate × cycle time. Cycle time is **response time + think time**.
 
-## How the estimate works
+  ```text
+  threads ≈ ceil(target_RPS × (response_time_ms + think_time_ms) / 1000)
+  ```
 
-Little's Law: concurrency ≈ arrival rate × cycle time. Cycle time is **response time + think time**.
+  Leave think time at **0** for busy threads (no timer). Copy Thread Group writes the fields you paste into JMeter; add a **Constant Timer** when think time is greater than zero.
 
-```text
-threads ≈ ceil(target_RPS × (response_time_ms + think_time_ms) / 1000)
-```
+  ### Example
 
-Leave think time at **0** for busy threads (no timer). Copy Thread Group writes the fields you paste into JMeter; add a **Constant Timer** when think time is greater than zero.
+  | Target RPS | Avg response time | Think time | Recommended threads |
+  |------------|-------------------|------------|---------------------|
+  | 50         | 200 ms            | 0          | 10                  |
+  | 50         | 200 ms            | 800 ms     | 50                  |
+  | 100        | 500 ms            | 0          | 50                  |
 
-### Example
+  ## What this does not include
 
-| Target RPS | Avg response time | Think time | Recommended threads |
-|------------|-------------------|------------|---------------------|
-| 50         | 200 ms            | 0          | 10                  |
-| 50         | 200 ms            | 800 ms     | 50                  |
-| 100        | 500 ms            | 0          | 50                  |
+  - Pacing that holds a fixed iteration rate (Constant Throughput Timer)
+  - Injector CPU, bandwidth, and listener overhead
+  - Server saturation (response time rises under load; re-measure)
+  - Splitting load across engines; see [Remote Testing](/user-manual/remote-test/)
 
-## What this does not include
+  ## Recommended workflow
 
-- Pacing that holds a fixed iteration rate (Constant Throughput Timer)
-- Injector CPU, bandwidth, and listener overhead
-- Server saturation (response time rises under load; re-measure)
-- Splitting load across engines; see [Remote Testing](/user-manual/remote-test/)
+  1. Measure average response time with a small pilot.
+  2. Use this calculator for an initial thread count and ramp-up.
+  3. Run CLI mode (`jmeter -n -t plan.jmx -l results.jtl`) without View Results Tree.
+  4. Compare achieved throughput in the [HTML dashboard](/user-manual/generating-dashboard/).
+  5. Scale out with [distributed testing](/topics/distributed-testing/) when one injector is saturated.
 
-## Recommended workflow
+  ## Related reading
 
-1. Measure average response time with a small pilot.
-2. Use this calculator for an initial thread count and ramp-up.
-3. Run CLI mode (`jmeter -n -t plan.jmx -l results.jtl`) without View Results Tree.
-4. Compare achieved throughput in the [HTML dashboard](/user-manual/generating-dashboard/).
-5. Scale out with [distributed testing](/topics/distributed-testing/) when one injector is saturated.
+  - [Best Practices](/user-manual/best-practices/)
+  - [Building a Test Plan](/user-manual/build-test-plan/)
+  - [Glossary](/user-manual/glossary/)
+  - [Heap Estimator](/tools/heap-estimator/)
+  - [CLI Command Builder](/tools/cli-builder/)
 
-## Related reading
-
-- [Best Practices](/user-manual/best-practices/)
-- [Building a Test Plan](/user-manual/build-test-plan/)
-- [Glossary](/user-manual/glossary/)
-- [Heap Estimator](/tools/heap-estimator/)
-- [CLI Command Builder](/tools/cli-builder/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    [Open Best Practices](/user-manual/best-practices/) and apply CLI-mode guidance before your first load run.
-  </Fragment>
-  <Fragment slot="related">
-    [Thread Group concepts](/user-manual/test-plan/) · [Remote testing](/user-manual/remote-test/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Setting thousands of threads with a 1-second ramp-up and View Results Tree enabled.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    Achieved RPS far below estimate? Re-measure response time under load and check injector CPU.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      [Open Best Practices](/user-manual/best-practices/) and apply CLI-mode guidance before your first load run.
+    </Fragment>
+    <Fragment slot="related">
+      [Thread Group concepts](/user-manual/test-plan/) · [Remote testing](/user-manual/remote-test/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Setting thousands of threads with a 1-second ramp-up and View Results Tree enabled.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      Achieved RPS far below estimate? Re-measure response time under load and check injector CPU.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>
 
 
 ---
@@ -5736,55 +5997,59 @@ Title: JMeter Heap / JVM Sizing Estimator
 URL: https://docs.jmeter.ai/tools/heap-estimator/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import HeapEstimator from '../../../components/tools/HeapEstimator.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter Heap / JVM Sizing Estimator
+<ToolPageLayout
+  title="JMeter Heap / JVM Sizing Estimator"
+  description="Pick a starting -Xmx for load injectors based on thread concurrency, engine count, scripting complexity, and listeners."
+  badge="JVM Memory Sizing"
+  version="JMeter 5.6.3 Validated"
+>
+  <HeapEstimator slot="tool" />
 
-Pick a **starting** `-Xmx` for injectors. Memory depends on threads, samplers, scripting, listeners, and response sizes. This tool gives a conservative first guess you should validate with GC logs.
+  ## How to apply the flags
 
-<HeapEstimator />
+  On the command line (example):
 
-## How to apply the flags
+  ```bash
+  JVM_ARGS="-Xms512m -Xmx2048m" jmeter -n -t plan.jmx -l results.jtl
+  ```
 
-On the command line (example):
+  Or paste HEAP into the [CLI Command Builder](/tools/cli-builder/) with the rest of the run flags.
 
-```bash
-JVM_ARGS="-Xms512m -Xmx2048m" jmeter -n -t plan.jmx -l results.jtl
-```
+  Or set `HEAP` in your JMeter startup script / environment for the version you ship.
 
-Or paste HEAP into the [CLI Command Builder](/tools/cli-builder/) with the rest of the run flags.
+  ## Practical tips
 
-Or set `HEAP` in your JMeter startup script / environment for the version you ship.
+  - Prefer **CLI mode** for load; GUI burns heap on rendering.
+  - Disable **View Results Tree / Table** during load tests.
+  - In distributed mode, size **each engine** for its share of threads.
+  - Controllers usually need less heap than injectors.
 
-## Practical tips
+  ## Related reading
 
-- Prefer **CLI mode** for load; GUI burns heap on rendering.
-- Disable **View Results Tree / Table** during load tests.
-- In distributed mode, size **each engine** for its share of threads.
-- Controllers usually need less heap than injectors.
+  - [Best Practices](/user-manual/best-practices/)
+  - [Thread Calculator](/tools/thread-calculator/)
+  - [Remote Testing](/user-manual/remote-test/)
+  - [Listeners](/user-manual/listeners/)
 
-## Related reading
-
-- [Best Practices](/user-manual/best-practices/)
-- [Thread Calculator](/tools/thread-calculator/)
-- [Remote Testing](/user-manual/remote-test/)
-- [Listeners](/user-manual/listeners/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    Size threads with the [Thread Calculator](/tools/thread-calculator/), then re-check heap.
-  </Fragment>
-  <Fragment slot="related">
-    [Properties cheat sheet](/tools/properties-cheatsheet/) · [Dashboard report](/user-manual/generating-dashboard/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Raising -Xmx endlessly while View Results Tree is still enabled.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    Still OOM? Reduce threads per engine, strip listeners, avoid saving response data.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      Size threads with the [Thread Calculator](/tools/thread-calculator/), then re-check heap.
+    </Fragment>
+    <Fragment slot="related">
+      [Properties cheat sheet](/tools/properties-cheatsheet/) · [Dashboard report](/user-manual/generating-dashboard/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Raising -Xmx endlessly while View Results Tree is still enabled.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      Still OOM? Reduce threads per engine, strip listeners, avoid saving response data.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>
 
 
 ---
@@ -5792,60 +6057,64 @@ Title: JMeter CLI Command Builder
 URL: https://docs.jmeter.ai/tools/cli-builder/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import CliBuilder from '../../../components/tools/CliBuilder.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter CLI Command Builder
+<ToolPageLayout
+  title="JMeter CLI Command Builder"
+  description="Assemble a non-GUI JMeter command for terminal runs, CI/CD pipelines, and Docker containers with report generation."
+  badge="CLI Generator"
+  version="JMeter 5.6.3 Validated"
+>
+  <CliBuilder slot="tool" />
 
-Assemble a **non-GUI** JMeter command you can paste into a terminal, GitHub Actions, or Docker. Paths stay in your browser; nothing is uploaded.
+  ## What the flags mean
 
-<CliBuilder />
+  | Flag | Purpose |
+  |------|---------|
+  | `-n` | Non-GUI (CLI) mode — required for real load |
+  | `-t` | Test plan (`.jmx`) |
+  | `-l` | Results file (`.jtl` / CSV) |
+  | `-e` `-o` | Generate the HTML dashboard into an empty folder |
+  | `-f` | Overwrite existing results and report directory |
+  | `-q` | Extra properties file (prefer this over editing `jmeter.properties`) |
+  | `-j` | JMeter log file |
+  | `-Jname=value` | Set a property for this run (`__P` in the plan) |
+  | `-R` | Remote worker hosts (start `jmeter-server` first) |
+  | `-X` | Exit remote servers when the test ends |
 
-## What the flags mean
+  `HEAP` is an environment variable consumed by JMeter startup scripts, not a `jmeter` flag. Size it with the [Heap Estimator](/tools/heap-estimator/).
 
-| Flag | Purpose |
-|------|---------|
-| `-n` | Non-GUI (CLI) mode — required for real load |
-| `-t` | Test plan (`.jmx`) |
-| `-l` | Results file (`.jtl` / CSV) |
-| `-e` `-o` | Generate the HTML dashboard into an empty folder |
-| `-f` | Overwrite existing results and report directory |
-| `-q` | Extra properties file (prefer this over editing `jmeter.properties`) |
-| `-j` | JMeter log file |
-| `-Jname=value` | Set a property for this run (`__P` in the plan) |
-| `-R` | Remote worker hosts (start `jmeter-server` first) |
-| `-X` | Exit remote servers when the test ends |
+  ## Typical workflow
 
-`HEAP` is an environment variable consumed by JMeter startup scripts, not a `jmeter` flag. Size it with the [Heap Estimator](/tools/heap-estimator/).
+  1. Size threads and think time with the [Thread Calculator](/tools/thread-calculator/).
+  2. Build the CLI command here (add `-e -o` for a dashboard artifact).
+  3. Parameterize hosts and threads with `-J` / `__P` so the same `.jmx` works in every environment.
+  4. Gate the pipeline on dashboard error rate and percentiles, not only the process exit code.
 
-## Typical workflow
+  ## Related reading
 
-1. Size threads and think time with the [Thread Calculator](/tools/thread-calculator/).
-2. Build the CLI command here (add `-e -o` for a dashboard artifact).
-3. Parameterize hosts and threads with `-J` / `__P` so the same `.jmx` works in every environment.
-4. Gate the pipeline on dashboard error rate and percentiles, not only the process exit code.
+  - [CI/CD Load Testing](/topics/ci-cd-load-testing/)
+  - [Best Practices](/user-manual/best-practices/)
+  - [Generating Dashboard](/user-manual/generating-dashboard/)
+  - [Remote Testing](/user-manual/remote-test/)
 
-## Related reading
-
-- [CI/CD Load Testing](/topics/ci-cd-load-testing/)
-- [Best Practices](/user-manual/best-practices/)
-- [Generating Dashboard](/user-manual/generating-dashboard/)
-- [Remote Testing](/user-manual/remote-test/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    Paste the command into a small CLI run, then attach the HTML report as a CI artifact.
-  </Fragment>
-  <Fragment slot="related">
-    [Heap estimator](/tools/heap-estimator/) · [Properties cheat sheet](/tools/properties-cheatsheet/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Running load in GUI mode, or pointing -o at a non-empty report folder without -f.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    Command not found? Add JMeter bin to PATH, or use the full path to jmeter.bat / jmeter.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      Paste the command into a small CLI run, then attach the HTML report as a CI artifact.
+    </Fragment>
+    <Fragment slot="related">
+      [Heap estimator](/tools/heap-estimator/) · [Properties cheat sheet](/tools/properties-cheatsheet/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Running load in GUI mode, or pointing -o at a non-empty report folder without -f.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      Command not found? Add JMeter bin to PATH, or use the full path to jmeter.bat / jmeter.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>
 
 
 ---
@@ -5853,84 +6122,92 @@ Title: Distributed Testing Port & Firewall Planner
 URL: https://docs.jmeter.ai/tools/distributed-planner/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import DistributedPlanner from '../../../components/tools/DistributedPlanner.astro';
 
-<DistributedPlanner />
+<ToolPageLayout
+  title="Distributed Testing Port & Firewall Planner"
+  description="Plan pinned RMI ports, firewall rules, and cluster configurations for AWS, Azure, GCP, Docker, and Kubernetes."
+  badge="Cluster Planner"
+  version="JMeter 5.6.3 Validated"
+>
+  <DistributedPlanner slot="tool" />
 
-## How JMeter Distributed Testing Works
+  ## How JMeter Distributed Testing Works
 
-When you launch a distributed load test from a **Controller (Master)** against remote **Workers (Injectors)**, JMeter uses **Java RMI (Remote Method Invocation)** for two-way coordination:
+  When you launch a distributed load test from a **Controller (Master)** against remote **Workers (Injectors)**, JMeter uses **Java RMI (Remote Method Invocation)** for two-way coordination:
 
-1. **RMI Registry (`server_port`, default 1099)**: The controller connects to port 1099 on each worker node to look up the remote engine service.
-2. **Worker Engine Execution (`server.rmi.localport`, e.g. 50000)**: The controller sends the compiled test plan, parameters, and startup signals to the worker's dedicated engine port.
-3. **Return Sample Callback (`client.rmi.localport`, e.g. 60000)**: As workers generate load, they stream sample results and metrics back to the controller over this return port.
+  1. **RMI Registry (`server_port`, default 1099)**: The controller connects to port 1099 on each worker node to look up the remote engine service.
+  2. **Worker Engine Execution (`server.rmi.localport`, e.g. 50000)**: The controller sends the compiled test plan, parameters, and startup signals to the worker's dedicated engine port.
+  3. **Return Sample Callback (`client.rmi.localport`, e.g. 60000)**: As workers generate load, they stream sample results and metrics back to the controller over this return port.
 
-### Why Default Setups Fail in the Cloud
+  ### Why Default Setups Fail in the Cloud
 
-By default, Java RMI uses dynamic ephemeral ports (`0`) for engine communication and callback channels. In cloud environments (AWS Security Groups, Azure NSGs, GCP Firewalls, Docker, or Kubernetes), firewalls silently drop return packets, causing tests to **freeze indefinitely at initialization**.
+  By default, Java RMI uses dynamic ephemeral ports (`0`) for engine communication and callback channels. In cloud environments (AWS Security Groups, Azure NSGs, GCP Firewalls, Docker, or Kubernetes), firewalls silently drop return packets, causing tests to **freeze indefinitely at initialization**.
 
-By **pinning all three ports** (`server_port`, `server.rmi.localport`, and `client.rmi.localport`), you can write strict, deterministic firewall rules without opening wide port ranges.
+  By **pinning all three ports** (`server_port`, `server.rmi.localport`, and `client.rmi.localport`), you can write strict, deterministic firewall rules without opening wide port ranges.
 
----
+  ---
 
-## Step-by-Step Distributed Setup Guide
+  ## Step-by-Step Distributed Setup Guide
 
-### 1. Configure Controller (Master) Node
+  ### 1. Configure Controller (Master) Node
 
-Place these properties in `bin/user.properties` on your controller machine:
+  Place these properties in `bin/user.properties` on your controller machine:
 
-```properties
-remote_hosts=10.0.1.10:1099,10.0.1.11:1099,10.0.1.12:1099
-client.rmi.localport=60000
-mode=StrippedBatch
-server.rmi.ssl.disable=false
-java.rmi.server.hostname=10.0.0.5
-```
+  ```properties
+  remote_hosts=10.0.1.10:1099,10.0.1.11:1099,10.0.1.12:1099
+  client.rmi.localport=60000
+  mode=StrippedBatch
+  server.rmi.ssl.disable=false
+  java.rmi.server.hostname=10.0.0.5
+  ```
 
-Launch the distributed run in CLI mode:
+  Launch the distributed run in CLI mode:
 
-```bash
-jmeter -n -t test.jmx -R 10.0.1.10,10.0.1.11,10.0.1.12 -l results.jtl -e -o ./report
-```
+  ```bash
+  jmeter -n -t test.jmx -R 10.0.1.10,10.0.1.11,10.0.1.12 -l results.jtl -e -o ./report
+  ```
 
-### 2. Configure Worker (Server) Nodes
+  ### 2. Configure Worker (Server) Nodes
 
-On each worker node, configure `bin/user.properties`:
+  On each worker node, configure `bin/user.properties`:
 
-```properties
-server_port=1099
-server.rmi.localport=50000
-server.rmi.ssl.disable=false
-```
+  ```properties
+  server_port=1099
+  server.rmi.localport=50000
+  server.rmi.ssl.disable=false
+  ```
 
-Start the daemon specifying its routable network IP address:
+  Start the daemon specifying its routable network IP address:
 
-```bash
-./bin/jmeter-server -Djava.rmi.server.hostname=10.0.1.10
-```
+  ```bash
+  ./bin/jmeter-server -Djava.rmi.server.hostname=10.0.1.10
+  ```
 
-### 3. Verify Network Reachability Before Running Tests
+  ### 3. Verify Network Reachability Before Running Tests
 
-Always test bidirectional TCP connectivity with `nc` (Netcat) or `Test-NetConnection` (PowerShell) before starting tests:
+  Always test bidirectional TCP connectivity with `nc` (Netcat) or `Test-NetConnection` (PowerShell) before starting tests:
 
-```bash
-# Test from Controller to Worker
-nc -zv 10.0.1.10 1099
-nc -zv 10.0.1.10 50000
+  ```bash
+  # Test from Controller to Worker
+  nc -zv 10.0.1.10 1099
+  nc -zv 10.0.1.10 50000
 
-# Test from Worker to Controller
-nc -zv 10.0.0.5 60000
-```
+  # Test from Worker to Controller
+  nc -zv 10.0.0.5 60000
+  ```
 
----
+  ---
 
-## Related Guides & Playbooks
+  ## Related Guides & Playbooks
 
-- [Remote Testing User Manual](/user-manual/remote-test/)
-- [Step-by-Step Distributed Testing Tutorial](/user-manual/jmeter-distributed-testing-step-by-step/)
-- [RMI Connection Refused & Port Troubleshooting](/topics/errors/rmi-connection-refused-remote-testing/)
-- [Docker & Kubernetes Deployment Guide](/topics/docker-kubernetes/)
-- [Heap Estimator for Injector Engines](/tools/heap-estimator/)
+  - [Remote Testing User Manual](/user-manual/remote-test/)
+  - [Step-by-Step Distributed Testing Tutorial](/user-manual/jmeter-distributed-testing-step-by-step/)
+  - [RMI Connection Refused & Port Troubleshooting](/topics/errors/rmi-connection-refused-remote-testing/)
+  - [Docker & Kubernetes Deployment Guide](/topics/docker-kubernetes/)
+  - [Heap Estimator for Injector Engines](/tools/heap-estimator/)
+</ToolPageLayout>
 
 
 ---
@@ -5938,106 +6215,108 @@ Title: Linux Kernel & OS Tuning Configurator
 URL: https://docs.jmeter.ai/tools/os-tuning/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import OsTuningConfigurator from '../../../components/tools/OsTuningConfigurator.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-When simulating thousands of concurrent virtual users or pushing high throughput, default Linux operating system settings bottleneck load injectors before JMeter reaches its hardware capacity.
+<ToolPageLayout
+  title="Linux Kernel & OS Tuning Configurator"
+  description="Generate sysctl.conf, limits.conf, and systemd configs to prevent ulimit errors, port exhaustion, and GC latency spikes under high load."
+  badge="Kernel Tuning"
+  version="Linux 4.x / 5.x / 6.x"
+>
+  <OsTuningConfigurator slot="tool" />
 
-Use this interactive configurator to generate tuned `/etc/sysctl.d/99-jmeter-tuning.conf`, `/etc/security/limits.d/99-jmeter.conf`, systemd overrides, and Docker/Kubernetes parameters tailored to your target scale and system RAM.
+  ## Why Default Linux Limits Fail Under Load
 
-<OsTuningConfigurator />
+  Linux out-of-the-box is configured for balanced desktop and general-purpose server workloads. High-volume load generators stress the TCP stack and operating system kernel in distinct ways:
 
----
+  ### 1. File Descriptor Limits (`Too many open files`)
+  Every outbound TCP socket connection, active JTL results writer, and loaded JAR library consumes a file descriptor.
+  - **Default limit**: `ulimit -n` is typically `1024` on standard distributions.
+  - **Under load**: A test running 2,000 threads opening connections simultaneously will crash with `java.io.IOException: Too many open files`.
+  - **Solution**: Set `nofile` to `524,288` or `1,048,576` in `limits.conf` and `systemd` manager configs.
 
-## Why Default Linux Limits Fail Under Load
+  ### 2. Ephemeral Port Exhaustion (`BindException: Address already in use`)
+  When JMeter opens outbound HTTP/1.1 connections without keep-alive or with rapid connection cycling, closed sockets sit in the `TIME_WAIT` state for 60 seconds to ensure lingering network packets are drained.
+  - **Default range**: `net.ipv4.ip_local_port_range` defaults to `32768 60999` (~28,231 ports).
+  - **Under load**: Generating 1,000 new connections per second exhausts all 28k ports in less than 30 seconds, throwing `java.net.BindException: Address already in use`.
+  - **Solution**: Expand the range to `1024 65535` (64,512 ports), enable `net.ipv4.tcp_tw_reuse = 1`, and reduce `net.ipv4.tcp_fin_timeout = 15`.
 
-Linux out-of-the-box is configured for balanced desktop and general-purpose server workloads. High-volume load generators stress the TCP stack and operating system kernel in distinct ways:
+  > [!WARNING]
+  > **Never enable `net.ipv4.tcp_tw_recycle`**: This legacy parameter was deprecated in Linux 4.10 and removed in 4.12 because it dropped valid SYN packets from clients or load injectors operating behind NAT / load balancers. Always use `net.ipv4.tcp_tw_reuse = 1` instead.
 
-### 1. File Descriptor Limits (`Too many open files`)
-Every outbound TCP socket connection, active JTL results writer, and loaded JAR library consumes a file descriptor.
-- **Default limit**: `ulimit -n` is typically `1024` on standard distributions.
-- **Under load**: A test running 2,000 threads opening connections simultaneously will crash with `java.io.IOException: Too many open files`.
-- **Solution**: Set `nofile` to `524,288` or `1,048,576` in `limits.conf` and `systemd` manager configs.
+  ### 3. SYN & Listen Queue Backlog Overflows
+  During rapid test ramp-up or surge testing, connection requests queue up in the kernel socket listen queue.
+  - **Default backlog**: `net.core.somaxconn` defaults to `128` or `1024`.
+  - **Under load**: Bursts overflow the queue, causing silent SYN drops and artificial connection timeouts.
+  - **Solution**: Increase `net.core.somaxconn = 65535` and `net.ipv4.tcp_max_syn_backlog = 65535`.
 
-### 2. Ephemeral Port Exhaustion (`BindException: Address already in use`)
-When JMeter opens outbound HTTP/1.1 connections without keep-alive or with rapid connection cycling, closed sockets sit in the `TIME_WAIT` state for 60 seconds to ensure lingering network packets are drained.
-- **Default range**: `net.ipv4.ip_local_port_range` defaults to `32768 60999` (~28,231 ports).
-- **Under load**: Generating 1,000 new connections per second exhausts all 28k ports in less than 30 seconds, throwing `java.net.BindException: Address already in use`.
-- **Solution**: Expand the range to `1024 65535` (64,512 ports), enable `net.ipv4.tcp_tw_reuse = 1`, and reduce `net.ipv4.tcp_fin_timeout = 15`.
+  ### 4. Swapping Protection (`vm.swappiness = 1`)
+  The Linux kernel aggressively pages memory to swap space when RAM usage increases.
+  - **Default swappiness**: `60` (very prone to paging).
+  - **Under load**: If inactive JVM heap memory is paged out to disk, the next Garbage Collection cycle must read pages back from storage, freezing threads and creating catastrophic **100ms–2000ms latency spikes**.
+  - **Solution**: Set `vm.swappiness = 1` to ensure the kernel only swaps under critical out-of-memory emergency pressure.
 
-> [!WARNING]
-> **Never enable `net.ipv4.tcp_tw_recycle`**: This legacy parameter was deprecated in Linux 4.10 and removed in 4.12 because it dropped valid SYN packets from clients or load injectors operating behind NAT / load balancers. Always use `net.ipv4.tcp_tw_reuse = 1` instead.
+  ---
 
-### 3. SYN & Listen Queue Backlog Overflows
-During rapid test ramp-up or surge testing, connection requests queue up in the kernel socket listen queue.
-- **Default backlog**: `net.core.somaxconn` defaults to `128` or `1024`.
-- **Under load**: Bursts overflow the queue, causing silent SYN drops and artificial connection timeouts.
-- **Solution**: Increase `net.core.somaxconn = 65535` and `net.ipv4.tcp_max_syn_backlog = 65535`.
+  ## How to Apply These Settings
 
-### 4. Swapping Protection (`vm.swappiness = 1`)
-The Linux kernel aggressively pages memory to swap space when RAM usage increases.
-- **Default swappiness**: `60` (very prone to paging).
-- **Under load**: If inactive JVM heap memory is paged out to disk, the next Garbage Collection cycle must read pages back from storage, freezing threads and creating catastrophic **100ms–2000ms latency spikes**.
-- **Solution**: Set `vm.swappiness = 1` to ensure the kernel only swaps under critical out-of-memory emergency pressure.
+  ### 1. Apply Sysctl Kernel Parameters
+  Create a dedicated file in `/etc/sysctl.d/`:
 
----
+  ```bash
+  sudo nano /etc/sysctl.d/99-jmeter-tuning.conf
+  # Paste the generated sysctl.conf snippet
+  sudo sysctl --system
+  ```
 
-## How to Apply These Settings
+  ### 2. Apply File Descriptor Limits
+  Place user limits in `/etc/security/limits.d/`:
 
-### 1. Apply Sysctl Kernel Parameters
-Create a dedicated file in `/etc/sysctl.d/`:
+  ```bash
+  sudo nano /etc/security/limits.d/99-jmeter.conf
+  # Paste the generated limits.conf snippet
+  ```
 
-```bash
-sudo nano /etc/sysctl.d/99-jmeter-tuning.conf
-# Paste the generated sysctl.conf snippet
-sudo sysctl --system
-```
+  > [!NOTE]
+  > For `limits.conf` changes to take effect on interactive sessions, log out and log back in, then verify with `ulimit -n`. For background services managed by **systemd**, configure `DefaultLimitNOFILE` in `/etc/systemd/system.conf` and reload systemd with `sudo systemctl daemon-reexec`.
 
-### 2. Apply File Descriptor Limits
-Place user limits in `/etc/security/limits.d/`:
+  ### 3. Verify Active Settings
+  Run this quick diagnostic to confirm your kernel accepted the values:
 
-```bash
-sudo nano /etc/security/limits.d/99-jmeter.conf
-# Paste the generated limits.conf snippet
-```
+  ```bash
+  ulimit -n
+  sysctl net.ipv4.ip_local_port_range net.ipv4.tcp_tw_reuse net.core.somaxconn vm.swappiness
+  ss -s
+  ```
 
-> [!NOTE]
-> For `limits.conf` changes to take effect on interactive sessions, log out and log back in, then verify with `ulimit -n`. For background services managed by **systemd**, configure `DefaultLimitNOFILE` in `/etc/systemd/system.conf` and reload systemd with `sudo systemctl daemon-reexec`.
+  ---
 
-### 3. Verify Active Settings
-Run this quick diagnostic to confirm your kernel accepted the values:
+  ## Related Guides & Error Playbooks
 
-```bash
-ulimit -n
-sysctl net.ipv4.ip_local_port_range net.ipv4.tcp_tw_reuse net.core.somaxconn vm.swappiness
-ss -s
-```
+  - [JMeter Performance Tuning Guide](/topics/jmeter-performance-tuning-guide/)
+  - [Too Many Open Files (ulimit) Playbook](/topics/errors/too-many-open-files-ulimit/)
+  - [BindException / Port Exhaustion Playbook](/topics/errors/bind-exception-address-in-use/)
+  - [Heap / JVM Sizing Estimator](/tools/heap-estimator/)
+  - [Distributed Testing Planner](/tools/distributed-planner/)
+  - [CLI Command Builder](/tools/cli-builder/)
 
----
-
-## Related Guides & Error Playbooks
-
-- [JMeter Performance Tuning Guide](/topics/jmeter-performance-tuning-guide/)
-- [Too Many Open Files (ulimit) Playbook](/topics/errors/too-many-open-files-ulimit/)
-- [BindException / Port Exhaustion Playbook](/topics/errors/bind-exception-address-in-use/)
-- [Heap / JVM Sizing Estimator](/tools/heap-estimator/)
-- [Distributed Testing Planner](/tools/distributed-planner/)
-- [CLI Command Builder](/tools/cli-builder/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    Size your JVM heap with the [Heap Estimator](/tools/heap-estimator/) and build CLI run flags with the [CLI Builder](/tools/cli-builder/).
-  </Fragment>
-  <Fragment slot="related">
-    [Distributed Testing Planner](/tools/distributed-planner/) · [Performance Tuning Guide](/topics/jmeter-performance-tuning-guide/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Enabling deprecated tcp_tw_recycle, or forgetting that systemd services ignore /etc/security/limits.conf.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    Still seeing BindException? Check if JMeter HTTP Request Defaults has "Use KeepAlive" enabled to reduce connection churn.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      Size your JVM heap with the [Heap Estimator](/tools/heap-estimator/) and build CLI run flags with the [CLI Builder](/tools/cli-builder/).
+    </Fragment>
+    <Fragment slot="related">
+      [Distributed Testing Planner](/tools/distributed-planner/) · [Performance Tuning Guide](/topics/jmeter-performance-tuning-guide/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Enabling deprecated tcp_tw_recycle, or forgetting that systemd services ignore /etc/security/limits.conf.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      Still seeing BindException? Check if JMeter HTTP Request Defaults has "Use KeepAlive" enabled to reduce connection churn.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>
 
 
 ---
@@ -6045,101 +6324,101 @@ Title: JMeter Coordinated Omission Calculator
 URL: https://docs.jmeter.ai/tools/coordinated-omission/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import CoordinatedOmission from '../../../components/tools/CoordinatedOmission.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter Coordinated Omission Calculator
+<ToolPageLayout
+  title="JMeter Coordinated Omission Calculator"
+  description="Calculate the measurement bias, dropped requests, and true latency inflation when JMeter throughput falls below target RPS."
+  badge="Measurement Bias Calculator"
+  version="JMeter 5.6.3 Validated"
+>
+  <CoordinatedOmission slot="tool" />
 
-When the server can't keep up with your target throughput, JMeter's Thread Group
-silently drops requests instead of queuing them. This produces **artificially low**
-response times and **inflated** percentiles. Enter your target RPS, actual RPS,
-average response time, and test duration to compute the correction factor, lost
-requests, corrected response time, and the thread count you should have used.
+  ## What is coordinated omission?
 
-<CoordinatedOmission />
+  **Coordinated Omission** is a measurement bias that occurs when a load generator
+  schedules the next request at a fixed interval (e.g., every 20 ms for 50 RPS) but
+  fails to account for the time already spent waiting on the previous request.
 
-## What is coordinated omission?
+  When the server degrades:
 
-**Coordinated Omission** is a measurement bias that occurs when a load generator
-schedules the next request at a fixed interval (e.g., every 20 ms for 50 RPS) but
-fails to account for the time already spent waiting on the previous request.
+  1. Threads get "stuck" waiting for slow responses.
+  2. Fewer requests are sent than the target rate.
+  3. The "missing" requests are silently dropped - never queued.
+  4. Measured throughput drops, but response times look artificially low.
 
-When the server degrades:
+  **Example:** You target 50 RPS with 100 threads. Server degrades to 5-second
+  response time. Instead of 50 RPS, you get ~20 RPS (100 threads / 5s). Your
+  throughput drops by 60%, and your average response time doesn't reflect what
+  real users would experience.
 
-1. Threads get "stuck" waiting for slow responses.
-2. Fewer requests are sent than the target rate.
-3. The "missing" requests are silently dropped - never queued.
-4. Measured throughput drops, but response times look artificially low.
+  ## How the correction works
 
-**Example:** You target 50 RPS with 100 threads. Server degrades to 5-second
-response time. Instead of 50 RPS, you get ~20 RPS (100 threads / 5s). Your
-throughput drops by 60%, and your average response time doesn't reflect what
-real users would experience.
+  The calculator uses the **queue-depth model** from Gil Tene's talk
+  *[How NOT to Measure Latency](https://www.infoq.com/presentations/latency-response-time/)*:
 
-## How the correction works
+  ```text
+  correction_factor = target_RPS / actual_RPS
+  lost_requests     = (target_RPS - actual_RPS) × duration_seconds
+  queue_depth       = (target_RPS - actual_RPS) × (avg_RT_ms / 1000)
+  corrected_RT      = avg_RT_ms + (queue_depth × avg_RT_ms)
+  needed_threads    = target_RPS × (avg_RT_ms / 1000)
+  ```
 
-The calculator uses the **queue-depth model** from Gil Tene's talk
-*[How NOT to Measure Latency](https://www.infoq.com/presentations/latency-response-time/)*:
+  When `target_RPS > actual_RPS`, the correction factor tells you how much your
+  measured metrics are skewed. A factor of 2.5x means your real response time is
+  roughly 2.5× what JMeter reported.
 
-```text
-correction_factor = target_RPS / actual_RPS
-lost_requests     = (target_RPS - actual_RPS) × duration_seconds
-queue_depth       = (target_RPS - actual_RPS) × (avg_RT_ms / 1000)
-corrected_RT      = avg_RT_ms + (queue_depth × avg_RT_ms)
-needed_threads    = target_RPS × (avg_RT_ms / 1000)
-```
+  ## Example
 
-When `target_RPS > actual_RPS`, the correction factor tells you how much your
-measured metrics are skewed. A factor of 2.5x means your real response time is
-roughly 2.5× what JMeter reported.
+  | Target RPS | Actual RPS | Avg RT | Duration | Correction | Lost reqs | Corrected RT |
+  |------------|------------|--------|----------|------------|-----------|--------------|
+  | 50         | 20         | 5,000ms| 60s      | 2.5x       | 1,800     | ~12,500ms    |
+  | 100        | 80         | 3,000ms| 120s     | 1.25x      | 2,400     | ~3,750ms     |
+  | 200        | 200        | 500ms  | 60s      | 1.0x       | 0         | 500ms        |
 
-## Example
+  ## What this does not include
 
-| Target RPS | Actual RPS | Avg RT | Duration | Correction | Lost reqs | Corrected RT |
-|------------|------------|--------|----------|------------|-----------|--------------|
-| 50         | 20         | 5,000ms| 60s      | 2.5x       | 1,800     | ~12,500ms    |
-| 100        | 80         | 3,000ms| 120s     | 1.25x      | 2,400     | ~3,750ms     |
-| 200        | 200        | 500ms  | 60s      | 1.0x       | 0         | 500ms        |
+  - **Percentile correction** - the queue-depth model corrects averages; for
+    percentile correction, use a proper histogram (HdrHistogram) in your test.
+  - **Think time / pacing** - real users pause between actions; this calculator
+    assumes continuous load.
+  - **Server-side queuing** - if the server itself queues requests, the corrected
+    RT is a lower bound on what users experience.
+  - **Distributed test aggregation** - run this per engine and combine results.
 
-## What this does not include
+  ## Recommended workflow
 
-- **Percentile correction** - the queue-depth model corrects averages; for
-  percentile correction, use a proper histogram (HdrHistogram) in your test.
-- **Think time / pacing** - real users pause between actions; this calculator
-  assumes continuous load.
-- **Server-side queuing** - if the server itself queues requests, the corrected
-  RT is a lower bound on what users experience.
-- **Distributed test aggregation** - run this per engine and combine results.
+  1. Run your test and record target RPS, actual RPS, avg response time, and duration.
+  2. Use this calculator to compute the correction factor and lost requests.
+  3. If the factor is > 1.25, your results are significantly skewed.
+  4. Re-run with more threads (use the **Thread Calculator**) or lower the target RPS.
+  5. For accurate percentiles, instrument with HdrHistogram in your JMeter test.
 
-## Recommended workflow
+  ## Related reading
 
-1. Run your test and record target RPS, actual RPS, avg response time, and duration.
-2. Use this calculator to compute the correction factor and lost requests.
-3. If the factor is > 1.25, your results are significantly skewed.
-4. Re-run with more threads (use the **Thread Calculator**) or lower the target RPS.
-5. For accurate percentiles, instrument with HdrHistogram in your JMeter test.
+  - [Best Practices](/user-manual/best-practices/)
+  - [Thread Calculator](/tools/thread-calculator/)
+  - [Heap Estimator](/tools/heap-estimator/)
+  - [Generating Dashboard](/user-manual/generating-dashboard/)
 
-## Related reading
-
-- [Best Practices](/user-manual/best-practices/)
-- [Thread Calculator](/tools/thread-calculator/)
-- [Heap Estimator](/tools/heap-estimator/)
-- [Generating Dashboard](/user-manual/generating-dashboard/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    Size your Thread Group correctly with the [Thread Calculator](/tools/thread-calculator/) to avoid coordinated omission in the first place.
-  </Fragment>
-  <Fragment slot="related">
-    [Best Practices](/user-manual/best-practices/) · [Remote testing](/user-manual/remote-test/) · [Dashboard report](/user-manual/generating-dashboard/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Setting a high target RPS with too few threads, causing throughput to drop below target while response times look artificially low.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    Correction factor > 2? You need significantly more threads or a lower target RPS. Use the Thread Calculator to size correctly.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      Size your Thread Group correctly with the [Thread Calculator](/tools/thread-calculator/) to avoid coordinated omission in the first place.
+    </Fragment>
+    <Fragment slot="related">
+      [Best Practices](/user-manual/best-practices/) · [Remote testing](/user-manual/remote-test/) · [Dashboard report](/user-manual/generating-dashboard/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Setting a high target RPS with too few threads, causing throughput to drop below target while response times look artificially low.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      Correction factor > 2? You need significantly more threads or a lower target RPS. Use the Thread Calculator to size correctly.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>
 
 
 ---
@@ -6147,36 +6426,40 @@ Title: JMeter Properties Cheat Sheet
 URL: https://docs.jmeter.ai/tools/properties-cheatsheet/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import PropertiesCheatsheet from '../../../components/tools/PropertiesCheatsheet.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter Properties Cheat Sheet
+<ToolPageLayout
+  title="JMeter Properties Cheat Sheet"
+  description="Search and filter high-impact JMeter properties for results logging, HTTP network settings, SSL, distributed testing, and HTML dashboards."
+  badge="Property Reference"
+  version="JMeter 5.6.3 Validated"
+>
+  <PropertiesCheatsheet slot="tool" />
 
-Search the properties people actually change for load tests. Always set overrides in **`user.properties`** (or `-J` / `-q`); do not edit stock `jmeter.properties` if you can avoid it.
+  ## Related reading
 
-<PropertiesCheatsheet />
+  - Full catalog: [Properties Reference](/user-manual/properties-reference/)
+  - [Best Practices](/user-manual/best-practices/)
+  - [Remote Testing](/user-manual/remote-test/)
+  - [Dashboard Report](/user-manual/generating-dashboard/)
 
-## Related reading
-
-- Full catalog: [Properties Reference](/user-manual/properties-reference/)
-- [Best Practices](/user-manual/best-practices/)
-- [Remote Testing](/user-manual/remote-test/)
-- [Dashboard Report](/user-manual/generating-dashboard/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    Copy a property into <code>user.properties</code>, restart JMeter, and verify with a small CLI run.
-  </Fragment>
-  <Fragment slot="related">
-    [Hints and tips](/user-manual/hints-and-tips/) · [Heap estimator](/tools/heap-estimator/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Editing jmeter.properties in place so upgrades wipe your customizations.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    Property not applied? Confirm user.properties path and that JMeter was fully restarted.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      Copy a property into <code>user.properties</code>, restart JMeter, and verify with a small CLI run.
+    </Fragment>
+    <Fragment slot="related">
+      [Hints and tips](/user-manual/hints-and-tips/) · [Heap estimator](/tools/heap-estimator/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Editing jmeter.properties in place so upgrades wipe your customizations.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      Property not applied? Confirm user.properties path and that JMeter was fully restarted.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>
 
 
 ---
@@ -6184,61 +6467,65 @@ Title: JMeter Regex Extractor Builder
 URL: https://docs.jmeter.ai/tools/regex-tester/
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import RegexTester from '../../../components/tools/RegexTester.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter Regex Extractor Builder
+<ToolPageLayout
+  title="JMeter Regex Extractor Builder"
+  description="Paste an HTTP response body to propose Regular Expression Extractor settings for session tokens, CSRF inputs, UUIDs, and JWTs."
+  badge="Regex Extractor"
+  version="JMeter 5.6.3 Validated"
+>
+  <RegexTester slot="tool" />
 
-Paste a response body. The tool scans for likely **dynamic values** (tokens, CSRF fields, UUIDs, JWTs) and proposes **Regular Expression Extractor** settings you can copy into JMeter.
+  ## Privacy and limits
 
-<RegexTester />
+  | Rule | Detail |
+  |------|--------|
+  | **Where it runs** | 100% in your browser (this page). |
+  | **What is sent** | Nothing: no upload, no server analysis. |
+  | **Max body size** | **1 MB** (1,048,576 bytes). Larger pastes are rejected so the tab stays responsive. |
+  | **Scope** | **Regular Expression Extractor** only (not JSON Extractor / Boundary Extractor). |
 
-## Privacy and limits
+  ## Extractor field mapping
 
-| Rule | Detail |
-|------|--------|
-| **Where it runs** | 100% in your browser (this page). |
-| **What is sent** | Nothing: no upload, no server analysis. |
-| **Max body size** | **1 MB** (1,048,576 bytes). Larger pastes are rejected so the tab stays responsive. |
-| **Scope** | **Regular Expression Extractor** only (not JSON Extractor / Boundary Extractor). |
+  | JMeter field | This tool |
+  |--------------|-----------|
+  | Name of created variable | Suggested from key / type |
+  | Regular Expression | Generated pattern with one capture group |
+  | Template | `$1$` |
+  | Match No. | `1` (first match) |
+  | Default Value | `NOT_FOUND` |
 
-## Extractor field mapping
+  ## Tips
 
-| JMeter field | This tool |
-|--------------|-----------|
-| Name of created variable | Suggested from key / type |
-| Regular Expression | Generated pattern with one capture group |
-| Template | `$1$` |
-| Match No. | `1` (first match) |
-| Default Value | `NOT_FOUND` |
+  - Prefer **JSON Extractor** when the entire body is JSON; more stable than regex.
+  - Always verify with a **Debug Sampler** or View Results Tree; browser JS RegExp is close to Java but not identical.
+  - If nothing is found, paste a **smaller fragment** that still includes the token and its key.
 
-## Tips
+  ## Related reading
 
-- Prefer **JSON Extractor** when the entire body is JSON; more stable than regex.
-- Always verify with a **Debug Sampler** or View Results Tree; browser JS RegExp is close to Java but not identical.
-- If nothing is found, paste a **smaller fragment** that still includes the token and its key.
+  - [Regular Expressions](/user-manual/regular-expressions/)
+  - [Functions and Variables](/user-manual/functions/)
+  - [HTTP Recorder](/topics/http-recorder/)
+  - [Component Reference](/user-manual/component-reference/)
 
-## Related reading
-
-- [Regular Expressions](/user-manual/regular-expressions/)
-- [Functions and Variables](/user-manual/functions/)
-- [HTTP Recorder](/topics/http-recorder/)
-- [Component Reference](/user-manual/component-reference/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    Add a Regular Expression Extractor under your sampler, paste the fields, then confirm with a Debug Sampler.
-  </Fragment>
-  <Fragment slot="related">
-    [Functions guide](/topics/functions-and-variables/) · [Best practices](/user-manual/best-practices/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Using Match No. 0 (random) in load tests when you need a stable extraction.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    No candidates? Paste a smaller fragment that still includes the token.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      Add a Regular Expression Extractor under your sampler, paste the fields, then confirm with a Debug Sampler.
+    </Fragment>
+    <Fragment slot="related">
+      [Functions guide](/topics/functions-and-variables/) · [Best practices](/user-manual/best-practices/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Using Match No. 0 (random) in load tests when you need a stable extraction.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      No candidates? Paste a smaller fragment that still includes the token.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>
 
 
 ---

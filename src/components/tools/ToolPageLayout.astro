@@ -1,0 +1,113 @@
+---
+/**
+ * Dedicated Page Layout for Interactive JMeter Tools.
+ * Provides maximum screen estate, clean developer workspace header,
+ * quick-switch dropdown between tools, and eliminates doc article baggage.
+ * Strict Rule: File must remain <= 500 lines.
+ */
+interface Props {
+  title: string;
+  description: string;
+  badge?: string;
+  version?: string;
+}
+
+const {
+  title,
+  description,
+  badge = 'Live Interactive Tool',
+  version = 'JMeter 5.6.3 Validated',
+} = Astro.props;
+
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isHubPage = currentPath === '/tools';
+
+const ALL_TOOLS = [
+  { label: 'Interactive Tools Hub', href: '/tools/' },
+  { label: 'Correlation & Practice Sandbox', href: '/tools/correlation-sandbox/' },
+  { label: 'cURL & HAR to JMX Converter', href: '/tools/curl-to-jmx/' },
+  { label: 'OpenAPI / Swagger to JMX', href: '/tools/openapi-to-jmx/' },
+  { label: 'JMX Linter & Health Analyzer', href: '/tools/jmx-linter/' },
+  { label: 'JSR223 Groovy Builder', href: '/tools/groovy-builder/' },
+  { label: 'Thread Group Calculator', href: '/tools/thread-calculator/' },
+  { label: 'Heap Memory Estimator', href: '/tools/heap-estimator/' },
+  { label: 'CLI Command Builder', href: '/tools/cli-builder/' },
+  { label: 'Distributed Testing Planner', href: '/tools/distributed-planner/' },
+  { label: 'Linux OS & Kernel Tuning', href: '/tools/os-tuning/' },
+  { label: 'Coordinated Omission Calculator', href: '/tools/coordinated-omission/' },
+  { label: 'Properties Cheat Sheet', href: '/tools/properties-cheatsheet/' },
+  { label: 'Regex Extractor Builder', href: '/tools/regex-tester/' },
+];
+---
+
+<div class="tool-dedicated-page">
+  <!-- Clean Apple/Linear Workspace Header (div, not <header>: PageFrame applies position:sticky to every header inside [data-slot=layout]) -->
+  <div class="tool-page-header">
+    <div class="tool-page-nav-row">
+      <nav class="tool-page-nav" aria-label="Breadcrumb">
+        {isHubPage ? (
+          <a href="/" class="tool-nav-back">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14" aria-hidden="true">
+              <path d="M10 13L5 8L10 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Docs Home</span>
+          </a>
+        ) : (
+          <a href="/tools/" class="tool-nav-back">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14" aria-hidden="true">
+              <path d="M10 13L5 8L10 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>All Tools Hub</span>
+          </a>
+        )}
+        <span class="tool-nav-sep" aria-hidden="true">/</span>
+        <span class="tool-nav-current">{title}</span>
+      </nav>
+
+      <!-- Quick Switcher Dropdown -->
+      <div class="tool-switcher-wrap">
+        <label for="tool-quick-switch" class="sr-only">Switch Tool</label>
+        <select
+          id="tool-quick-switch"
+          class="tool-quick-switch"
+          onchange="if (this.value) window.location.href = this.value"
+        >
+          <option value="" disabled selected>Quick Jump to Tool...</option>
+          {ALL_TOOLS.map((t) => (
+            <option value={t.href} selected={t.href.replace(/\/$/, '') === currentPath}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+
+    <div class="tool-title-row">
+      <div class="tool-title-wrap">
+        <h1 class="tool-title-text">{title}</h1>
+        <p class="tool-desc-text">{description}</p>
+      </div>
+      <div class="tool-badges-wrap">
+        {badge && (
+          <span class="tool-live-pill">
+            <span class="tool-pulse-dot" aria-hidden="true"></span>
+            <span>{badge}</span>
+          </span>
+        )}
+        {version && (
+          <span class="tool-version-pill">{version}</span>
+        )}
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Tool Workspace -->
+  <section class="tool-workspace-section">
+    <slot name="tool" />
+  </section>
+
+  <!-- Documentation & Educational Content -->
+  <article class="tool-documentation-section">
+    <slot />
+  </article>
+</div>

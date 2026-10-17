@@ -11,35 +11,40 @@ difficulty: intermediate
 guideType: reference
 estimatedReadTime: "4 min read"
 lastVerified: "JMeter 5.6"
+template: splash
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import PropertiesCheatsheet from '../../../components/tools/PropertiesCheatsheet.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter Properties Cheat Sheet
+<ToolPageLayout
+  title="JMeter Properties Cheat Sheet"
+  description="Search and filter high-impact JMeter properties for results logging, HTTP network settings, SSL, distributed testing, and HTML dashboards."
+  badge="Property Reference"
+  version="JMeter 5.6.3 Validated"
+>
+  <PropertiesCheatsheet slot="tool" />
 
-Search the properties people actually change for load tests. Always set overrides in **`user.properties`** (or `-J` / `-q`); do not edit stock `jmeter.properties` if you can avoid it.
+  ## Related reading
 
-<PropertiesCheatsheet />
+  - Full catalog: [Properties Reference](/user-manual/properties-reference/)
+  - [Best Practices](/user-manual/best-practices/)
+  - [Remote Testing](/user-manual/remote-test/)
+  - [Dashboard Report](/user-manual/generating-dashboard/)
 
-## Related reading
-
-- Full catalog: [Properties Reference](/user-manual/properties-reference/)
-- [Best Practices](/user-manual/best-practices/)
-- [Remote Testing](/user-manual/remote-test/)
-- [Dashboard Report](/user-manual/generating-dashboard/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    Copy a property into <code>user.properties</code>, restart JMeter, and verify with a small CLI run.
-  </Fragment>
-  <Fragment slot="related">
-    [Hints and tips](/user-manual/hints-and-tips/) · [Heap estimator](/tools/heap-estimator/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Editing jmeter.properties in place so upgrades wipe your customizations.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    Property not applied? Confirm user.properties path and that JMeter was fully restarted.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      Copy a property into <code>user.properties</code>, restart JMeter, and verify with a small CLI run.
+    </Fragment>
+    <Fragment slot="related">
+      [Hints and tips](/user-manual/hints-and-tips/) · [Heap estimator](/tools/heap-estimator/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Editing jmeter.properties in place so upgrades wipe your customizations.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      Property not applied? Confirm user.properties path and that JMeter was fully restarted.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>

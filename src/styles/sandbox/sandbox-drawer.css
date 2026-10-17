@@ -1,0 +1,252 @@
+/* ==========================================================================
+   Correlation Sandbox — Inspector Drawer, Specs, Console, and JMX Preview
+   ========================================================================== */
+
+/* 3. Focused Inspector Drawer */
+.cs-drawer {
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface);
+  border: 1px solid var(--cs-border);
+  overflow: hidden;
+}
+
+.cs-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1.15rem;
+  border-bottom: 1px solid var(--cs-border);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.cs-view-pills, .cs-mode-segmented {
+  display: inline-flex;
+  padding: 0.2rem;
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.cs-view-btn, .cs-mode-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--cs-text-muted);
+  padding: 0.35rem 0.75rem;
+  border-radius: calc(var(--cs-radius-sm) - 0.0625rem);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 150ms ease;
+}
+
+.cs-view-btn.is-active, .cs-mode-btn.is-active { background: var(--cs-surface-elevated); color: var(--cs-text-primary); border-color: rgba(255, 255, 255, 0.12); }
+.cs-view-btn:hover:not(.is-active), .cs-mode-btn:hover:not(.is-active) { color: var(--cs-text-primary); background: rgba(255, 255, 255, 0.04); }
+.cs-mode-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: var(--cs-emerald);
+  box-shadow: 0 0 6px var(--cs-emerald);
+}
+
+.cs-drawer-body { padding: 1.25rem; min-height: 16rem; }
+
+.cs-specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: 0 0 1rem;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  overflow: hidden;
+}
+
+.cs-spec {
+  display: grid;
+  grid-template-columns: 8.25rem minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  align-items: baseline;
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  background: var(--cs-surface-elevated);
+  border-bottom: 1px solid var(--cs-border-subtle);
+}
+
+.cs-spec--span { grid-column: 1 / -1; }
+
+.sl-markdown-content .cs-spec dt,
+.sl-markdown-content .cs-spec dd,
+.cs-spec dt,
+.cs-spec dd {
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 640px) {
+  .cs-specs { grid-template-columns: 1fr; }
+}
+
+@container sandbox (max-width: 36rem) {
+  .cs-specs { grid-template-columns: 1fr; }
+}
+
+.cs-spec-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cs-text-muted);
+}
+
+.cs-spec-val, .cs-spec-code {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cs-text-primary);
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.cs-spec-code {
+  font-family: var(--sl-font-mono, monospace);
+  color: #e7e5e4;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.12rem 0.45rem;
+  border-radius: 0.3rem;
+}
+.cs-spec-code--accent { color: #fdba74; font-weight: 700; }
+
+.cs-test-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.cs-test-btn {
+  appearance: none;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  background: rgba(249, 115, 22, 0.14);
+  color: #fdba74;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  padding: 0.5rem 1rem;
+  border-radius: var(--cs-radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 150ms ease;
+}
+
+.cs-test-btn:hover {
+  background: rgba(249, 115, 22, 0.25);
+  border-color: rgba(249, 115, 22, 0.6);
+  color: var(--cs-text-primary);
+  transform: translateY(-1px);
+}
+
+.cs-test-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
+}
+
+.cs-test-hint { font-size: 0.78rem; color: var(--cs-text-muted); }
+
+/* Live Console Result */
+.cs-console {
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg);
+  border: 1px solid var(--cs-border);
+  overflow: hidden;
+  margin-top: 0.75rem;
+}
+
+.cs-console-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cs-mac-dots { display: flex; gap: 0.35rem; }
+.cs-mac-dot { width: 0.55rem; height: 0.55rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.2); }
+.cs-console-status { flex: 1; padding-inline: 0.75rem; font-size: 0.75rem; font-weight: 700; font-family: var(--sl-font-mono, monospace); }
+.cs-status--ok-text { color: #34d399; }
+.cs-status--err-text { color: #f87171; }
+.cs-console-link { font-size: 0.75rem; color: var(--cs-accent); text-decoration: none; font-weight: 600; }
+.cs-console-link:hover { text-decoration: underline; }
+.cs-console-pre {
+  margin: 0;
+  padding: 0.85rem;
+  font-family: var(--sl-font-mono, monospace);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #e7e5e4;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+/* JMX Preview */
+.cs-jmx-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.cs-jmx-meta { font-size: 0.75rem; color: var(--cs-text-muted); font-family: var(--sl-font-mono, monospace); }
+.cs-mini-btn {
+  appearance: none;
+  background: var(--cs-surface-elevated);
+  border: 1px solid var(--cs-border);
+  color: var(--cs-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--cs-radius-sm);
+  cursor: pointer;
+}
+.cs-mini-btn:hover { color: var(--cs-text-primary); border-color: rgba(255, 255, 255, 0.2); }
+
+.cs-jmx-pre {
+  margin: 0;
+  max-height: 22rem;
+  overflow: auto;
+  font-size: 0.78rem;
+  padding: 1rem;
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg);
+  border: 1px solid var(--cs-border);
+  color: #e7e5e4;
+}
+
+.cs-steps-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.cs-step-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, max-content) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.45rem 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-elevated);
+  border: 1px solid var(--cs-border-subtle);
+  font-size: 0.8125rem;
+}
+.cs-step-row-num { font-weight: 700; color: var(--cs-text-muted); font-size: 0.75rem; }
+.cs-step-row-path { font-family: var(--sl-font-mono, monospace); color: var(--cs-text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; background: rgba(255, 255, 255, 0.05); padding: 0.1rem 0.45rem; border-radius: 0.3rem; }
+.cs-step-row-desc { color: var(--cs-text-secondary); margin: 0; font-size: 0.75rem; }
+
+@container sandbox (max-width: 40rem) {
+  .cs-step-row { grid-template-columns: auto auto minmax(0, 1fr); }
+  .cs-step-row-desc { grid-column: 1 / -1; }
+}

@@ -11,13 +11,21 @@ keywords:
 difficulty: beginner
 guideType: reference
 estimatedReadTime: "4 min read"
+template: splash
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import OpenApiToJmx from '../../../components/tools/OpenApiToJmx.astro';
 
-<OpenApiToJmx />
+<ToolPageLayout
+  title="OpenAPI / Swagger to JMeter JMX Converter"
+  description="Convert OpenAPI 3.0, OpenAPI 3.1, and Swagger 2.0 JSON or YAML into an Apache JMeter JMX test plan in your browser."
+  badge="OpenAPI Converter"
+  version="JMeter 5.6.3 Validated"
+>
+  <OpenApiToJmx slot="tool" />
 
-## What gets generated
+  ## What gets generated
 
 The converter turns each included API operation into a JMeter HTTP Request sampler and builds the surrounding Test Plan, HTTP Request Defaults, Thread Group, optional Cookie Manager, and response assertions.
 
@@ -81,3 +89,5 @@ Ask the agent to call `convert_openapi_to_jmx` with an OpenAPI 3.x or Swagger 2.
 - Use the [cURL & HAR to JMX Converter](/tools/curl-to-jmx/) when you have captured requests rather than an API contract.
 - Run the generated plan through the [JMX Linter & Health Analyzer](/tools/jmx-linter/) before execution.
 - Review [JMeter Best Practices](/user-manual/best-practices/) before increasing load.
+
+</ToolPageLayout>

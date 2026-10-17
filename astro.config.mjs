@@ -31,6 +31,9 @@ export default defineConfig({
     platformProxy: { enabled: true },
     imageService: 'compile',
   }),
+  security: {
+    checkOrigin: false,
+  },
   markdown: {
     processor: unified({
       remarkPlugins: [remarkImageOptimize],
@@ -62,7 +65,7 @@ export default defineConfig({
           ],
         }),
       ],
-      customCss: ['./src/styles/custom.css', './src/styles/landing.css', './src/styles/ask-ai.css', './src/styles/tools.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/landing.css', './src/styles/ask-ai.css', './src/styles/tools.css', './src/styles/tool-page.css'],
       components: {
         Footer: './src/components/FooterDisclaimer.astro',
         Head: './src/components/SeoHead.astro',

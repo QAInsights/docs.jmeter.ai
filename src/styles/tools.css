@@ -394,8 +394,8 @@
   align-items: stretch;
 }
 
-.tool-metric,
-.tool-card {
+.tool .tool-metric,
+.tool .tool-card {
   display: grid;
   grid-template-rows: subgrid;
   grid-row: span 2;
@@ -409,8 +409,8 @@
   align-content: start;
 }
 
-.tool-metric--primary,
-.tool-card-primary {
+.tool .tool-metric--primary,
+.tool .tool-card-primary {
   border-color: color-mix(in oklab, var(--sl-color-accent) 50%, var(--sl-color-gray-5));
   background: linear-gradient(
     160deg,
@@ -419,8 +419,8 @@
   );
 }
 
-.tool-metric__label,
-.tool-card-label {
+.tool .tool-metric__label,
+.tool .tool-card-label {
   display: flex;
   align-items: flex-end;
   margin: 0;
@@ -437,9 +437,9 @@
   overflow: hidden;
 }
 
-.tool-metric__value,
-.tool-card-value,
-.tool-card-sm {
+.tool .tool-metric__value,
+.tool .tool-card-value,
+.tool .tool-card-sm {
   display: flex;
   align-items: center;
   margin: 0;
@@ -465,8 +465,8 @@
     row-gap: var(--tool-gap);
   }
 
-  .tool-metric,
-  .tool-card {
+  .tool .tool-metric,
+  .tool .tool-card {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -483,8 +483,8 @@
     gap: var(--tool-gap);
   }
 
-  .tool-metric,
-  .tool-card {
+  .tool .tool-metric,
+  .tool .tool-card {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -630,7 +630,7 @@
   max-width: none;
 }
 
-.tool-card--full {
+.tool .tool-card--full {
   grid-column: 1 / -1;
   grid-row: auto;
   display: flex;

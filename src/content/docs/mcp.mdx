@@ -16,7 +16,7 @@ estimatedReadTime: "4 min read"
 
 import McpInstallButtons from '../../components/McpInstallButtons.astro';
 
-Point Claude Code, Qwen Code, Cursor, or any MCP client at `https://docs.jmeter.ai/api/mcp` and your agent answers JMeter questions grounded in this documentation, with a source link for every answer. Free, no API key, no signup. The on-site **Ask AI** chat uses these same tools in-process.
+Point Claude Code, Qwen Code, Cursor, Pi, or any MCP client at `https://docs.jmeter.ai/api/mcp` and your agent answers JMeter questions grounded in this documentation, with a source link for every answer. Free, no API key, no signup. The on-site **Ask AI** chat uses these same tools in-process.
 
 **Endpoint:** `https://docs.jmeter.ai/api/mcp` (Streamable HTTP, stateless)
 
@@ -207,6 +207,25 @@ claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --sco
 ```
 
 `--scope user` registers the server for all your projects, no matter which folder you run the command from. Restart Claude Code after adding it, then verify with `/mcp`.
+
+### Pi
+
+```bash
+pi mcp add jmeter-docs --url https://docs.jmeter.ai/api/mcp
+```
+
+This registers the server for all your projects. Verify the connection with `pi mcp list`, then start Pi and run `/mcp` to inspect the tools. Pi reaches MCP tools through its `codemode` tool by default; to declare the tools to the model directly, set `"exposure": "direct"` in `~/.pi/agent/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "jmeter-docs": {
+      "url": "https://docs.jmeter.ai/api/mcp",
+      "exposure": "direct"
+    }
+  }
+}
+```
 
 ### Qwen Code, Cursor, and other MCP clients
 

@@ -1,0 +1,265 @@
+/* ==========================================================================
+   Correlation Sandbox — Hero Pipeline Canvas, Nodes, and SVG Conduits
+   ========================================================================== */
+
+/* 2. Hero Visual Pipeline Canvas with SVG Conduits */
+.cs-canvas {
+  padding: 1.5rem;
+  border-radius: var(--cs-radius-md);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0.35) 100%), var(--cs-surface);
+  border: 1px solid var(--cs-border);
+}
+
+.cs-pipeline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .cs-pipeline { grid-template-columns: 1fr; gap: 1rem; }
+}
+
+.cs-node {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-elevated);
+  border: 1px solid var(--cs-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.cs-node:hover { border-color: rgba(255, 255, 255, 0.16); }
+
+.cs-node-head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.cs-node-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.cs-step-pill {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--cs-text-muted);
+}
+
+.cs-method-tag {
+  font-family: var(--sl-font-mono, monospace);
+  font-size: 0.75rem;
+  font-weight: 750;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--cs-radius-sm);
+}
+
+.cs-method--get { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+.cs-method--post { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+.cs-node-path {
+  font-family: var(--sl-font-mono, monospace);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cs-text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  margin-left: auto;
+}
+
+.cs-status--ok, .cs-status--verified { background: rgba(16, 185, 129, 0.14); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.28); }
+.cs-status--failed { background: rgba(239, 68, 68, 0.14); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.28); }
+
+.cs-node-snippet {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cs-snippet-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cs-text-muted);
+}
+
+.cs-node-body,
+.cs-node-snippet {
+  min-width: 0;
+}
+
+.cs-code-preview {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--cs-radius-sm);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--cs-border-subtle);
+  font-family: var(--sl-font-mono, monospace);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--cs-text-secondary);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.cs-code-preview code {
+  white-space: inherit;
+  overflow-wrap: inherit;
+  word-break: normal;
+}
+
+.cs-hl-token {
+  background: rgba(249, 115, 22, 0.25);
+  color: #fdba74;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.cs-hl-cookie {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.cs-hl-var {
+  color: #60a5fa;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.15);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.25rem;
+}
+
+.cs-hl-err {
+  color: #f87171;
+  font-weight: 600;
+  background: rgba(239, 68, 68, 0.15);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.25rem;
+}
+
+/* Center Conduits + Extractor Bridge */
+.cs-conduit-bridge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-width: 0;
+  max-width: 14.5rem;
+  width: 100%;
+  justify-self: center;
+}
+
+@media (max-width: 900px) {
+  .cs-conduit-bridge {
+    flex-direction: column;
+    min-width: unset;
+    padding: 0.5rem 0;
+  }
+}
+
+.cs-cable {
+  flex: 1 1 auto;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+@media (max-width: 900px) {
+  .cs-cable {
+    width: 16px;
+    height: 32px;
+    transform: rotate(90deg);
+  }
+}
+
+.cs-cable-svg {
+  width: 100%;
+  height: 16px;
+  overflow: visible;
+}
+
+.cs-cable-track {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.cs-cable-pulse {
+  stroke: var(--cs-accent);
+  stroke-width: 2;
+  stroke-dasharray: 12 36;
+  animation: cs-cable-flow 1.6s linear infinite;
+}
+
+.cs-cable-arrow {
+  fill: var(--cs-accent);
+}
+
+@keyframes cs-cable-flow {
+  from { stroke-dashoffset: 48; }
+  to { stroke-dashoffset: 0; }
+}
+
+.cs-extractor-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.5rem;
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid var(--cs-border-accent);
+  color: #fdba74;
+  font-family: var(--sl-font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: center;
+  text-wrap: balance;
+  max-width: 12.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.cs-extractor-icon { color: var(--cs-accent); flex-shrink: 0; }
+
+/* Challenge mode: extractor intentionally absent — flag it in red */
+.cs-extractor-badge.is-broken {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+}
+
+.cs-extractor-badge.is-broken .cs-extractor-icon { color: #f87171; }

@@ -1,0 +1,286 @@
+/* ==========================================================================
+   Dedicated Tool Page Layout — Full Screen Estate & Workspace Polish
+   Eliminates Starlight/Lucode doc article baggage and provides 1440px canvas.
+   Strict Rule: File must remain <= 500 lines.
+   ========================================================================== */
+
+/* 1. Eliminate Lucode/Starlight default doc-title completely on tool pages */
+main:has(.tool-dedicated-page) [data-slot="doc-title"],
+[data-slot="doc-title"]:has(~ .markdown-wrapper .tool-dedicated-page),
+main:has(.tool-dedicated-page) > .content-panel:first-child {
+  display: none !important;
+}
+
+/* 2. Remove all narrow width constraints on tool pages */
+main:has(.tool-dedicated-page),
+.markdown-wrapper:has(.tool-dedicated-page),
+.sl-markdown-content:has(.tool-dedicated-page) {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+main:has(.tool-dedicated-page) .sl-container {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* 3. Tool column: wide enough for a two-pane workspace, narrow enough to read. */
+.tool-dedicated-page {
+  max-width: 60rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.15rem 1.25rem 3.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .tool-dedicated-page {
+    padding: 1rem 1rem 3rem;
+  }
+}
+
+/* 4. Apple/Linear-Style Workspace Header */
+.tool-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='light'] .tool-page-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.tool-page-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tool-page-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--sl-color-gray-3);
+}
+
+.tool-quick-switch {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a8a29e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  color: var(--sl-color-gray-2, #a8a29e);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 2rem 0.35rem 0.85rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+:root[data-theme='light'] .tool-quick-switch {
+  background-color: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #44403c;
+}
+
+.tool-quick-switch:hover,
+.tool-quick-switch:focus {
+  border-color: #f97316;
+  color: var(--sl-color-white, #fafaf9);
+}
+
+:root[data-theme='light'] .tool-quick-switch:hover,
+:root[data-theme='light'] .tool-quick-switch:focus {
+  color: #1c1917;
+}
+
+.tool-quick-switch option {
+  background: #1c1917;
+  color: #fafaf9;
+}
+
+:root[data-theme='light'] .tool-quick-switch option {
+  background: #ffffff;
+  color: #1c1917;
+}
+
+
+.tool-nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #f97316;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 150ms ease;
+}
+
+.tool-nav-back:hover {
+  color: #fb923c;
+  text-decoration: underline;
+}
+
+.tool-nav-sep {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+:root[data-theme='light'] .tool-nav-sep {
+  color: rgba(0, 0, 0, 0.2);
+}
+
+.tool-nav-current {
+  color: var(--sl-color-gray-2);
+  font-weight: 500;
+}
+
+.tool-title-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+
+.tool-title-wrap {
+  flex: 1 1 28rem;
+  max-width: 40rem;
+  min-width: min(100%, 16rem);
+}
+
+.tool-title-text {
+  font-size: clamp(1.5rem, 1.15rem + 1vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--sl-color-white, #fafaf9);
+  margin: 0 0 0.4rem 0;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.tool-desc-text {
+  font-size: 0.95rem;
+  color: var(--sl-color-gray-2, #a8a29e);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 38rem;
+  text-wrap: pretty;
+}
+
+.tool-badges-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-self: flex-start;
+  margin-top: 0.2rem;
+}
+
+.tool-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: #34d399;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.tool-pulse-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: tool-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes tool-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.9); }
+}
+
+.tool-version-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--sl-color-gray-2, #a8a29e);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--sl-font-mono, monospace);
+}
+
+:root[data-theme='light'] .tool-version-pill {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #57534e;
+}
+
+/* 5. Tool Workspace Section */
+.tool-workspace-section {
+  width: 100%;
+}
+
+/* 6. Tool Documentation Section */
+.tool-documentation-section {
+  width: 100%;
+  max-width: 46rem;
+  margin-top: 1.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='light'] .tool-documentation-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.tool-documentation-section h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.tool-documentation-section h3 {
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.tool-documentation-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+}
+
+.tool-documentation-section th,
+.tool-documentation-section td {
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='light'] .tool-documentation-section th,
+:root[data-theme='light'] .tool-documentation-section td {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
