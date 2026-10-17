@@ -1,0 +1,105 @@
+---
+/**
+ * Homepage Tools Hub showcase — renders the real tool catalog grid
+ * (shared TOOLS data + same .tools-hub card styles as /tools/).
+ */
+import { TOOLS } from '../../lib/tools-catalog.mjs';
+---
+
+<div class="tools-hub tools-hub--home not-content">
+  <div class="tools-home-head">
+    <div>
+      <h2 class="tools-home-title">Interactive <span class="tools-home-accent">Tools Hub</span></h2>
+      <p class="tools-home-desc">
+        {TOOLS.length} browser-only utilities: JMX converters, sizing calculators, linters, and a live correlation practice sandbox.
+      </p>
+    </div>
+    <a href="/tools/" class="tools-home-all">Browse all tools <span aria-hidden="true">&rarr;</span></a>
+  </div>
+
+  <div class="tools-grid">
+    {TOOLS.map((tool) => (
+      <a href={tool.href} class="tool-card">
+        <div class="tool-card-top">
+          <div class="tool-card-meta">
+            <span class="tool-card-category">{tool.categoryLabel}</span>
+            <span class="tool-card-badge">{tool.badge}</span>
+          </div>
+          <h3 class="tool-card-title">
+            <span>{tool.title}</span>
+            <span class="tool-card-arrow" aria-hidden="true">&rarr;</span>
+          </h3>
+          <p class="tool-card-desc">{tool.desc}</p>
+        </div>
+        <div class="tool-card-specs">
+          {tool.specs.map((spec) => (
+            <span class="tool-spec-pill">{spec}</span>
+          ))}
+        </div>
+      </a>
+    ))}
+  </div>
+
+  <div class="tools-guarantee-bar">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    </svg>
+    <span>Runs in your browser. Test plans, credentials, and API tokens are not uploaded.</span>
+  </div>
+</div>
+
+<style>
+  .tools-hub--home {
+    /* homepage section spacing only — card/grid styles come from tools-hub.css */
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+  }
+
+  .tools-home-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .tools-home-title {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--cs-text-primary, #fafaf9);
+  }
+
+  .tools-home-accent { color: #fb923c; }
+
+  .tools-home-desc {
+    margin: 0.35rem 0 0;
+    font-size: 0.9rem;
+    color: var(--cs-text-secondary, #a8a29e);
+    max-width: 46rem;
+  }
+
+  .tools-home-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fb923c;
+    text-decoration: none;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid rgba(249, 115, 22, 0.35);
+    border-radius: 0.55rem;
+    transition: all 150ms ease;
+    white-space: nowrap;
+  }
+
+  .tools-home-all:hover {
+    background: rgba(249, 115, 22, 0.12);
+    border-color: rgba(249, 115, 22, 0.55);
+    text-decoration: none;
+  }
+</style>
