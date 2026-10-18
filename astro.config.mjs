@@ -62,6 +62,7 @@ export default defineConfig({
             { label: 'JMeter AI', link: 'https://jmeter.ai', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'JMeter AI - AI Platform' } },
             { label: 'I Am Speed', link: 'https://iamspeed.dev', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'I Am Speed - Developer Tools' } },
             { label: 'Dosa', link: 'https://ai.dosa.dev', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'Dosa AI - AI Platform' } },
+            { label: 'Guess the Speed', link: 'https://guessthespeed.com', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'Guess the Speed - Speed Guessing Game' } },
           ],
         }),
       ],

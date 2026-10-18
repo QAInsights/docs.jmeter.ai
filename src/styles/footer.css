@@ -82,6 +82,22 @@
   max-width: 22rem;
 }
 
+.footer-brand-partof {
+  margin: 0.85rem 0 0;
+  font-size: 0.8rem;
+  color: var(--sl-color-gray-3, #78716c);
+}
+
+.footer-brand-partof a {
+  color: #fb923c;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footer-brand-partof a:hover {
+  text-decoration: underline;
+}
+
 .footer-author-card {
   display: flex;
   flex-direction: column;

@@ -8,6 +8,8 @@ import ImageLightbox from './ImageLightbox.astro';
 import PeopleAlsoAsk from './PeopleAlsoAsk.astro';
 import PageFeedback from './PageFeedback.astro';
 import EthicalAd from './EthicalAd.astro';
+import logoDark from '../assets/logo-dark.svg';
+import logoLight from '../assets/logo-light.svg';
 
 const pathname = Astro.url.pathname;
 const isLandingPage = pathname === '/';
@@ -37,13 +39,15 @@ const isDocPage = !isLandingPage && !isToolPage && !isLegalPage && !is404;
       <div class="footer-grid">
         <div class="footer-brand-col">
           <a href="/" class="footer-brand-logo">
-            <svg class="footer-brand-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-            </svg>
+            <img class="footer-brand-icon light:sl-hidden" src={logoDark.src} width="22" height="22" alt="" />
+            <img class="footer-brand-icon dark:sl-hidden" src={logoLight.src} width="22" height="22" alt="" />
             <span>JMeter Docs</span>
           </a>
           <p class="footer-brand-tagline">
             Modern, battle-tested Apache JMeter guides, interactive sandboxes, and production tuning playbooks.
+          </p>
+          <p class="footer-brand-partof">
+            This project is part of <a href="https://jmeter.si" target="_blank" rel="noopener noreferrer">JMeter.SI <span class="footer-ext-arrow" aria-hidden="true">↗</span></a>
           </p>
           <div class="footer-author-card">
             <span class="footer-author-label">Maintained by</span>
@@ -84,6 +88,7 @@ const isDocPage = !isLandingPage && !isToolPage && !isLegalPage && !is404;
             <li><a href="https://qainsights.com" target="_blank" rel="noopener noreferrer">QAInsights <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
             <li><a href="https://iamspeed.dev" target="_blank" rel="noopener noreferrer">I Am Speed <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
             <li><a href="https://dosa.dev" target="_blank" rel="noopener noreferrer">Dosa <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
+            <li><a href="https://guessthespeed.com" target="_blank" rel="noopener noreferrer">Guess the Speed <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
             <li><a href="https://github.com/apache/jmeter" target="_blank" rel="noopener noreferrer">apache/jmeter <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
           </ul>
         </div>
