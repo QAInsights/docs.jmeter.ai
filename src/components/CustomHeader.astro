@@ -290,9 +290,10 @@ const shouldRenderSearch =
         }
     }
 
-    /* Narrow desktop (1024–1279px): collapse search pill to icon so the
-       full nav fits — min-content exceeds the viewport otherwise */
-    @media (min-width: 1024px) and (max-width: 1279px) {
+    /* Narrow desktop (1024–1249px): collapse search pill to icon so the
+       full nav fits — min-content (~1157px + gutters) exceeds the
+       viewport only below ~1250px; the full pill fits above that */
+    @media (min-width: 1024px) and (max-width: 1249px) {
         .DocSearch-Button {
             min-width: 0 !important;
             width: 2.5rem !important;
