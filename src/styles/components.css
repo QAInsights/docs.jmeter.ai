@@ -36,6 +36,28 @@ nav.nav-bar a::after,
   }
 }
 
+/* Keep nav link labels on one line — mid-word wrap looks broken */
+.nav-bar a,
+.left-nav-links a {
+  white-space: nowrap;
+}
+
+/* Tighten header links so the row fits without clipping (header grid is 1fr/auto/1fr) */
+.nav-bar a,
+.left-nav-links a {
+  padding-inline: 0.375rem !important;
+}
+
+@media (min-width: 1024px) {
+  .left-nav-links {
+    margin-left: 0.5rem !important;
+  }
+
+  .header-right {
+    gap: 0.25rem !important;
+  }
+}
+
 /* ==========================================================================
    Component reference property tables
    ========================================================================== */

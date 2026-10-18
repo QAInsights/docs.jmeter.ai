@@ -245,7 +245,7 @@ const shouldRenderSearch =
             border: none !important;
             background: transparent !important;
             overflow: visible !important;
-            min-width: 320px !important;
+            min-width: 260px !important;
         }
 
         .DocSearch-Button:hover {
@@ -287,6 +287,23 @@ const shouldRenderSearch =
             right: 2px !important;
             bottom: 2px !important;
             border-radius: calc(0.5rem - 2px) !important;
+        }
+    }
+
+    /* Narrow desktop (1024–1279px): collapse search pill to icon so the
+       full nav fits — min-content exceeds the viewport otherwise */
+    @media (min-width: 1024px) and (max-width: 1279px) {
+        .DocSearch-Button {
+            min-width: 0 !important;
+            width: 2.5rem !important;
+            padding-inline: 0 !important;
+            justify-content: center !important;
+            overflow: hidden !important;
+        }
+
+        .DocSearch-Button .DocSearch-Button-Container span,
+        .DocSearch-Button .DocSearch-Button-Keys {
+            display: none !important;
         }
     }
 
