@@ -56,6 +56,11 @@ nav.nav-bar a::after,
   .header-right {
     gap: 0.25rem !important;
   }
+
+  /* Center search pill is present — the icon fallback is mobile-only */
+  .mobile-search-wrapper {
+    display: none !important;
+  }
 }
 
 /* ==========================================================================
