@@ -11,69 +11,74 @@ difficulty: beginner
 guideType: how-to
 estimatedReadTime: "3 min read"
 lastVerified: "JMeter 5.6"
+template: splash
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import ThreadCalculator from '../../../components/tools/ThreadCalculator.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter Thread Group Calculator
+<ToolPageLayout
+  title="JMeter Thread Group Calculator"
+  description="Estimate required concurrent users, ramp-up time, and CLI heap from target throughput (RPS), response time, and think time."
+  badge="Sizing Calculator"
+  version="JMeter 5.6.3 Validated"
+>
+  <ThreadCalculator slot="tool" />
 
-Size your Thread Group before you hit Coordinated Omission. Enter a target **requests per second (RPS)**, expected **average response time**, and optional **think time** to estimate concurrent threads, ramp-up, and a rough CLI heap.
+  ## How the estimate works
 
-<ThreadCalculator />
+  Little's Law: concurrency ≈ arrival rate × cycle time. Cycle time is **response time + think time**.
 
-## How the estimate works
+  ```text
+  threads ≈ ceil(target_RPS × (response_time_ms + think_time_ms) / 1000)
+  ```
 
-Little's Law: concurrency ≈ arrival rate × cycle time. Cycle time is **response time + think time**.
+  Leave think time at **0** for busy threads (no timer). Copy Thread Group writes the fields you paste into JMeter; add a **Constant Timer** when think time is greater than zero.
 
-```text
-threads ≈ ceil(target_RPS × (response_time_ms + think_time_ms) / 1000)
-```
+  ### Example
 
-Leave think time at **0** for busy threads (no timer). Copy Thread Group writes the fields you paste into JMeter; add a **Constant Timer** when think time is greater than zero.
+  | Target RPS | Avg response time | Think time | Recommended threads |
+  |------------|-------------------|------------|---------------------|
+  | 50         | 200 ms            | 0          | 10                  |
+  | 50         | 200 ms            | 800 ms     | 50                  |
+  | 100        | 500 ms            | 0          | 50                  |
 
-### Example
+  ## What this does not include
 
-| Target RPS | Avg response time | Think time | Recommended threads |
-|------------|-------------------|------------|---------------------|
-| 50         | 200 ms            | 0          | 10                  |
-| 50         | 200 ms            | 800 ms     | 50                  |
-| 100        | 500 ms            | 0          | 50                  |
+  - Pacing that holds a fixed iteration rate (Constant Throughput Timer)
+  - Injector CPU, bandwidth, and listener overhead
+  - Server saturation (response time rises under load; re-measure)
+  - Splitting load across engines; see [Remote Testing](/user-manual/remote-test/)
 
-## What this does not include
+  ## Recommended workflow
 
-- Pacing that holds a fixed iteration rate (Constant Throughput Timer)
-- Injector CPU, bandwidth, and listener overhead
-- Server saturation (response time rises under load; re-measure)
-- Splitting load across engines; see [Remote Testing](/user-manual/remote-test/)
+  1. Measure average response time with a small pilot.
+  2. Use this calculator for an initial thread count and ramp-up.
+  3. Run CLI mode (`jmeter -n -t plan.jmx -l results.jtl`) without View Results Tree.
+  4. Compare achieved throughput in the [HTML dashboard](/user-manual/generating-dashboard/).
+  5. Scale out with [distributed testing](/topics/distributed-testing/) when one injector is saturated.
 
-## Recommended workflow
+  ## Related reading
 
-1. Measure average response time with a small pilot.
-2. Use this calculator for an initial thread count and ramp-up.
-3. Run CLI mode (`jmeter -n -t plan.jmx -l results.jtl`) without View Results Tree.
-4. Compare achieved throughput in the [HTML dashboard](/user-manual/generating-dashboard/).
-5. Scale out with [distributed testing](/topics/distributed-testing/) when one injector is saturated.
+  - [Best Practices](/user-manual/best-practices/)
+  - [Building a Test Plan](/user-manual/build-test-plan/)
+  - [Glossary](/user-manual/glossary/)
+  - [Heap Estimator](/tools/heap-estimator/)
+  - [CLI Command Builder](/tools/cli-builder/)
 
-## Related reading
-
-- [Best Practices](/user-manual/best-practices/)
-- [Building a Test Plan](/user-manual/build-test-plan/)
-- [Glossary](/user-manual/glossary/)
-- [Heap Estimator](/tools/heap-estimator/)
-- [CLI Command Builder](/tools/cli-builder/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    [Open Best Practices](/user-manual/best-practices/) and apply CLI-mode guidance before your first load run.
-  </Fragment>
-  <Fragment slot="related">
-    [Thread Group concepts](/user-manual/test-plan/) · [Remote testing](/user-manual/remote-test/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Setting thousands of threads with a 1-second ramp-up and View Results Tree enabled.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    Achieved RPS far below estimate? Re-measure response time under load and check injector CPU.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      [Open Best Practices](/user-manual/best-practices/) and apply CLI-mode guidance before your first load run.
+    </Fragment>
+    <Fragment slot="related">
+      [Thread Group concepts](/user-manual/test-plan/) · [Remote testing](/user-manual/remote-test/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Setting thousands of threads with a 1-second ramp-up and View Results Tree enabled.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      Achieved RPS far below estimate? Re-measure response time under load and check injector CPU.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>

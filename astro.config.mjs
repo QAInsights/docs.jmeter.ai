@@ -31,6 +31,9 @@ export default defineConfig({
     platformProxy: { enabled: true },
     imageService: 'compile',
   }),
+  security: {
+    checkOrigin: false,
+  },
   markdown: {
     processor: unified({
       remarkPlugins: [remarkImageOptimize],
@@ -59,10 +62,11 @@ export default defineConfig({
             { label: 'JMeter AI', link: 'https://jmeter.ai', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'JMeter AI - AI Platform' } },
             { label: 'I Am Speed', link: 'https://iamspeed.dev', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'I Am Speed - Developer Tools' } },
             { label: 'Dosa', link: 'https://ai.dosa.dev', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'Dosa AI - AI Platform' } },
+            { label: 'Guess the Speed', link: 'https://guessthespeed.com', attrs: { target: '_blank', rel: 'noopener noreferrer', title: 'Guess the Speed - Speed Guessing Game' } },
           ],
         }),
       ],
-      customCss: ['./src/styles/custom.css', './src/styles/landing.css', './src/styles/ask-ai.css', './src/styles/tools.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/landing.css', './src/styles/ask-ai.css', './src/styles/tools.css', './src/styles/tool-page.css'],
       components: {
         Footer: './src/components/FooterDisclaimer.astro',
         Head: './src/components/SeoHead.astro',

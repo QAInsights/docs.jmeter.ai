@@ -158,6 +158,7 @@ export const sidebar = [
     collapsed: true,
     items: [
       { label: 'Tools Hub', link: '/tools' },
+      { label: 'Correlation Sandbox', link: '/tools/correlation-sandbox' },
       { label: 'cURL & HAR to JMX', link: '/tools/curl-to-jmx' },
       { label: 'OpenAPI to JMX', link: '/tools/openapi-to-jmx' },
       { label: 'JMX Linter & Health Analyzer', link: '/tools/jmx-linter' },

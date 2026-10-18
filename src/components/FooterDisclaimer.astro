@@ -8,50 +8,125 @@ import ImageLightbox from './ImageLightbox.astro';
 import PeopleAlsoAsk from './PeopleAlsoAsk.astro';
 import PageFeedback from './PageFeedback.astro';
 import EthicalAd from './EthicalAd.astro';
+import logoDark from '../assets/logo-dark.svg';
+import logoLight from '../assets/logo-light.svg';
 
-const isLandingPage = Astro.url.pathname === '/';
-const isDocPage = !isLandingPage
-  && !Astro.url.pathname.startsWith('/404')
-  && !Astro.url.pathname.startsWith('/legal');
+const pathname = Astro.url.pathname;
+const isLandingPage = pathname === '/';
+const isToolPage = pathname.startsWith('/tools');
+const isLegalPage = pathname.startsWith('/legal');
+const is404 = pathname.startsWith('/404');
+const isDocPage = !isLandingPage && !isToolPage && !isLegalPage && !is404;
 ---
 
 <div class="doc-footer-wrapper">
-  {!isLandingPage && <PeopleAlsoAsk />}
-  {isDocPage && <PageFeedback />}
-  <DocActions variant="footer" {...Astro.props} />
-  <footer class="sl-flex doc-footer">
-    <div class="meta sl-flex">
-      <EditLink />
-      <LastUpdated />
-    </div>
-    {!isLandingPage && <Pagination />}
-  </footer>
+  {isDocPage && (
+    <>
+      <PeopleAlsoAsk />
+      <PageFeedback />
+      <DocActions variant="footer" {...Astro.props} />
+      <footer class="sl-flex doc-footer">
+        <div class="meta sl-flex">
+          <EditLink />
+          <LastUpdated />
+        </div>
+        <Pagination />
+      </footer>
+    </>
+  )}
   <footer class="site-footer">
-    <div class="site-footer-top">
-      <span>
-        Created by <a href="https://qainsights.com" target="_blank" rel="noopener noreferrer">NaveenKumar Namachivayam</a>
-      </span>
-      <span class="footer-divider">&middot;</span>
-      <span>
-        Content synced from <a href="https://github.com/apache/jmeter" target="_blank" rel="noopener noreferrer">apache/jmeter</a> under Apache License 2.0
-      </span>
+    <div class="site-footer-inner">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="/" class="footer-brand-logo">
+            <img class="footer-brand-icon light:sl-hidden" src={logoDark.src} width="22" height="22" alt="" />
+            <img class="footer-brand-icon dark:sl-hidden" src={logoLight.src} width="22" height="22" alt="" />
+            <span>JMeter Docs</span>
+          </a>
+          <p class="footer-brand-tagline">
+            Modern, battle-tested Apache JMeter guides, interactive sandboxes, and production tuning playbooks.
+          </p>
+          <p class="footer-brand-partof">
+            This project is part of <a href="https://jmeter.si" target="_blank" rel="noopener noreferrer">JMeter.SI <span class="footer-ext-arrow" aria-hidden="true">↗</span></a>
+          </p>
+          <div class="footer-author-card">
+            <span class="footer-author-label">Maintained by</span>
+            <a href="https://qainsights.com" target="_blank" rel="noopener noreferrer" class="footer-author-link">
+              <span>NaveenKumar Namachivayam</span>
+              <span class="footer-ext-arrow" aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h3 class="footer-col-title">Interactive Tools</h3>
+          <ul class="footer-links">
+            <li><a href="/tools/correlation-sandbox/">Correlation Sandbox</a></li>
+            <li><a href="/tools/groovy-builder/">Groovy Builder</a></li>
+            <li><a href="/tools/thread-calculator/">Thread Calculator</a></li>
+            <li><a href="/tools/jmx-linter/">JMX Linter</a></li>
+            <li><a href="/tools/regex-tester/">Regex Tester</a></li>
+            <li><a href="/tools/" class="footer-all-link">Browse All Tools &rarr;</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h3 class="footer-col-title">Essential Guides</h3>
+          <ul class="footer-links">
+            <li><a href="/getting-started/get-started/">Getting Started</a></li>
+            <li><a href="/user-manual/best-practices/">Best Practices</a></li>
+            <li><a href="/topics/errors/">Error Playbooks</a></li>
+            <li><a href="/tools/cli-builder/">CLI Command Builder</a></li>
+            <li><a href="/components/">Component Library</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h3 class="footer-col-title">Ecosystem</h3>
+          <ul class="footer-links">
+            <li><a href="https://jmeter.ai" target="_blank" rel="noopener noreferrer">JMeter AI <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
+            <li><a href="https://qainsights.com" target="_blank" rel="noopener noreferrer">QAInsights <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
+            <li><a href="https://iamspeed.dev" target="_blank" rel="noopener noreferrer">I Am Speed <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
+            <li><a href="https://dosa.dev" target="_blank" rel="noopener noreferrer">Dosa <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
+            <li><a href="https://guessthespeed.com" target="_blank" rel="noopener noreferrer">Guess the Speed <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
+            <li><a href="https://github.com/apache/jmeter" target="_blank" rel="noopener noreferrer">apache/jmeter <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h3 class="footer-col-title">Project &amp; Legal</h3>
+          <ul class="footer-links">
+            <li><a href="/legal/disclaimer/">Disclaimer</a></li>
+            <li><a href="/legal/notice/">NOTICE</a></li>
+            <li><a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache 2.0 License <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
+            <li><a href="https://jmeter.apache.org" target="_blank" rel="noopener noreferrer">Official JMeter <span class="footer-ext-arrow" aria-hidden="true">↗</span></a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div class="footer-bottom-left">
+          <p class="footer-copyright">
+            &copy; {new Date().getFullYear()} QAInsights. Built for the performance testing community.
+          </p>
+          <p class="footer-trademark">
+            Apache, Apache JMeter, JMeter, and the Apache JMeter logo are trademarks of the
+            Apache Software Foundation. This site is an independent community resource and is
+            not affiliated with, endorsed by, or sponsored by the Apache Software Foundation.
+          </p>
+        </div>
+        <div class="footer-bottom-right">
+          <div class="footer-status-pill" title="Aligned with Apache JMeter 5.6.3">
+            <span class="footer-status-dot" aria-hidden="true"></span>
+            <span>JMeter 5.6.3 Validated</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="site-footer-links">
-      <a href="/legal/disclaimer">Disclaimer</a>
-      <span class="footer-divider">&middot;</span>
-      <a href="/legal/notice">NOTICE</a>
-      <span class="footer-divider">&middot;</span>
-      <a href="https://jmeter.apache.org" target="_blank" rel="noopener noreferrer">Official JMeter Site</a>
-    </div>
-    <p class="site-footer-trademark">
-      Apache, Apache JMeter, JMeter, and the Apache JMeter logo are trademarks of the
-      Apache Software Foundation. This site is an independent community resource and is
-      not affiliated with, endorsed by, or sponsored by the Apache Software Foundation.
-    </p>
   </footer>
   <GoToTop />
   <ImageLightbox />
-  {!Astro.url.pathname.startsWith('/404') && <EthicalAd />}
+  {!is404 && <EthicalAd />}
 </div>
 
 <style>

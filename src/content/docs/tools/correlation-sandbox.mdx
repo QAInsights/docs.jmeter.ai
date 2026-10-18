@@ -1,0 +1,83 @@
+---
+title: "JMeter Correlation & Practice Sandbox"
+seoTitle: "JMeter Correlation Sandbox - Live Practice Endpoints & JMX Challenges"
+description: "Practice JMeter correlation against live edge endpoints or a local server: CSRF tokens, session cookies, JWT Bearer auth, and __VIEWSTATE."
+keywords:
+  - jmeter correlation practice
+  - jmeter sample application for testing
+  - jmeter correlation example
+  - jmeter practice website
+  - jmeter csrf token correlation
+  - jmeter jwt bearer extraction
+  - jmeter viewstate correlation
+  - jmeter boundary extractor example
+difficulty: beginner
+guideType: reference
+estimatedReadTime: "4 min read"
+lastVerified: "JMeter 5.6.3"
+template: splash
+---
+
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
+import CorrelationSandbox from '../../../components/tools/CorrelationSandbox.astro';
+
+<ToolPageLayout
+  title="JMeter Correlation & Practice Sandbox"
+  description="Practice JMeter correlation against live edge endpoints or a local server: CSRF tokens, session cookies, JWT Bearer auth, and __VIEWSTATE."
+  badge="Live Edge Ready"
+  version="JMeter 5.6.3 Validated"
+>
+  <CorrelationSandbox slot="tool" />
+
+  ## Why a Dedicated Correlation Sandbox?
+
+AI coding assistants can generate a `.jmx` file in seconds, but you still need a **safe, deterministic target server** to verify that your extractors (`Boundary Extractor`, `JSON Extractor`, `Regular Expression Extractor`), `HTTP Cookie Manager`, and `HTTP Header Manager` actually pass dynamic values from Step 1 to Step 2.
+
+This sandbox gives you two ways to run and validate your test plans:
+
+| Target Mode | Base URL | Best For |
+| :--- | :--- | :--- |
+| **Hosted Cloud Edge** | `https://docs.jmeter.ai/api/sandbox` | **1-thread functional debugging** in JMeter GUI or CLI (`ThreadGroup.num_threads = 1`). Zero setup required. |
+| **Local High-RPS Server** | `http://localhost:8787/api/sandbox` | **High-concurrency load tests (1,000+ threads)**. Click `$ node jmeter-sandbox.mjs` above to download the zero-dependency Node.js server. |
+
+---
+
+## The 4 Practice Scenarios
+
+### 01 · HTML Form + `csrf_token` + `Set-Cookie` Session Chain
+* **`GET /api/sandbox/flow1/login-page`**: Returns an HTML login form containing `<input type="hidden" name="csrf_token" value="csrf_..." />` and sets `Set-Cookie: JMETER_SANDBOX_SID=sid_...`.
+* **`POST /api/sandbox/flow1/login`**: Validates both the cookie and the `csrf_token` form parameter. If you run the **Challenge `.jmx`** without correlation, the endpoint returns `403 Forbidden` with a diagnostic message explaining whether the cookie or token failed.
+* **Related Playbook**: [HTTP 401/403 After Recording](/topics/errors/401-403-after-recording/)
+
+### 02 · OAuth2 / JWT Bearer Chain $\to$ Dynamic Order Polling
+* **`POST /api/sandbox/flow2/auth/token`**: Returns a signed token inside `$.auth.access_token`.
+* **`POST /api/sandbox/flow2/orders`**: Requires `Authorization: Bearer ${access_token}` via an `HTTP Header Manager` and returns `$.data.orderId`.
+* **`GET /api/sandbox/flow2/orders/${orderId}`**: Polls the created order using both the Bearer header and the extracted `${orderId}` path variable.
+* **Related Guide**: [JWT, OAuth & SSO Load Testing](/topics/jwt-oauth-sso/)
+
+### 03 · ASP.NET `__VIEWSTATE` Body + Response Header Ticket
+* **`GET /api/sandbox/flow3/checkout.aspx`**: Outputs a hidden `__VIEWSTATE` input field in the HTML body.
+* **`POST /api/sandbox/flow3/checkout.aspx`**: Validates `__VIEWSTATE` and issues `X-Checkout-Ticket` in the **HTTP Response Headers** (teaching header-scoped extraction).
+* **`GET /api/sandbox/flow3/confirm.aspx`**: Validates `X-Checkout-Ticket: ${checkout_ticket}`.
+* **Related Playbook**: [Works in Browser, Fails in JMeter](/topics/errors/works-in-browser-fails-in-jmeter/)
+
+### 04 · HTTP 429 Rate Limits & Silent HTTP 200 Soft Errors
+* **`GET /api/sandbox/flow4/chaos?mode=soft_error`**: Returns `HTTP 200 OK`, but the JSON body contains `{"status": "ERROR", "code": "DB_POOL_EXHAUSTED"}`. Teaches why HTTP status code 200 alone masks production failures unless paired with a `JSON Assertion` (`$.status == "OK"`).
+* **`GET /api/sandbox/flow4/chaos?mode=429`**: Simulates `HTTP 429 Too Many Requests` with `Retry-After: 2`.
+* **Related Playbooks**: [Assertions & SLA Validation](/topics/jmeter-assertions-guide/) · [HTTP 429 & WAF Rate Limits](/topics/errors/http-429-rate-limited/)
+
+---
+
+## Use via AI Agent (MCP Tool)
+
+Connected AI coding agents (Claude Code, Cursor, Windsurf, Copilot) can fetch any sandbox flow and its `.jmx` test plan directly via Model Context Protocol:
+
+```bash
+claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --scope user
+```
+
+Prompt your agent:
+
+> *"Fetch the Flow 2 JWT Bearer correlation challenge from `get_correlation_sandbox`, explain why Step 2 fails, and show me the solved JMX plan."*
+
+</ToolPageLayout>

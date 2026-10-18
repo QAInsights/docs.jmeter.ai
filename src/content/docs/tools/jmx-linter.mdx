@@ -11,13 +11,21 @@ keywords:
 difficulty: intermediate
 guideType: reference
 estimatedReadTime: "5 min read"
+template: splash
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import JmxLinter from '../../../components/tools/JmxLinter.astro';
 
-<JmxLinter />
+<ToolPageLayout
+  title="JMX Linter & Test Plan Health Analyzer"
+  description="Lint JMeter JMX files in your browser, find load-testing anti-patterns, calculate a health score, and inspect test plan structure."
+  badge="Test Plan Linter"
+  version="JMeter 5.6.3 Validated"
+>
+  <JmxLinter slot="tool" />
 
-## How the health score works
+  ## How the health score works
 
 The linter starts at **100 points** and subtracts **25 points per error**, **10 points per warning**, and **5 points per informational finding**, with a floor of zero. The score is a fast review signal, not proof that a test plan is valid or safe to run. The analyzer uses deterministic browser-side heuristics and does not execute the plan.
 
@@ -59,3 +67,5 @@ claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
 ```
 
 The agent can call `lint_jmx_snippet` with a JMX snippet or full test plan and return the same findings, score, and remediation guidance.
+
+</ToolPageLayout>

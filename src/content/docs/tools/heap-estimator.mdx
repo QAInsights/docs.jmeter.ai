@@ -11,54 +11,59 @@ difficulty: intermediate
 guideType: how-to
 estimatedReadTime: "3 min read"
 lastVerified: "JMeter 5.6"
+template: splash
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import HeapEstimator from '../../../components/tools/HeapEstimator.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter Heap / JVM Sizing Estimator
+<ToolPageLayout
+  title="JMeter Heap / JVM Sizing Estimator"
+  description="Pick a starting -Xmx for load injectors based on thread concurrency, engine count, scripting complexity, and listeners."
+  badge="JVM Memory Sizing"
+  version="JMeter 5.6.3 Validated"
+>
+  <HeapEstimator slot="tool" />
 
-Pick a **starting** `-Xmx` for injectors. Memory depends on threads, samplers, scripting, listeners, and response sizes. This tool gives a conservative first guess you should validate with GC logs.
+  ## How to apply the flags
 
-<HeapEstimator />
+  On the command line (example):
 
-## How to apply the flags
+  ```bash
+  JVM_ARGS="-Xms512m -Xmx2048m" jmeter -n -t plan.jmx -l results.jtl
+  ```
 
-On the command line (example):
+  Or paste HEAP into the [CLI Command Builder](/tools/cli-builder/) with the rest of the run flags.
 
-```bash
-JVM_ARGS="-Xms512m -Xmx2048m" jmeter -n -t plan.jmx -l results.jtl
-```
+  Or set `HEAP` in your JMeter startup script / environment for the version you ship.
 
-Or paste HEAP into the [CLI Command Builder](/tools/cli-builder/) with the rest of the run flags.
+  ## Practical tips
 
-Or set `HEAP` in your JMeter startup script / environment for the version you ship.
+  - Prefer **CLI mode** for load; GUI burns heap on rendering.
+  - Disable **View Results Tree / Table** during load tests.
+  - In distributed mode, size **each engine** for its share of threads.
+  - Controllers usually need less heap than injectors.
 
-## Practical tips
+  ## Related reading
 
-- Prefer **CLI mode** for load; GUI burns heap on rendering.
-- Disable **View Results Tree / Table** during load tests.
-- In distributed mode, size **each engine** for its share of threads.
-- Controllers usually need less heap than injectors.
+  - [Best Practices](/user-manual/best-practices/)
+  - [Thread Calculator](/tools/thread-calculator/)
+  - [Remote Testing](/user-manual/remote-test/)
+  - [Listeners](/user-manual/listeners/)
 
-## Related reading
-
-- [Best Practices](/user-manual/best-practices/)
-- [Thread Calculator](/tools/thread-calculator/)
-- [Remote Testing](/user-manual/remote-test/)
-- [Listeners](/user-manual/listeners/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    Size threads with the [Thread Calculator](/tools/thread-calculator/), then re-check heap.
-  </Fragment>
-  <Fragment slot="related">
-    [Properties cheat sheet](/tools/properties-cheatsheet/) · [Dashboard report](/user-manual/generating-dashboard/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Raising -Xmx endlessly while View Results Tree is still enabled.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    Still OOM? Reduce threads per engine, strip listeners, avoid saving response data.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      Size threads with the [Thread Calculator](/tools/thread-calculator/), then re-check heap.
+    </Fragment>
+    <Fragment slot="related">
+      [Properties cheat sheet](/tools/properties-cheatsheet/) · [Dashboard report](/user-manual/generating-dashboard/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Raising -Xmx endlessly while View Results Tree is still enabled.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      Still OOM? Reduce threads per engine, strip listeners, avoid saving response data.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>

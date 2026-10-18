@@ -92,7 +92,8 @@ describe('GET /api/mcp endpoint discovery', () => {
     expect(body.tools).toContain('triage_errors');
     expect(body.tools).toContain('lookup_component');
     expect(body.tools).toContain('lookup_function');
-    expect(body.tools).toHaveLength(15);
+    expect(body.tools).toContain('get_correlation_sandbox');
+    expect(body.tools).toHaveLength(16);
   });
 
   it('returns 405 instead of starting a reconnect loop for an SSE listener GET', async () => {

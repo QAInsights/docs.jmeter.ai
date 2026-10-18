@@ -26,6 +26,7 @@ import {
   runOpenApiConversionTool,
   runGroovyLintTool,
   runJmxLintTool,
+  runCorrelationSandboxTool,
 } from '../../lib/mcp/server.mjs';
 import {
   MCP_EVENT_TYPES,
@@ -47,6 +48,7 @@ export {
   runOpenApiConversionTool,
   runGroovyLintTool,
   runJmxLintTool,
+  runCorrelationSandboxTool,
 };
 
 export const prerender = false;

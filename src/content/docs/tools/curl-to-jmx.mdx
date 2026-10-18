@@ -14,13 +14,21 @@ keywords:
 difficulty: beginner
 guideType: reference
 estimatedReadTime: "3 min read"
+template: splash
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import CurlToJmx from '../../../components/tools/CurlToJmx.astro';
 
-<CurlToJmx />
+<ToolPageLayout
+  title="cURL & HAR to JMeter JMX Converter"
+  description="Convert cURL commands and HAR files into valid Apache JMeter JMX test plans. Supports GET, POST, PUT, DELETE, PATCH, and RFC 9838 QUERY."
+  badge="JMX Converter"
+  version="JMeter 5.6.3 Validated"
+>
+  <CurlToJmx slot="tool" />
 
-## How the Converter Works
+  ## How the Converter Works
 
 Creating JMeter test plans manually for dozens of API endpoints is slow and error-prone. This converter takes raw **cURL commands** (from Swagger, Postman, browser DevTools, or terminal history) and **HAR 1.2 network captures**, automatically structuring them into a production-grade Apache JMeter 5.6.3 `.jmx` test plan.
 
@@ -96,3 +104,5 @@ Prompt your AI agent:
 > *"Convert this cURL command into a JMeter test plan with 50 threads and 10s rampup: `curl -X QUERY https://api.example.com/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"loadtest\"}'`"*
 
 Your agent calls `convert_curl_or_har_to_jmx` and outputs schema-valid XML ready for execution.
+
+</ToolPageLayout>

@@ -130,7 +130,7 @@
 /* --- Inline link hover effect: accent background fill
    Keeps Starlight's default underline, adds background highlight on hover. */
 @media (prefers-reduced-motion: no-preference) {
-  .sl-markdown-content a:not(:where(.landing *, .mcp-install *, .not-content *)) {
+  .sl-markdown-content a:not(:where(.landing *, .mcp-install *, .not-content *, .tools-hub *, .cs-sandbox *, .tool-page-header *)) {
     position: relative;
     z-index: 0;
     padding: 0.1em 0.2em;
@@ -147,7 +147,7 @@
     transition: color 0.15s ease-in-out, background-size 0.2s ease-in-out;
   }
 
-  .sl-markdown-content a:not(:where(.landing *, .mcp-install *, .not-content *)):hover {
+  .sl-markdown-content a:not(:where(.landing *, .mcp-install *, .not-content *, .tools-hub *, .cs-sandbox *, .tool-page-header *)):hover {
     color: var(--sl-color-text-accent);
     background-size: 100% 100%;
     text-decoration-color: var(--sl-color-accent);

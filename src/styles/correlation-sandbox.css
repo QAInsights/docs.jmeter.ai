@@ -1,0 +1,8 @@
+/* ==========================================================================
+   Correlation & Practice Sandbox — Aggregator File
+   Strict Rule: File must remain <= 500 lines.
+   ========================================================================== */
+
+@import './sandbox/sandbox-base.css';
+@import './sandbox/sandbox-pipeline.css';
+@import './sandbox/sandbox-drawer.css';

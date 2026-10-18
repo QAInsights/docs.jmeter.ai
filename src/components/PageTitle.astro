@@ -26,49 +26,42 @@ const guideMeta = [
 // title is intentionally blank and the landing layout has its own CTAs.
 const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isHomePage = pathname === '/';
+const isToolPage = pathname.startsWith('/tools');
 
 const leftArrow = 'M15 18l-6-6 6-6';
 const rightArrow = 'M9 18l6-6-6-6';
 ---
 
-{!isHomePage && <ResumeBanner />}
+{!isHomePage && !isToolPage && <ResumeBanner />}
 
-<div data-slot="doc-title">
-    <div data-slot="doc-title-header">
-        <h1 id="_top">{title}</h1>
+{!isHomePage && !isToolPage && (
+    <div data-slot="doc-title">
+        <div data-slot="doc-title-header">
+            <h1 id="_top">{title}</h1>
 
-        <div data-slot="doc-title-actions">
-            {
-                !isHomePage && <BookmarkButton title={title} href={Astro.url.pathname} />
-            }
+            <div data-slot="doc-title-actions">
+                <BookmarkButton title={title} href={Astro.url.pathname} />
 
-            {
-                !isHomePage && prev && (
+                {prev && (
                     <a class="link-button secondary icon-md" data-size="icon-md" href={prev.href} rel="prev" aria-label="Previous page">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={leftArrow} /></svg>
                     </a>
-                )
-            }
+                )}
 
-            {
-                !isHomePage && next && (
+                {next && (
                     <a class="link-button secondary icon-md" data-size="icon-md" href={next.href} rel="next" aria-label="Next page">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={rightArrow} /></svg>
                     </a>
-                )
-            }
+                )}
+            </div>
         </div>
-    </div>
 
-    {
-        description &&
-        description.trim().toLowerCase() !== title.trim().toLowerCase() && (
-            <p slot="doc-title-description">{description}</p>
-        )
-    }
+        {description &&
+            description.trim().toLowerCase() !== title.trim().toLowerCase() && (
+                <p slot="doc-title-description">{description}</p>
+            )}
 
-    {
-        !isHomePage && guideMeta.length > 0 && (
+        {guideMeta.length > 0 && (
             <dl class="guide-meta" aria-label="Guide metadata">
                 {guideMeta.map((item) => (
                     <div class="guide-meta-chip" title={item.title}>
@@ -77,9 +70,9 @@ const rightArrow = 'M9 18l6-6-6-6';
                     </div>
                 ))}
             </dl>
-        )
-    }
-</div>
+        )}
+    </div>
+)}
 
 <script>
   (() => {

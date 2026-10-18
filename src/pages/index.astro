@@ -4,7 +4,7 @@ import TerminalHero from '../components/landing/TerminalHero.astro';
 import YouTubeBanner from '../components/landing/YouTubeBanner.astro';
 import BentoGrid from '../components/landing/BentoGrid.astro';
 import DocsGraph from '../components/landing/DocsGraph.astro';
-import ToolsHubBanner from '../components/landing/ToolsHubBanner.astro';
+import ToolsShowcase from '../components/landing/ToolsShowcase.astro';
 
 const workflows = [
   {
@@ -23,7 +23,7 @@ const workflows = [
   },
   {
     title: 'Connect my AI agent',
-    description: 'Add these JMeter docs to Claude Code, Qwen Code, or Cursor via MCP: grounded answers with a source link, no API key.',
+    description: 'Add these JMeter docs to Claude Code, Qwen Code, Cursor, or Pi via MCP: grounded answers with a source link, no API key.',
     href: '/mcp/',
     action: 'Get the MCP endpoint',
     badge: 'For agents',
@@ -128,6 +128,10 @@ const goals = [
       </div>
     </section>
 
+    <section class="tools-hub-banner-section" aria-label="Interactive tools">
+      <ToolsShowcase />
+    </section>
+
     <section class="youtube-banner-section" aria-label="Video tutorials">
       <YouTubeBanner />
     </section>
@@ -149,10 +153,6 @@ const goals = [
           </label>
         ))}
       </div>
-    </section>
-
-    <section class="tools-hub-banner-section" aria-label="Interactive tools">
-      <ToolsHubBanner />
     </section>
 
     <section class="docs-graph-section">

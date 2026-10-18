@@ -14,37 +14,34 @@ difficulty: beginner
 guideType: reference
 estimatedReadTime: "2 min read"
 lastVerified: "JMeter 5.6"
+template: splash
 ---
 
-# JMeter Tools
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
+import ToolsHub from '../../../components/tools/ToolsHub.astro';
 
-Interactive helpers for common load-testing decisions. All tools run **in your browser** on [docs.jmeter.ai](https://docs.jmeter.ai): no account, no upload of test data.
+<ToolPageLayout
+  title="JMeter Interactive Tools Hub"
+  description="Client-side utilities and practice targets for performance engineers: test plan converters, sizing calculators, linters, and correlation sandboxes."
+  badge="13 Production Tools"
+  version="JMeter 5.6.3 Validated"
+>
+  <ToolsHub slot="tool" />
 
-## Available tools
+  ## Architecture & Client-Side Privacy
 
-| Tool | Use it when you need to… |
-|------|--------------------------|
-| [cURL & HAR to JMX Converter](/tools/curl-to-jmx/) | Convert cURL commands and HAR files into valid JMX test plans (supports GET, POST, QUERY, etc.) |
-| [OpenAPI to JMX Converter](/tools/openapi-to-jmx/) | Convert OpenAPI 3.x or Swagger 2.0 JSON/YAML into a parameterized JMeter test plan |
-| [JMX Linter & Health Analyzer](/tools/jmx-linter/) | Find JMeter anti-patterns, calculate a health score, and inventory a JMX test plan locally |
-| [JSR223 Groovy Builder](/tools/groovy-builder/) | Lint JMeter Groovy code and generate ready-to-paste JSR223 JMX elements |
-| [Thread Calculator](/tools/thread-calculator/) | Estimate concurrent threads / RPS, think time, and ramp-up |
-| [Heap Estimator](/tools/heap-estimator/) | Pick a starting `-Xmx` for injectors |
-| [CLI Command Builder](/tools/cli-builder/) | Assemble `jmeter -n -t` with report, HEAP, and `-J` flags |
-| [Distributed Testing Planner](/tools/distributed-planner/) | Plan pinned RMI ports, firewall rules, and cluster configs |
-| [Linux OS & Kernel Tuning](/tools/os-tuning/) | Generate `sysctl.conf`, `limits.conf`, and systemd configs for high concurrency |
-| [Coordinated Omission Calculator](/tools/coordinated-omission/) | Correct for dropped requests when throughput falls below target |
-| [Properties Cheat Sheet](/tools/properties-cheatsheet/) | Find high-impact `user.properties` quickly |
-| [Regex Extractor Builder](/tools/regex-tester/) | Paste a response (max 1 MB, browser-only) for Regex Extractor fields |
+  Every tool in this catalog executes **100% locally in your web browser**. No test plan files (`.jmx`), cURL commands, API tokens, response bodies, or infrastructure IP addresses are uploaded, logged, or sent to any remote server or third-party telemetry service.
 
-## Why these tools
+  * **Converters & Linters:** DOM parsers and Web Workers process your files entirely in browser memory.
+  * **Sizing Calculators:** Mathematical algorithms based on Little's Law, Erlang queues, and JVM footprint formulas run instantly with zero latency.
+  * **Correlation Sandbox:** Practice endpoints can be targeted against the hosted cloud edge (`https://docs.jmeter.ai/api/sandbox`) for single-thread debugging or run completely offline against your own local Node.js server (`http://localhost:8787`).
 
-Docs alone rank for "what is…", but practitioners search for calculators and cheat sheets. Each tool has shareable URL state, SEO metadata, and links back into the manual so answers stay grounded in JMeter concepts.
+  ---
 
+  ## Related reading
 
-## Related reading
-
-- [Best Practices](/user-manual/best-practices/)
-- [Properties Reference](/user-manual/properties-reference/)
-- [Regular Expressions](/user-manual/regular-expressions/)
-- [Remote Testing](/user-manual/remote-test/)
+  - [Best Practices](/user-manual/best-practices/)
+  - [Properties Reference](/user-manual/properties-reference/)
+  - [Regular Expressions](/user-manual/regular-expressions/)
+  - [Remote Testing](/user-manual/remote-test/)
+</ToolPageLayout>

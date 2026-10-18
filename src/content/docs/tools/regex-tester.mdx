@@ -11,60 +11,65 @@ difficulty: beginner
 guideType: how-to
 estimatedReadTime: "3 min read"
 lastVerified: "JMeter 5.6"
+template: splash
 ---
 
+import ToolPageLayout from '../../../components/tools/ToolPageLayout.astro';
 import RegexTester from '../../../components/tools/RegexTester.astro';
 import RelatedContent from '../../../components/RelatedContent.astro';
 
-# JMeter Regex Extractor Builder
+<ToolPageLayout
+  title="JMeter Regex Extractor Builder"
+  description="Paste an HTTP response body to propose Regular Expression Extractor settings for session tokens, CSRF inputs, UUIDs, and JWTs."
+  badge="Regex Extractor"
+  version="JMeter 5.6.3 Validated"
+>
+  <RegexTester slot="tool" />
 
-Paste a response body. The tool scans for likely **dynamic values** (tokens, CSRF fields, UUIDs, JWTs) and proposes **Regular Expression Extractor** settings you can copy into JMeter.
+  ## Privacy and limits
 
-<RegexTester />
+  | Rule | Detail |
+  |------|--------|
+  | **Where it runs** | 100% in your browser (this page). |
+  | **What is sent** | Nothing: no upload, no server analysis. |
+  | **Max body size** | **1 MB** (1,048,576 bytes). Larger pastes are rejected so the tab stays responsive. |
+  | **Scope** | **Regular Expression Extractor** only (not JSON Extractor / Boundary Extractor). |
 
-## Privacy and limits
+  ## Extractor field mapping
 
-| Rule | Detail |
-|------|--------|
-| **Where it runs** | 100% in your browser (this page). |
-| **What is sent** | Nothing: no upload, no server analysis. |
-| **Max body size** | **1 MB** (1,048,576 bytes). Larger pastes are rejected so the tab stays responsive. |
-| **Scope** | **Regular Expression Extractor** only (not JSON Extractor / Boundary Extractor). |
+  | JMeter field | This tool |
+  |--------------|-----------|
+  | Name of created variable | Suggested from key / type |
+  | Regular Expression | Generated pattern with one capture group |
+  | Template | `$1$` |
+  | Match No. | `1` (first match) |
+  | Default Value | `NOT_FOUND` |
 
-## Extractor field mapping
+  ## Tips
 
-| JMeter field | This tool |
-|--------------|-----------|
-| Name of created variable | Suggested from key / type |
-| Regular Expression | Generated pattern with one capture group |
-| Template | `$1$` |
-| Match No. | `1` (first match) |
-| Default Value | `NOT_FOUND` |
+  - Prefer **JSON Extractor** when the entire body is JSON; more stable than regex.
+  - Always verify with a **Debug Sampler** or View Results Tree; browser JS RegExp is close to Java but not identical.
+  - If nothing is found, paste a **smaller fragment** that still includes the token and its key.
 
-## Tips
+  ## Related reading
 
-- Prefer **JSON Extractor** when the entire body is JSON; more stable than regex.
-- Always verify with a **Debug Sampler** or View Results Tree; browser JS RegExp is close to Java but not identical.
-- If nothing is found, paste a **smaller fragment** that still includes the token and its key.
+  - [Regular Expressions](/user-manual/regular-expressions/)
+  - [Functions and Variables](/user-manual/functions/)
+  - [HTTP Recorder](/topics/http-recorder/)
+  - [Component Reference](/user-manual/component-reference/)
 
-## Related reading
-
-- [Regular Expressions](/user-manual/regular-expressions/)
-- [Functions and Variables](/user-manual/functions/)
-- [HTTP Recorder](/topics/http-recorder/)
-- [Component Reference](/user-manual/component-reference/)
-
-<RelatedContent>
-  <Fragment slot="next-step">
-    Add a Regular Expression Extractor under your sampler, paste the fields, then confirm with a Debug Sampler.
-  </Fragment>
-  <Fragment slot="related">
-    [Functions guide](/topics/functions-and-variables/) · [Best practices](/user-manual/best-practices/)
-  </Fragment>
-  <Fragment slot="mistakes">
-    Using Match No. 0 (random) in load tests when you need a stable extraction.
-  </Fragment>
-  <Fragment slot="troubleshooting">
-    No candidates? Paste a smaller fragment that still includes the token.
-  </Fragment>
-</RelatedContent>
+  <RelatedContent>
+    <Fragment slot="next-step">
+      Add a Regular Expression Extractor under your sampler, paste the fields, then confirm with a Debug Sampler.
+    </Fragment>
+    <Fragment slot="related">
+      [Functions guide](/topics/functions-and-variables/) · [Best practices](/user-manual/best-practices/)
+    </Fragment>
+    <Fragment slot="mistakes">
+      Using Match No. 0 (random) in load tests when you need a stable extraction.
+    </Fragment>
+    <Fragment slot="troubleshooting">
+      No candidates? Paste a smaller fragment that still includes the token.
+    </Fragment>
+  </RelatedContent>
+</ToolPageLayout>

@@ -1,0 +1,178 @@
+---
+/**
+ * Dedicated Interactive Tools Hub Catalog.
+ * Showcases all 13 production tools with categories, search, and hero preview.
+ * Strict Rule: File must remain <= 500 lines.
+ */
+import { TOOLS } from '../../lib/tools-catalog.mjs';
+---
+
+<div class="tools-hub not-content" data-tools-hub>
+  <!-- Featured Hero Card: Correlation Sandbox -->
+  <section class="tools-hub-hero">
+    <div class="tools-hero-badge-row">
+      <div class="tools-hero-pill">
+        <span class="tools-hero-live-dot" aria-hidden="true"></span>
+        <span>Featured Interactive Sandbox</span>
+      </div>
+      <span class="tools-hero-chip">JMeter 5.6.3 Validated</span>
+      <span class="tools-hero-chip">Live Edge Endpoints</span>
+    </div>
+
+    <div class="tools-hero-content">
+      <div class="tools-hero-text">
+        <h2 class="tools-hero-title">JMeter Correlation &amp; Practice Sandbox</h2>
+        <p class="tools-hero-desc">
+          Stop struggling with broken session cookies and dynamic tokens. Practice correlation against hosted cloud edge endpoints or a local zero-dependency Node.js server. Run live simulations, inspect boundary extractors, and download ready-to-test JMX challenge plans.
+        </p>
+        <div class="tools-hero-highlights">
+          <span class="tools-hero-chip">01 CSRF + Session Cookie</span>
+          <span class="tools-hero-chip">02 JWT Bearer Auth</span>
+          <span class="tools-hero-chip">03 ASP.NET __VIEWSTATE</span>
+          <span class="tools-hero-chip">04 Rate Limit 429 &amp; Chaos</span>
+        </div>
+      </div>
+      <div class="tools-hero-cta">
+        <a href="/tools/correlation-sandbox/" class="tools-hero-btn">
+          <span>Open Sandbox</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter & Search Controls -->
+  <div class="tools-hub-controls">
+    <div class="tools-filter-tabs" role="tablist" aria-label="Tool Categories">
+      <button type="button" class="tools-filter-btn is-active" data-filter="all" role="tab" aria-selected="true">All (13)</button>
+      <button type="button" class="tools-filter-btn" data-filter="converters" role="tab" aria-selected="false">Converters (2)</button>
+      <button type="button" class="tools-filter-btn" data-filter="sizing" role="tab" aria-selected="false">Sizing &amp; Capacity (2)</button>
+      <button type="button" class="tools-filter-btn" data-filter="scripting" role="tab" aria-selected="false">Scripting &amp; CLI (2)</button>
+      <button type="button" class="tools-filter-btn" data-filter="infrastructure" role="tab" aria-selected="false">Infrastructure (2)</button>
+      <button type="button" class="tools-filter-btn" data-filter="quality" role="tab" aria-selected="false">Linters &amp; QA (5)</button>
+    </div>
+
+    <div class="tools-search-box">
+      <svg class="tools-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="search"
+        class="tools-search-input"
+        placeholder="Filter tools by keyword, format, or tag..."
+        aria-label="Filter tools"
+        data-tools-search
+      />
+    </div>
+  </div>
+
+  <!-- Tools Catalog Grid -->
+  <div class="tools-grid" data-tools-grid>
+    {TOOLS.map((tool) => (
+      <a
+        href={tool.href}
+        class="tool-card"
+        data-tool-item
+        data-category={tool.category}
+        data-keywords={`${tool.title} ${tool.desc} ${tool.categoryLabel} ${tool.specs.join(' ')}`.toLowerCase()}
+      >
+        <div class="tool-card-top">
+          <div class="tool-card-meta">
+            <span class="tool-card-category">{tool.categoryLabel}</span>
+            <span class="tool-card-badge">{tool.badge}</span>
+          </div>
+          <h3 class="tool-card-title">
+            <span>{tool.title}</span>
+            <span class="tool-card-arrow" aria-hidden="true">&rarr;</span>
+          </h3>
+          <p class="tool-card-desc">{tool.desc}</p>
+        </div>
+        <div class="tool-card-specs">
+          {tool.specs.map((spec) => (
+            <span class="tool-spec-pill">{spec}</span>
+          ))}
+        </div>
+      </a>
+    ))}
+    <div class="tools-no-results" data-no-results hidden>
+      <p>No tools matched your search. Try different keywords or select "All (13)".</p>
+    </div>
+  </div>
+
+  <!-- Security & Privacy Guarantee Bar -->
+  <div class="tools-guarantee-bar">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    </svg>
+    <span>Runs in your browser. Test plans, credentials, and API tokens are not uploaded.</span>
+  </div>
+</div>
+
+<script>
+  (() => {
+    function initToolsFilter() {
+      const root = document.querySelector('[data-tools-hub]');
+      if (!root || root.hasAttribute('data-initialized')) return;
+      root.setAttribute('data-initialized', 'true');
+
+      const filterButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('.tools-filter-btn'));
+      const searchInput = root.querySelector<HTMLInputElement>('[data-tools-search]');
+      const toolCards = Array.from(root.querySelectorAll<HTMLElement>('[data-tool-item]'));
+      const noResults = root.querySelector<HTMLElement>('[data-no-results]');
+
+      let currentCategory = 'all';
+      let currentQuery = '';
+
+      function applyFilter() {
+        let matchCount = 0;
+        toolCards.forEach((card) => {
+          const cat = card.dataset.category || '';
+          const keywords = card.dataset.keywords || '';
+
+          const matchesCategory = currentCategory === 'all' || cat === currentCategory;
+          const matchesQuery = !currentQuery || keywords.includes(currentQuery);
+
+          if (matchesCategory && matchesQuery) {
+            card.style.display = 'flex';
+            matchCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        if (noResults) {
+          noResults.hidden = matchCount > 0;
+        }
+      }
+
+      filterButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          filterButtons.forEach((b) => {
+            b.classList.remove('is-active');
+            b.setAttribute('aria-selected', 'false');
+          });
+          btn.classList.add('is-active');
+          btn.setAttribute('aria-selected', 'true');
+          currentCategory = btn.dataset.filter || 'all';
+          applyFilter();
+        });
+      });
+
+      searchInput?.addEventListener('input', () => {
+        currentQuery = searchInput.value.trim().toLowerCase();
+        applyFilter();
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initToolsFilter);
+    } else {
+      initToolsFilter();
+    }
+  })();
+</script>
