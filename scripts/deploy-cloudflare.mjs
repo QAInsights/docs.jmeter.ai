@@ -9,7 +9,7 @@
  *   1. Verifies `wrangler` is authenticated.
  *   2. Ensures the SESSION KV namespace exists (the @astrojs/cloudflare
  *      adapter injects that binding) and patches its id into wrangler.jsonc.
- *   3. Pushes the four runtime secrets via `wrangler secret put` (values are
+ *   3. Pushes the runtime secrets via `wrangler secret put` (values are
  *      piped over stdin and never printed). KV_REST_API_* values from the old
  *      Vercel integration are mapped to UPSTASH_REDIS_REST_* names.
  *
@@ -58,8 +58,9 @@ export function parseDotEnv(text) {
 }
 
 /**
- * Resolve the four worker secrets from parsed .env values, mapping the
+ * Resolve the worker secrets from parsed .env values, mapping the
  * legacy Vercel KV_REST_API_* names onto UPSTASH_REDIS_REST_*.
+ * MCPRUSH_TOKEN is optional — omit it only if /api/mcp stays ungated.
  * @param {Record<string, string>} env
  * @returns {Record<string, string>} name → value (missing values omitted)
  */
@@ -69,6 +70,7 @@ export function resolveSecrets(env) {
     TURNSTILE_SECRET_KEY: env.TURNSTILE_SECRET_KEY,
     UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL,
     UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN,
+    MCPRUSH_TOKEN: env.MCPRUSH_TOKEN,
   };
   return Object.fromEntries(Object.entries(pairs).filter(([, v]) => v));
 }
@@ -151,6 +153,11 @@ function main() {
   ].filter((name) => !secrets[name]);
   for (const name of missing) {
     console.warn(`WARNING: ${name} not found in .env — skipping.`);
+  }
+  if (!secrets.MCPRUSH_TOKEN) {
+    console.warn(
+      'WARNING: MCPRUSH_TOKEN not found in .env — the gated /api/mcp will refuse every call.',
+    );
   }
   for (const [name, value] of Object.entries(secrets)) {
     // `versions secret put` (not `secret put`): dashboard Git deploys use

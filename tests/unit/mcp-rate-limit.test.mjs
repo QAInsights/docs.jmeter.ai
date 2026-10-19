@@ -59,6 +59,7 @@ describe('/api/mcp POST rate limiting', () => {
         'Content-Type': 'application/json',
         Accept: 'application/json, text/event-stream',
         'x-forwarded-for': ip,
+        'x-mcprush-token': process.env.MCPRUSH_TOKEN,
       },
       body: JSON.stringify({
         jsonrpc: '2.0',
@@ -105,7 +106,10 @@ describe('/api/mcp POST rate limiting', () => {
     }));
     const { GET } = await import('../../src/pages/api/mcp.ts');
     const request = new Request('https://docs.jmeter.ai/api/mcp', {
-      headers: { Accept: 'text/event-stream' },
+      headers: {
+        Accept: 'text/event-stream',
+        'x-mcprush-token': process.env.MCPRUSH_TOKEN,
+      },
     });
     const res = await GET({ request });
     expect(res.status).toBe(429);

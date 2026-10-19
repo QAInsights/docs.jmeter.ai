@@ -53,6 +53,11 @@ describe('resolveSecrets', () => {
   it('omits missing secrets so the caller can warn', () => {
     expect(resolveSecrets({})).toEqual({});
   });
+
+  it('passes MCPRUSH_TOKEN through so the gated /api/mcp gets its secret', () => {
+    const secrets = resolveSecrets({ MCPRUSH_TOKEN: 'mgw_example' });
+    expect(secrets.MCPRUSH_TOKEN).toBe('mgw_example');
+  });
 });
 
 describe('patchWranglerConfig', () => {

@@ -11,6 +11,11 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    // /api/mcp is fail-closed behind x-mcprush-token; the suite runs with the
+    // secret "deployed" so endpoint tests authenticate like the gateway.
+    env: {
+      MCPRUSH_TOKEN: 'mgw_test_gate_token',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

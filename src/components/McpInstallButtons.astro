@@ -7,7 +7,9 @@
  *   Cursor:      cursor://anysphere.cursor-deeplink/mcp/install?name=<n>&config=<base64 {"url"}>
  */
 const SERVER_NAME = 'jmeter-docs';
-const ENDPOINT = 'https://docs.jmeter.ai/api/mcp';
+// The endpoint answers only calls forwarded by the mcprush gateway; the
+// listing issues the URL + key buyers paste here, not the direct address.
+const ENDPOINT = '<mcprush-gateway-url>';
 
 const vscodeConfig = JSON.stringify({ name: SERVER_NAME, type: 'http', url: ENDPOINT });
 const cursorConfig = JSON.stringify({ url: ENDPOINT });

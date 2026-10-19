@@ -87,7 +87,7 @@ The generated element uses `TestBeanGUI`, Groovy, and a non-empty `cacheKey` so 
 Connect an MCP-compatible agent:
 
 ```bash
-claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
+claude mcp add jmeter-docs <mcprush-gateway-url> --transport http
 ```
 
 Ask the agent to call `get_jsr223_recipe` by recipe name or category to retrieve the curated JWT, HMAC, dynamic header, JSON extraction, and custom logging examples used by this builder. For your own script, call `lint_groovy_script` with the code and JSR223 element type to receive the same findings, binding analysis, and optional ready-to-paste JMX element XML.

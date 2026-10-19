@@ -317,7 +317,11 @@ describe('/api/mcp endpoint telemetry integration', () => {
 
     const getRes = await getMcp({
       request: new Request('https://docs.jmeter.ai/api/mcp', {
-        headers: { Accept: 'application/json', 'User-Agent': 'Cursor/0.49' },
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'Cursor/0.49',
+          'x-mcprush-token': process.env.MCPRUSH_TOKEN,
+        },
       }),
     });
     expect(getRes.status).toBe(200);
@@ -333,6 +337,7 @@ describe('/api/mcp endpoint telemetry integration', () => {
           'Content-Type': 'application/json',
           Accept: 'application/json, text/event-stream',
           'User-Agent': 'claude-code/1.0.0',
+          'x-mcprush-token': process.env.MCPRUSH_TOKEN,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -369,7 +374,10 @@ describe('/api/mcp endpoint telemetry integration', () => {
 
     const getRes = await getMcp({
       request: new Request('https://docs.jmeter.ai/api/mcp?telemetry=0', {
-        headers: { Accept: 'application/json' },
+        headers: {
+          Accept: 'application/json',
+          'x-mcprush-token': process.env.MCPRUSH_TOKEN,
+        },
       }),
     });
     expect(getRes.status).toBe(200);
@@ -382,6 +390,7 @@ describe('/api/mcp endpoint telemetry integration', () => {
           'Content-Type': 'application/json',
           Accept: 'application/json, text/event-stream',
           'X-MCP-Telemetry': 'off',
+          'x-mcprush-token': process.env.MCPRUSH_TOKEN,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',

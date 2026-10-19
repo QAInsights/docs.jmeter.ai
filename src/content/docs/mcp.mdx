@@ -16,11 +16,15 @@ estimatedReadTime: "4 min read"
 
 import McpInstallButtons from '../../components/McpInstallButtons.astro';
 
-Point Claude Code, Qwen Code, Cursor, Pi, or any MCP client at `https://docs.jmeter.ai/api/mcp` and your agent answers JMeter questions grounded in this documentation, with a source link for every answer. Free, no API key, no signup. The on-site **Ask AI** chat uses these same tools in-process.
+Point Claude Code, Qwen Code, Cursor, Pi, or any MCP client at this server and your agent answers JMeter questions grounded in this documentation, with a source link for every answer. The on-site **Ask AI** chat uses these same tools in-process and stays free.
 
-**Endpoint:** `https://docs.jmeter.ai/api/mcp` (Streamable HTTP, stateless)
+**Endpoint:** `https://docs.jmeter.ai/api/mcp` (Streamable HTTP, stateless, gateway-forwarded)
+
+**Access:** this endpoint is served through its paid listing on [mcprush](https://www.mcprush.com). Subscribe on the listing to get the gateway URL and buyer key for your client. The gateway checks your key and plan, then forwards each call to this endpoint with a gateway token. Direct calls to `https://docs.jmeter.ai/api/mcp` are refused with HTTP 401.
 
 <McpInstallButtons />
+
+*The one-click installs above mint direct-connection configs. Use the endpoint URL your mcprush listing issues instead of the direct address.*
 
 **Fair use:** 120 requests/min per IP. Exceeding it returns HTTP 429 with a `Retry-After` header — well-behaved clients back off automatically.
 
@@ -200,10 +204,12 @@ Find the dedicated reference page for one built-in JMeter function and return it
 
 ## Connect your agent
 
+Use the gateway URL and key your mcprush listing issues wherever the examples show `<mcprush-gateway-url>`.
+
 ### Claude Code
 
 ```bash
-claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --scope user
+claude mcp add jmeter-docs <mcprush-gateway-url> --transport http --scope user
 ```
 
 `--scope user` registers the server for all your projects, no matter which folder you run the command from. Restart Claude Code after adding it, then verify with `/mcp`.
@@ -211,7 +217,7 @@ claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --sco
 ### Pi
 
 ```bash
-pi mcp add jmeter-docs --url https://docs.jmeter.ai/api/mcp
+pi mcp add jmeter-docs --url <mcprush-gateway-url>
 ```
 
 This registers the server for all your projects. Verify the connection with `pi mcp list`, then start Pi and run `/mcp` to inspect the tools. Pi reaches MCP tools through its `codemode` tool by default; to declare the tools to the model directly, set `"exposure": "direct"` in `~/.pi/agent/mcp.json`:
@@ -220,7 +226,7 @@ This registers the server for all your projects. Verify the connection with `pi 
 {
   "mcpServers": {
     "jmeter-docs": {
-      "url": "https://docs.jmeter.ai/api/mcp",
+      "url": "<mcprush-gateway-url>",
       "exposure": "direct"
     }
   }
@@ -235,7 +241,7 @@ Add this to your MCP configuration file:
 {
   "mcpServers": {
     "jmeter-docs": {
-      "url": "https://docs.jmeter.ai/api/mcp"
+      "url": "<mcprush-gateway-url>"
     }
   }
 }
@@ -244,7 +250,7 @@ Add this to your MCP configuration file:
 ### Verify with curl
 
 ```bash
-curl -X POST https://docs.jmeter.ai/api/mcp \
+curl -X POST <mcprush-gateway-url> \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{
@@ -275,7 +281,7 @@ You can disable telemetry for your MCP client at any time using either a query p
    {
      "mcpServers": {
        "jmeter-docs": {
-         "url": "https://docs.jmeter.ai/api/mcp?telemetry=0"
+         "url": "<mcprush-gateway-url>?telemetry=0"
        }
      }
    }
@@ -285,7 +291,7 @@ You can disable telemetry for your MCP client at any time using either a query p
    {
      "mcpServers": {
        "jmeter-docs": {
-         "url": "https://docs.jmeter.ai/api/mcp",
+         "url": "<mcprush-gateway-url>",
          "headers": {
            "X-MCP-Telemetry": "off"
          }

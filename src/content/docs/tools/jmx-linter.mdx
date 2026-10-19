@@ -63,7 +63,7 @@ A clean lint score does not replace a one-user smoke run, response assertions, r
 Connect an MCP-compatible agent:
 
 ```bash
-claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
+claude mcp add jmeter-docs <mcprush-gateway-url> --transport http
 ```
 
 The agent can call `lint_jmx_snippet` with a JMX snippet or full test plan and return the same findings, score, and remediation guidance.
