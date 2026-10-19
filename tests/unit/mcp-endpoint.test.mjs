@@ -149,7 +149,8 @@ describe('GET /api/mcp endpoint discovery', () => {
     });
     const res = await GET({ request });
     expect(res.status).toBe(200);
-    expect(res.headers.get('cache-control')).toContain('s-maxage=86400');
+    // no-store: discovery must never be served from a shared cache past the gate.
+    expect(res.headers.get('cache-control')).toBe('no-store');
     expect(res.headers.get('vary')).toBe('Accept');
     const body = await res.json();
     expect(body.name).toBe('jmeter-docs');

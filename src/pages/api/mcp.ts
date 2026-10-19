@@ -244,7 +244,8 @@ export async function GET({ request }: { request: Request }) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+        // no-store: a shared cache must never serve discovery past the gate.
+        'Cache-Control': 'no-store',
         Vary: 'Accept',
       },
     },
