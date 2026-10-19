@@ -11,8 +11,15 @@
  *
  * The index is generated at build time (scripts/generate-llms-chunks.mjs),
  * so this endpoint needs no database and no API keys.
+ *
+ * Access: every method is gated by the mcprush gateway token. Callers must
+ * send `x-mcprush-token: <MCPRUSH_TOKEN>` — the mcprush gateway attaches it
+ * to every call it forwards after checking the buyer's key and plan. Any
+ * request without a matching token (or while MCPRUSH_TOKEN is unset) gets
+ * a 401 before rate limiting or the MCP handler run.
  */
 
+import { timingSafeEqual } from 'node:crypto';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { normalizeDocPath, findChunkByPath } from '../../lib/rag.mjs';
 import { checkMcpRateLimit } from '../../lib/mcp-rate-limit.mjs';
@@ -53,7 +60,34 @@ export {
 
 export const prerender = false;
 
+const MCPRUSH_GATE_BODY = JSON.stringify({
+  jsonrpc: '2.0',
+  id: null,
+  error: { code: -32001, message: 'This endpoint answers mcprush only.' },
+});
+
+/**
+ * mcprush gateway gate: constant-time compare of the `x-mcprush-token`
+ * header against the MCPRUSH_TOKEN secret. Fail-closed — an unset secret
+ * refuses every call, so a missing deploy secret is loud instead of a
+ * silent unpaid opening. Runs first in every handler.
+ */
+function mcprushGateResponse(request: Request): Response | null {
+  const want = process.env.MCPRUSH_TOKEN;
+  const sent = Buffer.from(request.headers.get('x-mcprush-token') || '');
+  const good = Buffer.from(want || '');
+  const ok = Boolean(want) && sent.length === good.length && timingSafeEqual(sent, good);
+  if (ok) return null;
+  return new Response(MCPRUSH_GATE_BODY, {
+    status: 401,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+}
+
 export async function POST({ request, locals }: { request: Request; locals: any }) {
+  const gated = mcprushGateResponse(request);
+  if (gated) return gated;
+
   const startedAt = Date.now();
   const reqMeta = extractRequestMeta(request);
   const baseClient = detectMcpClient(reqMeta.userAgent);
@@ -139,6 +173,9 @@ export async function POST({ request, locals }: { request: Request; locals: any 
  * server for humans and directory crawlers.
  */
 export async function GET({ request }: { request: Request }) {
+  const gated = mcprushGateResponse(request);
+  if (gated) return gated;
+
   const startedAt = Date.now();
   const reqMeta = extractRequestMeta(request);
   const client = detectMcpClient(reqMeta.userAgent);
@@ -196,7 +233,7 @@ export async function GET({ request }: { request: Request }) {
           'Apache JMeter community documentation (docs.jmeter.ai): search and read guides, convert cURL/HAR/OpenAPI to JMX, lint JMX and Groovy, calculate workload sizing, plan distributed clusters, query tuning properties, fetch Groovy recipes, and lookup diagnostic error playbooks.',
         transport: 'streamable-http',
         endpoint: 'https://docs.jmeter.ai/api/mcp',
-        auth: 'none',
+        auth: 'x-mcprush-token',
         tools: [...MCP_TOOL_NAMES],
         docs: 'https://docs.jmeter.ai/mcp/',
       },
@@ -344,7 +381,10 @@ function acceptsEventStream(request: Request): boolean {
 }
 
 /** Stateless server: there are no sessions to terminate. */
-export function DELETE() {
+export function DELETE({ request }: { request: Request }) {
+  const gated = mcprushGateResponse(request);
+  if (gated) return gated;
+
   return new Response(JSON.stringify({ error: 'Stateless MCP server: no sessions to delete.' }), {
     status: 405,
     headers: {

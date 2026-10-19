@@ -63,7 +63,10 @@ describe('createMcpChatSession', () => {
     session = await createMcpChatSession();
     const advertised = await GET({
       request: new Request('https://docs.jmeter.ai/api/mcp', {
-        headers: { Accept: 'application/json' },
+        headers: {
+          Accept: 'application/json',
+          'x-mcprush-token': process.env.MCPRUSH_TOKEN,
+        },
       }),
     }).then((res) => res.json());
     expect([...session.toolNames].sort()).toEqual([...advertised.tools].sort());

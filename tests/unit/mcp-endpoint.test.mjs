@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   normalizeDocPath,
   findChunkByPath,
+  DELETE,
   GET,
   POST,
   runCurlHarConversionTool,
@@ -65,10 +66,86 @@ describe('findChunkByPath', () => {
   });
 });
 
+describe('MCPRUSH x-mcprush-token gate', () => {
+  function makeInitializeRequest(headers = {}) {
+    return new Request('https://docs.jmeter.ai/api/mcp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+        'x-mcprush-token': process.env.MCPRUSH_TOKEN,
+        ...headers,
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: { name: 'vitest', version: '1' },
+        },
+      }),
+    });
+  }
+
+  function expectGateBody(body) {
+    expect(body.jsonrpc).toBe('2.0');
+    expect(body.error.code).toBe(-32001);
+    expect(body.error.message).toBe('This endpoint answers mcprush only.');
+  }
+
+  it('refuses POST without the token', async () => {
+    const request = makeInitializeRequest({ 'x-mcprush-token': '' });
+    const res = await POST({ request });
+    expect(res.status).toBe(401);
+    expectGateBody(await res.json());
+  });
+
+  it('refuses POST with a wrong token', async () => {
+    const request = makeInitializeRequest({ 'x-mcprush-token': 'mgw_wrong_token' });
+    const res = await POST({ request });
+    expect(res.status).toBe(401);
+    expectGateBody(await res.json());
+  });
+
+  it('refuses GET and DELETE without the token', async () => {
+    const getRes = await GET({
+      request: new Request('https://docs.jmeter.ai/api/mcp', {
+        headers: { Accept: 'application/json' },
+      }),
+    });
+    expect(getRes.status).toBe(401);
+    const deleteRes = await DELETE({
+      request: new Request('https://docs.jmeter.ai/api/mcp', { method: 'DELETE' }),
+    });
+    expect(deleteRes.status).toBe(401);
+  });
+
+  it('is fail-closed while MCPRUSH_TOKEN is unset', async () => {
+    const saved = process.env.MCPRUSH_TOKEN;
+    delete process.env.MCPRUSH_TOKEN;
+    try {
+      const res = await POST({ request: makeInitializeRequest() });
+      expect(res.status).toBe(401);
+      expectGateBody(await res.json());
+    } finally {
+      process.env.MCPRUSH_TOKEN = saved;
+    }
+  });
+
+  it('answers initialize with the correct token', async () => {
+    const res = await POST({ request: makeInitializeRequest() });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.result.serverInfo.name).toBe('jmeter-docs');
+  }, 15000);
+});
+
 describe('GET /api/mcp endpoint discovery', () => {
   it('advertises all 15 MCP tools and streamable HTTP metadata', async () => {
     const request = new Request('https://docs.jmeter.ai/api/mcp', {
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', 'x-mcprush-token': process.env.MCPRUSH_TOKEN },
     });
     const res = await GET({ request });
     expect(res.status).toBe(200);
@@ -98,7 +175,7 @@ describe('GET /api/mcp endpoint discovery', () => {
 
   it('returns 405 instead of starting a reconnect loop for an SSE listener GET', async () => {
     const request = new Request('https://docs.jmeter.ai/api/mcp', {
-      headers: { Accept: 'text/event-stream' },
+      headers: { Accept: 'text/event-stream', 'x-mcprush-token': process.env.MCPRUSH_TOKEN },
     });
     const res = await GET({ request });
     expect(res.status).toBe(405);
@@ -108,7 +185,10 @@ describe('GET /api/mcp endpoint discovery', () => {
 
   it('recognizes an event-stream media type with parameters', async () => {
     const request = new Request('https://docs.jmeter.ai/api/mcp', {
-      headers: { Accept: 'application/json, text/event-stream; charset=utf-8' },
+      headers: {
+        Accept: 'application/json, text/event-stream; charset=utf-8',
+        'x-mcprush-token': process.env.MCPRUSH_TOKEN,
+      },
     });
     expect((await GET({ request })).status).toBe(405);
   });
@@ -121,6 +201,7 @@ describe('POST /api/mcp — Cloudflare locals compatibility', () => {
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json, text/event-stream',
+        'x-mcprush-token': process.env.MCPRUSH_TOKEN,
       },
       body: JSON.stringify({
         jsonrpc: '2.0',
@@ -191,6 +272,7 @@ describe('POST /api/mcp — lookup_component and lookup_function tools', () => {
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json, text/event-stream',
+        'x-mcprush-token': process.env.MCPRUSH_TOKEN,
       },
       body: JSON.stringify({
         jsonrpc: '2.0',
