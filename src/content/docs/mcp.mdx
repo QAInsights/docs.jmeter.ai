@@ -204,10 +204,12 @@ Find the dedicated reference page for one built-in JMeter function and return it
 
 ## Connect your agent
 
+Use the gateway URL and key your mcprush listing issues wherever the examples show `<mcprush-gateway-url>`.
+
 ### Claude Code
 
 ```bash
-claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --scope user
+claude mcp add jmeter-docs <mcprush-gateway-url> --transport http --scope user
 ```
 
 `--scope user` registers the server for all your projects, no matter which folder you run the command from. Restart Claude Code after adding it, then verify with `/mcp`.
@@ -215,7 +217,7 @@ claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http --sco
 ### Pi
 
 ```bash
-pi mcp add jmeter-docs --url https://docs.jmeter.ai/api/mcp
+pi mcp add jmeter-docs --url <mcprush-gateway-url>
 ```
 
 This registers the server for all your projects. Verify the connection with `pi mcp list`, then start Pi and run `/mcp` to inspect the tools. Pi reaches MCP tools through its `codemode` tool by default; to declare the tools to the model directly, set `"exposure": "direct"` in `~/.pi/agent/mcp.json`:
@@ -224,7 +226,7 @@ This registers the server for all your projects. Verify the connection with `pi 
 {
   "mcpServers": {
     "jmeter-docs": {
-      "url": "https://docs.jmeter.ai/api/mcp",
+      "url": "<mcprush-gateway-url>",
       "exposure": "direct"
     }
   }
@@ -239,7 +241,7 @@ Add this to your MCP configuration file:
 {
   "mcpServers": {
     "jmeter-docs": {
-      "url": "https://docs.jmeter.ai/api/mcp"
+      "url": "<mcprush-gateway-url>"
     }
   }
 }
@@ -248,7 +250,7 @@ Add this to your MCP configuration file:
 ### Verify with curl
 
 ```bash
-curl -X POST https://docs.jmeter.ai/api/mcp \
+curl -X POST <mcprush-gateway-url> \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{
@@ -279,7 +281,7 @@ You can disable telemetry for your MCP client at any time using either a query p
    {
      "mcpServers": {
        "jmeter-docs": {
-         "url": "https://docs.jmeter.ai/api/mcp?telemetry=0"
+         "url": "<mcprush-gateway-url>?telemetry=0"
        }
      }
    }
@@ -289,7 +291,7 @@ You can disable telemetry for your MCP client at any time using either a query p
    {
      "mcpServers": {
        "jmeter-docs": {
-         "url": "https://docs.jmeter.ai/api/mcp",
+         "url": "<mcprush-gateway-url>",
          "headers": {
            "X-MCP-Telemetry": "off"
          }

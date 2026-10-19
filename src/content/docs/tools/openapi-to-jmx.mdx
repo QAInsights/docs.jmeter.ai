@@ -79,7 +79,7 @@ A duration greater than zero enables the scheduler and infinite looping for the 
 Connect an MCP-compatible agent:
 
 ```bash
-claude mcp add jmeter-docs https://docs.jmeter.ai/api/mcp --transport http
+claude mcp add jmeter-docs <mcprush-gateway-url> --transport http
 ```
 
 Ask the agent to call `convert_openapi_to_jmx` with an OpenAPI 3.x or Swagger 2.0 document in JSON or YAML. It can apply the same server, method, tag, deprecated-operation, path-value, assertion, and Cookie Manager options as the browser converter and returns the generated JMX XML in its response.
