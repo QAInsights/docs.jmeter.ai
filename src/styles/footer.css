@@ -25,29 +25,65 @@
   display: flex;
   flex-direction: column;
   gap: 3rem;
+  container: site-footer / inline-size;
 }
 
-/* --- Top Multi-Column Grid ---------------------------------------------- */
+/* --- Top Multi-Column Grid ----------------------------------------------
+   The footer renders inside the narrow doc column on docs pages and full
+   width on landing/tool pages, so breakpoints follow the footer's own
+   width (container queries), not the viewport. */
 .footer-grid {
   display: grid;
-  grid-template-columns: 2.2fr repeat(4, 1.2fr);
-  gap: 2.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2.25rem 1.5rem;
 }
 
-@media (max-width: 1100px) {
+.footer-brand-col {
+  grid-column: 1 / -1;
+}
+
+@container site-footer (max-width: 399px) {
   .footer-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
-  }
-  .footer-brand-col {
-    grid-column: 1 / -1;
   }
 }
 
-@media (max-width: 640px) {
+@container site-footer (min-width: 560px) {
+  .footer-grid .footer-brand-col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem 2rem;
+    align-items: start;
+  }
+  .footer-grid .footer-brand-col > :not(.footer-author-card) {
+    grid-column: 1;
+  }
+  .footer-grid .footer-brand-col .footer-author-card {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+  }
+}
+
+@container site-footer (min-width: 720px) {
   .footer-grid {
-    grid-template-columns: 1fr;
-    gap: 2rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2.5rem 2rem;
+  }
+}
+
+@container site-footer (min-width: 1000px) {
+  .footer-grid {
+    grid-template-columns: minmax(0, 2.2fr) repeat(4, minmax(0, 1.2fr));
+    gap: 2.5rem;
+  }
+  .footer-grid .footer-brand-col {
+    grid-column: auto;
+    display: flex;
+  }
+  .footer-grid .footer-brand-col .footer-author-card {
+    align-self: stretch;
   }
 }
 
@@ -67,6 +103,7 @@
   font-weight: 750;
   font-size: 1.15rem;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .footer-brand-icon {
@@ -169,9 +206,7 @@
   font-size: 0.825rem;
   font-weight: 500;
   line-height: 1.4;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+  display: inline-block;
   transition: color 150ms ease, transform 150ms ease;
 }
 
@@ -196,6 +231,8 @@
 }
 
 .footer-ext-arrow {
+  display: inline-block;
+  margin-left: 0.1rem;
   font-size: 0.7rem;
   opacity: 0.55;
   transition: opacity 150ms ease;
